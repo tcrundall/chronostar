@@ -2,15 +2,24 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
 #include <time.h>
+#include <string.h>
 
-int main()
+int main(int argc, char * argv[])
 {
+  if (argc != 3 || strcmp(argv[1], "-h") == 0)
+  {
+    printf("Usage: ./gslDeterm N_MATRIX(<=1000) ITERATIONS(~1000)\n");
+    return 1;
+  }
+    
   srand(time(NULL));
   int MAT_DIM = 6;
-  int N_MATRIX = 1000;
-  int ITERATIONS = 1000;
+  int N_MATRIX = atoi(argv[1]);
+  int ITERATIONS = atoi(argv[2]);
   int i,j,k, count;
   double start, end, t_time = 0.0;
+
+  printf("N_MATRIX: %d, ITERATIONS: %d\n", N_MATRIX, ITERATIONS);
 
   /*int myArray2[36] = {4, 3, 2, 1, 1,10,
                      3, 4, 5, 3, 2, -4,
