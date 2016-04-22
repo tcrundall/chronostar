@@ -17,8 +17,8 @@ int main(int argc, char * argv[])
 
   srand(time(NULL));
 
-  //MatrixXd m = MatrixXd::Random(6, 6);
-  cout << "Here is the matrix m:" << endl << MatrixXd::Random(6,6) << endl;
+  MatrixXd m = MatrixXd::Random(6, 6);
+  cout << "Here is the matrix m:" << endl << m << endl;
   /*Matrix3d inverse;
   bool invertible;
   double determinant;
