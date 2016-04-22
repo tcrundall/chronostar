@@ -198,3 +198,6 @@ if __name__ == "__main__":
     cov_ix1 = [[dims[0],dims[1]],[dims[0],dims[1]]]
     cov_ix2 = [[dims[0],dims[0]],[dims[1],dims[1]]]
     plot_cov_ellipse(xyz_cov[cov_ix1,cov_ix2],[xyz[dim1],xyz[dim2]],alpha=0.5,color='k')
+
+    plt.savefig('plot.png')
+    plt.show()
