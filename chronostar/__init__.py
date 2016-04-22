@@ -6,5 +6,7 @@
 __author__ = "Michael Ireland <michael.ireland@anu.edu.au>"
 __version__ = "0.1"
 
-from error_ellipse import *  
 
+#!!! Note that from traceback import * doesn't work!
+import error_ellipse
+import traceback 
