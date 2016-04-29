@@ -17,11 +17,9 @@ int main(int argc, char * argv[])
   int N_MATRIX = atoi(argv[1]);
   int ITERATIONS = atoi(argv[2]);
   int i,j,k, count;
-  double start, end, t_time = 0.0;
+  double start, end, t_time = 0.0, dummy;
 
   printf("N_MATRIX: %d, ITERATIONS: %d\n", N_MATRIX, ITERATIONS);
-
-  int *myArray = malloc(N_MATRIX*MAT_DIM*MAT_DIM*sizeof(int));
 
   gsl_permutation *p;
   gsl_matrix *m_list[N_MATRIX];
@@ -30,10 +28,6 @@ int main(int argc, char * argv[])
   // finding
   for (count=0; count<ITERATIONS; count++)
   {
-    // Insert random values into the master array
-    for (i=0; i<N_MATRIX; i++)
-      myArray[i] = rand()%100;
-   
     // Initialise a list of gsl arrays
     for (i=0; i<N_MATRIX; i++)
      m_list[i] = gsl_matrix_alloc(MAT_DIM,MAT_DIM);
@@ -42,8 +36,7 @@ int main(int argc, char * argv[])
     for (i=0; i<N_MATRIX; i++)
       for (j=0; j<MAT_DIM; j++)
         for (k=0; k<MAT_DIM; k++)
-          gsl_matrix_set (m_list[i], j, k, (double)
-                       myArray[i*N_MATRIX + j*MAT_DIM + k]);
+          gsl_matrix_set (m_list[i], j, k, rand()%100);
 
     /*for (i=0; i<MAT_DIM; i++)
       for (j=0; j<MAT_DIM; j++)
@@ -60,8 +53,9 @@ int main(int argc, char * argv[])
 
     for (i=0; i<N_MATRIX; i++)
     {
-      gsl_linalg_LU_decomp(m_list[0], p, &signum);
-      det = gsl_linalg_LU_det(m_list[0], signum);
+//      dummy = (double)clock() /(double) CLOCKS_PER_SEC;
+      gsl_linalg_LU_decomp(m_list[i], p, &signum);
+      det = gsl_linalg_LU_det(m_list[i], signum);
     }
 
     end = (double)clock() / (double) CLOCKS_PER_SEC;

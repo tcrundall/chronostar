@@ -8,8 +8,10 @@ the group formation based on Bayesian analysis, which in this case involves
 computing overlap integrals. 
     
 TODO:
+0) Once the group is found, output the probability of each star being in the group.
 1) Add in multiple groups 
 2) Change from a group to a cluster, which can evaporate e.g. exponentially.
+3) Add in a fixed background which is the Galaxy (from Robin et al 2003).
 
 To use MPI, try:
 
@@ -28,7 +30,7 @@ import pickle
 import pdb
 from emcee.utils import MPIPool
    
-def compute_overlap(A,a,B,b,A_det):
+def compute_overlap(A,a,A_det,B,b,B_det):
     """Compute the overlap integral between a star and group mean + covariance matrix
     in six dimensions, including some temporary variables for speed and to match the 
     notes.
@@ -40,7 +42,6 @@ def compute_overlap(A,a,B,b,A_det):
     AapBb = np.dot(A,a) + np.dot(B,b)
     
     #Compute determinants.
-    B_det   = np.linalg.det(B)
     ApB_det = np.linalg.det(ApB)
     
     #Error checking (not needed in C once shown to work?) This shouldn't ever happen, as 
@@ -85,11 +86,13 @@ def read_stars(infile):
     ns = len(stars)    #Number of stars
     nt = len(times)    #Number of times.
     xyzuvw_icov = np.empty( (ns,nt,6,6) )
+    xyzuvw_icov_det = np.empty( (ns,nt) )
     #Fill up the inverse covariance matrices.
     for i in range(ns):
         for j in range(nt):
-            xyzuvw_icov[i,j] = np.linalg.inv(xyzuvw_cov[i,j])
-    return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov,xyzuvw_icov=xyzuvw_icov)
+            xyzuvw_icov[i,j]     = np.linalg.inv(xyzuvw_cov[i,j])
+            xyzuvw_icov_det[i,j] = np.linalg.det(xyzuvw_icov[i,j])
+    return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov,xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
 
    
 def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_overlaps=False,\
@@ -139,6 +142,7 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
     xyzuvw = star_params['xyzuvw']
     xyzuvw_cov = star_params['xyzuvw_cov']
     xyzuvw_icov = star_params['xyzuvw_icov']
+    xyzuvw_icov_det = star_params['xyzuvw_icov_det']
     times = star_params['times']
     ns = len(star_params['stars'])    #Number of stars
     nt = len(times)    #Number of times.
@@ -155,11 +159,13 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
         bs     = xyzuvw[:,ix0]*(1-frac) + xyzuvw[:,ix0+1]*frac
         cov    = xyzuvw_cov[:,ix0]*(1-frac) + xyzuvw_cov[:,ix0+1]*frac
         Bs     = np.linalg.inv(cov)
+        B_dets = xyzuvw_icov_det[:,ix0]*(1-frac) + xyzuvw_icov_det[:,ix0+1]*frac
     else:
         #Extract the time that we really care about.
         #The result is a (ns,6) array for bs, and (ns,6,6) array for Bs.
         bs     = xyzuvw[:,t_ix]
         Bs     = xyzuvw_icov[:,t_ix]
+        B_dets = xyzuvw_icov_det[:,t_ix]
 
     #Sanity check inputs for out of bounds...
     if (np.min(x[6:9])<=min_axis):
@@ -217,7 +223,7 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
     #Now loop through stars, and save the overlap integral for every star.
     overlaps = np.empty(ns)
     for i in range(ns):
-        overlaps[i] = compute_overlap(group_icov,group_mn,Bs[i],bs[i],group_icov_det)
+        overlaps[i] = compute_overlap(group_icov,group_mn,,group_icov_det,Bs[i],bs[i],B_dets[i])
         lnprob += np.log(background_density + overlaps[i])
     if return_overlaps:
         return overlaps    
