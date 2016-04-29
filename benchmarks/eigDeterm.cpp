@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdio.h>
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <Eigen/Core>
@@ -16,20 +17,23 @@ int main(int argc, char * argv[])
   }
 
   srand(time(NULL));
+  int MAT_DIM = 6;
+  int N_MATRIX = atoi(argv[1]);
+  int ITERATIONS = atoi(argv[2]);
+  int i, j, k, count;
+  double start, end, t_time = 0.0;
 
-  MatrixXd m = MatrixXd::Random(6, 6);
+
+  printf("N_MATRIX: %d, ITERATIONS: %d\n", N_MATRIX, ITERATIONS);
+
+
+//  MatrixXd *m_list(6,6);
+
+  MatrixXd m = MatrixXd::Random(MAT_DIM, MAT_DIM);
+  
   cout << "Here is the matrix m:" << endl << m << endl;
-  /*Matrix3d inverse;
-  bool invertible;
   double determinant;
-  m.computeInverseAndDetWithCheck(inverse,determinant, invertible);
-  cout << "Its determinant is " << determinant << endl;
-  if (invertible) {
-    cout << "It is invertible, and its inverse is:" << endl << inverse << endl;
-  }
-  else {
-    cout << "It is not invertible." << endl;
-  }
-*/
+  cout << "Determinant is: " << m.determinant() << endl;
+
   return 0;
 }

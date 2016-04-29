@@ -21,24 +21,17 @@ int main(int argc, char * argv[])
 
   printf("N_MATRIX: %d, ITERATIONS: %d\n", N_MATRIX, ITERATIONS);
 
-  /*int myArray2[36] = {4, 3, 2, 1, 1,10,
-                     3, 4, 5, 3, 2, -4,
-                     4, 8, 7, 9, 3, 2,
-                     10, 12, 1,-2,-5, 1,
-                     17, 1, 23, 1, 2,1,
-                     34, 2, 1, 2, 1, 1};*/
-
-  //int myArray[MAT_DIM*MAT_DIM*N_MATRIX];
   int *myArray = malloc(N_MATRIX*MAT_DIM*MAT_DIM*sizeof(int));
 
   gsl_permutation *p;
   gsl_matrix *m_list[N_MATRIX];
 
+  // Do this ITERATIONS times, timing only the loop with the determinant
+  // finding
   for (count=0; count<ITERATIONS; count++)
   {
     for (i=0; i<N_MATRIX; i++)
       myArray[i] = rand()%100;
-
    
     for (i=0; i<N_MATRIX; i++)
      m_list[i] = gsl_matrix_alloc(MAT_DIM,MAT_DIM);
@@ -58,8 +51,9 @@ int main(int argc, char * argv[])
     int signum;
     p = gsl_permutation_alloc(m_list[0]->size1);
 
+    //start time: find the determinant of each matrix in
+    //m_list
     start = (double)clock() /(double) CLOCKS_PER_SEC;
-    //for (i=0; i<N_MATRIX; i++)
 
     for (i=0; i<N_MATRIX; i++)
     {
