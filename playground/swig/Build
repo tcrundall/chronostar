@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# Script to run make using the Makefile for this OS
+#
+if (test $# -eq 0) then
+        echo There should at least be one argument......
+else
+
+if [ `uname` = Darwin ]; then
+        make -f ./Makefile.Darwin $1
+elif [ `uname` = Linux ]; then
+        make -f ./Makefile.Linux $1
+else
+        make -f ./Makefile.other $1
+fi
+
+fi
