@@ -23,6 +23,11 @@ int main(int argc, char * argv[])
 
   gsl_permutation *p;
   gsl_matrix *m_list[N_MATRIX];
+  gsl_vector *x = gsl_vector_alloc (MAT_DIM);
+  int signum;
+
+  double b_data[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+  gsl_vector_view b = gsl_vector_view_array (b_data, 6);
 
   // Do this ITERATIONS times, timing only the loop with the determinant
   // finding
@@ -32,19 +37,12 @@ int main(int argc, char * argv[])
     for (i=0; i<N_MATRIX; i++)
      m_list[i] = gsl_matrix_alloc(MAT_DIM,MAT_DIM);
     
-    // Insert values into gsl arrays from master array
+    // Initialise values to random integers 0 -> 99
     for (i=0; i<N_MATRIX; i++)
       for (j=0; j<MAT_DIM; j++)
         for (k=0; k<MAT_DIM; k++)
           gsl_matrix_set (m_list[i], j, k, rand()%100);
 
-    /*for (i=0; i<MAT_DIM; i++)
-      for (j=0; j<MAT_DIM; j++)
-        printf("m(%d,%d) = %g\n", i, j,
-                gsl_matrix_get (m_list[0], i, j));*/
-
-    volatile double det;
-    int signum;
     p = gsl_permutation_alloc(m_list[0]->size1);
 
     //start time: find the determinant of each matrix in
@@ -53,9 +51,8 @@ int main(int argc, char * argv[])
 
     for (i=0; i<N_MATRIX; i++)
     {
-//      dummy = (double)clock() /(double) CLOCKS_PER_SEC;
       gsl_linalg_LU_decomp(m_list[i], p, &signum);
-      det = gsl_linalg_LU_det(m_list[i], signum);
+      gsl_linalg_LU_solve(m_list[i], p, &b.vector, x);
     }
 
     end = (double)clock() / (double) CLOCKS_PER_SEC;
@@ -68,6 +65,7 @@ int main(int argc, char * argv[])
   gsl_permutation_free(p);
   for (i=0; i<N_MATRIX; i++)
     gsl_matrix_free(m_list[i]);
+  gsl_vector_free (x);
 
   return 0;
 }
