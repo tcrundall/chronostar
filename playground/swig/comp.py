@@ -1,7 +1,7 @@
 import overlap
 
-A = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+A = [1, 1, 1, 2, 3, 4, 5, 6, 7]
 
-sum = overlap.compute_overlap(A)
+det = overlap.get_det(A)
 
-print "(In Python) total is: " + str(sum)
+print "(In Python) det is: " + str(det)
