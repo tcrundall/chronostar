@@ -36,15 +36,20 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
                    PyObject *st_icov, PyObject *st_mn, double st_icov_det)
 {
   int MAT_DIM = 6;
-  int i, j;
+  int i, j, signum;
+  double ApB_det;
   PyObject *o1, *o2;
+  gsl_permutation *p;
 
   gsl_matrix *A   = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
   gsl_matrix *B   = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
   gsl_matrix *ApB = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
-//  gsl_vector *a   = gsl_vector_alloc(MAT_DIM);
-//  gsl_vector *b   = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *a   = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *b   = gsl_vector_alloc(MAT_DIM);
 
+  p = gsl_permutation_alloc(A->size1);
+
+  //Inserting values into matricies and vectors
   for (i=0; i<MAT_DIM; i++)
   {
     for (j =0; j<MAT_DIM; j++)
@@ -54,25 +59,45 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
       o2 = PyList_GetItem(st_icov, i*MAT_DIM + j);
       gsl_matrix_set (B, i, j, PyFloat_AS_DOUBLE(o2));
     }
-  } 
+  }
 
-/*  for (i=0; i<MAT_DIM; i++)
+  for (i=0; i<MAT_DIM; i++)
   {
     o1 = PyList_GetItem(gr_mn, i);
     gsl_vector_set (a, i, PyFloat_AS_DOUBLE(o1));
     o2 = PyList_GetItem(st_mn, i);
     gsl_vector_set (b, i, PyFloat_AS_DOUBLE(o2));
   }
-*/
+
+  // Adding A and B together and storing in ApB
+  gsl_matrix_set_zero(ApB);
+  gsl_matrix_add(ApB, A);
+  gsl_matrix_add(ApB, B);
+
+  // Getting determinant of ApB
+  gsl_linalg_LU_decomp(ApB, p, &signum);
+  ApB_det = gsl_linalg_LU_det(ApB, signum);
+
+  printf("Determinant of ApB is: %f\n", ApB_det);
+
+  //printing for sanity reasons
+  /*
   for (i=0; i<MAT_DIM; i++)
     for (j=0; j<MAT_DIM; j++)
       printf ("A(%d, %d) = %g\n", i, j, gsl_matrix_get (A, i, j));
+  
 
+  for (i=0; i<MAT_DIM; i++)
+    for (j=0; j<MAT_DIM; j++)
+      printf ("ApB(%d, %d) = %g\n", i, j, gsl_matrix_get (ApB, i, j));
+  */
+
+  // Freeing memory
   gsl_matrix_free(A);
   gsl_matrix_free(B);
   gsl_matrix_free(ApB);
-//  gsl_vector_free(a);
-//  gsl_vector_free(b);
+  gsl_vector_free(a);
+  gsl_vector_free(b);
 
   return 0.0;
 }
