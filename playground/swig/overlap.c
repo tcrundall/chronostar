@@ -161,6 +161,13 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
   gsl_matrix_free(ApB);
   gsl_vector_free(a);
   gsl_vector_free(b);
+  gsl_vector_free(AapBb);
+  gsl_vector_free(c);
+  gsl_vector_free(v_temp);
+  gsl_vector_free(amc);
+  gsl_vector_free(bmc);
 
-  return 0.0;
+  gsl_permutation_free(p);
+
+  return result;
 }
