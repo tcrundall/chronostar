@@ -5,6 +5,7 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
 #include <string.h>
+#include <math.h>
 
 double get_det(PyObject *A)
 {
@@ -37,17 +38,20 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
 {
   int MAT_DIM = 6;
   int i, j, signum;
-  double ApB_det;
+  double ApB_det, overlap;
   PyObject *o1, *o2;
   gsl_permutation *p;
 
-  gsl_matrix *A     = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
-  gsl_matrix *B     = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
-  gsl_matrix *ApB   = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
-  gsl_vector *a     = gsl_vector_alloc(MAT_DIM);
-  gsl_vector *b     = gsl_vector_alloc(MAT_DIM);
-  gsl_vector *AapBb = gsl_vector_alloc(MAT_DIM);
-  gsl_vector *c     = gsl_vector_alloc(MAT_DIM);
+  gsl_matrix *A       = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
+  gsl_matrix *B       = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
+  gsl_matrix *ApB     = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
+  gsl_vector *a       = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *b       = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *AapBb   = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *c       = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *v_temp  = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *amc     = gsl_vector_alloc(MAT_DIM); //will hold a - c
+  gsl_vector *bmc     = gsl_vector_alloc(MAT_DIM); //will hold b - c
 
   p = gsl_permutation_alloc(A->size1);
 
@@ -104,6 +108,40 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
   {
     printf("C(%d): %f\n", i, gsl_vector_get(c, i));
   }
+
+  // Compute the overlap formula
+
+  gsl_vector_set_zero(v_temp);
+  gsl_blas_dcopy(a, v_temp);       //v_temp holds a
+  gsl_blas_daxpy(-1.0, c, v_temp); //v_temp holds a - c
+  gsl_blas_dcopy(v_temp, amc);     //amc holds a - c
+
+  gsl_blas_dgemv(CblasNoTrans, 1.0, A, v_temp, 0.0, v_temp);
+  //v_temp holds A (a-c)
+
+  double d_temp;
+  double result = 0.0;
+  gsl_blas_ddot(v_temp, amc, &d_temp);
+
+  result += d_temp;
+  
+  gsl_vector_set_zero(v_temp);
+  gsl_blas_dcopy(b, v_temp);       //v_temp holds b
+  gsl_blas_daxpy(-1.0, c, v_temp); //v_temp holds b - c
+  gsl_blas_dcopy(v_temp, bmc);     //bmc holds b - c
+
+  gsl_blas_dgemv(CblasNoTrans, 1.0, A, v_temp, 0.0, v_temp);
+  //v_temp holds A (b-c)
+
+  gsl_blas_ddot(v_temp, bmc, &d_temp);
+  result += d_temp;
+ 
+  result = -0.5 * result;
+  result = exp(result);
+
+  result *= sqrt((gr_icov_det * st_icov_det)
+                / (ApB_det)*pow(2*M_PI, MAT_DIM));
+
 
   //printing for sanity reasons
   /*

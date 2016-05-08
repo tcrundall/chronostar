@@ -7,8 +7,8 @@ test: test.i
 
 overlap: overlap.i
 	swig -python overlap.i
-	gcc -c overlap.c overlap_wrap.c -I /usr/include/python2.7 -lgsl -lgslcblas
-	ld -shared overlap.o overlap_wrap.o -o _overlap.so -lgsl -lgslcblas
+	gcc -c overlap.c overlap_wrap.c -I /usr/include/python2.7 -lgsl -lgslcblas -lm
+	ld -shared overlap.o overlap_wrap.o -o _overlap.so -lgsl -lgslcblas -lm
 
 
 clean:
