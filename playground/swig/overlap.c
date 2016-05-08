@@ -31,3 +31,35 @@ double get_det(PyObject *A)
   //printf("%6.2f\n",det);
   return det;
 }
+
+double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
+                   PyObject *st_icov, PyObject *st_mn, double st_icov_det)
+{
+  int MAT_DIM = 6;
+  int i, j;
+  PyObject *oo;
+
+  gsl_matrix *A   = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
+  gsl_matrix *B   = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
+  gsl_matrix *ApB = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
+
+  for (i=0; i<MAT_DIM; i++)
+  {
+    for (j =0; j<MAT_DIM; j++)
+    {
+      oo = PyList_GetItem(gr_icov, i*MAT_DIM + j);
+      gsl_matrix_set (A, i, j, PyFloat_AS_DOUBLE(oo));
+      
+    }
+  } 
+
+  for (i=0; i<MAT_DIM; i++)
+    for (j=0; j<MAT_DIM; j++)
+      printf ("A(%d, %d) = %g\n", i, j, gsl_matrix_get (A, i, j));
+
+  gsl_matrix_free(A);
+  gsl_matrix_free(B);
+  gsl_matrix_free(ApB);
+
+  return 0.0;
+}
