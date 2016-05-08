@@ -13,4 +13,4 @@ det = overlap.get_det(A.flatten().tolist())
 
 print "(In Python) det is: " + str(det)
 
-overlap.get_overlap(A, 0, 0.0, 0, 0, 0.0)
+overlap.get_overlap(A.flatten().tolist(), 0, 0.0, A.flatten().tolist(), 0, 0.0)

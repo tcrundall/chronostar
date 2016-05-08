@@ -37,22 +37,33 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
 {
   int MAT_DIM = 6;
   int i, j;
-  PyObject *oo;
+  PyObject *o1, *o2;
 
   gsl_matrix *A   = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
   gsl_matrix *B   = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
   gsl_matrix *ApB = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
+//  gsl_vector *a   = gsl_vector_alloc(MAT_DIM);
+//  gsl_vector *b   = gsl_vector_alloc(MAT_DIM);
 
   for (i=0; i<MAT_DIM; i++)
   {
     for (j =0; j<MAT_DIM; j++)
     {
-      oo = PyList_GetItem(gr_icov, i*MAT_DIM + j);
-      gsl_matrix_set (A, i, j, PyFloat_AS_DOUBLE(oo));
-      
+      o1 = PyList_GetItem(gr_icov, i*MAT_DIM + j);
+      gsl_matrix_set (A, i, j, PyFloat_AS_DOUBLE(o1));
+      o2 = PyList_GetItem(st_icov, i*MAT_DIM + j);
+      gsl_matrix_set (B, i, j, PyFloat_AS_DOUBLE(o2));
     }
   } 
 
+/*  for (i=0; i<MAT_DIM; i++)
+  {
+    o1 = PyList_GetItem(gr_mn, i);
+    gsl_vector_set (a, i, PyFloat_AS_DOUBLE(o1));
+    o2 = PyList_GetItem(st_mn, i);
+    gsl_vector_set (b, i, PyFloat_AS_DOUBLE(o2));
+  }
+*/
   for (i=0; i<MAT_DIM; i++)
     for (j=0; j<MAT_DIM; j++)
       printf ("A(%d, %d) = %g\n", i, j, gsl_matrix_get (A, i, j));
@@ -60,6 +71,8 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
   gsl_matrix_free(A);
   gsl_matrix_free(B);
   gsl_matrix_free(ApB);
+//  gsl_vector_free(a);
+//  gsl_vector_free(b);
 
   return 0.0;
 }
