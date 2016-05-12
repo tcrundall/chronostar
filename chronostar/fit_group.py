@@ -28,7 +28,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import pdb
-#import overlap #&TC
+import overlap #&TC
 import time    #&TC
 from emcee.utils import MPIPool
    
@@ -222,11 +222,11 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
     #See YangBerger1998
     lnprob=np.log(np.abs(group_icov_det)**3.5)
 
-    overlaps_start = time.clock()
+    #overlaps_start = time.clock()
     #Now loop through stars, and save the overlap integral for every star.
     overlaps = np.empty(ns)
     for i in range(ns):
-        overlaps[i] = compute_overlap(group_icov,group_mn,,group_icov_det,Bs[i],bs[i],B_dets[i])
+        overlaps[i] = compute_overlap(group_icov,group_mn,group_icov_det,Bs[i],bs[i],B_dets[i])
         #overlaps[i] = overlap.get_overlap(group_icov.flatten().tolist(),
         #                                  group_mn.flatten().tolist(),
         #                                  group_icov_det,
@@ -235,7 +235,7 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
         #                                  B_dets[i]) #&TC
         lnprob += np.log(background_density + overlaps[i])
     
-    print (time.clock() - overlaps_start)
+    #print (time.clock() - overlaps_start)
 
     if return_overlaps:
         return overlaps    
