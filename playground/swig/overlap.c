@@ -38,7 +38,7 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
 {
   int MAT_DIM = 6;
   int i, j, signum;
-  double ApB_det, overlap;
+  double ApB_det, overlap, d_temp, result;
   PyObject *o1, *o2;
   gsl_permutation *p;
 
@@ -90,66 +90,27 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
                  1.0, B, b,
                  1.0, AapBb);
 
-  /*
-  for (i=0; i<MAT_DIM; i++)
-  {
-    printf("AapBb(%d): %f\n", i, gsl_vector_get(AapBb, i));
-  }
-  */
-
   // Getting determinant of ApB
   gsl_linalg_LU_decomp(ApB, p, &signum);
   //ApB_det = gsl_linalg_LU_det(ApB, signum);
   ApB_det = fabs(gsl_linalg_LU_det(ApB, signum)); //temp doctoring determinant
-  printf("ApB_det is: %f\n", ApB_det);
-
-  //printf("Determinant of ApB is: %f\n", ApB_det);
 
   // Solve for c
   gsl_linalg_LU_solve(ApB, p, AapBb, c);
 
-
-  printf("C vector is: \n");
-  for (i=0; i<MAT_DIM; i++)
-  {
-    printf("C(%d): %f\n", i, gsl_vector_get(c, i));
-  }
-  
-
   // Compute the overlap formula
-
   gsl_vector_set_zero(v_temp);
-  /*printf("a vector is: \n");
-  for (i=0; i<MAT_DIM; i++)
-  {
-    printf("a(%d): %f\n", i, gsl_vector_get(a, i));
-  }*/
   gsl_blas_dcopy(a, v_temp);       //v_temp holds a
-  /*printf("v_temp vector is a: \n");
-  for (i=0; i<MAT_DIM; i++)
-  {
-    printf("v(%d): %f\n", i, gsl_vector_get(v_temp, i));
-  }*/
   gsl_blas_daxpy(-1.0, c, v_temp); //v_temp holds a - c
-  /*printf("v_temp vector is a - c: \n");
-  for (i=0; i<MAT_DIM; i++)
-  {
-    printf("v(%d): %f\n", i, gsl_vector_get(v_temp, i));
-  }*/
   gsl_blas_dcopy(v_temp, amc);     //amc holds a - c
 
+  // CAN'T HAVE v_temp and v_temp2 be the same vector.
+  // Results in 0's being stored in v_temp2.
   gsl_blas_dgemv(CblasNoTrans, 1.0, A, v_temp, 0.0, v_temp2);
   //v_temp2 holds A (a-c)
-  printf("v_temp2 vecotr is A (a - c)\n");
-  for (i=0; i<MAT_DIM; i++)
-  {
-    printf("v2(%d): %f\n", i, gsl_vector_get(v_temp2, i));
-  }
 
-  double d_temp;
-  double result = 0.0;
-  gsl_blas_ddot(v_temp2, amc, &d_temp);
-  printf("(a-c) . A . (a-c) = %f\n", d_temp);
+  result = 0.0;
+  gsl_blas_ddot(v_temp2, amc, &d_temp); //d_temp holds (a-c)^T A (a-c)
 
   result += d_temp;
   
@@ -158,11 +119,12 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
   gsl_blas_daxpy(-1.0, c, v_temp); //v_temp holds b - c
   gsl_blas_dcopy(v_temp, bmc);     //bmc holds b - c
 
+  // CAN'T HAVE v_temp and v_temp2 be the same vector.
+  // Results in 0's being stored in v_temp2.
   gsl_blas_dgemv(CblasNoTrans, 1.0, B, v_temp, 0.0, v_temp2);
   //v_temp2 holds A (b-c)
 
-  gsl_blas_ddot(v_temp2, bmc, &d_temp);
-  printf("(b-c) . B . (b-c) = %f\n", d_temp);
+  gsl_blas_ddot(v_temp2, bmc, &d_temp); //d_temp holds (b-c)^T B (b-c)
   result += d_temp;
  
   result = -0.5 * result;
@@ -171,17 +133,6 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
   result *= sqrt((gr_icov_det * st_icov_det/ApB_det)
                 / pow(2*M_PI, MAT_DIM));
 
-  //printing for sanity reasons
-  /*
-  for (i=0; i<MAT_DIM; i++)
-    for (j=0; j<MAT_DIM; j++)
-      printf ("A(%d, %d) = %g\n", i, j, gsl_matrix_get (A, i, j));
-  
-
-  for (i=0; i<MAT_DIM; i++)
-    for (j=0; j<MAT_DIM; j++)
-      printf ("ApB(%d, %d) = %g\n", i, j, gsl_matrix_get (ApB, i, j));
-  */
 
   // Freeing memory
   gsl_matrix_free(A);
