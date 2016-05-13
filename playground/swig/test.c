@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include <Python.h>
 
 void addInt(int x, int y)

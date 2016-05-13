@@ -98,7 +98,7 @@ def read_stars(infile):
 
    
 def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_overlaps=False,\
-    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False):
+    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, use_swig=True):
     """Compute the log-likelihood for a fit to a group.
 
     The x variables are:
@@ -225,15 +225,19 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
     #overlaps_start = time.clock()
     #Now loop through stars, and save the overlap integral for every star.
     overlaps = np.empty(ns)
-    for i in range(ns):
-        overlaps[i] = compute_overlap(group_icov,group_mn,group_icov_det,Bs[i],bs[i],B_dets[i])
-        #overlaps[i] = overlap.get_overlap(group_icov.flatten().tolist(),
-        #                                  group_mn.flatten().tolist(),
-        #                                  group_icov_det,
-        #                                  Bs[i].flatten().tolist(),
-        #                                  bs[i].flatten().tolist(),
-        #                                  B_dets[i]) #&TC
-        lnprob += np.log(background_density + overlaps[i])
+    if use_swig:
+        for i in range(ns):
+            overlaps[i] = overlap.get_overlap(group_icov.flatten().tolist(),
+                                              group_mn.flatten().tolist(),
+                                              group_icov_det,
+                                              Bs[i].flatten().tolist(),
+                                              bs[i].flatten().tolist(),
+                                              B_dets[i]) #&TC
+            lnprob += np.log(background_density + overlaps[i])
+    else:
+        for i in range(ns):
+            overlaps[i] = compute_overlap(group_icov,group_mn,group_icov_det,Bs[i],bs[i],B_dets[i])
+            lnprob += np.log(background_density + overlaps[i])
     
     #print (time.clock() - overlaps_start)
 
