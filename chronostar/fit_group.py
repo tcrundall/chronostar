@@ -306,7 +306,7 @@ def lnprob_one_cluster(x, star_params, background_density=2e-12,t_ix = 20,return
 
     #See if we have to interpolate in time.
     if len(x)>13:
-        if ( (x[13] < 0) | (x[13] >= nt-1)):
+        if ( (x[13] < min(times)) | (x[13] > max(times))):
             return -practically_infinity
         #Linearly interpolate in time to get bs and Bs
         #Note that there is a fast scipy package (in ndimage?) that is good for this.

@@ -56,6 +56,8 @@ class TraceBack():
     
         Parameters
         ----------
+        times: float array
+            Times to trace back, in Myr. Note that positive numbers are going backwards in time.
         max_plot_error: float
             Maximum positional error in pc to allow plotting.
         dims: list with 2 ints
@@ -66,7 +68,7 @@ class TraceBack():
         nstars = self.nstars
         stars = self.stars
         #Times in Myr
-        ts = (times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
+        ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
         nts = len(times)
         
         #Positions and velocities in the co-rotating solar reference frame.
@@ -167,7 +169,7 @@ if __name__ == "__main__":
     #Remove bad stars. "bp" stands for Beta Pictoris.
     bp = bp[np.where([ (n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
 
-    times = -np.linspace(0,20,21)
+    times = np.linspace(0,40,41)
 
     dims = [1,2]
     dim1=dims[0]
@@ -187,7 +189,7 @@ if __name__ == "__main__":
 
     #Read in the csv file and trace back orbits with plotting.
     tb = TraceBack(bp)
-    tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True)
+    tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="traceback_save.pkl")
 
     
     #Error ellipse for the association.
