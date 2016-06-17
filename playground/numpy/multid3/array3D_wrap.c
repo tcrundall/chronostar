@@ -3427,6 +3427,9 @@ SWIGINTERNINLINE PyObject*
   return PyInt_FromLong((long) value);
 }
 
+
+  #define SWIG_From_double   PyFloat_FromDouble 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -3458,9 +3461,26 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_get_det(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  PyObject *arg1 = (PyObject *) 0 ;
+  PyObject * obj0 = 0 ;
+  double result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:get_det",&obj0)) SWIG_fail;
+  arg1 = obj0;
+  result = (double)get_det(arg1);
+  resultobj = SWIG_From_double((double)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"SWIG_PyInstanceMethod_New", (PyCFunction)SWIG_PyInstanceMethod_New, METH_O, NULL},
 	 { (char *)"sum", _wrap_sum, METH_VARARGS, NULL},
+	 { (char *)"get_det", _wrap_get_det, METH_VARARGS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 

@@ -73,6 +73,10 @@ except AttributeError:
 def sum(*args):
   return _array3D.sum(*args)
 sum = _array3D.sum
+
+def get_det(*args):
+  return _array3D.get_det(*args)
+get_det = _array3D.get_det
 # This file is compatible with both classic and new-style classes.
 
 

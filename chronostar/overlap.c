@@ -7,6 +7,17 @@
 #include <string.h>
 #include <math.h>
 
+/*
+void inplace(double* npyArray3D, int npyLength1D, int npylength2D,
+              int npylength2D, double* invec, int n)
+{
+  int i;
+  for (i=0; i<n; i++) {
+    invec[i] = npyArray3D[i];
+  }
+}
+*/
+
 int sum(int* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D)
 {
   int i, j, k;
@@ -23,8 +34,7 @@ int sum(int* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D)
 double get_det(PyObject *A)
 {
   int MAT_DIM = 6;
-  int *array = NULL;
-  int i, j, signum;
+  int i, signum;
   double det;
   int nInts = PyList_Size(A);
 
@@ -51,7 +61,7 @@ double get_overlap(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
 {
   int MAT_DIM = 6;
   int i, j, signum;
-  double ApB_det, overlap, d_temp, result;
+  double ApB_det, d_temp, result;
   PyObject *o1, *o2;
   gsl_permutation *p;
 
