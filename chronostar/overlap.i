@@ -13,7 +13,11 @@
 
 %apply (int* INPLACE_ARRAY3, int DIM1, int DIM2, int DIM3) \
       {(int* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D)}
+%apply (double* ARGOUT_ARRAY1, int DIM1) {(double* rangevec, int n)}
+%apply (double* IN_ARRAY3, int DIM1, int DIM2, int DIM3) \
+      {(double* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D)}
+
 
 %include "overlap.h"
 
-%clear (int* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D);
+%clear (double* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D);
