@@ -87,15 +87,20 @@ def correctness():
         print compute_overlap(group_icov, group_mean, group_icov_det,
                               star_icovs[i], star_means[i], star_icov_dets[i])
         print "Using swig module:"
-        print overlap.get_overlap(group_icov.flatten().tolist(),
-                                  group_mean.flatten().tolist(),
-                                  group_icov_det,
-                                  star_icovs[i].flatten().tolist(),
-                                  star_means[i].flatten().tolist(),
-                                  star_icov_dets[i])
+        print overlap.get_overlap2(group_icov.flatten().tolist(),
+                                   group_mean.flatten().tolist(),
+                                   group_icov_det,
+                                   star_icovs[i].flatten().tolist(),
+                                   star_means[i].flatten().tolist(),
+                                   star_icov_dets[i])
+
+        print "Using swig-numpy module"
+        print overlap.get_overlap(group_icov, group_mean, group_icov_det,
+                              star_icovs[i], star_means[i], star_icov_dets[i])
+
 
 def timings():
-    iterations = 1000
+    iterations = 10000
 
     npstart = time.clock()
     for i in range(iterations):
@@ -106,13 +111,19 @@ def timings():
 
     swigstart = time.clock()
     for i in range(iterations):
-        result =  overlap.get_overlap(group_icov.flatten().tolist(),
-                                      group_mean.flatten().tolist(),
-                                      group_icov_det,
-                                      star_icovs[0].flatten().tolist(),
-                                      star_means[0].flatten().tolist(),
-                                      star_icov_dets[0])
+        result =  overlap.get_overlap2(group_icov.flatten().tolist(),
+                                       group_mean.flatten().tolist(),
+                                       group_icov_det,
+                                       star_icovs[0].flatten().tolist(),
+                                       star_means[0].flatten().tolist(),
+                                       star_icov_dets[0])
     print "Swig: " + str(time.clock() - swigstart)
 
+    swignpstart = time.clock()
+    for i in range(iterations):
+        result = overlap.get_overlap(group_icov, group_mean, group_icov_det,
+                              star_icovs[0], star_means[0], star_icov_dets[0])
+    print "Swigging numpy: " + str(time.clock() - swignpstart)
 
+#correctness()
 timings()
