@@ -38,6 +38,14 @@ def compute_overlap(A,a,A_det,B,b,B_det):
     notes.
     
     This is the first function to be converted to a C program in order to speed up."""
+
+    print(A)
+    print(a)
+    print(A_det)
+    print(B)
+    print(b)
+    print(B_det)
+
     #Preliminaries - add matrices together. This might make code more readable? 
     #Or might not.
     ApB = A + B
@@ -98,7 +106,7 @@ def read_stars(infile):
 
    
 def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_overlaps=False,\
-    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, use_swig=True
+    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, use_swig=False
     ):
     """Compute the log-likelihood for a fit to a group.
 
