@@ -1,6 +1,14 @@
 #include <stdio.h>
 #include "overlap.h"
 
+double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
+                   double* gr_mn, int gr_mn_dim, double gr_icov_det,
+                   double* st_icov, int st_dim1, int st_dim2,
+                   double* st_mn, int st_mn_dim, double st_icov_det)
+{
+  return gr_icov[0];
+}
+
 double sum(double* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D)
 {
   int i, j, k;
