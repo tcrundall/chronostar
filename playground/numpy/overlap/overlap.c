@@ -14,6 +14,22 @@ double sum(double* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D
   return result;
 }
 
+void sum2(double* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D, double *rangevec, int n)
+{
+  int i, j, k;
+  double result = 0;
+
+  for (i=0; i<npyLength1D; i++)
+    for (j=0; j<npyLength2D; j++)
+      for (k=0; k<npyLength3D; k++)
+        result += npyArray3D[i*npyLength3D*npyLength2D + k*npyLength2D + j];
+  
+  for (i=0; i<n; i++)
+    rangevec[i] = result;
+
+}
+
+
 double flatten(int len1, double* vec1, int len2, double* vec2)
 {
   int i;

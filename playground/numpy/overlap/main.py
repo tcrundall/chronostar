@@ -15,3 +15,4 @@ myArray = np.arange(72, dtype=np.float)
 myArray = myArray.reshape(2, 6, 6)
 
 print overlap.sum(myArray)
+print overlap.sum2(myArray,5)
