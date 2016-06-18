@@ -15,7 +15,27 @@ import time
 plt.ion()
 
 def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
-    """Convenience function"""
+    """Convenience function. Integrates the motion of a star backwards in time.
+    
+    
+    
+    Parameters
+    ----------
+    params: numpy array 
+        Kinematic parameters (RAdeg,DEdeg,Plx,pmRA,pmDE,RV)
+        
+    ts: times for back propagation
+        Needs to be converted to galpy units, e.g. for times in Myr:
+        ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
+        ts = -(np.array([0,10,20])/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
+    lsr_orbit:
+        WARNING: messy...
+        lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8)
+        lsr_orbit.integrate(ts,MWPotential2014,method='odeint')
+    MWPotential2014:
+        WARNING: messy...
+        from galpy.potential import MWPotential2014        
+    """
     vxvv = params.copy()
     vxvv[2]=1.0/params[2]
     o = Orbit(vxvv=vxvv, radec=True, solarmotion='schoenrich')
@@ -164,12 +184,19 @@ class TraceBack():
 
 #Some test calculations applicable to the ARC DP17 proposal.
 if __name__ == "__main__":
-    #Read in numbers for beta Pic. For HIPPARCOS, we have *no* radial velocities in general.
-    bp=Table.read('betaPic.csv')
-    #Remove bad stars. "bp" stands for Beta Pictoris.
-    bp = bp[np.where([ (n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
 
-    times = np.linspace(0,40,41)
+    if (False):
+        #Read in numbers for beta Pic. For HIPPARCOS, we have *no* radial velocities in general.
+        bp=Table.read('betaPic.csv')
+        #Remove bad stars. "bp" stands for Beta Pictoris.
+        bp = bp[np.where([ (n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
+    else:
+        import play
+        bp = play.crvad2[play.get_good()]
+        bp['HIP'].name = 'Name'
+
+
+    times = np.linspace(0,80,81)
 
     dims = [1,2]
     dim1=dims[0]
