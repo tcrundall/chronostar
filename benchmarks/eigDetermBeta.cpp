@@ -4,6 +4,11 @@
 #include <Eigen/LU>
 #include <Eigen/Core>
 
+/*
+ * A benchmark to test performance of calculating determinants of 
+ * 6x6 matrices with the Eigen linear algebra package.
+ */
+
 using namespace std;
 using namespace Eigen;
 
@@ -25,8 +30,10 @@ int main(int argc, char * argv[])
 
   printf("N_MATRIX: %d, ITERATIONS: %d\n", N_MATRIX, ITERATIONS);
 
-  //Setting up matrix list
+  //Setting up array of matrices
   MatrixXd *m_list = new MatrixXd[N_MATRIX];
+
+  //Initialise each matrix in m_list as random 6x6 matrices
   for (i=0; i<N_MATRIX; i++)
   {
     m_list[i] = MatrixXd::Random(MAT_DIM, MAT_DIM);
@@ -34,14 +41,13 @@ int main(int argc, char * argv[])
 
   start = (double)clock() / (double) CLOCKS_PER_SEC;
   
+  //Calculating determinants of matrices
   for(i=0; i<ITERATIONS; i++)
   {
     for(j=0; j<N_MATRIX; j++)
     {
-    //cout << "Here is the matrix m:" << endl << m_list[j] << endl;
     volatile double determinant;
     determinant = m_list[j].determinant();
-    //cout << "Determinant is: " << m_list[j].determinant() << endl;
     }
   }
   end = (double)clock() / (double) CLOCKS_PER_SEC;

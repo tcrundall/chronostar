@@ -5,7 +5,7 @@
 #include <string.h>
 
 /*
- * A benchmark to test performance oc calculating determinants of 
+ * A benchmark to test performance of calculating determinants of 
  * 6x6 matrices with the GNU Scientific Library (GSL) package.
  */
 
