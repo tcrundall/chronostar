@@ -1,3 +1,9 @@
+"""
+    A test program completely separate from main chronostar for astr3005,
+    in order to test out the performance of swig and suitability of
+    the code to find overlap in a simple test.
+"""
+
 import numpy as np
 import overlap
 import time
@@ -82,6 +88,10 @@ star_means = np.array(
 nstars = 2
 
 def correctness():
+    """
+        Displays the result for each function, no differences should
+        occur.
+    """
     for i in range(nstars):
         print "Using numpy:"
         print compute_overlap(group_icov, group_mean, group_icov_det,
@@ -100,6 +110,10 @@ def correctness():
 
 
 def timings():
+    """
+        Executes each function a fixed number of times, timing for how
+        long it takes.
+    """
     iterations = 10000
 
     npstart = time.clock()

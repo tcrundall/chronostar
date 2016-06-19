@@ -192,7 +192,7 @@ if __name__ == "__main__":
         bp = bp[np.where([ (n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
     else:
         import play
-        bp = play.crvad2[play.get_good()]
+        bp = play.crvad2[play.get_pl_loc2()]
         bp['HIP'].name = 'Name'
 
 
