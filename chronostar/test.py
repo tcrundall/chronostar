@@ -39,6 +39,12 @@ def compute_overlap(A,a,A_det,B,b,B_det):
     
     return overlap
 
+#Hard coding some sample data:
+#  1 group inverse covariance matrix and determinant
+#  1 group mean
+#  2 star inverse covariance matrices and determinants
+#  2 star means
+#  n=2:  number of stars in sample data
 group_icov = np.array(
 [[ 0.08169095,-0.08676841, 0.01251394, 0.,         0.,         0.        ],
  [-0.08676841, 0.12519631,-0.03667345, 0.,         0.,         0.        ],
