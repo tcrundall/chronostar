@@ -4,6 +4,11 @@
 #include <time.h>
 #include <string.h>
 
+/*
+ * A benchmark to test performance oc calculating determinants of 
+ * 6x6 matrices with the GNU Scientific Library (GSL) package.
+ */
+
 int main(int argc, char * argv[])
 {
   if (argc != 3 || strcmp(argv[1], "-h") == 0)
@@ -21,8 +26,6 @@ int main(int argc, char * argv[])
 
   printf("N_MATRIX: %d, ITERATIONS: %d\n", N_MATRIX, ITERATIONS);
 
-  int *myArray = malloc(N_MATRIX*MAT_DIM*MAT_DIM*sizeof(int));
-
   gsl_permutation *p;
   gsl_matrix *m_list[N_MATRIX];
 
@@ -30,29 +33,23 @@ int main(int argc, char * argv[])
   // finding
   for (count=0; count<ITERATIONS; count++)
   {
+    // initialise each element of m_list as a gsl_matrix
     for (i=0; i<N_MATRIX; i++)
-      myArray[i] = rand()%100;
-   
-    for (i=0; i<N_MATRIX; i++)
-     m_list[i] = gsl_matrix_alloc(MAT_DIM,MAT_DIM);
+      m_list[i] = gsl_matrix_alloc(MAT_DIM,MAT_DIM);
     
+    // initialise each element of each gsl_matrix as some random double
+    // less than 100
     for (i=0; i<N_MATRIX; i++)
       for (j=0; j<MAT_DIM; j++)
         for (k=0; k<MAT_DIM; k++)
-          gsl_matrix_set (m_list[i], j, k, (double)
-                       myArray[i*N_MATRIX + j*MAT_DIM + k]);
+          gsl_matrix_set (m_list[i], j, k, (double) (rand()%100));
 
-    /*for (i=0; i<MAT_DIM; i++)
-      for (j=0; j<MAT_DIM; j++)
-        printf("m(%d,%d) = %g\n", i, j,
-                gsl_matrix_get (m_list[0], i, j));*/
 
     volatile double det;
     int signum;
     p = gsl_permutation_alloc(m_list[0]->size1);
 
-    //start time: find the determinant of each matrix in
-    //m_list
+    //start time: find the determinant of each matrix in m_list
     start = (double)clock() /(double) CLOCKS_PER_SEC;
 
     for (i=0; i<N_MATRIX; i++)
