@@ -17,14 +17,14 @@ for i in range(len(stars)):
         colour = 'r'
     else:
         colour = 'b'
-    plt.plot(xyzuvw[i,:,0], xyzuvw[i,:,1], colour)
+    plt.plot(xyzuvw[i,:2,0], xyzuvw[i,:2,1], colour)
 
 plt.scatter(xyzuvw[:,0,0], xyzuvw[:,0,1])
 
-plt.title("Traceback of bright stars near Pleiades")
+plt.title("Initial positions and velocities of bright stars near Pleiades")
 plt.xlabel("X [pc]")
 plt.ylabel("Y [pc]")
-plt.savefig("plots/pleiades_traced_XY.png")
+plt.savefig("plots/pleiades_intial_XY.png")
 plt.show()
 
 plt.clf()
