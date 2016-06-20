@@ -96,3 +96,4 @@ if __name__ == '__main__':
     plot_point_cov(points, nstd=3, alpha=0.5, color='green')
 
     plt.show()
+    plt.savefig("error_ellipse.png")

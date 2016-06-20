@@ -39,13 +39,6 @@ def compute_overlap(A,a,A_det,B,b,B_det):
     
     This is the first function to be converted to a C program in order to speed up."""
 
-    print(A)
-    print(a)
-    print(A_det)
-    print(B)
-    print(b)
-    print(B_det)
-
     #Preliminaries - add matrices together. This might make code more readable? 
     #Or might not.
     ApB = A + B
@@ -106,7 +99,7 @@ def read_stars(infile):
 
    
 def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_overlaps=False,\
-    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, use_swig=False
+    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, use_swig=True
     ):
     """Compute the log-likelihood for a fit to a group.
 
@@ -236,11 +229,11 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
     overlaps = np.empty(ns)
     if use_swig:
         for i in range(ns):
-            overlaps[i] = overlap.get_overlap(group_icov.flatten().tolist(),
-                                              group_mn.flatten().tolist(),
+            overlaps[i] = overlap.get_overlap(group_icov,
+                                              group_mn,
                                               group_icov_det,
-                                              Bs[i].flatten().tolist(),
-                                              bs[i].flatten().tolist(),
+                                              Bs[i],
+                                              bs[i],
                                               B_dets[i]) #&TC
             lnprob += np.log(background_density + overlaps[i])
     else:
@@ -508,9 +501,15 @@ if __name__ == "__main__":
         else:
             print("MPI available! - call this with e.g. mpirun -np 4 python fit_group.py")
     
-    dummy = lnprob_one_group(np.array([ -6.574, 66.560, 23.436, -1.327,-11.427, -6.527, \
-        10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589]), star_params)
+    beta_pic_group = np.array([-6.574, 66.560, 23.436, -1.327,-11.427, -6.527,\
+        10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589])
+    plei_group = np.array([116.0,27.6, -27.6, 4.7, -23.1, -13.2, 20, 20, 20,\
+                        3, 0, 0, 0, 70])
+
+    dummy = lnprob_one_group(plei_group, star_params)
         
+    
+
     fitted_params = fit_one_group(star_params, pool=pool)
     
     if using_mpi:
