@@ -1,6 +1,9 @@
 all: 
 	./Build all
 
+numpy:
+	./Build numpy
+
 clean:
 	./Build clean
 

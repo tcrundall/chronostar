@@ -17,3 +17,8 @@ plt.ylabel("Time (s)")
 plt.title("Finding Determinant of 10,000 6x6 Matrices")
 
 plt.show()
+
+plt.clf()
+
+with_swig = 145.544751
+without_swig = 278.262612
