@@ -1,5 +1,9 @@
 #include <stdio.h>
-#include <malloc.h>
+
+//#ifndef DARWIN 
+//#include <malloc.h>
+//#endif
+
 #include <Python.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>

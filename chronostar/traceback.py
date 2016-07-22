@@ -185,24 +185,28 @@ class TraceBack():
 #Some test calculations applicable to the ARC DP17 proposal.
 if __name__ == "__main__":
 
-    if (False):
+    #Load in some data and define times for plotting.
+    if (True):
         #Read in numbers for beta Pic. For HIPPARCOS, we have *no* radial velocities in general.
         bp=Table.read('betaPic.csv')
         #Remove bad stars. "bp" stands for Beta Pictoris.
         bp = bp[np.where([ (n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
+        times = np.linspace(0,20,21)
     else:
         import play
         bp = play.crvad2[play.get_pl_loc2()]
         bp['HIP'].name = 'Name'
+        #Which times are we plotting?
+        times = np.linspace(0,80,81)
 
-
-    times = np.linspace(0,80,81)
-
-    dims = [1,2]
+    #Which dimensions do we plot? 0=X, 1=Y, 2=Z
+    dims = [0,1]
     dim1=dims[0]
     dim2=dims[1]
     xoffset = np.zeros(len(bp))
     yoffset = np.zeros(len(bp))
+    
+    #Some hardwired plotting options.
     if (dims[0]==0) & (dims[1]==1):
         yoffset[0:10] = [6,-8,-6,2,0,-4,0,0,0,-4]
         yoffset[10:] = [0,-8,0,0,6,-6,0,0,0]
@@ -214,12 +218,12 @@ if __name__ == "__main__":
         text_ix = [0,1,4,7]
         xoffset[7]=-15
 
-    #Read in the csv file and trace back orbits with plotting.
+    #Trace back orbits with plotting enabled.
     tb = TraceBack(bp)
     tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="traceback_save.pkl")
 
     
-    #Error ellipse for the association.
+    #Error ellipse for the association. This comes from "fit_group.py".
     xyz_cov = np.array([[  34.25840977,   35.33697325,   56.24666544],
            [  35.33697325,   46.18069795,   66.76389275],
            [  56.24666544,   66.76389275,  109.98883853]])

@@ -28,7 +28,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import pdb
-import overlap #&TC
+try:
+    import overlap #&TC
+except:
+    print("overlap not imported, SWIG not possible. Need to make in directory...")
 import time    #&TC
 from emcee.utils import MPIPool
    
@@ -98,9 +101,8 @@ def read_stars(infile):
     return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov,xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
 
    
-def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_overlaps=False,\
-    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, use_swig=True
-    ):
+def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix = 20,return_overlaps=False,\
+    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False):
     """Compute the log-likelihood for a fit to a group.
 
     The x variables are:
@@ -141,7 +143,7 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
     min_v_disp : float
         Minimum allowable cluster velocity dispersion in km/s.
     """
-    practically_infinity = 1e20
+    practically_infinity = np.inf#1e20
     
     xyzuvw = star_params['xyzuvw']
     xyzuvw_cov = star_params['xyzuvw_cov']
@@ -153,8 +155,8 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
 
     #See if we have to interpolate in time.
     if len(x)>13:
-        if ( (x[13] < 0) | (x[13] >= nt-1)):
-            return -practically_infinity
+        if ( (x[13] < min(times)) | (x[13] > max(times))):
+            return -np.inf #-practically_infinity
         #Linearly interpolate in time to get bs and Bs
         #Note that there is a fast scipy package (in ndimage?) that is good for this.
         ix = np.interp(x[13],times,np.arange(nt))
@@ -163,7 +165,9 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
         bs     = xyzuvw[:,ix0]*(1-frac) + xyzuvw[:,ix0+1]*frac
         cov    = xyzuvw_cov[:,ix0]*(1-frac) + xyzuvw_cov[:,ix0+1]*frac
         Bs     = np.linalg.inv(cov)
-        B_dets = xyzuvw_icov_det[:,ix0]*(1-frac) + xyzuvw_icov_det[:,ix0+1]*frac
+        B_dets = np.linalg.det(Bs)
+#        pdb.set_trace()
+#        B_dets = xyzuvw_icov_det[:,ix0]*(1-frac) + xyzuvw_icov_det[:,ix0+1]*frac
     else:
         #Extract the time that we really care about.
         #The result is a (ns,6) array for bs, and (ns,6,6) array for Bs.
@@ -248,8 +252,8 @@ def lnprob_one_group(x, star_params, background_density=2e-12,t_ix = 20,return_o
     
     return lnprob
 
-def lnprob_one_cluster(x, star_params, background_density=2e-12,t_ix = 20,return_overlaps=False,\
-    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, use_swig=False):
+def lnprob_one_cluster(x, star_params, background_density=2e-12,use_swig=False,t_ix = 20,return_overlaps=False,\
+    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False):
     """Compute the log-likelihood for a fit to a cluster. A cluster is defined as a group that decays 
     exponentially in time.
 
@@ -308,7 +312,7 @@ def lnprob_one_cluster(x, star_params, background_density=2e-12,t_ix = 20,return
     #See if we have to interpolate in time.
     if len(x)>13:
         if ( (x[13] < min(times)) | (x[13] > max(times))):
-            return -practically_infinity
+            return -np.inf #-practically_infinity
         #Linearly interpolate in time to get bs and Bs
         #Note that there is a fast scipy package (in ndimage?) that is good for this.
         ix = np.interp(x[13],times,np.arange(nt))
@@ -405,7 +409,7 @@ def lnprob_one_cluster(x, star_params, background_density=2e-12,t_ix = 20,return
 def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.327,-11.427, -6.527, \
     10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589]),\
         nwalkers=100,nchain=1000,nburn=200, return_sampler=False,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1])):
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=True):
     """Fit a single group, using a affine invariant Monte-Carlo Markov chain.
     
     Parameters
@@ -447,12 +451,13 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
     p0 = [init_mod + (np.random.random(size=ndim) - 0.5)*init_sdev for i in range(nwalkers)]
 
     #NB we can't set e.g. "threads=4" because the function isn't "pickleable"
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_one_group,pool=pool,args=[star_params])
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_one_group,pool=pool,args=[star_params,background_density,use_swig])
 
     #Burn in...
     pos, prob, state = sampler.run_mcmc(p0, nburn)
     print("Mean burn-in acceptance fraction: {0:.3f}"
                     .format(np.mean(sampler.acceptance_fraction)))
+
     sampler.reset()
 
     #Run...
@@ -464,10 +469,10 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
     #Best Model
     best_ix = np.argmax(sampler.flatlnprobability)
     print('[' + ",".join(["{0:7.3f}".format(f) for f in sampler.flatchain[best_ix]]) + ']')
-    overlaps = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_overlaps=True)
-    group_cov = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_cov=True)
+    overlaps = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_overlaps=True,use_swig=use_swig)
+    group_cov = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_cov=True,use_swig=use_swig)
     np.sqrt(np.linalg.eigvalsh(group_cov[:3,:3]))
-    ww = np.where(overlaps < 2e-12)[0]
+    ww = np.where(overlaps < background_density)[0]
     print("The following stars have very small overlaps with the group...")
     print(star_params['stars'][ww]['Name'])
 
@@ -477,6 +482,8 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
     plt.figure(2)       
     plt.clf()         
     plt.hist(sampler.chain[:,:,-1].flatten(),20)
+    
+    pdb.set_trace()
     
     return sampler.flatchain[best_ix]
         
@@ -506,11 +513,10 @@ if __name__ == "__main__":
     plei_group = np.array([116.0,27.6, -27.6, 4.7, -23.1, -13.2, 20, 20, 20,\
                         3, 0, 0, 0, 70])
 
-    dummy = lnprob_one_group(plei_group, star_params)
+    dummy = lnprob_one_group(beta_pic_group, star_params, use_swig=False)
+#    dummy = lnprob_one_group(plei_group, star_params, background_density=1e-10, use_swig=False)
         
-    
-
-    fitted_params = fit_one_group(star_params, pool=pool)
+    fitted_params = fit_one_group(star_params, pool=pool, use_swig=False)
     
     if using_mpi:
         # Close the processes.
