@@ -185,6 +185,12 @@ class TraceBack():
 #Some test calculations applicable to the ARC DP17 proposal.
 if __name__ == "__main__":
 
+    #Which dimensions do we plot? 0=X, 1=Y, 2=Z
+    dims = [0,1]
+    dim1=dims[0]
+    dim2=dims[1]
+
+
     #Load in some data and define times for plotting.
     if (True):
         #Read in numbers for beta Pic. For HIPPARCOS, we have *no* radial velocities in general.
@@ -192,38 +198,36 @@ if __name__ == "__main__":
         #Remove bad stars. "bp" stands for Beta Pictoris.
         bp = bp[np.where([ (n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
         times = np.linspace(0,20,21)
+        #Some hardwired plotting options.
+        xoffset = np.zeros(len(bp))
+        yoffset = np.zeros(len(bp))
+        if (dims[0]==0) & (dims[1]==1):
+            yoffset[0:10] = [6,-8,-6,2,0,-4,0,0,0,-4]
+            yoffset[10:] = [0,-8,0,0,6,-6,0,0,0]
+            xoffset[10:] = [0,-4,0,0,-15,-10,0,0,-20]
+            axis_range = [-70,60,-40,120]
+    
+        if (dims[0]==1) & (dims[1]==2):
+            axis_range = [-40,120,-30,100]
+            text_ix = [0,1,4,7]
+            xoffset[7]=-15
     else:
         import play
         bp = play.crvad2[play.get_pl_loc2()]
         bp['HIP'].name = 'Name'
         #Which times are we plotting?
-        times = np.linspace(0,80,81)
-
-    #Which dimensions do we plot? 0=X, 1=Y, 2=Z
-    dims = [0,1]
-    dim1=dims[0]
-    dim2=dims[1]
-    xoffset = np.zeros(len(bp))
-    yoffset = np.zeros(len(bp))
-    
-    #Some hardwired plotting options.
-    if (dims[0]==0) & (dims[1]==1):
-        yoffset[0:10] = [6,-8,-6,2,0,-4,0,0,0,-4]
-        yoffset[10:] = [0,-8,0,0,6,-6,0,0,0]
-        xoffset[10:] = [0,-4,0,0,-15,-10,0,0,-20]
-        axis_range = [-70,60,-40,120]
-    
-    if (dims[0]==1) & (dims[1]==2):
-        axis_range = [-40,120,-30,100]
-        text_ix = [0,1,4,7]
-        xoffset[7]=-15
+        times = np.linspace(0,5,11)
+        xoffset = np.zeros(len(bp))
+        yoffset = np.zeros(len(bp))
+        axis_range=[-200,200,-200,200]
 
     #Trace back orbits with plotting enabled.
     tb = TraceBack(bp)
     tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="traceback_save.pkl")
 
     
-    #Error ellipse for the association. This comes from "fit_group.py".
+    #Error ellipse for the association. This comes from "fit_group.py", and the numbers
+    #below are for the beta Pic association.
     xyz_cov = np.array([[  34.25840977,   35.33697325,   56.24666544],
            [  35.33697325,   46.18069795,   66.76389275],
            [  56.24666544,   66.76389275,  109.98883853]])
