@@ -186,7 +186,7 @@ class TraceBack():
 if __name__ == "__main__":
 
     #Which dimensions do we plot? 0=X, 1=Y, 2=Z
-    dims = [0,1]
+    dims = [1,2]
     dim1=dims[0]
     dim2=dims[1]
 
