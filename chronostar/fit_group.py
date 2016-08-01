@@ -513,10 +513,10 @@ if __name__ == "__main__":
     plei_group = np.array([116.0,27.6, -27.6, 4.7, -23.1, -13.2, 20, 20, 20,\
                         3, 0, 0, 0, 70])
 
-    dummy = lnprob_one_group(beta_pic_group, star_params, use_swig=False)
+    dummy = lnprob_one_group(beta_pic_group, star_params, use_swig=True)
 #    dummy = lnprob_one_group(plei_group, star_params, background_density=1e-10, use_swig=False)
         
-    fitted_params = fit_one_group(star_params, pool=pool, use_swig=False)
+    fitted_params = fit_one_group(star_params, pool=pool, use_swig=True)
     
     if using_mpi:
         # Close the processes.
