@@ -483,7 +483,7 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
     plt.clf()         
     plt.hist(sampler.chain[:,:,-1].flatten(),20)
     
-    pdb.set_trace()
+    #pdb.set_trace()
     
     return sampler.flatchain[best_ix]
         
