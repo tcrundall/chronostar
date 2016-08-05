@@ -129,9 +129,29 @@ class TraceBack():
             star = stars[i]
             if 'RAdeg' in star.columns:
                 RAdeg = star['RAdeg']
+            if 'HRV' in star.columns:
+                RV = star['HRV']
+                e_RV = star['e_HRV']
+            if 'plx' in star.columns:
+                Plx = star['plx']
+                e_Plx = star['e_plx']
+            if 'pmRAU4' in star.columns:
+                pmRA = star['pmRAU4']
+                e_pmRA = star['e_pmRAU4']
+            if 'pmDEU4' in star.columns:
+                pmDE = star['pmDEU4']
+                e_pmDE = star['e_pmDEU4']  
             else:
                 RAdeg = star['RAhour']*15.0
-            params = np.array([RAdeg,star['DEdeg'],star['Plx'],star['pmRA'],star['pmDE'],star['RV']])
+                RV = star['RV']
+                e_RV = star['e_RV']
+                e_Plx = star['e_Plx']
+                Plx = star['Plx']
+                pmRA = star['pmRA']
+                e_pmRA = star['e_pmRA']
+                pmDE = star['pmDE']
+                e_pmDE = star['e_pmDE']
+            params = np.array([RAdeg,star['DEdeg'],Plx,pmRA,pmDE,RV])
             xyzuvw[i] = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
             
             #Create numerical derivatives
@@ -146,10 +166,10 @@ class TraceBack():
             cov_obs = np.zeros( (6,6) )
             cov_obs[0,0] = 1e-1**2 #Nominal 0.1 degree. !!! There is almost a floating underflow in fit_group due to this
             cov_obs[1,1] = 1e-1**2 #Nominal 0.1 degree. !!! Need to think about this more
-            cov_obs[2,2] = star['e_Plx']**2
-            cov_obs[3,3] = star['e_pmRA']**2
-            cov_obs[4,4] = star['e_pmDE']**2
-            cov_obs[5,5] = star['e_RV']**2
+            cov_obs[2,2] = e_Plx**2
+            cov_obs[3,3] = e_pmRA**2
+            cov_obs[4,4] = e_pmDE**2
+            cov_obs[5,5] = e_RV**2
             
             #Create the covariance matrix from the Jacobian. See e.g.:
             #https://en.wikipedia.org/wiki/Covariance#A_more_general_identity_for_covariance_matrices
@@ -194,9 +214,11 @@ if __name__ == "__main__":
     #Load in some data and define times for plotting.
     if (True):
         #Read in numbers for beta Pic. For HIPPARCOS, we have *no* radial velocities in general.
-        bp=Table.read('betaPic.csv')
+        #bp=Table.read('betaPic.csv')
+        t=Table.read('ravedr4.dat', readme='RAVE_DR4_ReadMe', format='ascii.cds')
+        bp = t[(t['Dist'] <0.1355) & (t['Dist'] > 0.135)]
         #Remove bad stars. "bp" stands for Beta Pictoris.
-        bp = bp[np.where([ (n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
+        bp = bp[np.where([(n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
         times = np.linspace(0,20,21)
         #Some hardwired plotting options.
         xoffset = np.zeros(len(bp))
@@ -208,7 +230,7 @@ if __name__ == "__main__":
             axis_range = [-70,60,-40,120]
     
         if (dims[0]==1) & (dims[1]==2):
-            axis_range = [-40,120,-30,100]
+            axis_range = [-200,200,-100,100]
             text_ix = [0,1,4,7]
             xoffset[7]=-15
     else:
