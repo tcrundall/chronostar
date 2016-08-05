@@ -10,3 +10,4 @@ __version__ = "0.1"
 #!!! Note that from traceback import * doesn't work!
 import error_ellipse
 import traceback 
+import fit_group
