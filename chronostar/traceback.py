@@ -238,10 +238,8 @@ if __name__ == "__main__":
         #bp=Table.read('betaPic.csv')
         t=Table.read('ravedr4.dat', readme='RAVE_DR4_ReadMe', format='ascii.cds')
         vec_wd = np.vectorize(withindist)
-        #t = t[t['Dist'] < 0.35]
-        t = t[25432:27000]
+        t = t[t['Dist'] < 0.35]
         bp = t[vec_wd((t['RAdeg']),(t['DEdeg']),(t['Dist']),200)] 
-        #
         #Remove bad stars. "bp" stands for Beta Pictoris.
         bp = bp[np.where([(n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
         times = np.linspace(0,20,21)
