@@ -48,6 +48,27 @@ def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
     xyzuvw[:,4] = o.V(ts) - lsr_orbit.V(ts)
     xyzuvw[:,5] = o.W(ts)
     return xyzuvw
+    
+def withindist(ra2, de2, d2, maxi):
+    """Helper function - Determines if one object is within a certain distance
+    of another objectFinds the distances between two astronomical objects.
+    
+    Parameters: 
+    RA,DE,distance of one object.
+    maxi - The distance limit: anything outside this is not included
+    The other object is hard coded into the function i.e Pleiades
+    """
+    ra1 = 53.45111
+    de1 = 23.37806
+    d1 = 136.2
+    x1 = d1*np.cos(de1)*np.cos(ra1)
+    y1 = d1*np.cos(de1)*np.sin(ra1)
+    z1 = d1*np.sin(de1)
+    x2 = d2*np.cos(de2)*np.cos(ra2)
+    y2 = d2*np.cos(de2)*np.sin(ra2)
+    z2 = d2*np.sin(de2)
+    d = np.sqrt((x2-x1)**2+(y2-y1)**2+(z2-z1)**2)
+    return (d <= maxi) and (d >= 0)
 
 class TraceBack():
     """A class for tracing back orbits.
@@ -216,7 +237,11 @@ if __name__ == "__main__":
         #Read in numbers for beta Pic. For HIPPARCOS, we have *no* radial velocities in general.
         #bp=Table.read('betaPic.csv')
         t=Table.read('ravedr4.dat', readme='RAVE_DR4_ReadMe', format='ascii.cds')
-        bp = t[(t['Dist'] <0.1355) & (t['Dist'] > 0.135)]
+        vec_wd = np.vectorize(withindist)
+        #t = t[t['Dist'] < 0.35]
+        t = t[25432:27000]
+        bp = t[vec_wd((t['RAdeg']),(t['DEdeg']),(t['Dist']),200)] 
+        #
         #Remove bad stars. "bp" stands for Beta Pictoris.
         bp = bp[np.where([(n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
         times = np.linspace(0,20,21)
@@ -260,3 +285,4 @@ if __name__ == "__main__":
 
     plt.savefig('plot.png')
     plt.show()
+
