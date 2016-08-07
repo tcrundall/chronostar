@@ -133,6 +133,7 @@ class TraceBack():
                 RAdeg = star['RAhour']*15.0
             params = np.array([RAdeg,star['DEdeg'],star['Plx'],star['pmRA'],star['pmDE'],star['RV']])
             xyzuvw[i] = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
+            pdb.set_trace()
             
             #Create numerical derivatives
             for j in range(6):
