@@ -51,16 +51,16 @@ def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
     
 def withindist(ra2, de2, d2, maxi):
     """Helper function - Determines if one object is within a certain distance
-    of another objectFinds the distances between two astronomical objects.
+    of another object.
     
     Parameters: 
-    RA,DE,distance of one object.
+    RA,DE,distance of one object. NB: For RAVE - Distances in kpc
     maxi - The distance limit: anything outside this is not included
     The other object is hard coded into the function i.e Pleiades
     """
     ra1 = 53.45111
     de1 = 23.37806
-    d1 = 136.2
+    d1 = 0.1362
     x1 = d1*np.cos(de1)*np.cos(ra1)
     y1 = d1*np.cos(de1)*np.sin(ra1)
     z1 = d1*np.sin(de1)
@@ -174,7 +174,6 @@ class TraceBack():
                 e_pmDE = star['e_pmDE']
             params = np.array([RAdeg,star['DEdeg'],Plx,pmRA,pmDE,RV])
             xyzuvw[i] = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
-            pdb.set_trace()
             
             #Create numerical derivatives
             for j in range(6):
@@ -235,40 +234,40 @@ if __name__ == "__main__":
 
     #Load in some data and define times for plotting.
     if (True):
-        #Read in numbers for beta Pic. For HIPPARCOS, we have *no* radial velocities in general.
-        #bp=Table.read('betaPic.csv')
+        #Read in numbers for RAVE. For HIPPARCOS, we have *no* radial velocities in general.
         t=Table.read('ravedr4.dat', readme='RAVE_DR4_ReadMe', format='ascii.cds')
+        #Sorts the stars and finds the ones within 200pc of the Pleiades
         vec_wd = np.vectorize(withindist)
-        t = t[t['Dist'] < 0.35]
-        bp = t[vec_wd((t['RAdeg']),(t['DEdeg']),(t['Dist']),200)] 
+        t = t[(t['Dist'] < 0.35) & (t['Dist'] > 0)]
+        pl = t[vec_wd((t['RAdeg']),(t['DEdeg']),(t['Dist']),0.05)] 
         #Remove bad stars. "bp" stands for Beta Pictoris.
-        bp = bp[np.where([(n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in bp['Name']])[0]]
+        pl = pl[np.where([(n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in pl['Name']])[0]]
         times = np.linspace(0,20,21)
         #Some hardwired plotting options.
-        xoffset = np.zeros(len(bp))
-        yoffset = np.zeros(len(bp))
+        xoffset = np.zeros(len(pl))
+        yoffset = np.zeros(len(pl))
         if (dims[0]==0) & (dims[1]==1):
             yoffset[0:10] = [6,-8,-6,2,0,-4,0,0,0,-4]
             yoffset[10:] = [0,-8,0,0,6,-6,0,0,0]
             xoffset[10:] = [0,-4,0,0,-15,-10,0,0,-20]
-            axis_range = [-70,60,-40,120]
+            axis_range = [-500,500,-500,500]
     
         if (dims[0]==1) & (dims[1]==2):
-            axis_range = [-200,200,-100,100]
+            axis_range = [-500,500,-500,500]
             text_ix = [0,1,4,7]
-            xoffset[7]=-15
+            xoffset[7]=-15 
     else:
         import play
-        bp = play.crvad2[play.get_pl_loc2()]
-        bp['HIP'].name = 'Name'
+        pl = play.crvad2[play.get_pl_loc2()]
+        pl['HIP'].name = 'Name'
         #Which times are we plotting?
         times = np.linspace(0,5,11)
-        xoffset = np.zeros(len(bp))
-        yoffset = np.zeros(len(bp))
-        axis_range=[-200,200,-200,200]
+        xoffset = np.zeros(len(pl))
+        yoffset = np.zeros(len(pl))
+        axis_range=[-500,500,-500,500]
 
     #Trace back orbits with plotting enabled.
-    tb = TraceBack(bp)
+    tb = TraceBack(pl)
     tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="traceback_save.pkl")
 
     
@@ -284,4 +283,3 @@ if __name__ == "__main__":
 
     plt.savefig('plot.png')
     plt.show()
-
