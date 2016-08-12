@@ -49,13 +49,13 @@ def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
     xyzuvw[:,5] = o.W(ts)
     return xyzuvw
     
-def withindist(ra2, de2, d2, maxi):
+def withindist(ra2, de2, d2, maxim):
     """Helper function - Determines if one object is within a certain distance
     of another object.
     
     Parameters: 
     RA,DE,distance of one object. NB: For RAVE - Distances in kpc
-    maxi - The distance limit: anything outside this is not included
+    maxim - The distance limit: anything outside this is not included
     The other object is hard coded into the function i.e Pleiades
     """
     ra1 = 53.45111
@@ -68,7 +68,7 @@ def withindist(ra2, de2, d2, maxi):
     y2 = d2*np.cos(de2)*np.sin(ra2)
     z2 = d2*np.sin(de2)
     d = np.sqrt((x2-x1)**2+(y2-y1)**2+(z2-z1)**2)
-    return (d <= maxi) and (d >= 0)
+    return (d <= maxim) and (d >= 0)
 
 class TraceBack():
     """A class for tracing back orbits.
@@ -223,6 +223,32 @@ class TraceBack():
             pickle.dump((stars,times,xyzuvw,xyzuvw_cov),fp)
             fp.close()
 
+def traceforward(params,age,times):
+    """Trace forward a cluster. First column of returned array is the position of the cluster at a given age.
+
+    Parameters
+    ----------
+    times: float array
+        Times to trace forward, in Myr. Note that positive numbers are going forward in time.
+    params: float array
+        xyzuvw for a cluster
+    age: Age of cluster, in Myr
+    """
+    #Times in Myr
+    ts = (times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
+    nts = len(times)
+
+    #Positions and velocities in the co-rotating solar reference frame.
+    xyzuvw = np.zeros( (1,nts,6) )
+
+    #Trace forward the local standard of rest.
+    lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8)
+    lsr_orbit.integrate(ts,MWPotential2014,method='odeint')
+
+    xyzuvw = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
+    #xyzuvw = np.insert(xyzuvw,0,times,axis=1)
+    return xyzuvw
+
 #Some test calculations applicable to the ARC DP17 proposal.
 if __name__ == "__main__":
 
@@ -233,7 +259,7 @@ if __name__ == "__main__":
 
 
     #Load in some data and define times for plotting.
-    if (True):
+    if (False):
         #Read in numbers for RAVE. For HIPPARCOS, we have *no* radial velocities in general.
         t=Table.read('ravedr4.dat', readme='RAVE_DR4_ReadMe', format='ascii.cds')
         #Sorts the stars and finds the ones within 200pc of the Pleiades
@@ -256,7 +282,7 @@ if __name__ == "__main__":
             axis_range = [-500,500,-500,500]
             text_ix = [0,1,4,7]
             xoffset[7]=-15 
-    else:
+    elif (False):
         import play
         pl = play.crvad2[play.get_pl_loc2()]
         pl['HIP'].name = 'Name'
@@ -265,12 +291,19 @@ if __name__ == "__main__":
         xoffset = np.zeros(len(pl))
         yoffset = np.zeros(len(pl))
         axis_range=[-500,500,-500,500]
+        
+    else:
+        times = np.linspace(0,age,(age+1))
+        xyzuvw = np.array([1,1,1,1,1,1])
+        age = 150
+        x = traceforward(xyzuvw,age)
+        
 
     #Trace back orbits with plotting enabled.
-    tb = TraceBack(pl)
-    tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="traceback_save.pkl")
-
+    #tb = TraceBack(pl)
+    #tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="traceback_save.pkl")
     
+    """
     #Error ellipse for the association. This comes from "fit_group.py", and the numbers
     #below are for the beta Pic association.
     xyz_cov = np.array([[  34.25840977,   35.33697325,   56.24666544],
@@ -280,6 +313,7 @@ if __name__ == "__main__":
     cov_ix1 = [[dims[0],dims[1]],[dims[0],dims[1]]]
     cov_ix2 = [[dims[0],dims[0]],[dims[1],dims[1]]]
     plot_cov_ellipse(xyz_cov[cov_ix1,cov_ix2],[xyz[dim1],xyz[dim2]],alpha=0.5,color='k')
-
-    plt.savefig('plot.png')
-    plt.show()
+    """
+    #plt.savefig('plot.png')
+    #plt.show()
+    print(x)
