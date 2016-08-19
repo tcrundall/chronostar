@@ -11,3 +11,5 @@ __version__ = "0.1"
 import error_ellipse
 import traceback 
 import fit_group
+#Tim's code to play around with miscelaneous data sets neatly
+import play

@@ -49,18 +49,20 @@ def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
     xyzuvw[:,5] = o.W(ts)
     return xyzuvw
     
-def withindist(ra2, de2, d2, maxim):
+def withindist(ra2, de2, d2, maxim, ra1 = 53.45111, de1 = 23.37806, d1 = 0.1362):
     """Helper function - Determines if one object is within a certain distance
     of another object.
     
-    Parameters: 
-    RA,DE,distance of one object. NB: For RAVE - Distances in kpc
-    maxim - The distance limit: anything outside this is not included
-    The other object is hard coded into the function i.e Pleiades
+    Parameters
+    ----------
+    ra2,de2: float
+        distance of one object. 
+    d2: float
+        distance NB: For RAVE - Distances in kpc
+    maxim : float
+        The distance limit inkpc: anything outside this is not included
+        The other object is hard coded into the function for now i.e Pleiades
     """
-    ra1 = 53.45111
-    de1 = 23.37806
-    d1 = 0.1362
     x1 = d1*np.cos(de1)*np.cos(ra1)
     y1 = d1*np.cos(de1)*np.sin(ra1)
     z1 = d1*np.sin(de1)
@@ -150,26 +152,30 @@ class TraceBack():
             star = stars[i]
             if 'RAdeg' in star.columns:
                 RAdeg = star['RAdeg']
+            else:
+                RAdeg = star['RAhour']*15.0
             if 'HRV' in star.columns:
                 RV = star['HRV']
                 e_RV = star['e_HRV']
+            else:
+                RV = star['RV']
+                e_RV = star['e_RV']
             if 'plx' in star.columns:
                 Plx = star['plx']
                 e_Plx = star['e_plx']
+            else:
+                e_Plx = star['e_Plx']
+                Plx = star['Plx']
             if 'pmRAU4' in star.columns:
                 pmRA = star['pmRAU4']
                 e_pmRA = star['e_pmRAU4']
+            else:
+                pmRA = star['pmRA']
+                e_pmRA = star['e_pmRA']
             if 'pmDEU4' in star.columns:
                 pmDE = star['pmDEU4']
                 e_pmDE = star['e_pmDEU4']  
             else:
-                RAdeg = star['RAhour']*15.0
-                RV = star['RV']
-                e_RV = star['e_RV']
-                e_Plx = star['e_Plx']
-                Plx = star['Plx']
-                pmRA = star['pmRA']
-                e_pmRA = star['e_pmRA']
                 pmDE = star['pmDE']
                 e_pmDE = star['e_pmDE']
             params = np.array([RAdeg,star['DEdeg'],Plx,pmRA,pmDE,RV])
@@ -249,71 +255,4 @@ def traceforward(params,age,times):
     #xyzuvw = np.insert(xyzuvw,0,times,axis=1)
     return xyzuvw
 
-#Some test calculations applicable to the ARC DP17 proposal.
-if __name__ == "__main__":
-
-    #Which dimensions do we plot? 0=X, 1=Y, 2=Z
-    dims = [1,2]
-    dim1=dims[0]
-    dim2=dims[1]
-
-
-    #Load in some data and define times for plotting.
-    if (False):
-        #Read in numbers for RAVE. For HIPPARCOS, we have *no* radial velocities in general.
-        t=Table.read('ravedr4.dat', readme='RAVE_DR4_ReadMe', format='ascii.cds')
-        #Sorts the stars and finds the ones within 200pc of the Pleiades
-        vec_wd = np.vectorize(withindist)
-        t = t[(t['Dist'] < 0.35) & (t['Dist'] > 0)]
-        pl = t[vec_wd((t['RAdeg']),(t['DEdeg']),(t['Dist']),0.05)] 
-        #Remove bad stars. "bp" stands for Beta Pictoris.
-        pl = pl[np.where([(n.find('6070')<0) & (n.find('12545')<0) & (n.find('Tel')<0) for n in pl['Name']])[0]]
-        times = np.linspace(0,20,21)
-        #Some hardwired plotting options.
-        xoffset = np.zeros(len(pl))
-        yoffset = np.zeros(len(pl))
-        if (dims[0]==0) & (dims[1]==1):
-            yoffset[0:10] = [6,-8,-6,2,0,-4,0,0,0,-4]
-            yoffset[10:] = [0,-8,0,0,6,-6,0,0,0]
-            xoffset[10:] = [0,-4,0,0,-15,-10,0,0,-20]
-            axis_range = [-500,500,-500,500]
-    
-        if (dims[0]==1) & (dims[1]==2):
-            axis_range = [-500,500,-500,500]
-            text_ix = [0,1,4,7]
-            xoffset[7]=-15 
-    elif (False):
-        import play
-        pl = play.crvad2[play.get_pl_loc2()]
-        pl['HIP'].name = 'Name'
-        #Which times are we plotting?
-        times = np.linspace(0,5,11)
-        xoffset = np.zeros(len(pl))
-        yoffset = np.zeros(len(pl))
-        axis_range=[-500,500,-500,500]
-        
-    else:
-        times = np.linspace(0,age,(age+1))
-        xyzuvw = np.array([1,1,1,1,1,1])
-        age = 150
-        x = traceforward(xyzuvw,age)
-        
-
-    #Trace back orbits with plotting enabled.
-    #tb = TraceBack(pl)
-    #tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="traceback_save.pkl")
-    
-    """
-    #Error ellipse for the association. This comes from "fit_group.py", and the numbers
-    #below are for the beta Pic association.
-    xyz_cov = np.array([[  34.25840977,   35.33697325,   56.24666544],
-           [  35.33697325,   46.18069795,   66.76389275],
-           [  56.24666544,   66.76389275,  109.98883853]])
-    xyz = [ -6.221, 63.288, 23.408]
-    cov_ix1 = [[dims[0],dims[1]],[dims[0],dims[1]]]
-    cov_ix2 = [[dims[0],dims[0]],[dims[1],dims[1]]]
-    plot_cov_ellipse(xyz_cov[cov_ix1,cov_ix2],[xyz[dim1],xyz[dim2]],alpha=0.5,color='k')
-    """
-    #plt.savefig('plot.png')
-    #plt.show()
-    print(x)
+#Instead of a __main__ block below, please use test routines in the main directory.
