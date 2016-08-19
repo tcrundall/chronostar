@@ -252,21 +252,17 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
     
     return lnprob
 
-def lnprob_one_cluster(x, star_params, background_density=2e-12,use_swig=False,t_ix = 20,return_overlaps=False,\
-    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False):
+def lnprob_one_cluster(x, star_params, use_swig=False, return_overlaps=False, \
+    min_axis=2.0, min_v_disp=0.5, debug=False):
     """Compute the log-likelihood for a fit to a cluster. A cluster is defined as a group that decays 
     exponentially in time.
 
-    The x variables are:
-    xyzuvw (6), the birth time (1), the core radius (1), the central density decay time (1), 
-    the tidal radius now (1) [starts at 1.5 times the core radius], the velocity 
-    dispersion (1) [decays according to density ** 0.5]
+    The minimal set of x variables are:
+    xyzuvw (6), the core radius (1),  
+    the tidal radius now (1) [starts at 1.5 times the core radius], the initial velocity 
+    dispersion (1) [decays according to density ** 0.5], 
+    the birth time (1), the central density decay time (1),
     
-    uvw_symmetrical_std (1), xyz_correlations (3)
-
-    A 14th variable, if present, is the time at which the calculation is made. If not given, the
-    calculation is made at a fixed time index t_ix.
-
     The probability of a model is the product of the probabilities
     overlaps of every star in the group. 
 
@@ -274,19 +270,17 @@ def lnprob_one_cluster(x, star_params, background_density=2e-12,use_swig=False,t
     ----------
     x : array-like
         The group parameters, which are...
-        x[0] to x[5] : xyzuvw
-        x[6] to x[8] : positional variances in x,y,z
-        x[9]  : velocity dispersion (symmetrical for u,v,w)
-        x[10] to x[12] :  correlations between x,y,z
-        x[13] : (optional) birth time of group in Myr. 
+        x[0] to x[5] : xyzuvw at the CURRENT time.
+        x[6]  : Core radius (constant with time)
+        x[7]  : Tidal radius at current epoch.
+        x[8]  : Initial velocity dispersion
+        x[9]  : Birth time
+        x[10] : Central density 1/e decay time.
+        x[11] : Initial central density [for now as a multiplier of the 
+                background density in units of pc^{-3} km^{-3} s^3
 
-    background_density :
-        The density of a background stellar population, in
-        units of pc**(-3)*(km/s)**(-3). 
-    
-    t_ix : int
-        Time index (in the past) where we are computing the probabilities.
-    
+    star_params : astropy table
+
     return_overlaps : bool  
         Return the overlaps (rather than the log probability)
     
@@ -301,6 +295,7 @@ def lnprob_one_cluster(x, star_params, background_density=2e-12,use_swig=False,t
     """
     practically_infinity = 1e20
     
+    #Extract the key parameters in shorthand from star_params.
     xyzuvw = star_params['xyzuvw']
     xyzuvw_cov = star_params['xyzuvw_cov']
     xyzuvw_icov = star_params['xyzuvw_icov']
@@ -309,97 +304,40 @@ def lnprob_one_cluster(x, star_params, background_density=2e-12,use_swig=False,t
     ns = len(star_params['stars'])    #Number of stars
     nt = len(times)    #Number of times.
 
-    #See if we have to interpolate in time.
-    if len(x)>13:
-        if ( (x[13] < min(times)) | (x[13] > max(times))):
-            return -np.inf #-practically_infinity
-        #Linearly interpolate in time to get bs and Bs
-        #Note that there is a fast scipy package (in ndimage?) that is good for this.
-        ix = np.interp(x[13],times,np.arange(nt))
-        ix0 = np.int(ix)
-        frac = ix-ix0
-        bs     = xyzuvw[:,ix0]*(1-frac) + xyzuvw[:,ix0+1]*frac
-        cov    = xyzuvw_cov[:,ix0]*(1-frac) + xyzuvw_cov[:,ix0+1]*frac
-        Bs     = np.linalg.inv(cov)
-        B_dets = xyzuvw_icov_det[:,ix0]*(1-frac) + xyzuvw_icov_det[:,ix0+1]*frac
-    else:
-        #Extract the time that we really care about.
-        #The result is a (ns,6) array for bs, and (ns,6,6) array for Bs.
-        bs     = xyzuvw[:,t_ix]
-        Bs     = xyzuvw_icov[:,t_ix]
-        B_dets = xyzuvw_icov_det[:,t_ix]
-
     #Sanity check inputs for out of bounds...
-    if (np.min(x[6:9])<=min_axis):
+    if (np.min(x[6:8])<=min_axis):
         if debug:
             print("Positional Variance Too Low...")
         return -practically_infinity
-    if (np.min(x[9])<min_v_disp):
+    if (x[8]<min_v_disp):
         if debug:
             print("Velocity Variance Too Low...")
         return -practically_infinity
-    if (np.max(np.abs(x[10:13])) >= 1):
-        if debug:
-            print("Correlations above 1...")
-        return -practically_infinity       
 
-    #Create the group_mn and group_cov from x.
-    x = np.array(x)
-    group_mn = x[0:6]
-    group_cov = np.eye( 6 )
-    group_cov[np.tril_indices(3,-1)] = x[10:13]
-    group_cov[np.triu_indices(3,1)] = x[10:13]
-    for i in range(3):
-        group_cov[i,:3] *= x[6:9]
-        group_cov[:3,i] *= x[6:9]
-    for i in range(3,6):
-        group_cov[i,3:] *= x[9]
-        group_cov[3:,i] *= x[9]
-
-    #Allow this covariance matrix to be returned.
-    if return_cov:
-        return group_cov
-
-    #Enforce some sanity check limits on prior...
-    if (np.min(np.linalg.eigvalsh(group_cov[:3,:3])) < min_axis**2):
-        if debug:
-            print("Minimum positional covariance too small in one direction...")
-        return -practically_infinity
-
-    #Invert the group covariance matrix and check for negative eigenvalues
-    group_icov = np.linalg.inv(group_cov)
-    group_icov_eig = np.linalg.eigvalsh(group_icov)
-    if np.min(group_icov_eig) < 0:
-        if debug:
-            print("Numerical error in inverse covariance matrix!")
-        return -practically_infinity
-    group_icov_det = np.prod(group_icov_eig)
-
-    #Before starting, lets set the prior probability
-    #Given the way we're sampling the covariance matrix, I'm
-    #really not sure this is correct! But it is pretty close...
-    #it looks almost like 1/(product of standard deviations).
-    #See YangBerger1998
-    lnprob=np.log(np.abs(group_icov_det)**3.5)
-
-    #overlaps_start = time.clock()
+    #Trace the cluster backwards forwards in time. For every timestep, we have value of 
+    #xyzuvw for the cluster. Covariances are simply formed from the radius and dispersion - 
+    #they are symmetrical
+    
+    #!!! THIS SHOULD USE THE TRACEBACK MODULE, AND IS A JOB FOR JONAH TO TRY !!!
+    
     #Now loop through stars, and save the overlap integral for every star.
     overlaps = np.empty(ns)
-    if use_swig:
-        for i in range(ns):
-            overlaps[i] = overlap.get_overlap(group_icov.flatten().tolist(),
+    for i in range(ns):
+        #!!! Check if the spatial overlap is significant. If it is, find the time of 
+        #overlap and the parameters of the cluster treated as two groups at this time. !!!
+        spatial_overlap_is_significant = False
+        if spatial_overlap:
+            #!!! the "group" parameters below need to be set !!!
+            if use_swig:
+                overlaps[i] = overlap.get_overlap(group_icov.flatten().tolist(),
                                               group_mn.flatten().tolist(),
                                               group_icov_det,
                                               Bs[i].flatten().tolist(),
                                               bs[i].flatten().tolist(),
-                                              B_dets[i]) #&TC
-            lnprob += np.log(background_density + overlaps[i])
-    else:
-        for i in range(ns):
-            overlaps[i] = compute_overlap(group_icov,group_mn,group_icov_det,Bs[i],bs[i],B_dets[i])
-            lnprob += np.log(background_density + overlaps[i])
-    
-    #print (time.clock() - overlaps_start)
+                                              B_dets[i]) 
+            else:
+                overlaps[i] = compute_overlap(group_icov,group_mn,group_icov_det,Bs[i],bs[i],B_dets[i])
+        lnprob += np.log(1 + overlaps[i]*x[11])
 
     if return_overlaps:
         return overlaps    
