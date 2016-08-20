@@ -80,7 +80,7 @@ nwalkers = 250
 
 # Choose an intial set of gaussian parameters for the walkers.
 # They are 'helped' by being given a similar mean and std
-initialhelp = True
+initialhelp = False
 if (initialhelp):
 	# Walkers are initialised around the vicinity of the groups
 	p0 = [
@@ -149,24 +149,26 @@ else:
 	# Plotting all sampled means1
 	pl.figure(1)
 	pl.subplot(221)
-	pl.hist(sampler.flatchain[:,0], nbins)
+	mus = [mu for mu in sampler.flatchain[:,0] if (mu > 0) & (mu < 100)]
+	pl.hist(mus, nbins)
 	pl.title("Means of group 1")
 
 	# Plotting all sampled stds
 	# Need to take the absolute since emcee samples negative sigmas
 	pl.subplot(222)
-	sigs = [abs(sig) for sig in sampler.flatchain[:,1]]
+	sigs = [abs(sig) for sig in sampler.flatchain[:,1] if abs(sig) < 5]
 	pl.hist(sigs, nbins)
 	pl.title("Stds of group 1")
 	
 	pl.subplot(223)
-	pl.hist(sampler.flatchain[:,2], nbins)
+	mus = [mu for mu in sampler.flatchain[:,2] if (mu > 0) & (mu < 100)]
+	pl.hist(mus, nbins)
 	pl.title("Means of group 2")
 
 	pl.subplot(224)
-	sigs = [abs(sig) for sig in sampler.flatchain[:,3]]
+	sigs = [abs(sig) for sig in sampler.flatchain[:,3] if abs(sig) < 5]
 	pl.hist(sigs, nbins)
 	pl.title("Stds of group 2")
-	pl.show()
 
 	pl.savefig("gaussians.png")
+	pl.show()
