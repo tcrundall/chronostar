@@ -80,12 +80,18 @@ nwalkers = 250
 
 # Choose an intial set of gaussian parameters for the walkers.
 # They are 'helped' by being given a similar mean and std
-p0 = [
-				[np.random.uniform(means1[0]-5,means1[0]+5),
-				 np.random.uniform(stds1[0]-0.5, stds1[0]+0.5),
-				 np.random.uniform(means2[0]-5,means2[0]+5),
-				 np.random.uniform(stds2[0]-0.5, stds2[0]+0.5)]
-			for i in xrange(nwalkers)]
+initialhelp = True
+if (initialhelp):
+	# Walkers are initialised around the vicinity of the groups
+	p0 = [
+					[np.random.uniform(means1[0]-5,means1[0]+5),
+					 np.random.uniform(stds1[0]-0.5, stds1[0]+0.5),
+					 np.random.uniform(means2[0]-5,means2[0]+5),
+					 np.random.uniform(stds2[0]-0.5, stds2[0]+0.5)]
+				for i in xrange(nwalkers)]
+else:
+	# Walkers aren't initialised around the vicinity of the groups
+	p0 = [np.random.uniform(5,10, [4]) for i in xrange(nwalkers)]
 
 # Initialise the sampler with the chosen specs.
 sampler = emcee.EnsembleSampler(nwalkers, 4, lnprob, args=[stars])
