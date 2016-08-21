@@ -48,7 +48,7 @@ def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
     xyzuvw[:,4] = o.V(ts) - lsr_orbit.V(ts)
     xyzuvw[:,5] = o.W(ts)
     return xyzuvw
-    
+ 
 def withindist(ra2, de2, d2, maxim, ra1 = 53.45111, de1 = 23.37806, d1 = 0.1362):
     """Helper function - Determines if one object is within a certain distance
     of another object.
@@ -63,15 +63,15 @@ def withindist(ra2, de2, d2, maxim, ra1 = 53.45111, de1 = 23.37806, d1 = 0.1362)
         The distance limit inkpc: anything outside this is not included
         The other object is hard coded into the function for now i.e Pleiades
     """
-    x1 = d1*np.cos(de1)*np.cos(ra1)
-    y1 = d1*np.cos(de1)*np.sin(ra1)
-    z1 = d1*np.sin(de1)
-    x2 = d2*np.cos(de2)*np.cos(ra2)
-    y2 = d2*np.cos(de2)*np.sin(ra2)
-    z2 = d2*np.sin(de2)
+    x1 = d1*np.cos(np.deg2rad(de1))*np.cos(np.deg2rad(ra1))
+    y1 = d1*np.cos(np.deg2rad(de1))*np.sin(np.deg2rad(ra1))
+    z1 = d1*np.sin(np.deg2rad(de1))
+    x2 = d2*np.cos(np.deg2rad(de2))*np.cos(np.deg2rad(ra2))
+    y2 = d2*np.cos(np.deg2rad(de2))*np.sin(np.deg2rad(ra2))
+    z2 = d2*np.sin(np.deg2rad(de2))
     d = np.sqrt((x2-x1)**2+(y2-y1)**2+(z2-z1)**2)
     return (d <= maxim) and (d >= 0)
-
+    
 class TraceBack():
     """A class for tracing back orbits.
     
@@ -229,7 +229,7 @@ class TraceBack():
             pickle.dump((stars,times,xyzuvw,xyzuvw_cov),fp)
             fp.close()
 
-def traceforward(params,age,times):
+def traceback2(params,times):
     """Trace forward a cluster. First column of returned array is the position of the cluster at a given age.
 
     Parameters
@@ -241,7 +241,7 @@ def traceforward(params,age,times):
     age: Age of cluster, in Myr
     """
     #Times in Myr
-    ts = (times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
+    ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
     nts = len(times)
 
     #Positions and velocities in the co-rotating solar reference frame.
@@ -252,7 +252,6 @@ def traceforward(params,age,times):
     lsr_orbit.integrate(ts,MWPotential2014,method='odeint')
 
     xyzuvw = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
-    #xyzuvw = np.insert(xyzuvw,0,times,axis=1)
     return xyzuvw
 
 #Instead of a __main__ block below, please use test routines in the main directory.
