@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 """
-Generating a set of stars which follow a gaussian distribution of UVWXYZ
+Generates two groups of stars which follow a gaussian distribution
+in one dimension at the moment but will extend to 6 dimensions.
+
+Two gaussians are then fitted to the 'data' using MCMC. The gaussians'
+properties are extracted from the sampling by taking the modes of the
+parameters.
 
 ToDo:
-- assuming no covariance
-- extend to look at 2 gaussians
+- have differently sized groups (don't split 50:50)
+- generate a list of stars with percentage likelihoods to each group
+- test limits with some overlapping groups
 """
 
 from __future__ import print_function
@@ -18,13 +24,18 @@ except NameError:
 	xrange = range
 
 # Pseudo arguments
-initial_help = False
-reorder_samples = True
+initial_help = False		# If walkers are initialised around desired result
+reorder_samples = True	# If final sample parameters are reordered
 nstars = 100 
-nwalkers = 250
-
-# Simulating 2 groups as 1-dimensional Gaussian...
+nwalkers = 150
 ndim = 1
+npar = 4								# Number of param. required to define a sample
+												# 2 params. per group per dimension (mean and stdev)
+burninsteps = 100				# Number of burn in steps
+samplingsteps = 500		# Number of sampling steps
+
+
+# Simulating 2 groups as [ndim]-dimensional Gaussian...
 # ... with hard coded mean position with pos in pc and vel in km/s
 # means = [35.0, 0.0, 0.0, -10.0, -20.0, -5.0]
 means1 = [20.0]
@@ -35,9 +46,9 @@ stds1 = [1.0]
 stds2 = [1.0]
 #stds = [3.0, 3.0, 3.0, 1.0, 1.0, 1.0]
 
-# Initialising a set of 50 stars to have UVWXYZ as determined by 
+# Initialising a set of [nstars] stars to have UVWXYZ as determined by 
 # means and standard devs
-# 25 from one group, 25 from the other
+# [nstars]/2 from one group, [nstars]/2 from the other
 stars = np.zeros((nstars,ndim))
 for i in range(nstars/2):
 	for j in range(ndim):
@@ -59,9 +70,6 @@ for i in range(nstars/2, nstars):
 
 def gaussian_eval(x, mu, sig):
 	result = 1.0/(abs(sig)*math.sqrt(2*math.pi))*np.exp(-(x-mu)**2/(2*sig**2))
-	#if (result == 0):
-		#print(result)
-		#print(x, mu, sig)
 	return result
 
 def lnprob(x, stars):
@@ -74,14 +82,12 @@ def lnprob(x, stars):
 	for i in range(nstars):
 		result = np.log( gaussian_eval(stars[i][0], mu1, sig1) +
 										 gaussian_eval(stars[i][0], mu2, sig2) )
-		if (math.isnan(result)):
-			print("Found a NaN!: {} {} {}".format(stars[i][0], mu, sig))
 		sumlnprob += result
 	return sumlnprob
 
-# Takes in the set of samples as a flatchain, and orders each sample's
-# parameter sets such that the parameters representing groups are listed
-# in ascending order of means
+# Takes in [nstars][npar] array where each row is a sample and orders each
+# sample's parameter sets such that the parameters representing groups are
+# listed in ascending order of means
 # Hardcoded for 2D
 def align_samples(samples):
 	new_samples = []
@@ -106,13 +112,13 @@ if (initial_help):
 				for i in xrange(nwalkers)]
 else:
 	# Walkers aren't initialised around the vicinity of the groups
-	p0 = [np.random.uniform(5,10, [4]) for i in xrange(nwalkers)]
+	# It is important that stds are not initialised to 0
+	p0 = [np.random.uniform(5,10, [npar]) for i in xrange(nwalkers)]
 
 # Initialise the sampler with the chosen specs.
-sampler = emcee.EnsembleSampler(nwalkers, 4, lnprob, args=[stars])
+sampler = emcee.EnsembleSampler(nwalkers, npar, lnprob, args=[stars])
 
 # Run 100 steps as burn-in.
-burninsteps = 100 
 pos, prob, state = sampler.run_mcmc(p0, burninsteps)
 
 # Reset the chain to remove the burn-in samples.
@@ -120,7 +126,6 @@ sampler.reset()
 
 # Starting from the final position of the burn-in chain, smaple for 1000
 # steps.
-samplingsteps = 1000
 sampler.run_mcmc(pos, samplingsteps, rstate0=state)
 
 # Print out the mean acceptance fraction. In general, acceptance_fraction
@@ -135,7 +140,6 @@ print("Autocorrelation time:", sampler.get_autocorr_time())
 # Removes the first 100 iterations of each walker and reshapes
 # into an npar*X array where npar is the number of parameters required
 # to specify one position, and X is the number of instances
-npar = 4
 if(reorder_samples):
 	samples = np.array(align_samples(sampler.chain[:, burninsteps:, :].reshape((-1, npar))))
 else:
