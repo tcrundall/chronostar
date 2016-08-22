@@ -17,15 +17,20 @@ try:
 except NameError:
 	xrange = range
 
+# Pseudo arguments
+initial_help = False
+reorder_samples = True
+nstars = 100 
+nwalkers = 250
+
 # Simulating 2 groups as 1-dimensional Gaussian...
 ndim = 1
 # ... with hard coded mean position with pos in pc and vel in km/s
 # means = [35.0, 0.0, 0.0, -10.0, -20.0, -5.0]
-means1 = [35.0]
-means2 = [20.0]
+means1 = [20.0]
+means2 = [35.0]
 
 # ... and some standard deviations
-
 stds1 = [1.0]
 stds2 = [1.0]
 #stds = [3.0, 3.0, 3.0, 1.0, 1.0, 1.0]
@@ -33,7 +38,6 @@ stds2 = [1.0]
 # Initialising a set of 50 stars to have UVWXYZ as determined by 
 # means and standard devs
 # 25 from one group, 25 from the other
-nstars = 50 
 stars = np.zeros((nstars,ndim))
 for i in range(nstars/2):
 	for j in range(ndim):
@@ -75,13 +79,24 @@ def lnprob(x, stars):
 		sumlnprob += result
 	return sumlnprob
 
-# We'll sampe with 250 walkers
-nwalkers = 250
+# Takes in the set of samples as a flatchain, and orders each sample's
+# parameter sets such that the parameters representing groups are listed
+# in ascending order of means
+# Hardcoded for 2D
+def align_samples(samples):
+	new_samples = []
+	for sample in samples:
+		if sample[0] <= sample[2]:
+			new_samples.append(sample)
+		else:
+			new_sample = [sample[2], sample[3], sample[0], sample[1]]
+			new_samples.append(new_sample)
+	return np.array(new_samples)
+
 
 # Choose an intial set of gaussian parameters for the walkers.
 # They are 'helped' by being given a similar mean and std
-initialhelp = False
-if (initialhelp):
+if (initial_help):
 	# Walkers are initialised around the vicinity of the groups
 	p0 = [
 					[np.random.uniform(means1[0]-5,means1[0]+5),
@@ -118,15 +133,15 @@ print("Mean acceptance fraction:", np.mean(sampler.acceptance_fraction))
 print("Autocorrelation time:", sampler.get_autocorr_time())
 
 # Removes the first 100 iterations of each walker and reshapes
-# into an ndim*X array where ndim is the number of parameters required
+# into an npar*X array where npar is the number of parameters required
 # to specify one position, and X is the number of instances
-samples = sampler.chain[:, burninsteps:, :].reshape((-1, 4))
-#print(samples[0:10])
-#print(samples[:,0][0:15])
-for sample in samples:
-	print(sample[0])
+npar = 4
+if(reorder_samples):
+	samples = np.array(align_samples(sampler.chain[:, burninsteps:, :].reshape((-1, npar))))
+else:
+	samples = np.array(sampler.chain[:, burninsteps:, :].reshape((-1, npar)))
 
-# Taking median of sampled means and sampled stds
+# Taking average of sampled means and sampled stds
 print(" ____ GROUP 1 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(np.median(samples[:,0]),
 																								np.median(abs(samples[:,1]))))
@@ -153,24 +168,24 @@ else:
 	# Plotting all sampled means1
 	pl.figure(1)
 	pl.subplot(221)
-	mus = [mu for mu in sampler.flatchain[:,0] if (mu > 0) & (mu < 100)]
+	mus = [mu for mu in samples[:,0] if (mu > -30) & (mu < 100)]
 	pl.hist(mus, nbins)
 	pl.title("Means of group 1")
 
 	# Plotting all sampled stds
 	# Need to take the absolute since emcee samples negative sigmas
 	pl.subplot(222)
-	sigs = [abs(sig) for sig in sampler.flatchain[:,1] if abs(sig) < 5]
+	sigs = [abs(sig) for sig in samples[:,1] if abs(sig) < 5]
 	pl.hist(sigs, nbins)
 	pl.title("Stds of group 1")
 	
 	pl.subplot(223)
-	mus = [mu for mu in sampler.flatchain[:,2] if (mu > 0) & (mu < 100)]
+	mus = [mu for mu in samples[:,2] if (mu > -30) & (mu < 100)]
 	pl.hist(mus, nbins)
 	pl.title("Means of group 2")
 
 	pl.subplot(224)
-	sigs = [abs(sig) for sig in sampler.flatchain[:,3] if abs(sig) < 5]
+	sigs = [abs(sig) for sig in samples[:,3] if abs(sig) < 5]
 	pl.hist(sigs, nbins)
 	pl.title("Stds of group 2")
 
