@@ -8,6 +8,7 @@ properties are extracted from the sampling by taking the modes of the
 parameters.
 
 ToDo:
+- investigate sofar benign divide by zero error
 - have differently sized groups (don't split 50:50)
 - generate a list of stars with percentage likelihoods to each group
 - test limits with some overlapping groups
@@ -24,26 +25,28 @@ except NameError:
 	xrange = range
 
 # Pseudo arguments
+print_table = True			# Display a pretty table with sstars and their groups
+plotit = True						# Will plot some pretty graphs at end
 initial_help = False		# If walkers are initialised around desired result
 reorder_samples = True	# If final sample parameters are reordered
-nstars = 100 
+nstars = 50
 nwalkers = 150
-ndim = 1
+ndim = 1								# number of phys. dim. being looked at, max 6
 npar = 4								# Number of param. required to define a sample
 												# 2 params. per group per dimension (mean and stdev)
 burninsteps = 100				# Number of burn in steps
-samplingsteps = 500		# Number of sampling steps
+samplingsteps = 500			# Number of sampling steps
 
 
 # Simulating 2 groups as [ndim]-dimensional Gaussian...
 # ... with hard coded mean position with pos in pc and vel in km/s
 # means = [35.0, 0.0, 0.0, -10.0, -20.0, -5.0]
 means1 = [20.0]
-means2 = [35.0]
+means2 = [30.0]
 
 # ... and some standard deviations
-stds1 = [1.0]
-stds2 = [1.0]
+stds1 = [5.0]
+stds2 = [5.0]
 #stds = [3.0, 3.0, 3.0, 1.0, 1.0, 1.0]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
@@ -145,53 +148,74 @@ if(reorder_samples):
 else:
 	samples = np.array(sampler.chain[:, burninsteps:, :].reshape((-1, npar)))
 
+model_mu1  = np.median(samples[:,0])
+model_sig1 = np.median(abs(samples[:,1]))
+model_mu2  = np.median(samples[:,2])
+model_sig2 = np.median(abs(samples[:,3]))
+
 # Taking average of sampled means and sampled stds
+# Can compare that to the mean and std on which the stars were
+# actually formulated
+
 print(" ____ GROUP 1 _____ ")
-print("Modelled mean: {}, modelled std: {}".format(np.median(samples[:,0]),
-																								np.median(abs(samples[:,1]))))
-
-# Can compare that to the mean and std on which the stars were
-# actually formulated
+print("Modelled mean: {}, modelled std: {}".format(model_mu1, model_sig1))
 print("'True' mean: {}, 'true' std: {}".format(means1[0], stds1[0]))
-print(" ____ GROUP 2 _____ ")
-print("Modelled mean: {}, modelled std: {}".format(np.median(samples[:,2]),
-																								np.median(abs(samples[:,3]))))
 
-# Can compare that to the mean and std on which the stars were
-# actually formulated
+print(" ____ GROUP 2 _____ ")
+print("Modelled mean: {}, modelled std: {}".format(model_mu2, model_sig2))
 print("'True' mean: {}, 'true' std: {}".format(means2[0], stds2[0]))
+
+
+# Print a list of each star and their predicted group by percentage
+# also print the success rate - the number of times a probability > 50 %
+# is reported for the correct group
+if(print_table):
+	print("Star #\tGroup 1\tGroup 2")
+	success_cnt = 0.0
+	for i, star in enumerate(stars):
+		likelihood1 = gaussian_eval(stars[i][0], model_mu1, model_sig1)
+		likelihood2 = gaussian_eval(stars[i][0], model_mu2, model_sig2)
+		prob1 = likelihood1 / (likelihood1 + likelihood2) * 100
+		prob2 = likelihood2 / (likelihood1 + likelihood2) * 100
+		if (i < nstars/2) & (prob1 > prob2):
+			success_cnt += 1.0
+		if (i >= nstars/2) & (prob1 < prob2):
+			success_cnt += 1.0
+		print("{}\t{:10.2f}%\t{:10.2f}%".format(i, prob1, prob2))
+	print("Success rate of {:6.2f}%".format(success_cnt/nstars * 100))
 
 # Finally, you can plot the porjected histograms of the samples using
 # matplotlib as follows
-try:
-	import matplotlib.pyplot as pl
-except ImportError:
-	print("Try installing matplotlib to generate some sweet plots...")
-else:
-	nbins = 500 
-	# Plotting all sampled means1
-	pl.figure(1)
-	pl.subplot(221)
-	mus = [mu for mu in samples[:,0] if (mu > -30) & (mu < 100)]
-	pl.hist(mus, nbins)
-	pl.title("Means of group 1")
+if(plotit):
+	try:
+		import matplotlib.pyplot as pl
+	except ImportError:
+		print("Try installing matplotlib to generate some sweet plots...")
+	else:
+		nbins = 500 
+		# Plotting all sampled means1
+		pl.figure(1)
+		pl.subplot(221)
+		mus = [mu for mu in samples[:,0] if (mu > -30) & (mu < 100)]
+		pl.hist(mus, nbins)
+		pl.title("Means of group 1")
 
-	# Plotting all sampled stds
-	# Need to take the absolute since emcee samples negative sigmas
-	pl.subplot(222)
-	sigs = [abs(sig) for sig in samples[:,1] if abs(sig) < 5]
-	pl.hist(sigs, nbins)
-	pl.title("Stds of group 1")
-	
-	pl.subplot(223)
-	mus = [mu for mu in samples[:,2] if (mu > -30) & (mu < 100)]
-	pl.hist(mus, nbins)
-	pl.title("Means of group 2")
+		# Plotting all sampled stds
+		# Need to take the absolute since emcee samples negative sigmas
+		pl.subplot(222)
+		sigs = [abs(sig) for sig in samples[:,1] if abs(sig) < 30]
+		pl.hist(sigs, nbins)
+		pl.title("Stds of group 1")
+		
+		pl.subplot(223)
+		mus = [mu for mu in samples[:,2] if (mu > -30) & (mu < 100)]
+		pl.hist(mus, nbins)
+		pl.title("Means of group 2")
 
-	pl.subplot(224)
-	sigs = [abs(sig) for sig in samples[:,3] if abs(sig) < 5]
-	pl.hist(sigs, nbins)
-	pl.title("Stds of group 2")
+		pl.subplot(224)
+		sigs = [abs(sig) for sig in samples[:,3] if abs(sig) < 30]
+		pl.hist(sigs, nbins)
+		pl.title("Stds of group 2")
 
-	pl.savefig("gaussians.png")
-	pl.show()
+		pl.savefig("gaussians.png")
+		pl.show()
