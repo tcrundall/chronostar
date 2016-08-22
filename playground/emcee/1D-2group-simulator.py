@@ -76,11 +76,11 @@ def lnprob(x, stars):
 	return sumlnprob
 
 # We'll sampe with 250 walkers
-nwalkers = 250
+nwalkers = 50
 
 # Choose an intial set of gaussian parameters for the walkers.
 # They are 'helped' by being given a similar mean and std
-initialhelp = False
+initialhelp = True
 if (initialhelp):
 	# Walkers are initialised around the vicinity of the groups
 	p0 = [
@@ -120,19 +120,21 @@ print("Autocorrelation time:", sampler.get_autocorr_time())
 # Removes the first 100 iterations of each walker and reshapes
 # into an ndim*X array where ndim is the number of parameters required
 # to specify one position, and X is the number of instances
-samples = sampler.chain[:, burninsteps:, :].reshape((-1, ndim))
+samples = sampler.chain[:, burninsteps:, :].reshape((-1, 4))
+#print(samples[0:10])
+#print(samples[:,0][0:15])
 
 # Taking average of sampled means and sampled stds
 print(" ____ GROUP 1 _____ ")
-print("Modelled mean: {}, modelled std: {}".format(np.average(samples[0]),
-																								np.average(abs(samples[1]))))
+print("Modelled mean: {}, modelled std: {}".format(np.average(samples[:,0]),
+																								np.average(abs(samples[:,1]))))
 
 # Can compare that to the mean and std on which the stars were
 # actually formulated
 print("'True' mean: {}, 'true' std: {}".format(means1[0], stds1[0]))
 print(" ____ GROUP 2 _____ ")
-print("Modelled mean: {}, modelled std: {}".format(np.average(samples[2]),
-																								np.average(abs(samples[3]))))
+print("Modelled mean: {}, modelled std: {}".format(np.average(samples[:,2]),
+																								np.average(abs(samples[:,3]))))
 
 # Can compare that to the mean and std on which the stars were
 # actually formulated
