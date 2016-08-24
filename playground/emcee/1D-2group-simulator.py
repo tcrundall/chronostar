@@ -217,5 +217,5 @@ if(plotit):
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 2")
 
-		pl.savefig("gaussians.png")
+		pl.savefig("plots/gaussians.png")
 		pl.show()
