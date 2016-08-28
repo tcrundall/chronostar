@@ -55,6 +55,7 @@ nstars = int(args.s)
 nwalkers = int(args.w)
 fraction = float(args.f)
 ndim = 1								# number of phys. dim. being looked at, max 6
+ngroups = 2
 npar = 5								# Number of param. required to define a sample
 												# 2 params. per group per dimension (mean and stdev)
 burninsteps = 100				# Number of burn in steps
@@ -72,26 +73,23 @@ if (reorder_samples):
 
 # Simulating 2 groups as [ndim]-dimensional Gaussian...
 # ... with hard coded mean position with pos in pc and vel in km/s
-# means = [35.0, 0.0, 0.0, -10.0, -20.0, -5.0]
-means1 = [20.0]
-means2 = [40.0]
+means = [[20.0], [40.0], [70.0]]
 
 # ... and some standard deviations
-stds1 = [1.0]
-stds2 = [1.0]
-#stds = [3.0, 3.0, 3.0, 1.0, 1.0, 1.0]
+stds = [[1.0], [1.0], [3.0]]
+
+# Cumulative fraction of stars in groups
+# i.e. [0, .25, 1.] means 25% of stars in group 1 and 75% in group 2
+weights = [0.0, 0.25, 1.]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
 # means and standard devs
 # [nstars]/2 from one group, [nstars]/2 from the other
 stars = np.zeros((nstars,ndim))
-for i in range(int(nstars*fraction)):
-	for j in range(ndim):
-		stars[i][j] = np.random.normal(means1[j], stds1[j])
-
-for i in range(int(nstars*fraction), nstars):
-	for j in range(ndim):
-		stars[i][j] = np.random.normal(means2[j], stds2[j])
+for h in range(ngroups):
+	for i in range(int(nstars*weights[h]), int(nstars*weights[h+1])):
+		for j in range(ndim):
+			stars[i][j] = np.random.normal(means[h][j], stds[h][j])
 
 # Defining the probablility distribution to sample
 # x encapsulates the mean and std of a proposed model
@@ -109,15 +107,14 @@ def gaussian_eval(x, mu, sig):
 
 def lnprob(pars, stars):
 	nstars = stars.size
-	mu1  = pars[0]
-	sig1 =abs(pars[1])
-	w1   = abs(pars[2])
-	mu2  = pars[3]
-	sig2 = abs(pars[4])
+	mus     = pars[0::3]
+	sigs    = pars[1::3]
+	weights = pars[2::3]
 	sumlnprob = 0
 	for i in range(nstars):
-		result = np.log(1.0/(1 + w1) * gaussian_eval(stars[i][0], mu1, sig1) +
-										1.0/(1.0/w1 + 1) * gaussian_eval(stars[i][0], mu2, sig2) )
+		result = np.log(
+				1.0/(1+abs(weights[0])) * gaussian_eval(stars[i][0], mus[0], sigs[0]) +
+				1.0/(1+1./abs(weights[0])) *gaussian_eval(stars[i][0], mus[1], sigs[1]))
 		sumlnprob += result
 	return sumlnprob
 
@@ -125,6 +122,7 @@ def lnprob(pars, stars):
 # sample's parameter sets such that the parameters representing groups are
 # listed in ascending order of means
 # Hardcoded for 2D
+# CURRENTLY BROKEN FOR WEIGHTINGS!!!
 def align_samples(samples):
 	new_samples = []
 	for sample in samples:
@@ -141,11 +139,11 @@ def align_samples(samples):
 if (initial_help):
 	# Walkers are initialised around the vicinity of the groups
 	p0 = [
-					[np.random.uniform(means1[0] -5,  means1[0]+5 ),
-					 np.random.uniform(stds1[0] -0.5, stds1[0]+0.5),
+					[np.random.uniform(means[0][0] -5,  means[0][0]+5 ),
+					 np.random.uniform(stds[0][0] -0.5, stds[0][0]+0.5),
 					 np.random.uniform(2, 3),
-					 np.random.uniform(means2[0] -5,  means2[0]+5 ),
-					 np.random.uniform(stds2[0] -0.5, stds2[0]+0.5)]
+					 np.random.uniform(means[1][0] -5,  means[1][0]+5 ),
+					 np.random.uniform(stds[1][0] -0.5, stds[1][0]+0.5)]
 				for i in xrange(nwalkers)]
 else:
 	# Walkers aren't initialised around the vicinity of the groups
@@ -194,12 +192,12 @@ model_sig2 = np.median(abs(samples[:,4]))
 
 print(" ____ GROUP 1 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu1, model_sig1))
-print("'True' mean: {}, 'true' std: {}".format(means1[0], stds1[0]))
+print("'True' mean: {}, 'true' std: {}".format(means[0][0], stds[0][0]))
 print("With {}% of the stars".format(100.0/(1+model_w1)))
 
 print(" ____ GROUP 2 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu2, model_sig2))
-print("'True' mean: {}, 'true' std: {}".format(means2[0], stds2[0]))
+print("'True' mean: {}, 'true' std: {}".format(means[1][0], stds[1][0]))
 print("With {}% of the stars".format(100.0/(1+1.0/model_w1)))
 
 
