@@ -9,9 +9,9 @@ parameters.
 
 ToDo:
 - investigate sofar benign divide by zero error
-- have differently sized groups (don't split 50:50)
-- generate a list of stars with percentage likelihoods to each group
-- test limits with some overlapping groups
+- introduce consitency with 'weighting' and 'fraction' naming
+- get 'align' function to work for arbitrarily many groups
+- get plotting to work for arbitrarily many groups
 """
 
 from __future__ import print_function
@@ -36,12 +36,12 @@ parser.add_argument('-w', '--nwalkers', dest='w', default=150,
 												help='number of walkers')
 parser.add_argument('-p', '--steps', dest='p', default=500,
 												help='number of sampling steps')
-parser.add_argument('-t', '--plot', dest='plot', action='store_true', default=False, \
-												help='display and save the plots')
-parser.add_argument('-o', '--order', dest='order', action='store_true', default=False, \
-												help='reorder samples by mean, only 1D, 2 groups')
-parser.add_argument('-a', '--table', dest='table', action='store_true', default=False, \
-												help='print a table of stars with their probs')
+parser.add_argument('-t', '--plot', dest='plot', action='store_true',
+											default=False, help='display and save the plots')
+parser.add_argument('-o', '--order', dest='order', action='store_true',
+		  default=False, help='reorder samples by mean, only 1D, 2 groups')
+parser.add_argument('-a', '--table', dest='table', action='store_true',
+			default=False, help='print a table of stars with their probs')
 
 
 args = parser.parse_args()
@@ -55,9 +55,9 @@ nstars = int(args.s)
 nwalkers = int(args.w)
 fraction = float(args.f)
 ndim = 1								# number of phys. dim. being looked at, max 6
-ngroups = 2
-npar = 5								# Number of param. required to define a sample
-												# 2 params. per group per dimension (mean and stdev)
+ngroups = 3
+npar = ngroups*3 - 1		# Number of param. required to define a sample
+												# 3 params. per group per dim mean, stdev and weight
 burninsteps = 100				# Number of burn in steps
 samplingsteps = int(args.p)	# Number of sampling steps
 
@@ -67,7 +67,7 @@ print("Finding a fit for {} stars, with {} walkers for {} steps." \
 if (plotit):
 	print("Graphs will be plotted...")
 if (print_table):
-  print("A tabe will be printed...")
+  print("A table will be printed...")
 if (reorder_samples):
 	print("Each sample will have its paramaters made to be ascending...")
 
@@ -80,14 +80,14 @@ stds = [[1.0], [1.0], [3.0]]
 
 # Cumulative fraction of stars in groups
 # i.e. [0, .25, 1.] means 25% of stars in group 1 and 75% in group 2
-weights = [0.0, 0.25, 1.]
+cum_fracs = [0.0, 0.25, 0.75, 1.]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
 # means and standard devs
 # [nstars]/2 from one group, [nstars]/2 from the other
 stars = np.zeros((nstars,ndim))
 for h in range(ngroups):
-	for i in range(int(nstars*weights[h]), int(nstars*weights[h+1])):
+	for i in range(int(nstars*cum_fracs[h]), int(nstars*cum_fracs[h+1])):
 		for j in range(ndim):
 			stars[i][j] = np.random.normal(means[h][j], stds[h][j])
 
@@ -105,17 +105,30 @@ def gaussian_eval(x, mu, sig):
 	result = 1.0/(abs(sig)*math.sqrt(2*math.pi))*np.exp(-(x-mu)**2/(2*sig**2))
 	return result
 
+# for each star, we want to find the value of each gaussian at that point
+# and sum them. Every group bar the last has a weighting, the final group's
+# weighting is determined such that the total area under the curve stays 
+# constant (at the moment total area is [ngroups]
+# The awkward multiplicative factor with the weighting is selected
+# so that each factor is between 0 and 1.
+# Currently each star entry only has one value, will eventually extrapolate
+# to many stars
 def lnprob(pars, stars):
 	nstars = stars.size
 	mus     = pars[0::3]
 	sigs    = pars[1::3]
 	weights = pars[2::3]
 	sumlnprob = 0
+
 	for i in range(nstars):
-		result = np.log(
-				1.0/(1+abs(weights[0])) * gaussian_eval(stars[i][0], mus[0], sigs[0]) +
-				1.0/(1+1./abs(weights[0])) *gaussian_eval(stars[i][0], mus[1], sigs[1]))
-		sumlnprob += result
+		gaus_sum = 0
+		for j in range(ngroups - 1):
+			gaus_sum += 1.0/(1+abs(weights[j])) *  \
+									 gaussian_eval(stars[i][0], mus[j], sigs[j])
+		final_weight = 1 / (1 - sum([1./(1+w) for w in weights]))
+		gaus_sum += 1.0/(1+abs(final_weight)) *  \
+						gaussian_eval(stars[i][0], mus[ngroups-1], sigs[ngroups-1])
+		sumlnprob += np.log(gaus_sum)
 	return sumlnprob
 
 # Takes in [nstars][npar] array where each row is a sample and orders each
@@ -143,7 +156,10 @@ if (initial_help):
 					 np.random.uniform(stds[0][0] -0.5, stds[0][0]+0.5),
 					 np.random.uniform(2, 3),
 					 np.random.uniform(means[1][0] -5,  means[1][0]+5 ),
-					 np.random.uniform(stds[1][0] -0.5, stds[1][0]+0.5)]
+					 np.random.uniform(stds[1][0] -0.5, stds[1][0]+0.5),
+					 np.random.uniform(2, 3),
+					 np.random.uniform(means[2][0] -5,  means[2][0]+5 ),
+					 np.random.uniform(stds[2][0] -0.5, stds[2][0]+0.5)]
 				for i in xrange(nwalkers)]
 else:
 	# Walkers aren't initialised around the vicinity of the groups
@@ -185,6 +201,11 @@ model_sig1 = np.median(abs(samples[:,1]))
 model_w1   = np.median(abs(samples[:,2]))
 model_mu2  = np.median(samples[:,3])
 model_sig2 = np.median(abs(samples[:,4]))
+model_w2   = np.median(abs(samples[:,5]))
+model_mu3  = np.median(samples[:,6])
+model_sig3 = np.median(abs(samples[:,7]))
+model_w3   = 100.0/(1+1.0/model_w1+1.0/model_w2)
+
 
 # Taking average of sampled means and sampled stds
 # Can compare that to the mean and std on which the stars were
@@ -198,8 +219,12 @@ print("With {}% of the stars".format(100.0/(1+model_w1)))
 print(" ____ GROUP 2 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu2, model_sig2))
 print("'True' mean: {}, 'true' std: {}".format(means[1][0], stds[1][0]))
-print("With {}% of the stars".format(100.0/(1+1.0/model_w1)))
+print("With {}% of the stars".format(100.0/(1/model_w2)))
 
+print(" ____ GROUP 3 _____ ")
+print("Modelled mean: {}, modelled std: {}".format(model_mu3, model_sig3))
+print("'True' mean: {}, 'true' std: {}".format(means[2][0], stds[2][0]))
+print("With {}% of the stars".format(model_w3))
 
 # Print a list of each star and their predicted group by percentage
 # also print the success rate - the number of times a probability > 50 %
@@ -210,13 +235,19 @@ if(print_table):
 	for i, star in enumerate(stars):
 		likelihood1 = gaussian_eval(stars[i][0], model_mu1, model_sig1)
 		likelihood2 = gaussian_eval(stars[i][0], model_mu2, model_sig2)
-		prob1 = likelihood1 / (likelihood1 + likelihood2) * 100
-		prob2 = likelihood2 / (likelihood1 + likelihood2) * 100
-		if (i < nstars*fraction) & (prob1 > prob2):
+		likelihood3 = gaussian_eval(stars[i][0], model_mu3, model_sig3)
+		prob1 = likelihood1 / (likelihood1 + likelihood2 + likelihood3) * 100
+		prob2 = likelihood2 / (likelihood1 + likelihood2 + likelihood3) * 100
+		prob3 = likelihood3 / (likelihood1 + likelihood2 + likelihood3) * 100
+		if i<nstars*cum_fracs[1] and prob1>prob2 and prob1>prob3:
 			success_cnt += 1.0
-		if (i >= nstars*fraction) & (prob1 < prob2):
+		if i>=nstars*cum_fracs[1] and i < nstars*cum_fracs[2]\
+				and prob1<prob2 and prob2>prob3:
 			success_cnt += 1.0
-		print("{}\t{:10.2f}%\t{:10.2f}%".format(i, prob1, prob2))
+		if i >= nstars*cum_fracs[2] \
+				and prob1<prob3 and prob2<prob3:
+			success_cnt += 1.0
+		print("{}\t{:10.2f}%\t{:10.2f}%\t{:10.2f}%".format(i, prob1, prob2, prob3))
 	print("Success rate of {:6.2f}%".format(success_cnt/nstars * 100))
 
 # Finally, you can plot the porjected histograms of the samples using
@@ -231,7 +262,7 @@ if(plotit):
 		# Plotting all sampled means1
 		pl.figure(1)
 		pl.subplot(221)
-		mus = [mu for mu in samples[:,0] if (mu > -30) & (mu < 100)]
+		mus = [mu for mu in samples[:,0] if mu > -30 and mu < 100]
 		pl.hist(mus, nbins)
 		pl.title("Means of group 1")
 
@@ -243,7 +274,7 @@ if(plotit):
 		pl.title("Stds of group 1")
 		
 		pl.subplot(223)
-		mus = [mu for mu in samples[:,3] if (mu > -30) & (mu < 100)]
+		mus = [mu for mu in samples[:,3] if mu > -30 and mu < 100]
 		pl.hist(mus, nbins)
 		pl.title("Means of group 2")
 
