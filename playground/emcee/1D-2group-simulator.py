@@ -18,25 +18,54 @@ from __future__ import print_function
 import emcee
 import numpy as np
 import math
+import argparse
+
 
 try:
 	xrange
 except NameError:
 	xrange = range
 
-# Pseudo arguments
-print_table = True			# Display a pretty table with sstars and their groups
-plotit = True						# Will plot some pretty graphs at end
-initial_help = False		# If walkers are initialised around desired result
-reorder_samples = True	# If final sample parameters are reordered
-nstars = 50
-nwalkers = 150
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-s', '--nstars', dest='s', default=50,
+												help='number of stars')
+parser.add_argument('-w', '--nwalkers', dest='w', default=150,
+												help='number of walkers')
+parser.add_argument('-p', '--steps', dest='p', default=500,
+												help='number of sampling steps')
+parser.add_argument('-t', '--plot', dest='plot', action='store_true', default=False, \
+												help='display and save the plots')
+parser.add_argument('-o', '--order', dest='order', action='store_true', default=False, \
+												help='reorder samples by mean, only 1D, 2 groups')
+parser.add_argument('-a', '--table', dest='table', action='store_true', default=False, \
+												help='print a table of stars with their probs')
+
+
+args = parser.parse_args()
+
+# Setting parameters
+print_table = args.table # Display a pretty table with sstars and their groups
+plotit = args.plot      # Will plot some pretty graphs at end
+initial_help = True		  # If walkers are initialised around desired result
+reorder_samples = args.order # If final sample parameters are reordered
+nstars = int(args.s)
+nwalkers = int(args.w)
 ndim = 1								# number of phys. dim. being looked at, max 6
 npar = 4								# Number of param. required to define a sample
 												# 2 params. per group per dimension (mean and stdev)
 burninsteps = 100				# Number of burn in steps
-samplingsteps = 500			# Number of sampling steps
+samplingsteps = int(args.p)	# Number of sampling steps
 
+# Useful runtime information
+print("Finding a fit for {} stars, with {} walkers for {} steps." \
+	.format(nstars, nwalkers, samplingsteps))
+if (plotit):
+	print("Graphs will be plotted...")
+if (print_table):
+  print("A tabe will be printed...")
+if (reorder_samples):
+	print("Each sample will have its paramaters made to be ascending...")
 
 # Simulating 2 groups as [ndim]-dimensional Gaussian...
 # ... with hard coded mean position with pos in pc and vel in km/s
@@ -45,8 +74,8 @@ means1 = [20.0]
 means2 = [30.0]
 
 # ... and some standard deviations
-stds1 = [5.0]
-stds2 = [5.0]
+stds1 = [3.0]
+stds2 = [3.0]
 #stds = [3.0, 3.0, 3.0, 1.0, 1.0, 1.0]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
@@ -108,15 +137,15 @@ def align_samples(samples):
 if (initial_help):
 	# Walkers are initialised around the vicinity of the groups
 	p0 = [
-					[np.random.uniform(means1[0]-5,means1[0]+5),
-					 np.random.uniform(stds1[0]-0.5, stds1[0]+0.5),
-					 np.random.uniform(means2[0]-5,means2[0]+5),
-					 np.random.uniform(stds2[0]-0.5, stds2[0]+0.5)]
+					[np.random.uniform(means1[0] -5,  means1[0]+5 ),
+					 np.random.uniform(stds1[0] -0.5, stds1[0]+0.5),
+					 np.random.uniform(means2[0] -5,  means2[0]+5 ),
+					 np.random.uniform(stds2[0] -0.5, stds2[0]+0.5)]
 				for i in xrange(nwalkers)]
 else:
 	# Walkers aren't initialised around the vicinity of the groups
 	# It is important that stds are not initialised to 0
-	p0 = [np.random.uniform(5,10, [npar]) for i in xrange(nwalkers)]
+	p0 = [np.random.uniform(50,100, [npar]) for i in xrange(nwalkers)]
 
 # Initialise the sampler with the chosen specs.
 sampler = emcee.EnsembleSampler(nwalkers, npar, lnprob, args=[stars])
