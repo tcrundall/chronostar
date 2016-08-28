@@ -30,6 +30,8 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('-s', '--nstars', dest='s', default=50,
 												help='number of stars')
+parser.add_argument('-f', '--fraction', dest='f', default=0.25,
+												help='fraction of stars in group 1')
 parser.add_argument('-w', '--nwalkers', dest='w', default=150,
 												help='number of walkers')
 parser.add_argument('-p', '--steps', dest='p', default=500,
@@ -51,8 +53,9 @@ initial_help = True		  # If walkers are initialised around desired result
 reorder_samples = args.order # If final sample parameters are reordered
 nstars = int(args.s)
 nwalkers = int(args.w)
+fraction = float(args.f)
 ndim = 1								# number of phys. dim. being looked at, max 6
-npar = 4								# Number of param. required to define a sample
+npar = 5								# Number of param. required to define a sample
 												# 2 params. per group per dimension (mean and stdev)
 burninsteps = 100				# Number of burn in steps
 samplingsteps = int(args.p)	# Number of sampling steps
@@ -71,22 +74,22 @@ if (reorder_samples):
 # ... with hard coded mean position with pos in pc and vel in km/s
 # means = [35.0, 0.0, 0.0, -10.0, -20.0, -5.0]
 means1 = [20.0]
-means2 = [30.0]
+means2 = [40.0]
 
 # ... and some standard deviations
-stds1 = [3.0]
-stds2 = [3.0]
+stds1 = [1.0]
+stds2 = [1.0]
 #stds = [3.0, 3.0, 3.0, 1.0, 1.0, 1.0]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
 # means and standard devs
 # [nstars]/2 from one group, [nstars]/2 from the other
 stars = np.zeros((nstars,ndim))
-for i in range(nstars/2):
+for i in range(int(nstars*fraction)):
 	for j in range(ndim):
 		stars[i][j] = np.random.normal(means1[j], stds1[j])
 
-for i in range(nstars/2, nstars):
+for i in range(int(nstars*fraction), nstars):
 	for j in range(ndim):
 		stars[i][j] = np.random.normal(means2[j], stds2[j])
 
@@ -104,16 +107,17 @@ def gaussian_eval(x, mu, sig):
 	result = 1.0/(abs(sig)*math.sqrt(2*math.pi))*np.exp(-(x-mu)**2/(2*sig**2))
 	return result
 
-def lnprob(x, stars):
+def lnprob(pars, stars):
 	nstars = stars.size
-	mu1  = x[0]
-	sig1 = x[1]
-	mu2  = x[2]
-	sig2 = x[3]
+	mu1  = pars[0]
+	sig1 =abs(pars[1])
+	w1   = abs(pars[2])
+	mu2  = pars[3]
+	sig2 = abs(pars[4])
 	sumlnprob = 0
 	for i in range(nstars):
-		result = np.log( gaussian_eval(stars[i][0], mu1, sig1) +
-										 gaussian_eval(stars[i][0], mu2, sig2) )
+		result = np.log(1.0/(1 + w1) * gaussian_eval(stars[i][0], mu1, sig1) +
+										1.0/(1.0/w1 + 1) * gaussian_eval(stars[i][0], mu2, sig2) )
 		sumlnprob += result
 	return sumlnprob
 
@@ -139,6 +143,7 @@ if (initial_help):
 	p0 = [
 					[np.random.uniform(means1[0] -5,  means1[0]+5 ),
 					 np.random.uniform(stds1[0] -0.5, stds1[0]+0.5),
+					 np.random.uniform(2, 3),
 					 np.random.uniform(means2[0] -5,  means2[0]+5 ),
 					 np.random.uniform(stds2[0] -0.5, stds2[0]+0.5)]
 				for i in xrange(nwalkers)]
@@ -179,8 +184,9 @@ else:
 
 model_mu1  = np.median(samples[:,0])
 model_sig1 = np.median(abs(samples[:,1]))
-model_mu2  = np.median(samples[:,2])
-model_sig2 = np.median(abs(samples[:,3]))
+model_w1   = np.median(abs(samples[:,2]))
+model_mu2  = np.median(samples[:,3])
+model_sig2 = np.median(abs(samples[:,4]))
 
 # Taking average of sampled means and sampled stds
 # Can compare that to the mean and std on which the stars were
@@ -189,10 +195,12 @@ model_sig2 = np.median(abs(samples[:,3]))
 print(" ____ GROUP 1 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu1, model_sig1))
 print("'True' mean: {}, 'true' std: {}".format(means1[0], stds1[0]))
+print("With {}% of the stars".format(100.0/(1+model_w1)))
 
 print(" ____ GROUP 2 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu2, model_sig2))
 print("'True' mean: {}, 'true' std: {}".format(means2[0], stds2[0]))
+print("With {}% of the stars".format(100.0/(1+1.0/model_w1)))
 
 
 # Print a list of each star and their predicted group by percentage
@@ -206,9 +214,9 @@ if(print_table):
 		likelihood2 = gaussian_eval(stars[i][0], model_mu2, model_sig2)
 		prob1 = likelihood1 / (likelihood1 + likelihood2) * 100
 		prob2 = likelihood2 / (likelihood1 + likelihood2) * 100
-		if (i < nstars/2) & (prob1 > prob2):
+		if (i < nstars*fraction) & (prob1 > prob2):
 			success_cnt += 1.0
-		if (i >= nstars/2) & (prob1 < prob2):
+		if (i >= nstars*fraction) & (prob1 < prob2):
 			success_cnt += 1.0
 		print("{}\t{:10.2f}%\t{:10.2f}%".format(i, prob1, prob2))
 	print("Success rate of {:6.2f}%".format(success_cnt/nstars * 100))
@@ -237,12 +245,12 @@ if(plotit):
 		pl.title("Stds of group 1")
 		
 		pl.subplot(223)
-		mus = [mu for mu in samples[:,2] if (mu > -30) & (mu < 100)]
+		mus = [mu for mu in samples[:,3] if (mu > -30) & (mu < 100)]
 		pl.hist(mus, nbins)
 		pl.title("Means of group 2")
 
 		pl.subplot(224)
-		sigs = [abs(sig) for sig in samples[:,3] if abs(sig) < 30]
+		sigs = [abs(sig) for sig in samples[:,4] if abs(sig) < 30]
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 2")
 
