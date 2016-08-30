@@ -261,27 +261,47 @@ if(plotit):
 		nbins = 500 
 		# Plotting all sampled means1
 		pl.figure(1)
-		pl.subplot(221)
+		pl.subplot(331)
 		mus = [mu for mu in samples[:,0] if mu > -30 and mu < 100]
 		pl.hist(mus, nbins)
 		pl.title("Means of group 1")
 
 		# Plotting all sampled stds
 		# Need to take the absolute since emcee samples negative sigmas
-		pl.subplot(222)
+		pl.subplot(332)
 		sigs = [abs(sig) for sig in samples[:,1] if abs(sig) < 30]
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 1")
+
+		pl.subplot(333)
+		weights = [1./(1+weight) for weight in samples[:,2]] 
+		pl.hist(weights, nbins)
+		pl.title("Weights of group 1")
 		
-		pl.subplot(223)
+		pl.subplot(334)
 		mus = [mu for mu in samples[:,3] if mu > -30 and mu < 100]
 		pl.hist(mus, nbins)
 		pl.title("Means of group 2")
 
-		pl.subplot(224)
+		pl.subplot(335)
 		sigs = [abs(sig) for sig in samples[:,4] if abs(sig) < 30]
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 2")
+
+		pl.subplot(336)
+		weights = [1./(1+weight) for weight in samples[:,5]] 
+		pl.hist(weights, nbins)
+		pl.title("Weights of group 2")
+
+		pl.subplot(337)
+		mus = [mu for mu in samples[:,6] if mu > -30 and mu < 100]
+		pl.hist(mus, nbins)
+		pl.title("Means of group 3")
+
+		pl.subplot(238)
+		sigs = [abs(sig) for sig in samples[:,7] if abs(sig) < 30]
+		pl.hist(sigs, nbins)
+		pl.title("Stds of group 3")
 
 		pl.savefig("plots/gaussians.png")
 		pl.show()
