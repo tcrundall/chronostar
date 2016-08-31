@@ -49,7 +49,7 @@ def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
     xyzuvw[:,5] = o.W(ts)
     return xyzuvw
  
-def withindist(ra2, de2, d2, maxim, ra1 = 53.45111, de1 = 23.37806, d1 = 0.1362):
+def withindist(ra2, de2, d2, maxim, ra1 = 56.7500, de1 = 24.1167, d1 = 0.1362):
     """Helper function - Determines if one object is within a certain distance
     of another object.
     
@@ -213,8 +213,8 @@ class TraceBack():
             if plotit:
                 cov_end = xyzuvw_cov[i,-1,cov_ix1,cov_ix2]
                 if (np.sqrt(cov_end.trace()) < max_plot_error):
-                    if i in text_ix:
-                        plt.text(xyzuvw[i,0,dim1]*1.1 + xoffset[i],xyzuvw[i,0,dim2]*1.1 + yoffset[i],star['Name'],fontsize=11)
+                    #if i in text_ix:
+                       # plt.text(xyzuvw[i,0,dim1]*1.1 + xoffset[i],xyzuvw[i,0,dim2]*1.1 + yoffset[i],star['Name'],fontsize=11)
                     plt.plot(xyzuvw[i,:,dim1],xyzuvw[i,:,dim2],'b-')
                     plot_cov_ellipse(xyzuvw_cov[i,0,cov_ix1,cov_ix2], [xyzuvw[i,0,dim1],xyzuvw[i,0,dim2]],color='g',alpha=1)
                     plot_cov_ellipse(cov_end, [xyzuvw[i,-1,dim1],xyzuvw[i,-1,dim2]],color='r',alpha=0.2)
