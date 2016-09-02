@@ -77,6 +77,14 @@ def read_stars(infile):
     ----------
     infile: string
         input pickle file
+        
+    Returns
+    -------
+    star_dictionary: dict
+        stars: (nstars) high astropy table including columns as documented in the Traceback class.
+        times: (ntimes) numpy array, containing times that have been traced back, in Myr
+        xyzuvw (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
+        xyzuvw_cov (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
     """
     if len(infile)==0:
         print("Input a filename...")
@@ -101,7 +109,7 @@ def read_stars(infile):
     return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov,xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
 
    
-def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix = 20,return_overlaps=False,\
+def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix = 0,return_overlaps=False,\
     return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False):
     """Compute the log-likelihood for a fit to a group.
 
@@ -153,10 +161,14 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
     ns = len(star_params['stars'])    #Number of stars
     nt = len(times)    #Number of times.
 
-    #See if we have to interpolate in time.
+    #See if we have a time in Myr in the input vector, in which case we have
+    #to interpolate in time. Otherwise, just choose a single time snapshot given 
+    #by the input index t_ix.
     if len(x)>13:
+        #If the input time is outside our range of traceback times, return
+        #zero likelihood.
         if ( (x[13] < min(times)) | (x[13] > max(times))):
-            return -np.inf #-practically_infinity
+            return -np.inf 
         #Linearly interpolate in time to get bs and Bs
         #Note that there is a fast scipy package (in ndimage?) that is good for this.
         ix = np.interp(x[13],times,np.arange(nt))
@@ -166,8 +178,6 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
         cov    = xyzuvw_cov[:,ix0]*(1-frac) + xyzuvw_cov[:,ix0+1]*frac
         Bs     = np.linalg.inv(cov)
         B_dets = np.linalg.det(Bs)
-#        pdb.set_trace()
-#        B_dets = xyzuvw_icov_det[:,ix0]*(1-frac) + xyzuvw_icov_det[:,ix0+1]*frac
     else:
         #Extract the time that we really care about.
         #The result is a (ns,6) array for bs, and (ns,6,6) array for Bs.
@@ -175,7 +185,7 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
         Bs     = xyzuvw_icov[:,t_ix]
         B_dets = xyzuvw_icov_det[:,t_ix]
 
-    #Sanity check inputs for out of bounds...
+    #Sanity check inputs for out of bounds. If so, return zero likelihood.
     if (np.min(x[6:9])<=min_axis):
         if debug:
             print("Positional Variance Too Low...")
@@ -189,15 +199,21 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
             print("Correlations above 1...")
         return -practically_infinity       
 
-    #Create the group_mn and group_cov from x.
+    #Create the group_mn and group_cov from x. This looks a little tricky 
+    #because we're inputting correlations rather than elements of the covariance
+    #matrix.
+    #https://en.wikipedia.org/wiki/Correlation_and_dependence
     x = np.array(x)
     group_mn = x[0:6]
     group_cov = np.eye( 6 )
+    #Fill in correlations
     group_cov[np.tril_indices(3,-1)] = x[10:13]
     group_cov[np.triu_indices(3,1)] = x[10:13]
+    #Convert correlation to covariance for position.
     for i in range(3):
         group_cov[i,:3] *= x[6:9]
         group_cov[:3,i] *= x[6:9]
+    #Convert correlation to covariance for velocity.
     for i in range(3,6):
         group_cov[i,3:] *= x[9]
         group_cov[3:,i] *= x[9]
