@@ -1,12 +1,14 @@
 #PYINCLUDE = /usr/local/python-2.7.1/include/python2.7
-PYINCLUDE = -I/pkg/linux/anaconda/include/python2.7 -I/pkg/linux/anaconda/lib/python2.7/site-packages/numpy/core/include
+#PYINCLUDE = -I/pkg/linux/anaconda/include/python2.7 -I/pkg/linux/anaconda/lib/python2.7/site-packages/numpy/core/include
+PYINCLUDE = -I/opt/apps/intel14/mvapich2_2_0/python/2.7.6/include/python2.7/ -I/home/04345/mireland/.local/lib/python2.7/site-packages/numpy/core/include `gsl-config --cflags`
+GSLLIB = `gsl-config --libs`
 
 all: overlap
 
 _overlap.so: overlap.i
 	swig -python overlap.i
-	gcc -O3 -fPIC -c overlap.c overlap_wrap.c $(PYINCLUDE) -lgsl -lgslcblas -lm
-	ld -shared overlap.o overlap_wrap.o -o _overlap.so -lgsl -lgslcblas -lm
+	gcc -O3 -fPIC -c overlap.c overlap_wrap.c $(PYINCLUDE) 
+	ld -shared overlap.o overlap_wrap.o -o _overlap.so $(GSLLIB)
 #	gcc -I$(PYINCLUDE) -c overlap_wrap.c -o overlap_wrap.o -lgsl -lgslcblas -lm
 #	gcc -I$(PYINCLUDE) -c overlap.c -o overlap.o -lgsl -lgslcblas -lm
 #	gcc -shared -Wl,-O1 -Wl,-Bsymbolic-functions -Wl,-Bsymbolic-functions -Wl,-z,relro overlap_wrap.o overlap.o -o _overlap.so -lgsl -lgslcblas -lm
