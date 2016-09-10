@@ -37,19 +37,19 @@ def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
         from galpy.potential import MWPotential2014        
     """
     vxvv = params.copy()
-    vxvv[2]=1.0/params[2]
+    vxvv[2]=1.0/params[2]   #why???
     o = Orbit(vxvv=vxvv, radec=True, solarmotion='schoenrich')
     o.integrate(ts,MWPotential2014,method='odeint')
     xyzuvw = np.zeros( (len(ts),6) )
     xyzuvw[:,0] = 1e3*(o.x(ts)-lsr_orbit.x(ts))
     xyzuvw[:,1] = 1e3*(o.y(ts)-lsr_orbit.y(ts))
-    xyzuvw[:,2] = 1e3*(o.z(ts))
+    xyzuvw[:,2] = 1e3*(o.z(ts))  #why?? is sun assumed to be constant in Z direction?
     xyzuvw[:,3] = o.U(ts) - lsr_orbit.U(ts)
     xyzuvw[:,4] = o.V(ts) - lsr_orbit.V(ts)
     xyzuvw[:,5] = o.W(ts) - lsr_orbit.W(ts) #NB This line changed !!!
     return xyzuvw
  
-def withindist(ra2, de2, d2, maxim, ra1 = 56.7500, de1 = 24.1167, d1 = 0.1362):
+def withindist(ra2, de2, d2, maxim, ra1 = 53.45111, de1 = 23.37806, d1 = 0.1362):
     """Helper function - Determines if one object is within a certain distance
     of another object.
     
@@ -63,14 +63,24 @@ def withindist(ra2, de2, d2, maxim, ra1 = 56.7500, de1 = 24.1167, d1 = 0.1362):
         The distance limit inkpc: anything outside this is not included
         The other object is hard coded into the function for now i.e Pleiades
     """
-    x1 = d1*np.cos(np.deg2rad(de1))*np.cos(np.deg2rad(ra1))
-    y1 = d1*np.cos(np.deg2rad(de1))*np.sin(np.deg2rad(ra1))
-    z1 = d1*np.sin(np.deg2rad(de1))
-    x2 = d2*np.cos(np.deg2rad(de2))*np.cos(np.deg2rad(ra2))
-    y2 = d2*np.cos(np.deg2rad(de2))*np.sin(np.deg2rad(ra2))
-    z2 = d2*np.sin(np.deg2rad(de2))
+    x1,y1,z1 = spherical_to_cartesian (ra1,de1,d1)
+    x2,y2,z2 = spherical_to_cartesian (ra2,de2,d2)
     d = np.sqrt((x2-x1)**2+(y2-y1)**2+(z2-z1)**2)
     return (d <= maxim) and (d >= 0)
+    
+def spherical_to_cartesian(RA,DE,D):
+    """Helper funtion - Converts from spherical coordinates to cartesian 
+    coordinates
+    
+    Parameters
+    ----------
+    RA,DE: float - Right ascencion and Declination
+    D: float - Distance
+    """
+    x = D*np.cos(np.deg2rad(DE))*np.cos(np.deg2rad(RA))
+    y = D*np.cos(np.deg2rad(DE))*np.sin(np.deg2rad(RA))
+    z = D*np.sin(np.deg2rad(DE))    
+    return (x,y,z)
     
 class TraceBack():
     """A class for tracing back orbits.
@@ -179,6 +189,7 @@ class TraceBack():
                 pmDE = star['pmDE']
                 e_pmDE = star['e_pmDE']
             params = np.array([RAdeg,star['DEdeg'],Plx,pmRA,pmDE,RV])
+            #params = np.append(params,[56.75,24.1167,7.34214,19.17,-44.82,3.503],axis=0) #V value change back to -
             xyzuvw[i] = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
             
             #Create numerical derivatives
@@ -228,7 +239,7 @@ class TraceBack():
             fp = open(savefile,'w')
             pickle.dump((stars,times,xyzuvw,xyzuvw_cov),fp)
             fp.close()
-
+        
 def traceback2(params,times):
     """Trace forward a cluster. First column of returned array is the position of the cluster at a given age.
 
@@ -237,7 +248,13 @@ def traceback2(params,times):
     times: float array
         Times to trace forward, in Myr. Note that positive numbers are going forward in time.
     params: float array
-        xyzuvw for a cluster
+        [RA,DE,Plx,PM(RA),PM(DE),RV]
+        RA = Right Ascension (Deg)
+        DE = Declination (Deg)
+        Plx = Paralax (Mas)
+        PM(RA) = Proper motion (Right Ascension) (mas/yr)
+        PM(DE) = Proper motion (Declination) (mas/yr)
+        RV = Radial Velocity (km/s)
     age: Age of cluster, in Myr
     """
     #Times in Myr

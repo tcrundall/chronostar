@@ -363,7 +363,8 @@ def lnprob_one_cluster(x, star_params, use_swig=False, return_overlaps=False, \
 def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.327,-11.427, -6.527, \
     10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589]),\
         nwalkers=100,nchain=1000,nburn=200, return_sampler=False,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=True):
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=True, \
+        plotit=False):
     """Fit a single group, using a affine invariant Monte-Carlo Markov chain.
     
     Parameters
@@ -416,9 +417,10 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
 
     #Run...
     sampler.run_mcmc(pos, nchain)
-    plt.figure(1)
-    plt.clf()
-    plt.plot(sampler.lnprobability.T)
+    if plotit:
+        plt.figure(1)
+        plt.clf()
+        plt.plot(sampler.lnprobability.T)
 
     #Best Model
     best_ix = np.argmax(sampler.flatlnprobability)
@@ -433,9 +435,10 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
     print("Mean acceptance fraction: {0:.3f}"
                     .format(np.mean(sampler.acceptance_fraction)))
 
-    plt.figure(2)       
-    plt.clf()         
-    plt.hist(sampler.chain[:,:,-1].flatten(),20)
+    if plotit:
+        plt.figure(2)       
+        plt.clf()         
+        plt.hist(sampler.chain[:,:,-1].flatten(),20)
     
     #pdb.set_trace()
     
