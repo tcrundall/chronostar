@@ -46,7 +46,7 @@ def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
     xyzuvw[:,2] = 1e3*(o.z(ts))
     xyzuvw[:,3] = o.U(ts) - lsr_orbit.U(ts)
     xyzuvw[:,4] = o.V(ts) - lsr_orbit.V(ts)
-    xyzuvw[:,5] = o.W(ts)
+    xyzuvw[:,5] = o.W(ts) - lsr_orbit.W(ts) #NB This line changed !!!
     return xyzuvw
  
 def withindist(ra2, de2, d2, maxim, ra1 = 56.7500, de1 = 24.1167, d1 = 0.1362):
