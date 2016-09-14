@@ -125,6 +125,7 @@ def lnprob(pars, stars):
 		for j in range(ngroups - 1):
 			gaus_sum += 1.0/(1+abs(weights[j])) *  \
 									 gaussian_eval(stars[i][0], mus[j], sigs[j])
+
 		final_weight = 1 / (1 - sum([1./(1+w) for w in weights]))
 		gaus_sum += 1.0/(1+abs(final_weight)) *  \
 						gaussian_eval(stars[i][0], mus[ngroups-1], sigs[ngroups-1])
@@ -259,6 +260,8 @@ if(plotit):
 		print("Try installing matplotlib to generate some sweet plots...")
 	else:
 		nbins = 500 
+		pl.figure(1)
+
 		# Plotting all sampled means1
 		pl.figure(1)
 		pl.subplot(331)
@@ -266,39 +269,45 @@ if(plotit):
 		pl.hist(mus, nbins)
 		pl.title("Means of group 1")
 
-		# Plotting all sampled stds
+		# Plotting all sampled stds1
 		# Need to take the absolute since emcee samples negative sigmas
 		pl.subplot(332)
 		sigs = [abs(sig) for sig in samples[:,1] if abs(sig) < 30]
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 1")
 
+		# Weights of group 1
 		pl.subplot(333)
 		weights = [1./(1+weight) for weight in samples[:,2]] 
 		pl.hist(weights, nbins)
 		pl.title("Weights of group 1")
 		
+		# Means of group 2
 		pl.subplot(334)
 		mus = [mu for mu in samples[:,3] if mu > -30 and mu < 100]
 		pl.hist(mus, nbins)
 		pl.title("Means of group 2")
 
+		# Stds of group 2
 		pl.subplot(335)
 		sigs = [abs(sig) for sig in samples[:,4] if abs(sig) < 30]
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 2")
 
+		# Weights of group 2
 		pl.subplot(336)
 		weights = [1./(1+weight) for weight in samples[:,5]] 
 		pl.hist(weights, nbins)
 		pl.title("Weights of group 2")
 
+		# Means of group 3 
 		pl.subplot(337)
 		mus = [mu for mu in samples[:,6] if mu > -30 and mu < 100]
 		pl.hist(mus, nbins)
 		pl.title("Means of group 3")
 
-		pl.subplot(238)
+		# Stds of group 3 
+		pl.subplot(338)
 		sigs = [abs(sig) for sig in samples[:,7] if abs(sig) < 30]
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 3")
