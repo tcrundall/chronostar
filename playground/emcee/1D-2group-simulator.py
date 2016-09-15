@@ -73,10 +73,10 @@ if (reorder_samples):
 
 # Simulating 2 groups as [ndim]-dimensional Gaussian...
 # ... with hard coded mean position with pos in pc and vel in km/s
-means = [[20.0], [40.0], [70.0]]
+means = [[20.0], [0.0], [70.0]]
 
 # ... and some standard deviations
-stds = [[1.0], [1.0], [3.0]]
+stds = [[5.0], [100.0], [20.0]]
 
 # Cumulative fraction of stars in groups
 # i.e. [0, .25, 1.] means 25% of stars in group 1 and 75% in group 2
@@ -117,7 +117,7 @@ def lnprob(pars, stars):
 	nstars = stars.size
 	mus     = pars[0::3]
 	sigs    = pars[1::3]
-	weights = pars[2::3]
+	weights = abs(pars[2::3])
 	sumlnprob = 0
 
 	for i in range(nstars):
@@ -137,6 +137,14 @@ def lnprob(pars, stars):
 #		gaus_sum += 1.0/(1+abs(final_weight)) *  \
 #						gaussian_eval(stars[i][0], mus[ngroups-1], sigs[ngroups-1])
 		sumlnprob += np.log(gaus_sum)
+	
+	if math.isnan(sumlnprob):
+		print("Got a bad'un")
+		print(stars)
+		print(gaus_sum)
+		print(A)
+		print(B)
+		print(1-A-B)
 
 	return sumlnprob
 
@@ -147,6 +155,7 @@ def lnprob(pars, stars):
 # CURRENTLY BROKEN FOR WEIGHTINGS!!!
 def align_samples(samples):
 	new_samples = []
+
 	for sample in samples:
 		if sample[0] <= sample[2]:
 			new_samples.append(sample)
@@ -201,9 +210,11 @@ print("Autocorrelation time:", sampler.get_autocorr_time())
 # into an npar*X array where npar is the number of parameters required
 # to specify one position, and X is the number of instances
 if(reorder_samples):
-	samples = np.array(align_samples(sampler.chain[:, burninsteps:, :].reshape((-1, npar))))
+	samples = np.array(align_samples(sampler.chain[:, :, :].reshape((-1, npar))))
+	#samples = np.array(align_samples(sampler.chain[:, burninsteps:, :].reshape((-1, npar))))
 else:
-	samples = np.array(sampler.chain[:, burninsteps:, :].reshape((-1, npar)))
+	samples = np.array(sampler.chain[:, :, :].reshape((-1, npar)))
+	#samples = np.array(sampler.chain[:, burninsteps:, :].reshape((-1, npar)))
 
 model_mu1  = np.median(samples[:,0])
 model_sig1 = np.median(abs(samples[:,1]))
@@ -238,12 +249,43 @@ print(" ____ GROUP 3 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu3, model_sig3))
 print("'True' mean: {}, 'true' std: {}".format(means[2][0], stds[2][0]))
 print("With {}% of the stars".format(C))
+#
+#b_samp_ind = sampler.flatlnprobability.argmax()
+#print("Shape of flatlnprob: {}".format(sampler.flatlnprobability.shape))
+#print("Shape of samples: {}".format(samples.shape))
+#print("Index: {}".format(b_samp_ind))
+#b_samp = samples[b_samp_ind]
+#
+#print("b_samp: {}".format(b_samp))
+#
+#print("with logprob of: {}".format(lnprob(b_samp, stars)))
+#print("as opposed to... : {}".format(lnprob(samples[30], stars)))
+#
+#A = 100.0/(1+b_samp[3] + 1.0/b_samp[6])
+#B = 100.0/(1+1.0/b_samp[3] + b_samp[6])
+#C = 100.0 - A - B
+#
+#print(" ____ GROUP 1 _____ ")
+#print("Modelled mean: {}, modelled std: {}".format(b_samp[0],  b_samp[1]))
+#print("'True' mean: {}, 'true' std: {}".format(means[0][0], stds[0][0]))
+#print("With {}% of the stars".format(A))
+#
+#print(" ____ GROUP 2 _____ ")
+#print("Modelled mean: {}, modelled std: {}".format(b_samp[2], b_samp[3]))
+#print("'True' mean: {}, 'true' std: {}".format(means[1][0], stds[1][0]))
+#print("With {}% of the stars".format(B))
+#
+#print(" ____ GROUP 3 _____ ")
+#print("Modelled mean: {}, modelled std: {}".format(b_samp[5], b_samp[6]))
+#print("'True' mean: {}, 'true' std: {}".format(means[2][0], stds[2][0]))
+#print("With {}% of the stars".format(C))
+#
 
 # Print a list of each star and their predicted group by percentage
 # also print the success rate - the number of times a probability > 50 %
 # is reported for the correct group
 if(print_table):
-	print("Star #\tGroup 1\tGroup 2")
+	print("Star #\tGroup 1\tGroup 2\tGroup 3")
 	success_cnt = 0.0
 	for i, star in enumerate(stars):
 		likelihood1 = gaussian_eval(stars[i][0], model_mu1, model_sig1)
@@ -260,7 +302,7 @@ if(print_table):
 		if i >= nstars*cum_fracs[2] \
 				and prob1<prob3 and prob2<prob3:
 			success_cnt += 1.0
-		print("{}\t{:10.2f}%\t{:10.2f}%\t{:10.2f}%".format(i, prob1, prob2, prob3))
+		print("{}\t{:5.2f}%\t{:5.2f}%\t{:5.2f}%".format(i, prob1, prob2, prob3))
 	print("Success rate of {:6.2f}%".format(success_cnt/nstars * 100))
 
 # Finally, you can plot the porjected histograms of the samples using
@@ -271,6 +313,13 @@ if(plotit):
 	except ImportError:
 		print("Try installing matplotlib to generate some sweet plots...")
 	else:
+
+		#calculating percentages from weights:
+		weights_zip = zip(abs(samples[:,2]), abs(samples[:,5]))
+		perc1 = np.array([100/(1+x+1/y) for (x,y) in weights_zip])
+		perc2 = np.array([100/(1+1/x+y) for (x,y) in weights_zip])
+		perc3 = 100 - perc1 - perc2
+
 		nbins = 500 
 		pl.figure(1)
 
@@ -288,11 +337,10 @@ if(plotit):
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 1")
 
-		# Weights of group 1
+		# Percentages of group 1
 		pl.subplot(333)
-		weights = [1./(1+abs(weight)) for weight in samples[:,2]] 
-		pl.hist(weights, nbins)
-		pl.title("Weights of group 1")
+		pl.hist(perc1, nbins)
+		pl.title("Percentages of group 1")
 		
 		# Means of group 2
 		pl.subplot(334)
@@ -306,11 +354,10 @@ if(plotit):
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 2")
 
-		# Weights of group 2
+		# Percentages of group 2
 		pl.subplot(336)
-		weights = [1./(1+abs(weight)) for weight in samples[:,5]] 
-		pl.hist(weights, nbins)
-		pl.title("Weights of group 2")
+		pl.hist(perc2, nbins)
+		pl.title("Percentages of group 2")
 
 		# Means of group 3 
 		pl.subplot(337)
@@ -320,9 +367,14 @@ if(plotit):
 
 		# Stds of group 3 
 		pl.subplot(338)
-		sigs = [abs(sig) for sig in samples[:,7] if abs(sig) < 30]
+		sigs = [abs(sig) for sig in samples[:,7] if abs(sig) < 100]
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 3")
+
+		# Percentages of group 3
+		pl.subplot(339)
+		pl.hist(perc3, nbins)
+		pl.title("Percentages of group 3")
 
 		pl.savefig("plots/gaussians.png")
 		pl.show()
