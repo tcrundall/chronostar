@@ -122,14 +122,22 @@ def lnprob(pars, stars):
 
 	for i in range(nstars):
 		gaus_sum = 0
-		for j in range(ngroups - 1):
-			gaus_sum += 1.0/(1+abs(weights[j])) *  \
-									 gaussian_eval(stars[i][0], mus[j], sigs[j])
+		A = 1 / (1 + weights[0] + 1/weights[1])
+		B =  1 / (1 + 1/weights[0] + weights[1])
+		gaus_sum += A * gaussian_eval(stars[i][0], mus[0], sigs[0])
 
-		final_weight = 1 / (1 - sum([1./(1+w) for w in weights]))
-		gaus_sum += 1.0/(1+abs(final_weight)) *  \
-						gaussian_eval(stars[i][0], mus[ngroups-1], sigs[ngroups-1])
+		gaus_sum += B * gaussian_eval(stars[i][0], mus[1], sigs[1])
+
+		gaus_sum += (1-A-B)*gaussian_eval(stars[i][0], mus[2], sigs[2]) 
+#		for j in range(ngroups - 1):
+#			gaus_sum += 1.0/(1+abs(weights[j])) *  \
+#									 gaussian_eval(stars[i][0], mus[j], sigs[j])
+
+#		final_weight = 1 / (1 - sum([1./(1+w) for w in weights]))
+#		gaus_sum += 1.0/(1+abs(final_weight)) *  \
+#						gaussian_eval(stars[i][0], mus[ngroups-1], sigs[ngroups-1])
 		sumlnprob += np.log(gaus_sum)
+
 	return sumlnprob
 
 # Takes in [nstars][npar] array where each row is a sample and orders each
@@ -212,20 +220,24 @@ model_w3   = 100.0/(1+1.0/model_w1+1.0/model_w2)
 # Can compare that to the mean and std on which the stars were
 # actually formulated
 
+A = 100.0/(1+model_w1+1.0/model_w2)
+B = 100.0/(1+1.0/model_w1+model_w2)
+C = 100.0 - A - B
+
 print(" ____ GROUP 1 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu1, model_sig1))
 print("'True' mean: {}, 'true' std: {}".format(means[0][0], stds[0][0]))
-print("With {}% of the stars".format(100.0/(1+model_w1)))
+print("With {}% of the stars".format(A))
 
 print(" ____ GROUP 2 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu2, model_sig2))
 print("'True' mean: {}, 'true' std: {}".format(means[1][0], stds[1][0]))
-print("With {}% of the stars".format(100.0/(1/model_w2)))
+print("With {}% of the stars".format(B))
 
 print(" ____ GROUP 3 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu3, model_sig3))
 print("'True' mean: {}, 'true' std: {}".format(means[2][0], stds[2][0]))
-print("With {}% of the stars".format(model_w3))
+print("With {}% of the stars".format(C))
 
 # Print a list of each star and their predicted group by percentage
 # also print the success rate - the number of times a probability > 50 %
@@ -278,7 +290,7 @@ if(plotit):
 
 		# Weights of group 1
 		pl.subplot(333)
-		weights = [1./(1+weight) for weight in samples[:,2]] 
+		weights = [1./(1+abs(weight)) for weight in samples[:,2]] 
 		pl.hist(weights, nbins)
 		pl.title("Weights of group 1")
 		
@@ -296,7 +308,7 @@ if(plotit):
 
 		# Weights of group 2
 		pl.subplot(336)
-		weights = [1./(1+weight) for weight in samples[:,5]] 
+		weights = [1./(1+abs(weight)) for weight in samples[:,5]] 
 		pl.hist(weights, nbins)
 		pl.title("Weights of group 2")
 
