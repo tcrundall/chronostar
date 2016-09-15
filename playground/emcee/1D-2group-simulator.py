@@ -49,7 +49,7 @@ args = parser.parse_args()
 # Setting parameters
 print_table = args.table # Display a pretty table with sstars and their groups
 plotit = args.plot      # Will plot some pretty graphs at end
-initial_help = True		  # If walkers are initialised around desired result
+initial_help = True # If walkers are initialised around desired result
 reorder_samples = args.order # If final sample parameters are reordered
 nstars = int(args.s)
 nwalkers = int(args.w)
@@ -76,7 +76,7 @@ if (reorder_samples):
 means = [[20.0], [0.0], [70.0]]
 
 # ... and some standard deviations
-stds = [[5.0], [100.0], [20.0]]
+stds = [[5.0], [5.0], [5.0]]
 
 # Cumulative fraction of stars in groups
 # i.e. [0, .25, 1.] means 25% of stars in group 1 and 75% in group 2
@@ -121,31 +121,14 @@ def lnprob(pars, stars):
 	sumlnprob = 0
 
 	for i in range(nstars):
-		gaus_sum = 0
 		A = 1 / (1 + weights[0] + 1/weights[1])
 		B =  1 / (1 + 1/weights[0] + weights[1])
-		gaus_sum += A * gaussian_eval(stars[i][0], mus[0], sigs[0])
+		gaus_sum = ( A * gaussian_eval(stars[i][0], mus[0], sigs[0])
+						   + B * gaussian_eval(stars[i][0], mus[1], sigs[1])
+							 + (1-A-B)*gaussian_eval(stars[i][0], mus[2], sigs[2]) )
 
-		gaus_sum += B * gaussian_eval(stars[i][0], mus[1], sigs[1])
-
-		gaus_sum += (1-A-B)*gaussian_eval(stars[i][0], mus[2], sigs[2]) 
-#		for j in range(ngroups - 1):
-#			gaus_sum += 1.0/(1+abs(weights[j])) *  \
-#									 gaussian_eval(stars[i][0], mus[j], sigs[j])
-
-#		final_weight = 1 / (1 - sum([1./(1+w) for w in weights]))
-#		gaus_sum += 1.0/(1+abs(final_weight)) *  \
-#						gaussian_eval(stars[i][0], mus[ngroups-1], sigs[ngroups-1])
 		sumlnprob += np.log(gaus_sum)
 	
-	if math.isnan(sumlnprob):
-		print("Got a bad'un")
-		print(stars)
-		print(gaus_sum)
-		print(A)
-		print(B)
-		print(1-A-B)
-
 	return sumlnprob
 
 # Takes in [nstars][npar] array where each row is a sample and orders each
@@ -154,16 +137,35 @@ def lnprob(pars, stars):
 # Hardcoded for 2D
 # CURRENTLY BROKEN FOR WEIGHTINGS!!!
 def align_samples(samples):
+	print("Samples: {}".format(samples))
+
 	new_samples = []
+	
+	weights_zip = zip(abs(samples[:,2]), abs(samples[:,5]))
+	perc1 = np.array([100/(1+x+1/y) for (x,y) in weights_zip])
+	perc2 = np.array([100/(1+1/x+y) for (x,y) in weights_zip])
+	perc3 = 100 - perc1 - perc2
 
-	for sample in samples:
-		if sample[0] <= sample[2]:
-			new_samples.append(sample)
-		else:
-			new_sample = [sample[2], sample[3], sample[0], sample[1]]
-			new_samples.append(new_sample)
-	return np.array(new_samples)
+	temp_sampl = np.array( zip(samples[:,0], samples[:,1], perc1,
+									samples[:,3], samples[:,4], perc2,
+									samples[:,6], samples[:,7], perc3) )
 
+	print("Temp_samp")
+	print(temp_sampl)
+
+	tnw_trans = temp_sampl.reshape(-1,3,3)
+
+	print("Before sorting")
+	print(tnw_trans)
+	tnw_trans.sort(axis=1)
+
+	print("after sorting")
+	print(tnw_trans)
+	print("result:")
+	result = tnw_trans.reshape(-1,9)
+	print(result)
+
+	return tnw_trans.reshape(-1,9)
 
 # Choose an intial set of gaussian parameters for the walkers.
 # They are 'helped' by being given a similar mean and std
@@ -218,37 +220,37 @@ else:
 
 model_mu1  = np.median(samples[:,0])
 model_sig1 = np.median(abs(samples[:,1]))
-model_w1   = np.median(abs(samples[:,2]))
+model_p1   = np.median(samples[:,2])
 model_mu2  = np.median(samples[:,3])
 model_sig2 = np.median(abs(samples[:,4]))
-model_w2   = np.median(abs(samples[:,5]))
+model_p2   = np.median(samples[:,5])
 model_mu3  = np.median(samples[:,6])
 model_sig3 = np.median(abs(samples[:,7]))
-model_w3   = 100.0/(1+1.0/model_w1+1.0/model_w2)
+model_p3   = np.median(samples[:,8])
 
 
 # Taking average of sampled means and sampled stds
 # Can compare that to the mean and std on which the stars were
 # actually formulated
 
-A = 100.0/(1+model_w1+1.0/model_w2)
-B = 100.0/(1+1.0/model_w1+model_w2)
-C = 100.0 - A - B
+#A = 100.0/(1+model_w1+1.0/model_w2)
+#B = 100.0/(1+1.0/model_w1+model_w2)
+#C = 100.0 - A - B
 
 print(" ____ GROUP 1 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu1, model_sig1))
 print("'True' mean: {}, 'true' std: {}".format(means[0][0], stds[0][0]))
-print("With {}% of the stars".format(A))
+print("With {}% of the stars".format(model_p1))
 
 print(" ____ GROUP 2 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu2, model_sig2))
 print("'True' mean: {}, 'true' std: {}".format(means[1][0], stds[1][0]))
-print("With {}% of the stars".format(B))
+print("With {}% of the stars".format(model_p2))
 
 print(" ____ GROUP 3 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu3, model_sig3))
 print("'True' mean: {}, 'true' std: {}".format(means[2][0], stds[2][0]))
-print("With {}% of the stars".format(C))
+print("With {}% of the stars".format(model_p3))
 #
 #b_samp_ind = sampler.flatlnprobability.argmax()
 #print("Shape of flatlnprob: {}".format(sampler.flatlnprobability.shape))
@@ -313,13 +315,13 @@ if(plotit):
 	except ImportError:
 		print("Try installing matplotlib to generate some sweet plots...")
 	else:
-
-		#calculating percentages from weights:
-		weights_zip = zip(abs(samples[:,2]), abs(samples[:,5]))
-		perc1 = np.array([100/(1+x+1/y) for (x,y) in weights_zip])
-		perc2 = np.array([100/(1+1/x+y) for (x,y) in weights_zip])
-		perc3 = 100 - perc1 - perc2
-
+#
+#		#calculating percentages from weights:
+#		weights_zip = zip(abs(samples[:,2]), abs(samples[:,5]))
+#		perc1 = np.array([100/(1+x+1/y) for (x,y) in weights_zip])
+#		perc2 = np.array([100/(1+1/x+y) for (x,y) in weights_zip])
+#		perc3 = 100 - perc1 - perc2
+#
 		nbins = 500 
 		pl.figure(1)
 
@@ -339,7 +341,7 @@ if(plotit):
 
 		# Percentages of group 1
 		pl.subplot(333)
-		pl.hist(perc1, nbins)
+		pl.hist(samples[:,2], nbins)
 		pl.title("Percentages of group 1")
 		
 		# Means of group 2
@@ -356,7 +358,7 @@ if(plotit):
 
 		# Percentages of group 2
 		pl.subplot(336)
-		pl.hist(perc2, nbins)
+		pl.hist(samples[:,5], nbins)
 		pl.title("Percentages of group 2")
 
 		# Means of group 3 
@@ -373,7 +375,7 @@ if(plotit):
 
 		# Percentages of group 3
 		pl.subplot(339)
-		pl.hist(perc3, nbins)
+		pl.hist(samples[:,8], nbins)
 		pl.title("Percentages of group 3")
 
 		pl.savefig("plots/gaussians.png")
