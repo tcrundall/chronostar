@@ -70,8 +70,8 @@ tb.traceback(times,xoffset=xoffset, max_plot_error=150, yoffset=yoffset, axis_ra
 plt_COM = traceback.traceback2(centre_pl,times)
 plt.plot(plt_COM[:,dim1],plt_COM[:,dim2],'co')
 #Simbad - Cyan line
-#plt_simbad = traceback.traceback2(pl_from_simbad,times)
-#plt.plot(plt_simbad[:,dim1],plt_simbad[:,dim2],'co')
+plt_simbad = traceback.traceback2(pl_from_simbad,times)
+plt.plot(plt_simbad[:,dim1],plt_simbad[:,dim2],'co')
 
 
 plt.savefig('plot.png')
