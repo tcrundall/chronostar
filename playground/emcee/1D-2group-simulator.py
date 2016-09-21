@@ -100,7 +100,7 @@ def gaussian_eval(x, mu, sig):
 
 # The prior, used to set bounds on the walkers
 def lnprior(pars):
-	mu1, sig1, w1, mu2, sig2, w2, mu3 sig3 = pars
+	mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
 	if		-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and 10.0 < w1 < 80.0 \
 		and	-100 < mu2 < 100 and 0.0 < sig2 < 100.0 and 10.0 < w2 < 80.0 \
 		and	-100 < mu1 < 100 and 0.0 < sig1 < 100.0:
@@ -128,7 +128,7 @@ def lnprob(pars, stars):
 	nstars = stars.size
 	mus     = pars[0::3]
 	sigs    = pars[1::3]
-	ws = abs(pars[2::3])
+	weights = abs(pars[2::3])
 	sumlnlike = 0
 
 	for i in range(nstars):
