@@ -78,11 +78,11 @@ if (reorder_samples):
 means = [-20.0, 30.0, 100.0]
 
 # ... and some standard deviations
-stds = [15.0, 10.0, 5.0]
+stds = [10.0, 7.0, 5.0]
 
 # Cumulative fraction of stars in groups
 # i.e. [0, .25, 1.] means 25% of stars in group 1 and 75% in group 2
-cum_fracs = [0.0, 0.4, 0.5, 1.]
+cum_fracs = [0.0, 0.5, 0.75, 1.]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
 # means and standard devs
@@ -164,7 +164,7 @@ def align_samples(samples):
 	# Sort each sample by the mean of each modelled group
 	#temp = temp[np.argsort(temp[:, 0])]
 # HERE IS THE BUG!!!!! FIX ASAP!!!!
-	temp.sort(axis=1)
+	temp = np.array([sorted(mat, key=lambda t: t[0]) for mat in temp])
 	res = temp.reshape(-1,9)
 	return res
 
