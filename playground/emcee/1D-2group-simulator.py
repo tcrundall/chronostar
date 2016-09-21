@@ -99,10 +99,10 @@ def gaussian_eval(x, mu, sig):
 
 # The prior, used to set bounds on the walkers
 def lnprior(pars):
-	mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
-	if		-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and 5.0 < w1 < 80.0 \
-		and	-100 < mu2 < 100 and 0.0 < sig2 < 100.0 and 5.0 < w2 < 80.0 \
-		and	-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and (w1+w2) < 95.0:
+	mu1, sig1, w2, mu2, sig2, w1, mu3, sig3 = pars
+	if		-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and 5.0 < w2 < 80.0 \
+		and	-100 < mu2 < 100 and 0.0 < sig2 < 100.0 and 5.0 < w1 < 80.0 \
+		and	-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and (w2+w1) < 95.0:
 		return 0.0
 	return -np.inf 
 
@@ -125,13 +125,13 @@ def lnprior(pars):
 
 def lnlike(pars, stars):
 	nstars = stars.size
-	mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
+	mu1, sig1, w2, mu2, sig2, w1, mu3, sig3 = pars
 	sumlnlike = 0
 
-	for i in range(nstars):
+	for i in range(nstars): #SWAPPED W2 AND W1!!!
 		gaus_sum = ( w1 * gaussian_eval(stars[i], mu1, sig1)
 						   + w2 * gaussian_eval(stars[i], mu2, sig2)
-							 + (100-w1-w2)*gaussian_eval(stars[i], mu3, sig3) )
+							 + (100-w1-w2) * gaussian_eval(stars[i], mu3, sig3) )
 
 		sumlnlike += np.log(gaus_sum)
 	
@@ -149,20 +149,22 @@ def lnprob(pars, stars):
 # sample's parameter sets such that the parameters representing groups are
 # listed in ascending order of means
 # Hardcoded for 3D
-# It does this by turning each row of 8 parameters into a 3x3 matrix
-#  creating a 9th element based of the 3rd and 6th, and then sorts each
-#	matrix by row, before converting back into a single row array of length 9
 def align_samples(samples):
+	# Calculating the weighting of the 3rd group, which until now
+	# has been implicitly defined through w2 and w1
 	w3 = 100 - samples[:,2] - samples[:,5] 
 
-	temp_sampl = np.array( zip(samples[:,0], samples[:,1], samples[:,2],
-									samples[:,3], samples[:,4], samples[:,5],
-									samples[:,6], samples[:,7], w3) )
+	# Append the new weighting to the end of each row
+	temp = np.concatenate((samples, w3.T.reshape(-1,1)), axis=1)
 
-	tnw_trans = temp_sampl.reshape(-1,3,3)
-	tnw_trans.sort(axis=1)
-	result = tnw_trans.reshape(-1,9)
-	return tnw_trans.reshape(-1,9)
+	# Rearrange each sample into a 3x3 matrix where the extra dimension
+	# is for each modelled group
+	temp = temp.reshape(-1,3,3)
+
+	# Sort each sample by the mean of each modelled group
+	temp.sort(axis=1)
+	res = temp.reshape(-1,9)
+	return res
 
 # Choose an intial set of gaussian parameters for the walkers.
 # They are 'helped' by being given a similar mean and std
@@ -181,7 +183,7 @@ if (initial_help):
 else:
 	# Walkers aren't initialised around the vicinity of the groups
 	# It is important that stds are not initialised to 0
-	p0 = [np.random.uniform(10,60, [npar]) for i in xrange(nwalkers)]
+	p0 = [np.random.uniform(10, 60, [npar]) for i in xrange(nwalkers)]
 
 # Initialise the sampler with the chosen specs, run burn-in steps and start
 # sampling
@@ -233,6 +235,9 @@ print(" ____ GROUP 3 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu3, model_sig3))
 print("'True' mean: {}, 'true' std: {}".format(means[2], stds[2]))
 print("With {}% of the stars".format(model_p3))
+
+print()
+print("Cumulative fractions for reference:\n{}".format(cum_fracs))
 
 # Print a list of each star and their predicted group by percentage
 # also print the success rate - the number of times a star's membership
