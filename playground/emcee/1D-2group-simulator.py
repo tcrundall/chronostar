@@ -60,7 +60,7 @@ ndim = 1								# number of phys. dim. being looked at, max 6
 ngroups = 3
 npar = ngroups*3 - 1		# Number of param. required to define a sample
 												# 3 params. per group per dim mean, stdev and weight
-burninsteps = args.b	  # Number of burn in steps
+burninsteps = int(args.b)	  # Number of burn in steps
 samplingsteps = int(args.p)	# Number of sampling steps
 
 # Useful runtime information
@@ -73,12 +73,12 @@ if (print_table):
 if (reorder_samples):
 	print("Each sample will have its paramaters made to be ascending...")
 
-# Simulating 2 groups as [ndim]-dimensional Gaussian...
+# Simulating 3 groups as 1-dimensional Gaussian...
 # ... with hard coded mean position with pos in pc and vel in km/s
-means = [[0.0], [20.0], [70.0]]
+means = [0.0, 20.0, 70.0]
 
 # ... and some standard deviations
-stds = [[5.0], [8.0], [2.0]]
+stds = [5.0, 8.0, 2.0]
 
 # Cumulative fraction of stars in groups
 # i.e. [0, .25, 1.] means 25% of stars in group 1 and 75% in group 2
@@ -86,11 +86,10 @@ cum_fracs = [0.0, 0.1, 0.3, 1.]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
 # means and standard devs
-stars = np.zeros((nstars,ndim))
+stars = np.zeros(nstars)
 for h in range(ngroups):
 	for i in range(int(nstars*cum_fracs[h]), int(nstars*cum_fracs[h+1])):
-		for j in range(ndim):
-			stars[i][j] = np.random.normal(means[h][j], stds[h][j])
+		stars[i] = np.random.normal(means[h], stds[h])
 
 # Gaussian helper function
 def gaussian_eval(x, mu, sig):
@@ -130,9 +129,9 @@ def lnlike(pars, stars):
 	sumlnlike = 0
 
 	for i in range(nstars):
-		gaus_sum = ( w1 * gaussian_eval(stars[i][0], mu1, sig1)
-						   + w2 * gaussian_eval(stars[i][0], mu2, sig2)
-							 + (100-w1-w2)*gaussian_eval(stars[i][0], mu3, sig3) )
+		gaus_sum = ( w1 * gaussian_eval(stars[i], mu1, sig1)
+						   + w2 * gaussian_eval(stars[i], mu2, sig2)
+							 + (100-w1-w2)*gaussian_eval(stars[i], mu3, sig3) )
 
 		sumlnlike += np.log(gaus_sum)
 	
@@ -154,13 +153,6 @@ def lnprob(pars, stars):
 #  creating a 9th element based of the 3rd and 6th, and then sorts each
 #	matrix by row, before converting back into a single row array of length 9
 def align_samples(samples):
-	print("Samples: {}".format(samples))
-
-	new_samples = []
-	
-#	weights_zip = zip(abs(samples[:,2]), abs(samples[:,5]))
-#	perc1 = np.array([70/(1+x+1/y) + 10 for (x,y) in weights_zip])
-#	perc2 = np.array([70/(1+1/x+y) + 10 for (x,y) in weights_zip])
 	w3 = 100 - samples[:,2] - samples[:,5] 
 
 	temp_sampl = np.array( zip(samples[:,0], samples[:,1], samples[:,2],
@@ -177,31 +169,25 @@ def align_samples(samples):
 if (initial_help):
 	# Walkers are initialised around the vicinity of the groups
 	p0 = [
-					[np.random.uniform(means[0][0] -5,  means[0][0]+5 ),
-					 np.random.uniform(stds[0][0] -0.5, stds[0][0]+0.5),
+					[np.random.uniform(means[0] -5,  means[0]+5 ),
+					 np.random.uniform(stds[0] -0.5, stds[0]+0.5),
 					 np.random.uniform(2, 3),
-					 np.random.uniform(means[1][0] -5,  means[1][0]+5 ),
-					 np.random.uniform(stds[1][0] -0.5, stds[1][0]+0.5),
+					 np.random.uniform(means[1] -5,  means[1]+5 ),
+					 np.random.uniform(stds[1] -0.5, stds[1]+0.5),
 					 np.random.uniform(2, 3),
-					 np.random.uniform(means[2][0] -5,  means[2][0]+5 ),
-					 np.random.uniform(stds[2][0] -0.5, stds[2][0]+0.5)]
+					 np.random.uniform(means[2] -5,  means[2]+5 ),
+					 np.random.uniform(stds[2] -0.5, stds[2]+0.5)]
 				for i in xrange(nwalkers)]
 else:
 	# Walkers aren't initialised around the vicinity of the groups
 	# It is important that stds are not initialised to 0
 	p0 = [np.random.uniform(10,60, [npar]) for i in xrange(nwalkers)]
 
-# Initialise the sampler with the chosen specs.
+# Initialise the sampler with the chosen specs, run burn-in steps and start
+# sampling
 sampler = emcee.EnsembleSampler(nwalkers, npar, lnprob, args=[stars])
-
-# Run 100 steps as burn-in.
 pos, prob, state = sampler.run_mcmc(p0, burninsteps)
-
-# Reset the chain to remove the burn-in samples.
 sampler.reset()
-
-# Starting from the final position of the burn-in chain, smaple for 1000
-# steps.
 sampler.run_mcmc(pos, samplingsteps, rstate0=state)
 
 # Print out the mean acceptance fraction. In general, acceptance_fraction
@@ -209,98 +195,65 @@ sampler.run_mcmc(pos, samplingsteps, rstate0=state)
 # vector.
 print("Mean acceptance fraction:", np.mean(sampler.acceptance_fraction))
 
-# Estimate the integrated autocorrelation time for th eitme series in each
+# Estimate the integrated autocorrelation time for the time series in each
 # paramter.
 print("Autocorrelation time:", sampler.get_autocorr_time())
 
-# Removes the first 100 iterations of each walker and reshapes
-# into an npar*X array where npar is the number of parameters required
-# to specify one position, and X is the number of instances
+# Reshapes each chain into an npar*X array where npar is the number of 
+# parameters required to specify one position, and X is the number of instances
 if(reorder_samples):
 	samples = np.array(align_samples(sampler.chain[:, :, :].reshape((-1, npar))))
-	#samples = np.array(align_samples(sampler.chain[:, burninsteps:, :].reshape((-1, npar))))
 else:
 	samples = np.array(sampler.chain[:, :, :].reshape((-1, npar)))
-	#samples = np.array(sampler.chain[:, burninsteps:, :].reshape((-1, npar)))
 
 model_mu1  = np.median(samples[:,0])
-model_sig1 = np.median(abs(samples[:,1]))
+model_sig1 = np.median(samples[:,1])
 model_p1   = np.median(samples[:,2])
 model_mu2  = np.median(samples[:,3])
-model_sig2 = np.median(abs(samples[:,4]))
+model_sig2 = np.median(samples[:,4])
 model_p2   = np.median(samples[:,5])
 model_mu3  = np.median(samples[:,6])
-model_sig3 = np.median(abs(samples[:,7]))
+model_sig3 = np.median(samples[:,7])
 model_p3   = np.median(samples[:,8])
 
-
-# Taking average of sampled means and sampled stds
+# Taking the median of sampled means and sampled stds
 # Can compare that to the mean and std on which the stars were
 # actually formulated
-
-#A = 100.0/(1+model_w1+1.0/model_w2)
-#B = 100.0/(1+1.0/model_w1+model_w2)
-#C = 100.0 - A - B
-
 print(" ____ GROUP 1 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu1, model_sig1))
-print("'True' mean: {}, 'true' std: {}".format(means[0][0], stds[0][0]))
+print("'True' mean: {}, 'true' std: {}".format(means[0], stds[0]))
 print("With {}% of the stars".format(model_p1))
 
 print(" ____ GROUP 2 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu2, model_sig2))
-print("'True' mean: {}, 'true' std: {}".format(means[1][0], stds[1][0]))
+print("'True' mean: {}, 'true' std: {}".format(means[1], stds[1]))
 print("With {}% of the stars".format(model_p2))
 
 print(" ____ GROUP 3 _____ ")
 print("Modelled mean: {}, modelled std: {}".format(model_mu3, model_sig3))
-print("'True' mean: {}, 'true' std: {}".format(means[2][0], stds[2][0]))
+print("'True' mean: {}, 'true' std: {}".format(means[2], stds[2]))
 print("With {}% of the stars".format(model_p3))
-#
-#b_samp_ind = sampler.flatlnprobability.argmax()
-#print("Shape of flatlnprob: {}".format(sampler.flatlnprobability.shape))
-#print("Shape of samples: {}".format(samples.shape))
-#print("Index: {}".format(b_samp_ind))
-#b_samp = samples[b_samp_ind]
-#
-#print("b_samp: {}".format(b_samp))
-#
-#print("with logprob of: {}".format(lnprob(b_samp, stars)))
-#print("as opposed to... : {}".format(lnprob(samples[30], stars)))
-#
-#A = 100.0/(1+b_samp[3] + 1.0/b_samp[6])
-#B = 100.0/(1+1.0/b_samp[3] + b_samp[6])
-#C = 100.0 - A - B
-#
-#print(" ____ GROUP 1 _____ ")
-#print("Modelled mean: {}, modelled std: {}".format(b_samp[0],  b_samp[1]))
-#print("'True' mean: {}, 'true' std: {}".format(means[0][0], stds[0][0]))
-#print("With {}% of the stars".format(A))
-#
-#print(" ____ GROUP 2 _____ ")
-#print("Modelled mean: {}, modelled std: {}".format(b_samp[2], b_samp[3]))
-#print("'True' mean: {}, 'true' std: {}".format(means[1][0], stds[1][0]))
-#print("With {}% of the stars".format(B))
-#
-#print(" ____ GROUP 3 _____ ")
-#print("Modelled mean: {}, modelled std: {}".format(b_samp[5], b_samp[6]))
-#print("'True' mean: {}, 'true' std: {}".format(means[2][0], stds[2][0]))
-#print("With {}% of the stars".format(C))
-#
 
 # Print a list of each star and their predicted group by percentage
-# also print the success rate - the number of times a probability > 50 %
-# is reported for the correct group
+# also print the success rate - the number of times a star's membership
+# is correctly calculated 
 if(print_table):
 	print("Star #\tGroup 1\tGroup 2\tGroup 3")
 	success_cnt = 0.0
+
+	# To calculate the relative likelihoods for a star belonging to a group
+	# we simply evaluate the modelled gaussian for each group at the stars
+	# 'position'. Normalising these evaluations gives us the porbabilities.
 	for i, star in enumerate(stars):
-		likelihood1 = gaussian_eval(stars[i][0], model_mu1, model_sig1)
-		likelihood2 = gaussian_eval(stars[i][0], model_mu2, model_sig2)
-		likelihood3 = gaussian_eval(stars[i][0], model_mu3, model_sig3)
+		likelihood1 = gaussian_eval(stars[i], model_mu1, model_sig1)
+		likelihood2 = gaussian_eval(stars[i], model_mu2, model_sig2)
+		likelihood3 = gaussian_eval(stars[i], model_mu3, model_sig3)
 		prob1 = likelihood1 / (likelihood1 + likelihood2 + likelihood3) * 100
 		prob2 = likelihood2 / (likelihood1 + likelihood2 + likelihood3) * 100
 		prob3 = likelihood3 / (likelihood1 + likelihood2 + likelihood3) * 100
+
+		# We can also test to see if the most probable group was evaluated
+		# correctly
 		if i<nstars*cum_fracs[1] and prob1>prob2 and prob1>prob3:
 			success_cnt += 1.0
 		if i>=nstars*cum_fracs[1] and i < nstars*cum_fracs[2]\
@@ -310,9 +263,10 @@ if(print_table):
 				and prob1<prob3 and prob2<prob3:
 			success_cnt += 1.0
 		print("{}\t{:5.2f}%\t{:5.2f}%\t{:5.2f}%".format(i, prob1, prob2, prob3))
+
 	print("Success rate of {:6.2f}%".format(success_cnt/nstars * 100))
 
-# Finally, you can plot the porjected histograms of the samples using
+# Finally, you can plot the projected histograms of the samples using
 # matplotlib as follows
 if(plotit):
 	try:
@@ -320,13 +274,6 @@ if(plotit):
 	except ImportError:
 		print("Try installing matplotlib to generate some sweet plots...")
 	else:
-#
-#		#calculating percentages from weights:
-#		weights_zip = zip(abs(samples[:,2]), abs(samples[:,5]))
-#		perc1 = np.array([100/(1+x+1/y) for (x,y) in weights_zip])
-#		perc2 = np.array([100/(1+1/x+y) for (x,y) in weights_zip])
-#		perc3 = 100 - perc1 - perc2
-#
 		nbins = 500 
 		pl.figure(1)
 
