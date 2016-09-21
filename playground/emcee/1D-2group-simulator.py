@@ -78,11 +78,11 @@ if (reorder_samples):
 means = [[0.0], [20.0], [70.0]]
 
 # ... and some standard deviations
-stds = [[5.0], [5.0], [5.0]]
+stds = [[5.0], [8.0], [2.0]]
 
 # Cumulative fraction of stars in groups
 # i.e. [0, .25, 1.] means 25% of stars in group 1 and 75% in group 2
-cum_fracs = [0.0, 0.75, 0.85, 1.]
+cum_fracs = [0.0, 0.1, 0.3, 1.]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
 # means and standard devs
@@ -101,9 +101,9 @@ def gaussian_eval(x, mu, sig):
 # The prior, used to set bounds on the walkers
 def lnprior(pars):
 	mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
-	if		-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and 10.0 < w1 < 80.0 \
-		and	-100 < mu2 < 100 and 0.0 < sig2 < 100.0 and 10.0 < w2 < 80.0 \
-		and	-100 < mu1 < 100 and 0.0 < sig1 < 100.0:
+	if		-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and 5.0 < w1 < 80.0 \
+		and	-100 < mu2 < 100 and 0.0 < sig2 < 100.0 and 5.0 < w2 < 80.0 \
+		and	-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and (w1+w2) < 95.0:
 		return 0.0
 	return -np.inf 
 
@@ -124,29 +124,27 @@ def lnprior(pars):
 # Currently each star entry only has one value, will eventually extrapolate
 # to many stars
 
-def lnprob(pars, stars):
+def lnlike(pars, stars):
 	nstars = stars.size
-	mus     = pars[0::3]
-	sigs    = pars[1::3]
-	weights = abs(pars[2::3])
+	mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
 	sumlnlike = 0
 
 	for i in range(nstars):
-		A = 1 / (1 + weights[0] + 1/weights[1]) * 0.7 + 0.1
-		B =  1 / (1 + 1/weights[0] + weights[1]) * 0.7 + 0.1
-		gaus_sum = ( A * gaussian_eval(stars[i][0], mus[0], sigs[0])
-						   + B * gaussian_eval(stars[i][0], mus[1], sigs[1])
-							 + (1-A-B)*gaussian_eval(stars[i][0], mus[2], sigs[2]) )
+		gaus_sum = ( w1 * gaussian_eval(stars[i][0], mu1, sig1)
+						   + w2 * gaussian_eval(stars[i][0], mu2, sig2)
+							 + (100-w1-w2)*gaussian_eval(stars[i][0], mu3, sig3) )
 
 		sumlnlike += np.log(gaus_sum)
 	
+	if math.isnan(sumlnlike):
+		print("Got a bad'un...")
 	return sumlnlike
 
-#def lnprob(pars, stars):
-#	lp = lnprior(pars)
-#	if not np.isfinite(lp):
-#		return -np.inf
-#	return lp + lnlike(pars, stars):
+def lnprob(pars, stars):
+	lp = lnprior(pars)
+	if not np.isfinite(lp):
+		return -np.inf
+	return lp + lnlike(pars, stars)
 
 # Takes in [nstars][npar] array where each row is a sample and orders each
 # sample's parameter sets such that the parameters representing groups are
@@ -160,14 +158,14 @@ def align_samples(samples):
 
 	new_samples = []
 	
-	weights_zip = zip(abs(samples[:,2]), abs(samples[:,5]))
-	perc1 = np.array([70/(1+x+1/y) + 10 for (x,y) in weights_zip])
-	perc2 = np.array([70/(1+1/x+y) + 10 for (x,y) in weights_zip])
-	perc3 = 100 - perc1 - perc2
+#	weights_zip = zip(abs(samples[:,2]), abs(samples[:,5]))
+#	perc1 = np.array([70/(1+x+1/y) + 10 for (x,y) in weights_zip])
+#	perc2 = np.array([70/(1+1/x+y) + 10 for (x,y) in weights_zip])
+	w3 = 100 - samples[:,2] - samples[:,5] 
 
-	temp_sampl = np.array( zip(samples[:,0], samples[:,1], perc1,
-									samples[:,3], samples[:,4], perc2,
-									samples[:,6], samples[:,7], perc3) )
+	temp_sampl = np.array( zip(samples[:,0], samples[:,1], samples[:,2],
+									samples[:,3], samples[:,4], samples[:,5],
+									samples[:,6], samples[:,7], w3) )
 
 	tnw_trans = temp_sampl.reshape(-1,3,3)
 	tnw_trans.sort(axis=1)
@@ -191,7 +189,7 @@ if (initial_help):
 else:
 	# Walkers aren't initialised around the vicinity of the groups
 	# It is important that stds are not initialised to 0
-	p0 = [np.random.uniform(5,10, [npar]) for i in xrange(nwalkers)]
+	p0 = [np.random.uniform(10,60, [npar]) for i in xrange(nwalkers)]
 
 # Initialise the sampler with the chosen specs.
 sampler = emcee.EnsembleSampler(nwalkers, npar, lnprob, args=[stars])
