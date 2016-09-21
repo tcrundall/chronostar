@@ -75,14 +75,14 @@ if (reorder_samples):
 
 # Simulating 3 groups as 1-dimensional Gaussian...
 # ... with hard coded mean position with pos in pc and vel in km/s
-means = [0.0, 20.0, 70.0]
+means = [-20.0, 30.0, 100.0]
 
 # ... and some standard deviations
-stds = [5.0, 8.0, 2.0]
+stds = [15.0, 10.0, 5.0]
 
 # Cumulative fraction of stars in groups
 # i.e. [0, .25, 1.] means 25% of stars in group 1 and 75% in group 2
-cum_fracs = [0.0, 0.1, 0.3, 1.]
+cum_fracs = [0.0, 0.4, 0.5, 1.]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
 # means and standard devs
@@ -99,9 +99,9 @@ def gaussian_eval(x, mu, sig):
 
 # The prior, used to set bounds on the walkers
 def lnprior(pars):
-	mu1, sig1, w2, mu2, sig2, w1, mu3, sig3 = pars
-	if		-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and 5.0 < w2 < 80.0 \
-		and	-100 < mu2 < 100 and 0.0 < sig2 < 100.0 and 5.0 < w1 < 80.0 \
+	mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
+	if		-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and 5.0 < w1 < 80.0 \
+		and	-100 < mu2 < 100 and 0.0 < sig2 < 100.0 and 5.0 < w2 < 80.0 \
 		and	-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and (w2+w1) < 95.0:
 		return 0.0
 	return -np.inf 
@@ -125,7 +125,7 @@ def lnprior(pars):
 
 def lnlike(pars, stars):
 	nstars = stars.size
-	mu1, sig1, w2, mu2, sig2, w1, mu3, sig3 = pars
+	mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
 	sumlnlike = 0
 
 	for i in range(nstars): #SWAPPED W2 AND W1!!!
@@ -162,6 +162,8 @@ def align_samples(samples):
 	temp = temp.reshape(-1,3,3)
 
 	# Sort each sample by the mean of each modelled group
+	#temp = temp[np.argsort(temp[:, 0])]
+# HERE IS THE BUG!!!!! FIX ASAP!!!!
 	temp.sort(axis=1)
 	res = temp.reshape(-1,9)
 	return res
