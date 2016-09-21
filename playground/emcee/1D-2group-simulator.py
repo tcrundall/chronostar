@@ -36,6 +36,8 @@ parser.add_argument('-w', '--nwalkers', dest='w', default=150,
 												help='number of walkers')
 parser.add_argument('-p', '--steps', dest='p', default=500,
 												help='number of sampling steps')
+parser.add_argument('-b', '--burnin', dest='b', default=500,
+												help='number of burn-in steps')
 parser.add_argument('-t', '--plot', dest='plot', action='store_true',
 											default=False, help='display and save the plots')
 parser.add_argument('-o', '--order', dest='order', action='store_true',
@@ -49,7 +51,7 @@ args = parser.parse_args()
 # Setting parameters
 print_table = args.table # Display a pretty table with sstars and their groups
 plotit = args.plot      # Will plot some pretty graphs at end
-initial_help = True # If walkers are initialised around desired result
+initial_help = False    # If walkers are initialised around desired result
 reorder_samples = args.order # If final sample parameters are reordered
 nstars = int(args.s)
 nwalkers = int(args.w)
@@ -58,7 +60,7 @@ ndim = 1								# number of phys. dim. being looked at, max 6
 ngroups = 3
 npar = ngroups*3 - 1		# Number of param. required to define a sample
 												# 3 params. per group per dim mean, stdev and weight
-burninsteps = 100				# Number of burn in steps
+burninsteps = args.b	  # Number of burn in steps
 samplingsteps = int(args.p)	# Number of sampling steps
 
 # Useful runtime information
@@ -73,23 +75,37 @@ if (reorder_samples):
 
 # Simulating 2 groups as [ndim]-dimensional Gaussian...
 # ... with hard coded mean position with pos in pc and vel in km/s
-means = [[20.0], [0.0], [70.0]]
+means = [[0.0], [20.0], [70.0]]
 
 # ... and some standard deviations
 stds = [[5.0], [5.0], [5.0]]
 
 # Cumulative fraction of stars in groups
 # i.e. [0, .25, 1.] means 25% of stars in group 1 and 75% in group 2
-cum_fracs = [0.0, 0.25, 0.75, 1.]
+cum_fracs = [0.0, 0.75, 0.85, 1.]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
 # means and standard devs
-# [nstars]/2 from one group, [nstars]/2 from the other
 stars = np.zeros((nstars,ndim))
 for h in range(ngroups):
 	for i in range(int(nstars*cum_fracs[h]), int(nstars*cum_fracs[h+1])):
 		for j in range(ndim):
 			stars[i][j] = np.random.normal(means[h][j], stds[h][j])
+
+# Gaussian helper function
+def gaussian_eval(x, mu, sig):
+	res = 1.0/(abs(sig)*math.sqrt(2*math.pi))*np.exp(-(x-mu)**2/(2*sig**2))
+	return res
+
+
+# The prior, used to set bounds on the walkers
+def lnprior(pars):
+	mu1, sig1, w1, mu2, sig2, w2, mu3 sig3 = pars
+	if		-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and 10.0 < w1 < 80.0 \
+		and	-100 < mu2 < 100 and 0.0 < sig2 < 100.0 and 10.0 < w2 < 80.0 \
+		and	-100 < mu1 < 100 and 0.0 < sig1 < 100.0:
+		return 0.0
+	return -np.inf 
 
 # Defining the probablility distribution to sample
 # x encapsulates the mean and std of a proposed model
@@ -99,12 +115,6 @@ for h in range(ngroups):
 # location and product them.
 # Since we need the log likelihood, we can take the log of the gaussian at
 # each given star and sum them
-# Hardcoded to 1 dimension
-
-def gaussian_eval(x, mu, sig):
-	result = 1.0/(abs(sig)*math.sqrt(2*math.pi))*np.exp(-(x-mu)**2/(2*sig**2))
-	return result
-
 # for each star, we want to find the value of each gaussian at that point
 # and sum them. Every group bar the last has a weighting, the final group's
 # weighting is determined such that the total area under the curve stays 
@@ -113,58 +123,55 @@ def gaussian_eval(x, mu, sig):
 # so that each factor is between 0 and 1.
 # Currently each star entry only has one value, will eventually extrapolate
 # to many stars
+
 def lnprob(pars, stars):
 	nstars = stars.size
 	mus     = pars[0::3]
 	sigs    = pars[1::3]
-	weights = abs(pars[2::3])
-	sumlnprob = 0
+	ws = abs(pars[2::3])
+	sumlnlike = 0
 
 	for i in range(nstars):
-		A = 1 / (1 + weights[0] + 1/weights[1])
-		B =  1 / (1 + 1/weights[0] + weights[1])
+		A = 1 / (1 + weights[0] + 1/weights[1]) * 0.7 + 0.1
+		B =  1 / (1 + 1/weights[0] + weights[1]) * 0.7 + 0.1
 		gaus_sum = ( A * gaussian_eval(stars[i][0], mus[0], sigs[0])
 						   + B * gaussian_eval(stars[i][0], mus[1], sigs[1])
 							 + (1-A-B)*gaussian_eval(stars[i][0], mus[2], sigs[2]) )
 
-		sumlnprob += np.log(gaus_sum)
+		sumlnlike += np.log(gaus_sum)
 	
-	return sumlnprob
+	return sumlnlike
+
+#def lnprob(pars, stars):
+#	lp = lnprior(pars)
+#	if not np.isfinite(lp):
+#		return -np.inf
+#	return lp + lnlike(pars, stars):
 
 # Takes in [nstars][npar] array where each row is a sample and orders each
 # sample's parameter sets such that the parameters representing groups are
 # listed in ascending order of means
-# Hardcoded for 2D
-# CURRENTLY BROKEN FOR WEIGHTINGS!!!
+# Hardcoded for 3D
+# It does this by turning each row of 8 parameters into a 3x3 matrix
+#  creating a 9th element based of the 3rd and 6th, and then sorts each
+#	matrix by row, before converting back into a single row array of length 9
 def align_samples(samples):
 	print("Samples: {}".format(samples))
 
 	new_samples = []
 	
 	weights_zip = zip(abs(samples[:,2]), abs(samples[:,5]))
-	perc1 = np.array([100/(1+x+1/y) for (x,y) in weights_zip])
-	perc2 = np.array([100/(1+1/x+y) for (x,y) in weights_zip])
+	perc1 = np.array([70/(1+x+1/y) + 10 for (x,y) in weights_zip])
+	perc2 = np.array([70/(1+1/x+y) + 10 for (x,y) in weights_zip])
 	perc3 = 100 - perc1 - perc2
 
 	temp_sampl = np.array( zip(samples[:,0], samples[:,1], perc1,
 									samples[:,3], samples[:,4], perc2,
 									samples[:,6], samples[:,7], perc3) )
 
-	print("Temp_samp")
-	print(temp_sampl)
-
 	tnw_trans = temp_sampl.reshape(-1,3,3)
-
-	print("Before sorting")
-	print(tnw_trans)
 	tnw_trans.sort(axis=1)
-
-	print("after sorting")
-	print(tnw_trans)
-	print("result:")
 	result = tnw_trans.reshape(-1,9)
-	print(result)
-
 	return tnw_trans.reshape(-1,9)
 
 # Choose an intial set of gaussian parameters for the walkers.
@@ -184,7 +191,7 @@ if (initial_help):
 else:
 	# Walkers aren't initialised around the vicinity of the groups
 	# It is important that stds are not initialised to 0
-	p0 = [np.random.uniform(50,100, [npar]) for i in xrange(nwalkers)]
+	p0 = [np.random.uniform(5,10, [npar]) for i in xrange(nwalkers)]
 
 # Initialise the sampler with the chosen specs.
 sampler = emcee.EnsembleSampler(nwalkers, npar, lnprob, args=[stars])
@@ -328,14 +335,14 @@ if(plotit):
 		# Plotting all sampled means1
 		pl.figure(1)
 		pl.subplot(331)
-		mus = [mu for mu in samples[:,0] if mu > -30 and mu < 100]
+		mus = [mu for mu in samples[:,0] if mu > -150 and mu < 150]
 		pl.hist(mus, nbins)
 		pl.title("Means of group 1")
 
 		# Plotting all sampled stds1
 		# Need to take the absolute since emcee samples negative sigmas
 		pl.subplot(332)
-		sigs = [abs(sig) for sig in samples[:,1] if abs(sig) < 30]
+		sigs = [abs(sig) for sig in samples[:,1] if abs(sig) < 50]
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 1")
 
@@ -346,13 +353,13 @@ if(plotit):
 		
 		# Means of group 2
 		pl.subplot(334)
-		mus = [mu for mu in samples[:,3] if mu > -30 and mu < 100]
+		mus = [mu for mu in samples[:,3] if mu > -150 and mu < 150]
 		pl.hist(mus, nbins)
 		pl.title("Means of group 2")
 
 		# Stds of group 2
 		pl.subplot(335)
-		sigs = [abs(sig) for sig in samples[:,4] if abs(sig) < 30]
+		sigs = [abs(sig) for sig in samples[:,4] if abs(sig) < 50]
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 2")
 
@@ -363,13 +370,13 @@ if(plotit):
 
 		# Means of group 3 
 		pl.subplot(337)
-		mus = [mu for mu in samples[:,6] if mu > -30 and mu < 100]
+		mus = [mu for mu in samples[:,6] if mu > -150 and mu < 150]
 		pl.hist(mus, nbins)
 		pl.title("Means of group 3")
 
 		# Stds of group 3 
 		pl.subplot(338)
-		sigs = [abs(sig) for sig in samples[:,7] if abs(sig) < 100]
+		sigs = [abs(sig) for sig in samples[:,7] if abs(sig) < 50]
 		pl.hist(sigs, nbins)
 		pl.title("Stds of group 3")
 
