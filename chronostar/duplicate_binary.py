@@ -7,32 +7,39 @@ Created on Sat Sep 17 00:39:03 2016
 
 from astropy.table import Table
 import numpy as np
+import numpy.core.defchararray as npstr
 import math
 
 #Read in table
-t = Table.read('gdoc_Torres.csv', format = 'ascii')
+t = Table.read('gdoc_better.csv', format = 'ascii.csv')
 #Sort table according to RA and DE
 t.sort(['RAdeg', 'DEdeg'])
 
-#Choose the maximum difference in angular position for binary stars (deg)
-bin_dist = 0.01
-#Choose the maximum difference in angular position to identify duplicates eg arcsecond (deg)
-arcs = 0.0001
+arcsec = 1./3600.
 
+#Choose the maximum difference in angular position for binary stars (deg)
+bin_dist = 50*arcsec
+#Choose the maximum difference in angular position to identify duplicates eg arcsecond (deg)
+dup_dist = 1*arcsec
+
+#Initialise Variables
 i=0
+t['n_obs'] = np.zeros(len(t)).astype('int32')
+t['wide_binary'] = np.empty(len(t)).astype('S8')
 rmv = []
+ref = []
 
 #Remove Duplicates
-while i < (len(t)-1):
+while i <= (len(t)-1):
     l = 1
   
     #Determines if a star and the next in the table are within an arcsec of 
     #each other. That is, they are identical.
-    if (math.fabs(t['RAdeg'][i+1] - t['RAdeg'][i]) < arcs and math.fabs(t['DEdeg'][i+1] - t['DEdeg'][i]) < arcs) or t['Name1'][i+1] == t['Name1'][i]:
+    if i < (len(t)-1) and ((math.fabs(t['RAdeg'][i+1] - t['RAdeg'][i]) < dup_dist and math.fabs(t['DEdeg'][i+1] - t['DEdeg'][i]) < dup_dist) or t['Name1'][i+1] == t['Name1'][i]):
         duplicates = t[i:i+2]
         n= i+1
         #Searches for other identical stars
-        while math.fabs(t['RAdeg'][n+1] - t['RAdeg'][n]) < arcs and math.fabs(t['DEdeg'][n+1] - t['DEdeg'][n]) < arcs:
+        while math.fabs(t['RAdeg'][n+1] - t['RAdeg'][n]) < dup_dist and math.fabs(t['DEdeg'][n+1] - t['DEdeg'][n]) < dup_dist:
             duplicates.add_row(t[n+1])
             n += 1
         l = len(duplicates)
@@ -43,11 +50,21 @@ while i < (len(t)-1):
         sum_w = np.sum(1/(duplicates['RV error'])**2)
         t['RV'][i] = np.sum(duplicates['RV']*(1/(duplicates['RV error'])**2))/sum_w
         t['RV error'][i] = 1/np.sqrt(sum_w)
-        rmv = np.append(rmv, range(i+1,i+(len(duplicates))))
-                
+
+        rmv = np.append(rmv, range(i+1,i+l))
+    
+    #Combine References
+    new_ref = np.unique([t['Reference'][j] for j in range(i,i+l)])
+    joined_ref = ', '.join(new_ref)   
+    ref = np.append(ref,joined_ref)   
+    t['n_obs'][i] = l  
+       
     i += l
 
 t.remove_rows(rmv)
+t.remove_column('Reference')
+t['Reference'] = ref
+i=0
 
 #Find Binaries and average RVs
 while i < (len(t)-1):
@@ -66,6 +83,10 @@ while i < (len(t)-1):
         
         #Updates both binary stars with new RVs, but same coordinates
         t['RV error'][i:i+2] = np.sqrt(w_err**2+(np.diff(binaries['RV error'])/4)**2)
+        t['wide_binary'][i:i+2] = 'True'
+
+    else:
+        t['wide_binary'][i] = 'False'
         
     i += l
 
