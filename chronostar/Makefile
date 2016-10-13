@@ -1,8 +1,8 @@
 all: 
 	./Build all
 
-numpy:
-	./Build numpy
+overlap:
+	./Build overlap
 
 clean:
 	./Build clean

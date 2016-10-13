@@ -80,7 +80,7 @@ double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
                    double* st_mn, int st_mn_dim, double st_icov_det)
 {
   int MAT_DIM = gr_dim1;
-  int i, j, signum;
+  int i, j, signum, l;
   double ApB_det, d_temp, result;
   PyObject *o1, *o2;
   gsl_permutation *p;
@@ -98,6 +98,8 @@ double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
   gsl_vector *bmc      = gsl_vector_alloc(MAT_DIM); //will hold b - c
 
   p = gsl_permutation_alloc(A->size1);
+
+//for (l=0; l<1; l++){ //DELETE
 
   //Inserting values into matricies and vectors
   for (i=0; i<MAT_DIM; i++)
@@ -171,7 +173,7 @@ double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
 
   result *= sqrt((gr_icov_det * st_icov_det/ApB_det)
                 / pow(2*M_PI, MAT_DIM));
-
+//} //DELETE THIS 
 
   // Freeing memory
   gsl_matrix_free(A);
