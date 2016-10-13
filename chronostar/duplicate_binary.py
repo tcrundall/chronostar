@@ -11,7 +11,7 @@ import numpy.core.defchararray as npstr
 import math
 
 #Read in table
-t = Table.read('gdoc_better.csv', format = 'ascii.csv')
+t = Table.read('gdoc_best.csv', format = 'ascii.csv')
 #Sort table according to RA and DE
 t.sort(['RAdeg', 'DEdeg'])
 
@@ -91,4 +91,4 @@ while i < (len(t)-1):
     i += l
 
 #Writes the modified table to either the same, or new file
-t.write('gdoc_mod.csv', format='ascii')
+t.write('gdoc_mod.csv', format='ascii.csv')
