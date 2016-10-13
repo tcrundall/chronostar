@@ -104,7 +104,8 @@ class TraceBack():
         self.nstars = len(stars)
         self.stars = stars
         
-    def traceback(self,times,max_plot_error=50,plotit=False, savefile='', dims=[1,2],xoffset=[],yoffset=[],text_ix=[],axis_range=[]):
+    def traceback(self,times,max_plot_error=50,plotit=False, savefile='', dims=[1,2],\
+        xoffset=[],yoffset=[],text_ix=[],axis_range=[], plot_text=True):
         """Trace back stellar orbits
     
         Parameters
@@ -224,8 +225,9 @@ class TraceBack():
             if plotit:
                 cov_end = xyzuvw_cov[i,-1,cov_ix1,cov_ix2]
                 if (np.sqrt(cov_end.trace()) < max_plot_error):
-                    #if i in text_ix:
-                       # plt.text(xyzuvw[i,0,dim1]*1.1 + xoffset[i],xyzuvw[i,0,dim2]*1.1 + yoffset[i],star['Name'],fontsize=11)
+                    if plot_text:
+                        if i in text_ix:
+                           plt.text(xyzuvw[i,0,dim1]*1.1 + xoffset[i],xyzuvw[i,0,dim2]*1.1 + yoffset[i],star['Name'],fontsize=11)
                     plt.plot(xyzuvw[i,:,dim1],xyzuvw[i,:,dim2],'b-')
                     plot_cov_ellipse(xyzuvw_cov[i,0,cov_ix1,cov_ix2], [xyzuvw[i,0,dim1],xyzuvw[i,0,dim2]],color='g',alpha=1)
                     plot_cov_ellipse(cov_end, [xyzuvw[i,-1,dim1],xyzuvw[i,-1,dim2]],color='r',alpha=0.2)
