@@ -161,35 +161,59 @@ class TraceBack():
 
         for i in range(nstars):
             star = stars[i]
-            if 'RAdeg' in star.columns:
+            if 'ra_adopt' in star.columns:
+                RAdeg = star['ra_adopt']
+            elif 'RAdeg' in star.columns:
                 RAdeg = star['RAdeg']
             else:
                 RAdeg = star['RAhour']*15.0
-            if 'HRV' in star.columns:
+                
+            if 'dec_adopt' in star.columns:
+                DEdeg = star['dec_adopt']
+            else:
+                DEdeg = star['DEdeg']
+                
+            if 'rv_adopt' in star.columns:
+                RV = star['rv_adopt']
+                e_RV = star['rv_adopt_error']
+            elif 'HRV' in star.columns:
                 RV = star['HRV']
                 e_RV = star['e_HRV']
             else:
                 RV = star['RV']
                 e_RV = star['e_RV']
-            if 'plx' in star.columns:
+                
+            if 'parallax_1' in star.columns:
+                Plx = star['parallax_1']
+                e_Plx = star['parallax_error']
+            elif 'plx' in star.columns:
                 Plx = star['plx']
                 e_Plx = star['e_plx']
             else:
                 e_Plx = star['e_Plx']
                 Plx = star['Plx']
-            if 'pmRAU4' in star.columns:
+                
+            if 'pmra_1' in star.columns:
+                pmRA = star['pmra_1']
+                e_pmRA = star['pmra_error']
+            elif 'pmRAU4' in star.columns:
                 pmRA = star['pmRAU4']
                 e_pmRA = star['e_pmRAU4']
             else:
                 pmRA = star['pmRA']
                 e_pmRA = star['e_pmRA']
-            if 'pmDEU4' in star.columns:
+                
+            if 'pmdec' in star.columns:
+                pmDE = star['pmdec']
+                e_pmDE = star['pmdec_error'] 
+            elif 'pmDEU4' in star.columns:
                 pmDE = star['pmDEU4']
-                e_pmDE = star['e_pmDEU4']  
+                e_pmDE = star['e_pmDEU4']
             else:
                 pmDE = star['pmDE']
                 e_pmDE = star['e_pmDE']
-            params = np.array([RAdeg,star['DEdeg'],Plx,pmRA,pmDE,RV])
+                
+            params = np.array([RAdeg,DEdeg,Plx,pmRA,pmDE,RV])
             #params = np.append(params,[56.75,24.1167,7.34214,19.17,-44.82,3.503],axis=0) #V value change back to -
             xyzuvw[i] = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
             
