@@ -14,7 +14,7 @@ import chronostar.traceback as traceback
 #t = t[(t['Dist'] < 0.05) & (t['Dist'] > 0)]
 #vec_wd = np.vectorize(traceback.withindist)
 #t = t[vec_wd((t['ra_adopt']),(t['dec_adopt']),(t['Dist']),0.02, 86.82119870, -51.06651143, 0.01944)]
-t=Table.read('betaPic_RV_Check.csv')
+t=Table.read('data/betaPic_RV_Check.csv')
 
 #Which dimensions do we plot? 0=X, 1=Y, 2=Z
 dims = [0,1]
