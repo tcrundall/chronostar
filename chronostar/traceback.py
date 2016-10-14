@@ -158,70 +158,68 @@ class TraceBack():
             text_ix = range(nstars)
         if len(axis_range)==0:
             axis_range = [-100,100,-100,100]
-
+        
         for i in range(nstars):
             star = stars[i]
+            
             #Some defaults for correlations.
             parallax_pmra_corr=0.0
             parallax_pmdec_corr=0.0
             pmra_pmdec_corr=0.0
+            
             #Are we using our joint HIPPARCOS/TGAS table?
             if 'ra_adopt' in star.columns:
                 RAdeg = star['ra_adopt']
                 DEdeg = star['dec_adopt']
                 RV = star['rv_adopt']
                 e_RV = star['rv_adopt_error']
+                
                 #Do we have a TGAS entry?
-                try:
-                    is_masked = star['parallax_1'].mask
-                    #WARNING: These will be masked columns in full TGAS data
+                if not (stars['parallax_1'].mask)[i]:               
+                    Plx = star['parallax_1']
+                    e_Plx = star['parallax_error']
+                    pmRA = star['pmra_1']
+                    e_pmRA = star['pmra_error']
+                    pmDE = star['pmdec']
+                    e_pmDE = star['pmdec_error']
+                    parallax_pmra_corr = star['parallax_pmra_corr']
+                    parallax_pmdec_corr = star['parallax_pmdec_corr']
+                    pmra_pmdec_corr = star['pmra_pmdec_corr']  
+                else:
                     Plx = star['Plx']
                     e_Plx = star['e_Plx']
                     pmDE = star['pmDE']
                     e_pmDE = 0.5 #star['e_pmDE']
                     pmRA = star['pmRA_2']
                     e_pmRA = 0.5 #star['e_pmRA']
-                except:
-                    Plx = star['parallax_1']
-                    e_Plx = star['parallax_error']
-                    pmRA = star['pmra_1']
-                    e_pmRA = star['pmra_error']
-                    pmDE = star['pmdec']
-                    e_pmDE = star['pmdec_error'] 
-                
+            
             else:
                 DEdeg = star['DEdeg']
+                
+                #RAVE Dataset
                 if 'RAdeg' in star.columns:
                     RAdeg = star['RAdeg']
-                else:
-                    RAdeg = star['RAhour']*15.0
-                if 'HRV' in star.columns:
                     RV = star['HRV']
                     e_RV = star['e_HRV']
-                else:
-                    RV = star['RV']
-                    e_RV = star['e_RV']
-                if 'plx' in star.columns:
                     Plx = star['plx']
                     e_Plx = star['e_plx']
-                else:
-                    e_Plx = star['e_Plx']
-                    Plx = star['Plx']
-                if 'pmRAU4' in star.columns:
                     pmRA = star['pmRAU4']
                     e_pmRA = star['e_pmRAU4']
+                    pmDE = star['pmDEU4']
+                    e_pmDE = star['e_pmDEU4'] 
+                #HIPPARCOS    
                 else:
+                    RAdeg = star['RAhour']*15.0
+                    RV = star['RV']
+                    e_RV = star['e_RV']
+                    Plx = star['Plx']
+                    e_Plx = star['e_Plx']
                     pmRA = star['pmRA']
                     e_pmRA = star['e_pmRA']
-                if 'pmDEU4' in star.columns:
-                    pmDE = star['pmDEU4']
-                    e_pmDE = star['e_pmDEU4']  
-                else:
                     pmDE = star['pmDE']
                     e_pmDE = star['e_pmDE']
                 
             params = np.array([RAdeg,DEdeg,Plx,pmRA,pmDE,RV])
-            #params = np.append(params,[56.75,24.1167,7.34214,19.17,-44.82,3.503],axis=0) #V value change back to -
             xyzuvw[i] = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
             
             #Create numerical derivatives
@@ -243,8 +241,10 @@ class TraceBack():
             
             #Add covariances.
             cov_obs[2,3] = e_Plx * e_pmRA * parallax_pmra_corr
-            
-            cov_obs[3,2] = cov_obs[2,3]
+            cov_obs[2,4] = e_Plx * e_pmDE * parallax_pmdec_corr
+            cov_obs[3,4] = e_pmRA * e_pmDE * pmra_pmdec_corr                        
+            for (j,k) in [(3,2),(4,2),(4,3)]:
+                cov_obs[j,k] = cov_obs[j,k]
             
             #Create the covariance matrix from the Jacobian. See e.g.:
             #https://en.wikipedia.org/wiki/Covariance#A_more_general_identity_for_covariance_matrices
@@ -253,7 +253,6 @@ class TraceBack():
             for k in range(nts):
                 xyzuvw_cov[i,k] = np.dot(np.dot(xyzuvw_jac[i,k].T,cov_obs),xyzuvw_jac[i,k])
                 
-            #pdb.set_trace()
                 
             #Plot beginning and end points, plus their the uncertainties from the
             #covariance matrix.
@@ -271,7 +270,7 @@ class TraceBack():
                     plot_cov_ellipse(cov_end, [xyzuvw[i,-1,dim1],xyzuvw[i,-1,dim2]],color='r',alpha=0.2)
                 else:
                     print(star['Name'] + " not plottable (errors too high)")
-        
+
         if plotit:            
             plt.xlabel(axis_titles[dim1])
             plt.ylabel(axis_titles[dim2])
