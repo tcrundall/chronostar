@@ -197,7 +197,7 @@ class TraceBack():
                 DEdeg = star['DEdeg']
                 
                 #RAVE Dataset
-                if 'RAdeg' in star.columns:
+                if 'HRV' in star.columns:
                     RAdeg = star['RAdeg']
                     RV = star['HRV']
                     e_RV = star['e_HRV']
@@ -209,7 +209,10 @@ class TraceBack():
                     e_pmDE = star['e_pmDEU4'] 
                 #HIPPARCOS    
                 else:
-                    RAdeg = star['RAhour']*15.0
+                    if 'RAdeg' in star.columns:
+                        RAdeg = star['RAdeg']
+                    else:
+                        RAdeg = star['RAhour']*15.0
                     RV = star['RV']
                     e_RV = star['e_RV']
                     Plx = star['Plx']
@@ -268,8 +271,8 @@ class TraceBack():
                     plt.plot(xyzuvw[i,:,dim1],xyzuvw[i,:,dim2],'b-')
                     plot_cov_ellipse(xyzuvw_cov[i,0,cov_ix1,cov_ix2], [xyzuvw[i,0,dim1],xyzuvw[i,0,dim2]],color='g',alpha=1)
                     plot_cov_ellipse(cov_end, [xyzuvw[i,-1,dim1],xyzuvw[i,-1,dim2]],color='r',alpha=0.2)
-                else:
-                    print(star['Name'] + " not plottable (errors too high)")
+                #else:
+                   # print(star['Name'] + " not plottable (errors too high)")
 
         if plotit:            
             plt.xlabel(axis_titles[dim1])

@@ -20,7 +20,7 @@ t = t[(t['Dist'] < 0.25) & (t['Dist'] > 0)]
 vec_wd = np.vectorize(traceback.withindist)
 stars = t[vec_wd((t['RAdeg']),(t['DEdeg']),(t['Dist']),0.02)]
 
-#Calculate the pleiades model - centre of mass of stars 10pc away
+#Calculate the pleiades model - centre of mass of stars 20pc away
 pl = t[vec_wd((t['RAdeg']),(t['DEdeg']),(t['Dist']),0.02)]
 #pl = pl[pl['Vmag'] < 7.0]
 centre_pl = []
@@ -30,7 +30,6 @@ for i in col:
     x_bar = np.mean(x)
     #sd = np.std(x)
     pl = pl[np.absolute(x - x_bar)/pl['e_%s' %i] < 5]
-    print (len(x))
 for i in col:
     x = pl[i]
     x_bar = np.mean(x)
@@ -47,7 +46,7 @@ xoffset = np.zeros(len(stars))
 yoffset = np.zeros(len(stars))
  
 #Which dimensions do we plot? 0=X, 1=Y, 2=Z
-dims = [0,1]
+dims = [1,2]
 dim1=dims[0]
 dim2=dims[1]
 
@@ -64,7 +63,7 @@ if (dims[0]==1) & (dims[1]==2):
 
 #Trace back orbits with plotting enabled.
 tb = traceback.TraceBack(stars)
-tb.traceback(times,xoffset=xoffset, max_plot_error=150, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="results/traceback_save.pkl")
+tb.traceback(times,xoffset=xoffset, max_plot_error=150, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="results/traceback_save.pkl", plot_text=False)
 
 #Centre of mass - Black line
 plt_COM = traceback.traceback2(centre_pl,times)
