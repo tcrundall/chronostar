@@ -104,6 +104,13 @@ def timings(group_icov, group_mean, group_icov_det,
                               star_icovs[0], star_means[0], star_icov_dets[0])
     print "Swigging numpy: " + str(time.clock() - swignpstart)
 
+    swignpmultistart = time.clock()
+    for i in range(iterations/nstars):
+        result = overlap.get_overlaps(group_icov, group_mean, group_icov_det,
+                              star_icovs, star_means, star_icov_dets, nstars)
+    print "Swigging numpy multi: {}".format(time.clock() - swignpmultistart)
+    print(" -- total module calls: {}".format(iterations/nstars))
+
 # ------------- MAIN PROGRAM -----------------------
 
 #Parsing arguments
@@ -112,9 +119,12 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('-i', '--iter', dest='i', default=10000,
                         help='number of iterations, def 10000')
+parser.add_argument('-n', '--nstars', dest='n', default=10000,
+                        help='number of stars called by get_overlaps')
 args = parser.parse_args()
 
 iterations = int(args.i)
+NSTARS = int(args.n)
 
 #Hard coding some sample data:
 #  1 group inverse covariance matrix and determinant
@@ -176,6 +186,12 @@ correctness(group_icov, group_mean, group_icov_det, star_icovs,
                                   star_means, star_icov_dets, nstars)
 print
 
+nstars = NSTARS 
+star_icovs = np.tile(star_icovs, (nstars/2,1,1))
+star_means = np.tile(star_means, (nstars/2,1))
+star_icov_dets = np.tile(star_icov_dets, nstars/2)
+
 print("____ TIMINGS ______")
+print("# of stars: {}".format(iterations))
 timings(group_icov, group_mean, group_icov_det, star_icovs,
                          star_means, star_icov_dets, nstars, iterations)
