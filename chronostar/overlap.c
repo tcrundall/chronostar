@@ -22,7 +22,26 @@ void inplace(double* npyArray3D, int npyLength1D, int npylength2D,
 }
 */
 
-void get_overlaps(double* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D, double *rangevec, int n)
+/* Placeholder function which will ultimately accept:
+ *  group_icov (6*6 npyArray which is the group's inverse covariance matrix
+ *  group_mn   (1*6 npyArray which is the group's mean kinematic info
+ *  group_icov_det (flt, the determinent of the group_icov)
+ *  Bs (nstars*6*6 npyArray which is a list of each star's icov matrix)
+ *  bs (nstars*6 npyArray which is a list of each star's mean kinematic info)
+ *  B_dets (1*nstars npyArray which is a list of the determinent of each icov)
+ *  nstars (the number of stars, used to determine the size of npyArray which
+ *              will return calculated overlaps)
+ *
+ *  Draft 1: get parameters in, and call internal overlaps function
+ */
+void get_overlaps(double* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D,
+                  double *rangevec, int n)
+
+/*double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
+                   double* gr_mn, int gr_mn_dim, double gr_icov_det,
+                   double* st_icov, int st_dim1, int st_dim2,
+                   double* st_mn, int st_mn_dim, double st_icov_det)
+{*/
 {
   int i, j, k;
   double result = 0;

@@ -64,6 +64,11 @@ def correctness():
                               star_icovs[i], star_means[i], star_icov_dets[i])
 
 
+    print "Using swig-numpy module with multiple stars:"
+    #print overlap.get_overlaps(group_icov, group_mean, group_icov_det,
+    #                          star_icovs, star_means, star_icov_dets)
+    print overlap.get_overlaps(star_icovs, nstars)
+
 def timings(iterations=10000):
     """
         Executes each function a fixed number of times, timing for how
