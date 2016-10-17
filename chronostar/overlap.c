@@ -112,12 +112,8 @@ double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
 
   // Storing the result A*a + B*b in AapBb
   gsl_vector_set_zero(AapBb);
-  gsl_blas_dgemv(CblasNoTrans,
-                 1.0, A, a,
-                 1.0, AapBb);
-  gsl_blas_dgemv(CblasNoTrans,
-                 1.0, B, b,
-                 1.0, AapBb);
+  gsl_blas_dsymv(CblasUpper, 1.0, A, a, 1.0, AapBb);
+  gsl_blas_dsymv(CblasUpper, 1.0, B, b, 1.0, AapBb);
 
   // Getting determinant of ApB
   gsl_linalg_LU_decomp(ApB, p, &signum);
@@ -135,7 +131,7 @@ double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
 
   // CAN'T HAVE v_temp and v_temp2 be the same vector.
   // Results in 0's being stored in v_temp2.
-  gsl_blas_dgemv(CblasNoTrans, 1.0, A, v_temp, 0.0, v_temp2);
+  gsl_blas_dsymv(CblasUpper, 1.0, A, v_temp, 0.0, v_temp2);
   //v_temp2 holds A (a-c)
 
   result = 0.0;
@@ -150,7 +146,7 @@ double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
 
   // CAN'T HAVE v_temp and v_temp2 be the same vector.
   // Results in 0's being stored in v_temp2.
-  gsl_blas_dgemv(CblasNoTrans, 1.0, B, v_temp, 0.0, v_temp2);
+  gsl_blas_dsymv(CblasUpper, 1.0, B, v_temp, 0.0, v_temp2);
   //v_temp2 holds A (b-c)
 
   gsl_blas_ddot(v_temp2, bmc, &d_temp); //d_temp holds (b-c)^T B (b-c)
