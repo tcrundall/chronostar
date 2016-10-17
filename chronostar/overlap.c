@@ -44,12 +44,12 @@ void get_overlaps(double* gr_icov, int gr_dim1, int gr_dim2,
 {
   int i, j, k;
   double result = 0;
-/*
-  for (i=0; i<npyLength1D; i++)
-    for (j=0; j<npyLength2D; j++)
-      for (k=0; k<npyLength3D; k++)
-        result += npyArray3D[i*npyLength3D*npyLength2D + k*npyLength2D + j];
-*/
+
+  for (i=0; i<st_dim1; i++)
+    for (j=0; j<st_dim2; j++)
+      for (k=0; k<st_dim3; k++)
+        result += st_icovs[i*st_dim3*st_dim2 + k*st_dim2 + j];
+
   for (i=0; i<n; i++)
     rangevec[i] = result;
 }
