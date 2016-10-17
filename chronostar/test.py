@@ -42,7 +42,8 @@ def compute_overlap(A,a,A_det,B,b,B_det):
     
     return overlap
 
-def correctness():
+def correctness(group_icov, group_mean, group_icov_det, star_icovs,
+                                  star_means, star_icov_dets, nstars):
     """
         Displays the result for each function, no differences should
         occur.
@@ -73,7 +74,8 @@ def correctness():
                               star_icov_dets,
                               nstars)
 
-def timings(iterations=10000):
+def timings(group_icov, group_mean, group_icov_det,
+              star_icovs, star_means, star_icov_dets, nstars, iterations=10000):
     """
         Executes each function a fixed number of times, timing for how
         long it takes.
@@ -170,7 +172,10 @@ nstars = 2
 
 
 print("___ CORRECTNESS ___")
-correctness()
+correctness(group_icov, group_mean, group_icov_det, star_icovs,
+                                  star_means, star_icov_dets, nstars)
 print
+
 print("____ TIMINGS ______")
-timings(iterations)
+timings(group_icov, group_mean, group_icov_det, star_icovs,
+                         star_means, star_icov_dets, nstars, iterations)

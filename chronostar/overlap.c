@@ -22,37 +22,7 @@ void inplace(double* npyArray3D, int npyLength1D, int npylength2D,
 }
 */
 
-/* Placeholder function which will ultimately accept:
- *  group_icov (6*6 npyArray which is the group's inverse covariance matrix
- *  group_mn   (1*6 npyArray which is the group's mean kinematic info
- *  group_icov_det (flt, the determinent of the group_icov)
- *  Bs (nstars*6*6 npyArray which is a list of each star's icov matrix)
- *  bs (nstars*6 npyArray which is a list of each star's mean kinematic info)
- *  B_dets (1*nstars npyArray which is a list of the determinent of each icov)
- *  nstars (the number of stars, used to determine the size of npyArray which
- *              will return calculated overlaps)
- *
- *  Draft 1: get parameters in, and call internal overlaps function
- */
-void get_overlaps(double* gr_icov, int gr_dim1, int gr_dim2,
-                  double* gr_mn, int gr_mn_dim,
-                  double gr_icov_det,
-                  double* st_icovs, int st_dim1, int st_dim2, int st_dim3,
-                  double* st_mns, int st_mn_dim1, int st_mn_dim2,
-                  double* st_icov_dets, int st_icov_dets_dim,
-                  double* rangevec, int n)
-{
-  int i, j, k;
-  double result = 0;
 
-  for (i=0; i<st_dim1; i++)
-    for (j=0; j<st_dim2; j++)
-      for (k=0; k<st_dim3; k++)
-        result += st_icovs[i*st_dim3*st_dim2 + k*st_dim2 + j];
-
-  for (i=0; i<n; i++)
-    rangevec[i] = result;
-}
 
 int sum(int* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D)
 {
@@ -328,4 +298,48 @@ double get_overlap2(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
   gsl_permutation_free(p);
 
   return result;
+}
+
+/* Placeholder function which will ultimately accept:
+ *  group_icov (6*6 npyArray which is the group's inverse covariance matrix
+ *  group_mn   (1*6 npyArray which is the group's mean kinematic info
+ *  group_icov_det (flt, the determinent of the group_icov)
+ *  Bs (nstars*6*6 npyArray which is a list of each star's icov matrix)
+ *  bs (nstars*6 npyArray which is a list of each star's mean kinematic info)
+ *  B_dets (1*nstars npyArray which is a list of the determinent of each icov)
+ *  nstars (the number of stars, used to determine the size of npyArray which
+ *              will return calculated overlaps)
+ *
+ *  Draft 1: get parameters in, and call internal overlaps function
+ */
+void get_overlaps(double* gr_icov, int gr_dim1, int gr_dim2,
+                  double* gr_mn, int gr_mn_dim,
+                  double gr_icov_det,
+                  double* st_icovs, int st_dim1, int st_dim2, int st_dim3,
+                  double* st_mns, int st_mn_dim1, int st_mn_dim2,
+                  double* st_icov_dets, int st_icov_dets_dim,
+                  double* rangevec, int n)
+{
+  int i, j, k;
+  double* st_icov = (double *)malloc(sizeof(double)*6*6);
+  double* st_mn   = (double *)malloc(sizeof(double)*6);
+  double st_icov_det;
+  double result = 0;
+
+  // For each star, makes a copy of each icov and mn and calls internal
+  // get_overlap function
+  for (i=0; i<n; i++) {
+    for (j=i*6*6; j<(i+1)*6*6; j++)
+      st_icov[j%36] = st_icovs[j];
+    for (j=i*6; j<(i+1)*6; j++)
+      st_mn[j%6] = st_mns[j];
+    st_icov_det = st_icov_dets[i];
+
+    rangevec[i] = get_overlap(gr_icov, 6, 6,
+                              gr_mn, 6,
+                              gr_icov_det,
+                              st_icov, 6, 6,
+                              st_mn, 6,
+                              st_icov_det);
+  }
 }
