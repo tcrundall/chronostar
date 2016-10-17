@@ -248,14 +248,21 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
     #Now loop through stars, and save the overlap integral for every star.
     overlaps = np.empty(ns)
     if use_swig:
-        for i in range(ns):
-            overlaps[i] = overlap.get_overlap(group_icov,
-                                              group_mn,
-                                              group_icov_det,
-                                              Bs[i],
-                                              bs[i],
-                                              B_dets[i]) #&TC
-            lnprob += np.log(background_density + overlaps[i])
+        if (False):
+            #NOT TESTED, JUST TO GIVE MIKE AN IDEA OF THE LAYOUT OF THE FUNCTION CALL
+            overlaps = overlap.get_overlap(group_icov, group_mn, group_icov_det,
+                                            Bs, bs, B_dets, ns)
+            #note 'ns' at end, see 'overlap.c' for documentation
+            lnprob = lnprob + np.sum(np.log(background_density + overlaps))
+        else:
+            for i in range(ns):
+                overlaps[i] = overlap.get_overlap(group_icov,
+                                                  group_mn,
+                                                  group_icov_det,
+                                                  Bs[i],
+                                                  bs[i],
+                                                  B_dets[i]) #&TC
+                lnprob += np.log(background_density + overlaps[i])
     else:
         for i in range(ns):
             overlaps[i] = compute_overlap(group_icov,group_mn,group_icov_det,Bs[i],bs[i],B_dets[i])

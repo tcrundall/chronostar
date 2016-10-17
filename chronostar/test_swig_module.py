@@ -120,7 +120,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--iter', dest='i', default=10000,
                         help='number of iterations, def 10000')
 parser.add_argument('-n', '--nstars', dest='n', default=10000,
-                        help='number of stars called by get_overlaps')
+                        help='number of stars, must be <= iterations, def: 10000')
 args = parser.parse_args()
 
 iterations = int(args.i)
