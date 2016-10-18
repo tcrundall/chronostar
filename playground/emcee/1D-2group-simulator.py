@@ -78,11 +78,11 @@ if (reorder_samples):
 means = [-20.0, 30.0, 100.0]
 
 # ... and some standard deviations
-stds = [10.0, 7.0, 5.0]
+stds = [10.0, 50.0, 5.0]
 
 # Cumulative fraction of stars in groups
 # i.e. [0, .25, 1.] means 25% of stars in group 1 and 75% in group 2
-cum_fracs = [0.0, 0.5, 0.75, 1.]
+cum_fracs = [0.0, 0.25, 0.75, 1.]
 
 # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
 # means and standard devs
@@ -100,9 +100,9 @@ def gaussian_eval(x, mu, sig):
 # The prior, used to set bounds on the walkers
 def lnprior(pars):
 	mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
-	if		-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and 5.0 < w1 < 80.0 \
-		and	-100 < mu2 < 100 and 0.0 < sig2 < 100.0 and 5.0 < w2 < 80.0 \
-		and	-100 < mu1 < 100 and 0.0 < sig1 < 100.0 and (w2+w1) < 95.0:
+	if		-200 < mu1 < 200 and 0.0 < sig1 < 100.0 and 5.0 < w1 < 80.0 \
+		and	-200 < mu2 < 200 and 0.0 < sig2 < 100.0 and 5.0 < w2 < 80.0 \
+		and	-200 < mu1 < 200 and 0.0 < sig1 < 100.0 and (w2+w1) < 95.0:
 		return 0.0
 	return -np.inf 
 
@@ -197,11 +197,17 @@ sampler.run_mcmc(pos, samplingsteps, rstate0=state)
 # Print out the mean acceptance fraction. In general, acceptance_fraction
 # has an entry for each walker so, in this case, it is a 250-dimensional
 # vector.
-print("Mean acceptance fraction:", np.mean(sampler.acceptance_fraction))
+try:
+  print("Mean acceptance fraction:", np.mean(sampler.acceptance_fraction))
+except:
+  pass
 
 # Estimate the integrated autocorrelation time for the time series in each
 # paramter.
-print("Autocorrelation time:", sampler.get_autocorr_time())
+try:
+  print("Autocorrelation time:", sampler.get_autocorr_time())
+except:
+  pass
 
 # Reshapes each chain into an npar*X array where npar is the number of 
 # parameters required to specify one position, and X is the number of instances
@@ -252,9 +258,9 @@ if(print_table):
 	# we simply evaluate the modelled gaussian for each group at the stars
 	# 'position'. Normalising these evaluations gives us the porbabilities.
 	for i, star in enumerate(stars):
-		likelihood1 = gaussian_eval(stars[i], model_mu1, model_sig1)
-		likelihood2 = gaussian_eval(stars[i], model_mu2, model_sig2)
-		likelihood3 = gaussian_eval(stars[i], model_mu3, model_sig3)
+		likelihood1 = model_p1*gaussian_eval(stars[i], model_mu1, model_sig1)
+		likelihood2 = model_p2*gaussian_eval(stars[i], model_mu2, model_sig2)
+		likelihood3 = model_p3*gaussian_eval(stars[i], model_mu3, model_sig3)
 		prob1 = likelihood1 / (likelihood1 + likelihood2 + likelihood3) * 100
 		prob2 = likelihood2 / (likelihood1 + likelihood2 + likelihood3) * 100
 		prob3 = likelihood3 / (likelihood1 + likelihood2 + likelihood3) * 100
