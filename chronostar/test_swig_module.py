@@ -80,14 +80,16 @@ def timings(group_icov, group_mean, group_icov_det,
         Executes each function a fixed number of times, timing for how
         long it takes.
     """
-
-    #npstart = time.clock()
-    #for i in range(noverlaps):
-    #    result = compute_overlap(group_icov, group_mean, group_icov_det,
-    #                             star_icovs[0], star_means[0],
-    #                             star_icov_dets[0])
-    #print "Numpy: " + str(time.clock() - npstart)
-    print "Numpy: practically infinity seconds"
+    if (noverlaps <= 100000):
+        npstart = time.clock()
+        for i in range(noverlaps):
+            result = compute_overlap(group_icov, group_mean, group_icov_det,
+                                     star_icovs[0], star_means[0],
+                                     star_icov_dets[0])
+        print "Numpy: " + str(time.clock() - npstart)
+    else:
+        print "Numpy: practically infinity seconds"
+        print " -- (approximately 5x 'Swig')"
 
     swigstart = time.clock()
     for i in range(noverlaps):
@@ -110,6 +112,7 @@ def timings(group_icov, group_mean, group_icov_det,
         result = overlap.get_overlaps(group_icov, group_mean, group_icov_det,
                               star_icovs, star_means, star_icov_dets, batch_size)
     end = time.clock()
+
     print "Swigging numpy multi: {} s".format(end - swignpmultistart)
     print(" -- total module calls: {}".format(noverlaps/batch_size))
     print(" -- {} microsec per overlap".format((end - swignpmultistart)/noverlaps*1e6))
@@ -122,13 +125,20 @@ def timings(group_icov, group_mean, group_icov_det,
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-o', '--over', dest='o', default=10000,
-                        help='number of overlaps, def 10000')
+                        help='number of overlaps, def: 10000')
 parser.add_argument('-b', '--batch', dest='b', default=10000,
-                        help='batch size, must be <= # of overlaps, def: 10000')
+                  help='batch size, must be <= and factor of noverlaps, def: 10000')
 args = parser.parse_args()
 
 noverlaps = int(args.o)
 batch_size = int(args.b)
+
+# ensuring batch_size is not greater than noverlaps
+if (batch_size > noverlaps):
+  batch_size = noverlaps
+
+# Readjusting batch_size upwards to next best fitting amount
+batch_size = noverlaps/(noverlaps/batch_size)
 
 #Hard coding some sample data:
 #  1 group inverse covariance matrix and determinant
