@@ -75,41 +75,45 @@ def correctness(group_icov, group_mean, group_icov_det, star_icovs,
                               nstars)
 
 def timings(group_icov, group_mean, group_icov_det,
-              star_icovs, star_means, star_icov_dets, nstars, iterations=10000):
+              star_icovs, star_means, star_icov_dets, batch_size, noverlaps=10000):
     """
         Executes each function a fixed number of times, timing for how
         long it takes.
     """
 
-    npstart = time.clock()
-    for i in range(iterations):
-        result = compute_overlap(group_icov, group_mean, group_icov_det,
-                                 star_icovs[0], star_means[0],
-                                 star_icov_dets[0])
-    print "Numpy: " + str(time.clock() - npstart)
+    #npstart = time.clock()
+    #for i in range(noverlaps):
+    #    result = compute_overlap(group_icov, group_mean, group_icov_det,
+    #                             star_icovs[0], star_means[0],
+    #                             star_icov_dets[0])
+    #print "Numpy: " + str(time.clock() - npstart)
+    print "Numpy: practically infinity seconds"
 
     swigstart = time.clock()
-    for i in range(iterations):
+    for i in range(noverlaps):
         result =  overlap.get_overlap2(group_icov.flatten().tolist(),
                                        group_mean.flatten().tolist(),
                                        group_icov_det,
                                        star_icovs[0].flatten().tolist(),
                                        star_means[0].flatten().tolist(),
                                        star_icov_dets[0])
-    print "Swig: " + str(time.clock() - swigstart)
+    print "Swig: {} s".format(time.clock() - swigstart)
 
     swignpstart = time.clock()
-    for i in range(iterations):
+    for i in range(noverlaps):
         result = overlap.get_overlap(group_icov, group_mean, group_icov_det,
                               star_icovs[0], star_means[0], star_icov_dets[0])
-    print "Swigging numpy: " + str(time.clock() - swignpstart)
+    print "Swigging numpy: {} s".format(time.clock() - swignpstart)
 
     swignpmultistart = time.clock()
-    for i in range(iterations/nstars):
+    for i in range(noverlaps/batch_size):
         result = overlap.get_overlaps(group_icov, group_mean, group_icov_det,
-                              star_icovs, star_means, star_icov_dets, nstars)
-    print "Swigging numpy multi: {}".format(time.clock() - swignpmultistart)
-    print(" -- total module calls: {}".format(iterations/nstars))
+                              star_icovs, star_means, star_icov_dets, batch_size)
+    end = time.clock()
+    print "Swigging numpy multi: {} s".format(end - swignpmultistart)
+    print(" -- total module calls: {}".format(noverlaps/batch_size))
+    print(" -- {} microsec per overlap".format((end - swignpmultistart)/noverlaps*1e6))
+    print(" -- {} stars per module call".format(batch_size))
 
 # ------------- MAIN PROGRAM -----------------------
 
@@ -117,14 +121,14 @@ def timings(group_icov, group_mean, group_icov_det,
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-i', '--iter', dest='i', default=10000,
-                        help='number of iterations, def 10000')
-parser.add_argument('-n', '--nstars', dest='n', default=10000,
-                        help='number of stars, must be <= iterations, def: 10000')
+parser.add_argument('-o', '--over', dest='o', default=10000,
+                        help='number of overlaps, def 10000')
+parser.add_argument('-b', '--batch', dest='b', default=10000,
+                        help='batch size, must be <= # of overlaps, def: 10000')
 args = parser.parse_args()
 
-iterations = int(args.i)
-NSTARS = int(args.n)
+noverlaps = int(args.o)
+batch_size = int(args.b)
 
 #Hard coding some sample data:
 #  1 group inverse covariance matrix and determinant
@@ -186,12 +190,11 @@ correctness(group_icov, group_mean, group_icov_det, star_icovs,
                                   star_means, star_icov_dets, nstars)
 print
 
-nstars = NSTARS 
-star_icovs = np.tile(star_icovs, (nstars/2,1,1))
-star_means = np.tile(star_means, (nstars/2,1))
-star_icov_dets = np.tile(star_icov_dets, nstars/2)
+star_icovs = np.tile(star_icovs[0], (batch_size,1,1))
+star_means = np.tile(star_means[0], (batch_size,1))
+star_icov_dets = np.tile(star_icov_dets[0], batch_size)
 
 print("____ TIMINGS ______")
-print("# of stars: {}".format(iterations))
+print("# of overlaps: {}".format(noverlaps))
 timings(group_icov, group_mean, group_icov_det, star_icovs,
-                         star_means, star_icov_dets, nstars, iterations)
+                         star_means, star_icov_dets, batch_size, noverlaps)

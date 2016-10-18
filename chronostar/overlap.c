@@ -70,7 +70,6 @@ double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
   int MAT_DIM = gr_dim1;
   int i, j, signum, l;
   double ApB_det, d_temp, result;
-  PyObject *o1, *o2;
   gsl_permutation *p;
 
   gsl_matrix *A        = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
@@ -320,26 +319,116 @@ void get_overlaps(double* gr_icov, int gr_dim1, int gr_dim2,
                   double* st_icov_dets, int st_icov_dets_dim,
                   double* rangevec, int n)
 {
-  int i, j, k;
-  double* st_icov = (double *)malloc(sizeof(double)*6*6);
-  double* st_mn   = (double *)malloc(sizeof(double)*6);
-  double st_icov_det;
-  double result = 0;
+  // ALLOCATE MEMORY
+  int star_count = 0;
+  int MAT_DIM = gr_dim1; //Typically set to 6
+  int i, j, signum;
+  double ApB_det, d_temp, result;
+  gsl_permutation *p;
 
-  // For each star, makes a copy of each icov and mn and calls internal
-  // get_overlap function
-  for (i=0; i<n; i++) {
-    for (j=i*6*6; j<(i+1)*6*6; j++)
-      st_icov[j%36] = st_icovs[j];
-    for (j=i*6; j<(i+1)*6; j++)
-      st_mn[j%6] = st_mns[j];
-    st_icov_det = st_icov_dets[i];
+  gsl_matrix *A        = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
+  gsl_matrix *B        = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
+  gsl_matrix *ApB      = gsl_matrix_alloc(MAT_DIM, MAT_DIM);
+  gsl_vector *a        = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *b        = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *AapBb    = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *c        = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *v_temp   = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *v_temp2  = gsl_vector_alloc(MAT_DIM);
+  gsl_vector *amc      = gsl_vector_alloc(MAT_DIM); //will hold a - c
+  gsl_vector *bmc      = gsl_vector_alloc(MAT_DIM); //will hold b - c
 
-    rangevec[i] = get_overlap(gr_icov, 6, 6,
-                              gr_mn, 6,
-                              gr_icov_det,
-                              st_icov, 6, 6,
-                              st_mn, 6,
-                              st_icov_det);
+  p = gsl_permutation_alloc(A->size1);
+
+  // INITIALISE GROUP MATRICES
+  for (i=0; i<MAT_DIM; i++)
+    for (j=0; j<MAT_DIM; j++)
+      gsl_matrix_set (A, i, j, gr_icov[i*MAT_DIM + j]);
+
+  for (i=0; i<MAT_DIM; i++)
+    gsl_vector_set (a, i, gr_mn[i]);
+
+
+  for (star_count=0; star_count<n; star_count++) {
+    // INITIALISE STAR MATRICES
+    for (i=0; i<MAT_DIM; i++)
+      for (j=0; j<MAT_DIM; j++)
+        gsl_matrix_set(B,i,j, st_icovs[star_count*MAT_DIM*MAT_DIM+i*MAT_DIM+j]);
+
+    for (i=0; i<MAT_DIM; i++) 
+      gsl_vector_set (b, i, st_mns[star_count*MAT_DIM + i]);
+
+
+    // FIND OVERLAP
+    // Adding A and B together and storing in ApB
+    gsl_matrix_set_zero(ApB);
+    gsl_matrix_add(ApB, A);
+    gsl_matrix_add(ApB, B);
+  
+    // Storing the result A*a + B*b in AapBb
+    gsl_vector_set_zero(AapBb);
+    gsl_blas_dsymv(CblasUpper, 1.0, A, a, 1.0, AapBb);
+    gsl_blas_dsymv(CblasUpper, 1.0, B, b, 1.0, AapBb);
+  
+    // Getting determinant of ApB
+    gsl_linalg_LU_decomp(ApB, p, &signum);
+    //ApB_det = gsl_linalg_LU_det(ApB, signum);
+    ApB_det = fabs(gsl_linalg_LU_det(ApB, signum)); //temp doctoring determinant
+  
+    // Solve for c
+    gsl_linalg_LU_solve(ApB, p, AapBb, c);
+  
+    // Compute the overlap formula
+    gsl_vector_set_zero(v_temp);
+    gsl_blas_dcopy(a, v_temp);       //v_temp holds a
+    gsl_blas_daxpy(-1.0, c, v_temp); //v_temp holds a - c
+    gsl_blas_dcopy(v_temp, amc);     //amc holds a - c
+  
+    // CAN'T HAVE v_temp and v_temp2 be the same vector.
+    // Results in 0's being stored in v_temp2.
+    gsl_blas_dsymv(CblasUpper, 1.0, A, v_temp, 0.0, v_temp2);
+    //v_temp2 holds A (a-c)
+  
+    result = 0.0;
+    gsl_blas_ddot(v_temp2, amc, &d_temp); //d_temp holds (a-c)^T A (a-c)
+  
+    result += d_temp;
+    
+    gsl_vector_set_zero(v_temp);
+    gsl_blas_dcopy(b, v_temp);       //v_temp holds b
+    gsl_blas_daxpy(-1.0, c, v_temp); //v_temp holds b - c
+    gsl_blas_dcopy(v_temp, bmc);     //bmc holds b - c
+  
+    // CAN'T HAVE v_temp and v_temp2 be the same vector.
+    // Results in 0's being stored in v_temp2.
+    gsl_blas_dsymv(CblasUpper, 1.0, B, v_temp, 0.0, v_temp2);
+    //v_temp2 holds A (b-c)
+  
+    gsl_blas_ddot(v_temp2, bmc, &d_temp); //d_temp holds (b-c)^T B (b-c)
+    result += d_temp;
+   
+    result = -0.5 * result;
+    result = exp(result);
+  
+    result *= sqrt((gr_icov_det * st_icov_dets[star_count]/ApB_det)
+                  / pow(2*M_PI, MAT_DIM));
+
+    // STORE IN 'rangevec'
+    rangevec[star_count] = result;
   }
+
+  // DEALLOCATE THE MEMORY
+  gsl_matrix_free(A);
+  gsl_matrix_free(B);
+  gsl_matrix_free(ApB);
+  gsl_vector_free(a);
+  gsl_vector_free(b);
+  gsl_vector_free(AapBb);
+  gsl_vector_free(c);
+  gsl_vector_free(v_temp);
+  gsl_vector_free(v_temp2);
+  gsl_vector_free(amc);
+  gsl_vector_free(bmc);
+
+  gsl_permutation_free(p);
 }
