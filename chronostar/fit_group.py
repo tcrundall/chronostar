@@ -63,7 +63,8 @@ def compute_overlap(A,a,A_det,B,b,B_det):
     #Compute the overlap formula.
     overlap = np.exp(-0.5*(np.dot(b-c,np.dot(B,b-c)) + \
                            np.dot(a-c,np.dot(A,a-c)) )) 
-    overlap *= np.sqrt(B_det*A_det/ApB_det)/(2*np.pi)**3.0
+
+    #overlap *= np.sqrt(B_det*A_det/ApB_det)/(2*np.pi)**3.0
     
     return overlap
    
