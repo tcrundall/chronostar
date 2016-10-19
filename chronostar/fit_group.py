@@ -64,7 +64,7 @@ def compute_overlap(A,a,A_det,B,b,B_det):
     overlap = np.exp(-0.5*(np.dot(b-c,np.dot(B,b-c)) + \
                            np.dot(a-c,np.dot(A,a-c)) )) 
 
-    #overlap *= np.sqrt(B_det*A_det/ApB_det)/(2*np.pi)**3.0
+    overlap *= np.sqrt(B_det*A_det/ApB_det)/(2*np.pi)**3.0
     
     return overlap
    
@@ -249,9 +249,9 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
     #Now loop through stars, and save the overlap integral for every star.
     overlaps = np.empty(ns)
     if use_swig:
-        if (False):
+        if (True):
             #NOT TESTED, JUST TO GIVE MIKE AN IDEA OF THE LAYOUT OF THE FUNCTION CALL
-            overlaps = overlap.get_overlap(group_icov, group_mn, group_icov_det,
+            overlaps = overlap.get_overlaps(group_icov, group_mn, group_icov_det,
                                             Bs, bs, B_dets, ns)
             #note 'ns' at end, see 'overlap.c' for documentation
             lnprob = lnprob + np.sum(np.log(background_density + overlaps))
@@ -383,8 +383,10 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
         "pickleable"
         
     init_mod : array-like
-        See lnprob_one_group for parameter definitions.
-        
+        Initial mean of models used to fit the group. See lnprob_one_group for parameter definitions.
+
+            
+
     nwalkers : int
         Number of walkers to characterise the parameter covariance matrix. Has to be
         at least 2 times the number of dimensions.
@@ -449,8 +451,10 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
         plt.hist(sampler.chain[:,:,-1].flatten(),20)
     
     #pdb.set_trace()
-    
-    return sampler.flatchain[best_ix]
+    if return_sampler:
+        return sampler
+    else:
+        return sampler.flatchain[best_ix]
         
 #Some test calculations applicable to the ARC DP17 proposal.
 if __name__ == "__main__":

@@ -8,10 +8,13 @@ from astropy.table import Table
 import pylab as p
 import chronostar.traceback as traceback
 import chronostar.fit_group as fit_group
+from emcee.utils import MPIPool
+import sys
+import pickle
 #plt.ion()
 
-trace_it_back = False
-fit_the_group = True
+trace_it_back = True
+fit_the_group = False
 n_times = 31
 max_time = 30
 
@@ -50,16 +53,42 @@ if trace_it_back:
 if fit_the_group:
     star_params = fit_group.read_stars("results/bp_TGAS1_traceback_save.pkl")
     
+    #Original
     beta_pic_group = np.array([-6.574, 66.560, 23.436, -1.327,-11.427, -6.527,\
         10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589])
- 
+    #Widened
     beta_pic_group = np.array([-6.574, 66.560, 23.436, -1.327,-11.427, 0,\
      10.045, 10.319, 12.334,  5,  0.932,  0.735,  0.846, 20.589])
+    #After one successful fit.
+    beta_pic_group = np.array([ -0.908, 60.998, 27.105, -0.651,-11.470, -0.148,  8.055,  4.645,  8.221,  0.655,  0.792,  0.911,  0.843, 18.924])
 
     ol_swig = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=True, return_overlaps=True)
     ol_old  = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=False, return_overlaps=True)
 
-#    fitted_group = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
-#        nwalkers=30,nchain=100,nburn=20, return_sampler=False,pool=None,\
-#        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=False, \
-#        plotit=True)
+    using_mpi = True
+    try:
+        # Initialize the MPI-based pool used for parallelization.
+        pool = MPIPool()
+    except:
+        print("Either MPI doesn't seem to be installed or you aren't running with MPI... ")
+        using_mpi = False
+        pool=None
+    
+    if using_mpi:
+        if not pool.is_master():
+            # Wait for instructions from the master process.
+            pool.wait()
+            sys.exit(0)
+    else:
+        print("MPI available for this code! - call this with e.g. mpirun -np 11 python test_betapic_TGAS.py")
+
+    sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
+        nwalkers=30,nchain=10000,nburn=1000, return_sampler=True,pool=pool,\
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,.01]), background_density=5e-12, use_swig=True, \
+        plotit=True)
+ 
+    pickle.dump((sampler.chain, sampler.lnprobability), open("betaPic_sampler.pkl",'w'))   
+
+    if using_mpi:
+        # Close the processes.
+        pool.close()
