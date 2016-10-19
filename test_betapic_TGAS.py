@@ -10,8 +10,8 @@ import chronostar.traceback as traceback
 import chronostar.fit_group as fit_group
 #plt.ion()
 
-trace_it_back = True
-fit_the_group = False
+trace_it_back = False
+fit_the_group = True
 n_times = 31
 max_time = 30
 

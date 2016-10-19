@@ -255,8 +255,8 @@ class TraceBack():
             cov_obs[2,3] = e_Plx * e_pmRA * parallax_pmra_corr
             cov_obs[2,4] = e_Plx * e_pmDE * parallax_pmdec_corr
             cov_obs[3,4] = e_pmRA * e_pmDE * pmra_pmdec_corr                        
-            for (j,k) in [(3,2),(4,2),(4,3)]:
-                cov_obs[j,k] = cov_obs[j,k]
+            for (j,k) in [(2,3),(2,4),(3,4)]:
+                cov_obs[k,j] = cov_obs[j,k]
             
             #Create the covariance matrix from the Jacobian. See e.g.:
             #https://en.wikipedia.org/wiki/Covariance#A_more_general_identity_for_covariance_matrices
