@@ -7,14 +7,20 @@ import matplotlib.pyplot as plt
 from astropy.table import Table
 import pylab as p
 import chronostar.traceback as traceback
+import chronostar.fit_group as fit_group
 #plt.ion()
+
+trace_it_back = True
+fit_the_group = False
+n_times = 31
+max_time = 30
 
 #t=Table.read('Astrometry_with_RVs_subset.fits')
 #t['Dist'] = 10e-3/t['parallax_1']
 #t = t[(t['Dist'] < 0.05) & (t['Dist'] > 0)]
 #vec_wd = np.vectorize(traceback.withindist)
 #t = t[vec_wd((t['ra_adopt']),(t['dec_adopt']),(t['Dist']),0.02, 86.82119870, -51.06651143, 0.01944)]
-t=Table.read('data/betaPic_RV_Check.csv')
+t=Table.read('data/betaPic_RV_Check2.csv')
 
 #Which dimensions do we plot? 0=X, 1=Y, 2=Z
 dims = [0,1]
@@ -35,8 +41,19 @@ if (dims[0]==1) & (dims[1]==2):
     #text_ix = [0,1,4,7]
     #xoffset[7]=-15
     
-times = np.linspace(0,20,21)
+times = np.linspace(0,max_time, n_times)
 
-tb = traceback.TraceBack(t)
-tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="results/bp_TGAS1_traceback_save.pkl")
+if trace_it_back:
+    tb = traceback.TraceBack(t)
+    tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=True,savefile="results/bp_TGAS1_traceback_save.pkl")
 
+if fit_the_group:
+    star_params = fit_group.read_stars("results/bp_TGAS1_traceback_save.pkl")
+    
+    beta_pic_group = np.array([-6.574, 66.560, 23.436, -1.327,-11.427, -6.527,\
+        10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589])
+
+    fitted_group = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
+        nwalkers=30,nchain=100,nburn=20, return_sampler=False,pool=None,\
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=False, \
+        plotit=True)

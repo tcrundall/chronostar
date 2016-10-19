@@ -189,9 +189,15 @@ class TraceBack():
                     Plx = star['Plx']
                     e_Plx = star['e_Plx']
                     pmDE = star['pmDE']
-                    e_pmDE = 0.5 #star['e_pmDE']
+                    try:
+                        e_pmDE = star['e_pmDE']
+                    except:
+                        e_pmDE = 0.5
                     pmRA = star['pmRA_2']
-                    e_pmRA = 0.5 #star['e_pmRA']
+                    try:
+                        e_pmRA = star['e_pmRA']
+                    except:
+                        e_pmRA = 0.5
             
             else:
                 DEdeg = star['DEdeg']
@@ -224,6 +230,9 @@ class TraceBack():
                 
             params = np.array([RAdeg,DEdeg,Plx,pmRA,pmDE,RV])
             xyzuvw[i] = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
+            
+            #if star['Name1'] == 'HIP 12545':
+            #    pdb.set_trace()
             
             #Create numerical derivatives
             for j in range(6):
