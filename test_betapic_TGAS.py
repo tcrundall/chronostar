@@ -52,8 +52,14 @@ if fit_the_group:
     
     beta_pic_group = np.array([-6.574, 66.560, 23.436, -1.327,-11.427, -6.527,\
         10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589])
+ 
+    beta_pic_group = np.array([-6.574, 66.560, 23.436, -1.327,-11.427, 0,\
+     10.045, 10.319, 12.334,  5,  0.932,  0.735,  0.846, 20.589])
 
-    fitted_group = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
-        nwalkers=30,nchain=100,nburn=20, return_sampler=False,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=False, \
-        plotit=True)
+    ol_swig = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=True, return_overlaps=True)
+    ol_old  = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=False, return_overlaps=True)
+
+#    fitted_group = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
+#        nwalkers=30,nchain=100,nburn=20, return_sampler=False,pool=None,\
+#        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=False, \
+#        plotit=True)

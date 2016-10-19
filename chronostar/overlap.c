@@ -154,8 +154,8 @@ double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
   result = -0.5 * result;
   result = exp(result);
 
-  result *= sqrt((gr_icov_det * st_icov_det/ApB_det)
-                / pow(2*M_PI, MAT_DIM));
+  //result *= sqrt((gr_icov_det * st_icov_det/ApB_det)
+  //              / pow(2*M_PI, MAT_DIM));
 //} //DELETE THIS 
 
   // Freeing memory
