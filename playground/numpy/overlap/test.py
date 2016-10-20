@@ -106,11 +106,11 @@ def timings():
 
     swigstart = time.clock()
     for i in range(iterations):
-        result =  overlap.get_overlap(group_icov.flatten().tolist(),
-                                      group_mean.flatten().tolist(),
+        result =  overlap.get_overlap(group_icov,
+                                      group_mean,
                                       group_icov_det,
-                                      star_icovs[0].flatten().tolist(),
-                                      star_means[0].flatten().tolist(),
+                                      star_icovs[0],
+                                      star_means[0],
                                       star_icov_dets[0])
     print "Swig: " + str(time.clock() - swigstart)
 
