@@ -5,7 +5,7 @@ In this repository, we will try to prototype some orbital traceback calculations
 
 For a local build, do:
 
-python setup.py build_ext -b .
+	python setup.py build_ext -b .
 
 Building on Raijin:
 	-- everytime
@@ -18,6 +18,8 @@ Building on Raijin:
 	pip install --user galpy
 	pip install --user emcee
 
-	-- in chronostar/chronostar
-	make
+	-- build
+	python setup.py build_ext -b .
+
+	-- to test
 	python test_swig_module.py
