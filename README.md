@@ -3,6 +3,10 @@ A stellar orbit traceback code
 
 In this repository, we will try to prototype some orbital traceback calculations.
 
+For a local build, do:
+
+python setup.py build_ext -b .
+
 Building on Raijin:
 	-- everytime
 	module load python/2.7.11

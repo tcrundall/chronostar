@@ -28,6 +28,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import pdb
+sys.path.append('..')
 try:
     import overlap #&TC
 except:

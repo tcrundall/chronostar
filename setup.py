@@ -12,6 +12,13 @@ try:
 except ImportError:
     from distutils.core import setup
 
+try:
+    from setuptools import Extension
+
+except ImportError:
+    from distutils.core import Extension
+
+
 major, minor1, minor2, release, serial =  sys.version_info
 
 readfile_kwargs = {"encoding": "utf-8"} if major >= 3 else {}
@@ -29,6 +36,21 @@ contents = readfile(os.path.join(
 
 version = version_regex.findall(contents)[0]
 
+#Third-party modules - we depend on numpy for everything
+import numpy
+
+# Obtain the numpy include directory. This logic works across numpy versions
+try:
+    numpy_include = numpy.get_include()
+except AttributeError:
+    numpy_include = numpy.get_numpy_include()
+
+_overlap = Extension("chronostar/_overlap",
+                    ["chronostar/overlap.i", "chronostar/overlap.c"],
+                    include_dirs = [numpy_include],
+                    libraries = ['gsl', 'gslcblas'],
+                    )
+
 setup(name="chronostar",
       version=version,
       author="Michael J. Ireland",
@@ -41,5 +63,6 @@ setup(name="chronostar",
       install_requires=[
         "requests",
         "requests_futures"
-      ]
+      ],
+      ext_modules = [_overlap]
      )
