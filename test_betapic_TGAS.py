@@ -13,8 +13,8 @@ import sys
 import pickle
 #plt.ion()
 
-trace_it_back = True
-fit_the_group = False
+trace_it_back = False
+fit_the_group = True
 n_times = 31
 max_time = 30
 
@@ -80,15 +80,17 @@ if fit_the_group:
             pool.wait()
             sys.exit(0)
     else:
-        print("MPI available for this code! - call this with e.g. mpirun -np 11 python test_betapic_TGAS.py")
+        print("MPI available for this code! - call this with e.g. mpirun -np 16 python test_betapic_TGAS.py")
 
     sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
-        nwalkers=30,nchain=10000,nburn=1000, return_sampler=True,pool=pool,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,.01]), background_density=5e-12, use_swig=True, \
+        nwalkers=30,nchain=50,nburn=5, return_sampler=True,pool=pool,\
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,.1]), background_density=5e-12, use_swig=True, \
         plotit=True)
- 
-    pickle.dump((sampler.chain, sampler.lnprobability), open("betaPic_sampler.pkl",'w'))   
-
+    
     if using_mpi:
         # Close the processes.
         pool.close()
+
+    #print("Autocorrelation lengths: ")
+    #print(sampler.get_autocorr_time(c=2.5))
+    pickle.dump((sampler.chain, sampler.lnprobability), open("betaPic_sampler_test.pkl",'w'))  

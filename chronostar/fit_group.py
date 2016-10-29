@@ -28,6 +28,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import pdb
+import time
 try:
     import overlap #&TC
 except:
@@ -152,6 +153,7 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
     min_v_disp : float
         Minimum allowable cluster velocity dispersion in km/s.
     """
+    t0=time.time()
     practically_infinity = np.inf#1e20
     
     xyzuvw = star_params['xyzuvw']
@@ -244,7 +246,9 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
     #it looks almost like 1/(product of standard deviations).
     #See YangBerger1998
     lnprob=np.log(np.abs(group_icov_det)**3.5)
-
+  
+    t1=time.time()  
+  
     #overlaps_start = time.clock()
     #Now loop through stars, and save the overlap integral for every star.
     overlaps = np.empty(ns)
@@ -270,6 +274,7 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
             lnprob += np.log(background_density + overlaps[i])
     
     #print (time.clock() - overlaps_start)
+    print("{0:9.6f}, {1:9.6f}".format(time.time()-t1, t1-t0))
 
     if return_overlaps:
         return overlaps    
