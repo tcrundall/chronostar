@@ -28,7 +28,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import pdb
-import time
+
 try:
     import overlap #&TC
 except:
@@ -436,6 +436,7 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
         plt.figure(1)
         plt.clf()
         plt.plot(sampler.lnprobability.T)
+	plt.savefig("plots/lnprobability.eps")
 
     #Best Model
     best_ix = np.argmax(sampler.flatlnprobability)
@@ -454,6 +455,7 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
         plt.figure(2)       
         plt.clf()         
         plt.hist(sampler.chain[:,:,-1].flatten(),20)
+	plt.savefig("plots/distribution_of_ages.eps")
     
     #pdb.set_trace()
     if return_sampler:

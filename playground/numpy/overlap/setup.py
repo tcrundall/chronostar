@@ -13,17 +13,17 @@ try:
 except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
-# flatten extension module
-_flatten = Extension("_flatten",
-                    ["flatten.i", "flatten.c"],
+# overlap extension module
+_overlap = Extension("_overlap",
+                    ["overlap.i", "overlap.c"],
                     include_dirs = [numpy_include],
                     )
 
-# flatten setup
-setup(  name        = "flatten function",
-        description = "Function that peforms a flatten",
+# overlap setup
+setup(  name        = "overlap function",
+        description = "Function that peforms a overlap",
         author      = "Egor Zindy",
         version     = "1.0",
-        ext_modules = [_flatten]
+        ext_modules = [_overlap]
         )
 

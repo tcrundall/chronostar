@@ -17,6 +17,7 @@ except AttributeError:
 _overlap = Extension("_overlap",
                     ["overlap.i", "overlap.c"],
                     include_dirs = [numpy_include],
+                    libraries = ['gsl', 'gslcblas'],
                     )
 
 # NumpyTypemapTests setup

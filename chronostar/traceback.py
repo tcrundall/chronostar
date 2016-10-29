@@ -159,7 +159,14 @@ class TraceBack():
         if len(axis_range)==0:
             axis_range = [-100,100,-100,100]
         
+        try:
+            colnames = stars.names
+        except:
+            colnames = stars.columns
+        
         for i in range(nstars):
+            if (i+1) % 100 ==0:
+                print("Done {0:d} of {1:d} stars.".format(i+1, nstars))
             star = stars[i]
             
             #Some defaults for correlations.
@@ -168,14 +175,21 @@ class TraceBack():
             pmra_pmdec_corr=0.0
             
             #Are we using our joint HIPPARCOS/TGAS table?
-            if 'ra_adopt' in star.columns:
+            if 'ra_adopt' in colnames:
                 RAdeg = star['ra_adopt']
                 DEdeg = star['dec_adopt']
                 RV = star['rv_adopt']
                 e_RV = star['rv_adopt_error']
                 
                 #Do we have a TGAS entry?
-                if not (stars['parallax_1'].mask)[i]:               
+                tgas_entry = True
+                try:
+                    if (stars['parallax_1'].mask)[i]:
+                        tgas_entry=False
+                except:
+                    if star['parallax_1']!=star['parallax_1']:
+                        tgas_entry=False
+                if tgas_entry:               
                     Plx = star['parallax_1']
                     e_Plx = star['parallax_error']
                     pmRA = star['pmra_1']

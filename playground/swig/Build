@@ -11,7 +11,9 @@ if [ `uname` = Darwin ]; then
 elif [ `uname` = Linux ]; then
         if [ `uname -r` = "3.16.0-30-generic" ]; then
                 make -f ./Makefile.tim $1
-        else
+        elif [ `uname -r` = "2.6.32-642.1.1.el6.x86_64" ]; then
+		make -f ./Makefile.Raijin $1
+	else
                 make -f ./Makefile.Linux $1
         fi
 else
