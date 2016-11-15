@@ -19,14 +19,17 @@ import astropy.io.fits as pyfits
 import pylab as p
 import chronostar.traceback as traceback
 import chronostar.fit_group as fit_group
+from emcee.utils import MPIPool
+import sys
+import pickle
 #plt.ion()
 
-trace_it_back = True
-fit_the_group = False
+trace_it_back = False 
+fit_the_group = True
 n_times = 2
 max_time = 18.924
 
-use_bpic_subset=False
+use_bpic_subset=True
 
 n_times = 41
 max_time = 40
@@ -34,6 +37,7 @@ max_time = 40
 n_times=56
 max_time=165
 pklfile="TGAS_traceback_165Myr.pkl"
+pklfile = "bp_TGAS2_traceback_save.pkl"
 ddir = "data/"
 #ddir = ""/Users/mireland/Google Drive/chronostar_catalogs/"
 #----
@@ -48,7 +52,7 @@ ddir = "data/"
 #Limit outselves to stars with parallaxes smaller than 250pc, uncertainties smaller than 20%
 #and radial velocities smaller than 100km/s. This gives 65,853 stars.
 if use_bpic_subset:
-    t = pyfits.getdata("/Users/mireland/Google Drive/chronostar_catalogs/Astrometry_with_RVs_possible_bpic.fits",1)
+    t = pyfits.getdata(ddir + "Astrometry_with_RVs_possible_bpic.fits",1)
 else:
     t = pyfits.getdata(ddir + "Astrometry_with_RVs_subset2.fits",1)
 good_par_sig = np.logical_or(t['parallax_1'] > 5*t['parallax_error'], t['Plx'] > 5*t['e_Plx'])
@@ -87,16 +91,40 @@ if trace_it_back:
 if fit_the_group:
     star_params = fit_group.read_stars("results/"+pklfile)
     
-    beta_pic_group = np.array([-6.574, 66.560, 23.436, -1.327,-11.427, -6.527,\
-        10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589])
+    beta_pic_group = np.array([ -0.908, 60.998, 27.105, -0.651,-11.470, -0.148, \
+      8.055,  4.645,  8.221,  0.655,  0.792,  0.911,  0.843, 18.924])
  
-    beta_pic_group = np.array([-6.574, 66.560, 23.436, -1.327,-11.427, 0,\
-     10.045, 10.319, 12.334,  5,  0.932,  0.735,  0.846, 20.589])
-
     ol_swig = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=True, return_overlaps=True)
     ol_old  = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=False, return_overlaps=True)
 
-#    fitted_group = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
-#        nwalkers=30,nchain=100,nburn=20, return_sampler=False,pool=None,\
-#        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=False, \
-#        plotit=True)
+    using_mpi = True
+    try:
+        # Initialize the MPI-based pool used for parallelization.
+        pool = MPIPool()
+    except:
+        print("Either MPI doesn't seem to be installed or you aren't running with MPI... ")
+        using_mpi = False
+        pool=None
+    
+    if using_mpi:
+        if not pool.is_master():
+            # Wait for instructions from the master process.
+            pool.wait()
+            sys.exit(0)
+    else:
+        print("MPI available for this code! - call this with e.g. mpirun -np 16 python test_betapic_TGAS.py")
+
+    sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
+        nwalkers=30,nchain=10000,nburn=1000, return_sampler=True,pool=pool,\
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,.1]), background_density=1e-6, use_swig=True, \
+        plotit=False)
+    
+    if using_mpi:
+        # Close the processes.
+        pool.close()
+
+    #print("Autocorrelation lengths: ")
+    #print(sampler.get_autocorr_time(c=2.5))
+    pickle.dump((sampler.chain[:,-1,:], sampler.lnprobability[:,-1]), open("betaPic_sampler_end_m06.pkl",'w')) 
+    print("Autocorrelation lengths: ")
+    print(sampler.get_autocorr_time(c=2.0))

@@ -48,7 +48,8 @@ except AttributeError:
 _overlap = Extension("chronostar/_overlap",
                     ["chronostar/overlap.i", "chronostar/overlap.c"],
                     include_dirs = [numpy_include],
-                    libraries = ['gsl', 'gslcblas'],
+                    libraries = ['gsl', 'gslcblas'], 
+                    extra_compile_args = ["-floop-parallelize-all","-ftree-parallelize-loops=4"],
                     )
 
 setup(name="chronostar",

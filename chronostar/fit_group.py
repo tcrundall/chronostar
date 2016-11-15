@@ -112,7 +112,7 @@ def read_stars(infile):
 
    
 def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix = 0,return_overlaps=False,\
-    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False):
+    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, print_times=False):
     """Compute the log-likelihood for a fit to a group.
 
     The x variables are:
@@ -274,7 +274,8 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
             lnprob += np.log(background_density + overlaps[i])
     
     #print (time.clock() - overlaps_start)
-    print("{0:9.6f}, {1:9.6f}".format(time.time()-t1, t1-t0))
+    if print_times:
+	print("{0:9.6f}, {1:9.6f}".format(time.time()-t1, t1-t0))
 
     if return_overlaps:
         return overlaps    
@@ -445,8 +446,11 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
     group_cov = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_cov=True,use_swig=use_swig)
     np.sqrt(np.linalg.eigvalsh(group_cov[:3,:3]))
     ww = np.where(overlaps < background_density)[0]
-    print("The following stars have very small overlaps with the group...")
-    print(star_params['stars'][ww]['Name'])
+    print("The following {0:d} stars are more likely not group members...".format(len(ww)))
+    try:
+        print(star_params['stars'][ww]['Name'])
+    except:
+       print(star_params['stars'][ww]['Name1'])
 
     print("Mean acceptance fraction: {0:.3f}"
                     .format(np.mean(sampler.acceptance_fraction)))
