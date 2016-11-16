@@ -1,12 +1,27 @@
 """This is a test script for trying to use the full TGAS set of stars.
 
 import chronostar
-star_params = chronostar.fit_group.read_stars('results/bp_TGAS2_traceback_save.pkl')
+star_params = chronostar.fit_group.read_stars('results/LOST_FILE.pkl')
 beta_pic_group = np.array([ -0.908, 60.998, 27.105, -0.651,-11.470, -0.148,  8.055,  4.645,  8.221,  0.655,  0.792,  0.911,  0.843])
 star_probs = chronostar.fit_group.lnprob_one_group(beta_pic_group, star_params, return_overlaps=True, t_ix=1)
 possible_members = np.where( (np.log10(star_probs) > -18) * (np.log10(star_probs) < 0) )[0]
 table_subset = t[possible_members]   
 pyfits.writeto('/Users/mireland/Google Drive/chronostar_catalogs/Astrometry_with_RVs_possible_bpic.fits', table_subset)
+
+*** Trimming down the file ***
+stars,times,xyzuvw,xyzuvw_cov = pickle.load(open('TGAS_traceback_165Myr.pkl'))
+new_stars = pyfits.getdata('../data/Astrometry_with_RVs_250pc_100kms_lesscols.fits',1)
+good = stars['rv_adopt_error'] < 10
+good_ix = np.where(good)[0]
+
+*** Saving our MASTER traceback ***
+hdu0 = pyfits.PrimaryHDU()
+hdu1 = pyfits.BinTableHDU(new_stars)
+hdu2 = pyfits.ImageHDU(times)
+hdu3 = pyfits.ImageHDU(xyzuvw)
+hdu4 = pyfits.ImageHDU(xyzuvw_cov)
+hdulist = pyfits.HDUList([hdu0,hdu1,hdu2,hdu3,hdu4])
+hdulist.writeto('TGAS_traceback_165Myr_small.fits', clobber=True)
 
 """
 
@@ -50,14 +65,16 @@ ddir = "data/"
 if use_bpic_subset:
     t = pyfits.getdata("/Users/mireland/Google Drive/chronostar_catalogs/Astrometry_with_RVs_possible_bpic.fits",1)
 else:
-    t = pyfits.getdata(ddir + "Astrometry_with_RVs_subset2.fits",1)
-good_par_sig = np.logical_or(t['parallax_1'] > 5*t['parallax_error'], t['Plx'] > 5*t['e_Plx'])
-good_rvs =np.abs(t['rv_adopt']) < 100
-good_par = np.logical_or(t['parallax_1'] > 4, t['Plx'] > 4)
-good = np.logical_and(np.logical_and(good_par_sig,good_par),good_rvs)
+
+#    t = pyfits.getdata(ddir + "Astrometry_with_RVs_subset2.fits",1)
+good_par_sig = np.logical_or(t['parallax_1'] > 5*t['parallax_error'], t['Plx'] > 5*t['e_Plx']) #<20% parallax uncertainty.
+good_rv_sig =t['rv_adopt_error'] < 10   #< 10km/s RV uncertainty
+good_rvs =np.abs(t['rv_adopt']) < 100   #<100m/s RV, i.e. thin disk.    
+good_par = np.logical_or(t['parallax_1'] > 4, t['Plx'] > 4) #<250pc from the sun
+good = good_par_sig * good_rv_sig * good_par * good_rvs
 t = t[good]
 
-
+#pyfits.writeto('/Users/mireland/Google Drive/chronostar_catalogs/Astrometry_with_RVs_250pc_100kms.fits', t)
 
 #Which dimensions do we plot? 0=X, 1=Y, 2=Z
 dims = [0,1]

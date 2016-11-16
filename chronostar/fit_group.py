@@ -28,6 +28,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import pdb
+try:
+    import astropy.io.fits as pyfits
+except:
+    import pyfits
 
 try:
     import overlap #&TC
@@ -93,23 +97,37 @@ def read_stars(infile):
         raise UserWarning
     
     #Stars is an astropy.Table of stars
-    fp = open(infile,'r')
-    (stars,times,xyzuvw,xyzuvw_cov)=pickle.load(fp)
-    fp.close()
+    if infile[-3:] == 'pkl':
+        with open(infile,'r') as fp:
+            (stars,times,xyzuvw,xyzuvw_cov)=pickle.load(fp)
+    elif (infile[-3:] == 'fit') or (infile[-4:] == 'fits'):
+        stars = pyfits.getdata(infile,1)
+        times = pyfits.getdata(infile,2)
+        xyzuvw = pyfits.getdata(infile,3)
+        xyzuvw_cov = pyfits.getdata(infile,4) 
+    else:
+        print("Unknown File Type!")
+        raise UserWarning
+    #Create the inverse covariances to save time.
+    xyzuvw_icov = np.linalg.inv(xyzuvw_cov)
+    xyzuvw_icov_det = np.linalg.det(xyzuvw_icov)
 
-    #Preliminaries. 
-    #Create the inverse covariances and other globals.
-    ns = len(stars)    #Number of stars
-    nt = len(times)    #Number of times.
-    xyzuvw_icov = np.empty( (ns,nt,6,6) )
-    xyzuvw_icov_det = np.empty( (ns,nt) )
-    #Fill up the inverse covariance matrices.
-    for i in range(ns):
-        for j in range(nt):
-            xyzuvw_icov[i,j]     = np.linalg.inv(xyzuvw_cov[i,j])
-            xyzuvw_icov_det[i,j] = np.linalg.det(xyzuvw_icov[i,j])
     return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov,xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
 
+
+def interp_cov(target_time, star_params):
+    """
+    Interpolate in time to get a xyzuvw vector and covariance matrix.
+    
+    Note that there is a fast scipy package (in ndimage?) that might be good for this.
+    """         
+    times = star_params['times']
+    ix = np.interp(target_time,times,np.arange(len(times)))
+    ix0 = np.int(ix)
+    frac = ix-ix0
+    bs     = star_params['xyzuvw'][:,ix0]*(1-frac) + star_params['xyzuvw'][:,ix0+1]*frac
+    cov    = star_params['xyzuvw_cov'][:,ix0]*(1-frac) + star_params['xyzuvw_cov'][:,ix0+1]*frac
+    return bs, cov
    
 def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix = 0,return_overlaps=False,\
     return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, print_times=False):
@@ -156,13 +174,7 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
     t0=time.time()
     practically_infinity = np.inf#1e20
     
-    xyzuvw = star_params['xyzuvw']
-    xyzuvw_cov = star_params['xyzuvw_cov']
-    xyzuvw_icov = star_params['xyzuvw_icov']
-    xyzuvw_icov_det = star_params['xyzuvw_icov_det']
-    times = star_params['times']
-    ns = len(star_params['stars'])    #Number of stars
-    nt = len(times)    #Number of times.
+    ns = len(star_params['xyzuvw'])    #Number of stars
 
     #See if we have a time in Myr in the input vector, in which case we have
     #to interpolate in time. Otherwise, just choose a single time snapshot given 
@@ -170,23 +182,21 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
     if len(x)>13:
         #If the input time is outside our range of traceback times, return
         #zero likelihood.
-        if ( (x[13] < min(times)) | (x[13] > max(times))):
+        if ( (x[13] < min(star_params['times'])) | (x[13] > max(star_params['times']))):
             return -np.inf 
         #Linearly interpolate in time to get bs and Bs
-        #Note that there is a fast scipy package (in ndimage?) that is good for this.
-        ix = np.interp(x[13],times,np.arange(nt))
-        ix0 = np.int(ix)
-        frac = ix-ix0
-        bs     = xyzuvw[:,ix0]*(1-frac) + xyzuvw[:,ix0+1]*frac
-        cov    = xyzuvw_cov[:,ix0]*(1-frac) + xyzuvw_cov[:,ix0+1]*frac
+        bs, cov = interp_cov(x[13], star_params)  
+        #WARNING: The next lines are slow, and should maybe be part of the overlap package,
+        #if numpy isn't fast enough. They are slow because an inverse and a determinant
+        #is computed for every star. 
         Bs     = np.linalg.inv(cov)
         B_dets = np.linalg.det(Bs)
     else:
         #Extract the time that we really care about.
         #The result is a (ns,6) array for bs, and (ns,6,6) array for Bs.
-        bs     = xyzuvw[:,t_ix]
-        Bs     = xyzuvw_icov[:,t_ix]
-        B_dets = xyzuvw_icov_det[:,t_ix]
+        bs     = star_params['xyzuvw'][:,t_ix]
+        Bs     = star_params['xyzuvw_icov'][:,t_ix]
+        B_dets = star_params['xyzuvw_icov_det'][:,t_ix]
 
     #Sanity check inputs for out of bounds. If so, return zero likelihood.
     if (np.min(x[6:9])<=min_axis):
@@ -331,7 +341,7 @@ def lnprob_one_cluster(x, star_params, use_swig=False, return_overlaps=False, \
     xyzuvw_icov = star_params['xyzuvw_icov']
     xyzuvw_icov_det = star_params['xyzuvw_icov_det']
     times = star_params['times']
-    ns = len(star_params['stars'])    #Number of stars
+    ns = len(star_params['xyzuvw'])    #Number of stars
     nt = len(times)    #Number of times.
 
     #Sanity check inputs for out of bounds...
