@@ -135,7 +135,7 @@ class TraceBack():
         xyzuvw_cov = np.zeros( (nstars,nts,6,6) )
         
         #Trace back the local standard of rest.
-        lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8)
+        lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion='schoenrich')
         lsr_orbit.integrate(ts,MWPotential2014,method='odeint')
         
         #Delta parameters for numerical derivativd
