@@ -13,6 +13,7 @@ from galpy.util import bovy_coords
 from error_ellipse import plot_cov_ellipse
 import pickle
 import time
+import astropy.io.fits as pyfits
 plt.ion()
 
 def xyzuvw_to_skycoord(xyzuvw_in, solarmotion='schoenrich'):
@@ -372,11 +373,21 @@ class TraceBack():
             plt.axis(axis_range)
 
         if len(savefile)>0:
-            fp = open(savefile,'w')
-            pickle.dump((stars,times,xyzuvw,xyzuvw_cov),fp)
-            fp.close()
-        else:
-            return xyzuvw
+            if savefile[-3:] == 'pkl':
+                with open(savefile,'w') as fp:
+                    pickle.dump((stars,times,xyzuvw,xyzuvw_cov),fp)
+         #Stars is an astropy.Table of stars
+            elif (savefile[-3:] == 'fit') or (savefile[-4:] == 'fits'):
+                hl = pyfits.HDUList()
+                hl.append(pyfits.PrimaryHDU())
+                hl.append(pyfits.BinTableHDU(stars))
+                hl.append(pyfits.ImageHDU(times))
+                hl.append(pyfits.ImageHDU(xyzuvw))
+                hl.append(pyfits.ImageHDU(xyzuvw_cov))
+                hl.writeto(savefile, clobber=True)
+            else:
+                print("Unknown File Type!")
+                raise UserWarning
         
 def traceback2(params,times):
     """Trace forward a cluster. First column of returned array is the position of the cluster at a given age.

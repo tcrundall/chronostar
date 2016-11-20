@@ -48,7 +48,7 @@ max_time = 40
 
 n_times=56
 max_time=165
-pklfile="TGAS_traceback_165Myr.pkl"
+pklfile="TGAS_traceback_165Myr_delete.fits"
 ddir = "data/"
 #ddir = ""/Users/mireland/Google Drive/chronostar_catalogs/"
 #----
@@ -63,16 +63,19 @@ ddir = "data/"
 #Limit outselves to stars with parallaxes smaller than 250pc, uncertainties smaller than 20%
 #and radial velocities smaller than 100km/s. This gives 65,853 stars.
 if use_bpic_subset:
-    t = pyfits.getdata("/Users/mireland/Google Drive/chronostar_catalogs/Astrometry_with_RVs_possible_bpic.fits",1)
+    t = pyfits.getdata(ddir + "Astrometry_with_RVs_possible_bpic.fits",1)
 else:
-
+    t = pyfits.getdata(ddir + "Astrometry_with_RVs_250pc_100kms_lesscols.fits",1)
 #    t = pyfits.getdata(ddir + "Astrometry_with_RVs_subset2.fits",1)
+
+print("{0:d} stars before trimming...".format(len(t)))
 good_par_sig = np.logical_or(t['parallax_1'] > 5*t['parallax_error'], t['Plx'] > 5*t['e_Plx']) #<20% parallax uncertainty.
 good_rv_sig =t['rv_adopt_error'] < 10   #< 10km/s RV uncertainty
 good_rvs =np.abs(t['rv_adopt']) < 100   #<100m/s RV, i.e. thin disk.    
 good_par = np.logical_or(t['parallax_1'] > 4, t['Plx'] > 4) #<250pc from the sun
 good = good_par_sig * good_rv_sig * good_par * good_rvs
 t = t[good]
+print("{0:d} stars after trimming...".format(len(t)))
 
 #pyfits.writeto('/Users/mireland/Google Drive/chronostar_catalogs/Astrometry_with_RVs_250pc_100kms.fits', t)
 
