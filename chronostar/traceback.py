@@ -9,12 +9,41 @@ import pdb
 from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014
 from galpy.util import bovy_conversion
+from galpy.util import bovy_coords
 from error_ellipse import plot_cov_ellipse
 import pickle
 import time
 plt.ion()
 
-def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
+def xyzuvw_to_skycoord(xyzuvw_in, solarmotion='schoenrich'):
+    """Converts XYZUVW with respect to the LSR 
+    to RAdeg, DEdeg, plx, pmra, pmdec, RV
+    
+    Parameters
+    ----------
+    xyzuvw_in:
+        XYZUVW with respect to the LSR.
+    """
+    if solarmotion=='schoenrich':
+        xyzuvw_sun = [0,0,25,11.1,12.24,7.25]
+    else:
+        raise UserWarning
+    #Make coordinates relative to sun
+    xyzuvw = xyzuvw_in - xyzuvw_sun
+    #Special for the sun itself...
+    if np.sum(xyzuvw**2) < 1:
+        return [0,0,1e5, 0,0,0]
+    #Find l, b and distance.
+    #!!! WARNING: the X-coordinate is reversed here, just like everywhere else, 
+    #because of the convention in Orbit.x(), which doesn't seem to match X.
+    lbd = bovy_coords.XYZ_to_lbd(-xyzuvw[0]/1e3, xyzuvw[1]/1e3, xyzuvw[2]/1e3, degree=True)
+    radec = bovy_coords.lb_to_radec(lbd[0], lbd[1], degree=True)
+    vrpmllpmbb = bovy_coords.vxvyvz_to_vrpmllpmbb(xyzuvw[3],xyzuvw[4], xyzuvw[5],\
+                    lbd[0],lbd[1],lbd[2], degree=True)
+    pmrapmdec = bovy_coords.pmllpmbb_to_pmrapmdec(vrpmllpmbb[1],vrpmllpmbb[2],lbd[0],lbd[1],degree=True)
+    return [radec[0], radec[1], 1.0/lbd[2], pmrapmdec[0], pmrapmdec[1], vrpmllpmbb[0]]
+    
+def integrate_xyzuvw(params,ts,lsr_orbit=None,Potential=MWPotential2014):
     """Convenience function. Integrates the motion of a star backwards in time.
     
     
@@ -27,23 +56,38 @@ def integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014):
     ts: times for back propagation
         Needs to be converted to galpy units, e.g. for times in Myr:
         ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
-        ts = -(np.array([0,10,20])/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
+        ts = -(np.arange(11)/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
     lsr_orbit:
         WARNING: messy...
-        lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8)
+        lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion='schoenrich')
         lsr_orbit.integrate(ts,MWPotential2014,method='odeint')
     MWPotential2014:
         WARNING: messy...
         from galpy.potential import MWPotential2014        
     """
+    #We allow MWPotential and lsr_orbit to be passed for speed, but can compute/import 
+    #now.
+    if not lsr_orbit:
+        lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion='schoenrich')
+        lsr_orbit.integrate(ts,Potential,method='odeint')
+        
+    params = np.array(params)
     vxvv = params.copy()
-    vxvv[2]=1.0/params[2]   #why???
+    #We'd prefer to pass parallax in mas, but distance in kpc is accepted. This
+    #reciporical could be done elsewhere...
+    vxvv[2]=1.0/params[2]   
     o = Orbit(vxvv=vxvv, radec=True, solarmotion='schoenrich')
-    o.integrate(ts,MWPotential2014,method='odeint')
+        
+    
+    o.integrate(ts,Potential,method='odeint')
     xyzuvw = np.zeros( (len(ts),6) )
     xyzuvw[:,0] = 1e3*(o.x(ts)-lsr_orbit.x(ts))
     xyzuvw[:,1] = 1e3*(o.y(ts)-lsr_orbit.y(ts))
-    xyzuvw[:,2] = 1e3*(o.z(ts))  #why?? is sun assumed to be constant in Z direction?
+    #The lsr_orbit is zero in the z direction by definition - the local standard of 
+    #rest is at the midplane of the Galaxy
+    xyzuvw[:,2] = 1e3*(o.z(ts))  
+    #UVW is relative to the sun. We *could* have used vx, vy and vz. Would these
+    #have been relative to the LSR?
     xyzuvw[:,3] = o.U(ts) - lsr_orbit.U(ts)
     xyzuvw[:,4] = o.V(ts) - lsr_orbit.V(ts)
     xyzuvw[:,5] = o.W(ts) - lsr_orbit.W(ts) #NB This line changed !!!
@@ -95,14 +139,33 @@ class TraceBack():
     Parameters
     ----------
     stars: astropy Table
-        Table of star parameters."""
+        Table of star parameters.
+    params: [RAdeg, DEdeg, plx, pmra, pmdec, RV]
+        Parameters for a single star or group. """
 
     # A constant - is this in astropy???
     spc_kmMyr = 1.022712165
 
-    def __init__(self, stars, include_cor=False):
-        self.nstars = len(stars)
+    def __init__(self, stars=None, params=None):
+        #WARNING: Error checking needed here.
+        if params:
+            stars = {}
+            stars['RAdeg']=params[0]
+            stars['DEdeg']=params[1]
+            stars['Plx'] = params[2]
+            stars['pmRA'] = params[3]
+            stars['pmDE'] = params[4]
+            stars['RV'] = params[5]
+            stars['e_RV'] = 1.0
+            #0.2 AU/year
+            stars['e_pmRA'] = 0.2*stars['Plx']
+            stars['e_pmDE'] = 0.2*stars['Plx']
+            #0.001 kPc distance uncertainty
+            stars['e_Plx'] = 0.001*stars['Plx']**2
+            
+            stars = Table([stars])
         self.stars = stars
+        self.nstars = len(stars)    
         
     def traceback(self,times,max_plot_error=50,plotit=False, savefile='', dims=[1,2],\
         xoffset=[],yoffset=[],text_ix=[],axis_range=[], plot_text=True):
@@ -159,11 +222,13 @@ class TraceBack():
         if len(axis_range)==0:
             axis_range = [-100,100,-100,100]
         
+        #WARNING: The following is messy, but different types of input are 
+        #accepted for now...
         try:
             colnames = stars.names
         except:
             colnames = stars.columns
-        
+                    
         for i in range(nstars):
             if (i+1) % 100 ==0:
                 print("Done {0:d} of {1:d} stars.".format(i+1, nstars))
@@ -279,7 +344,11 @@ class TraceBack():
             for k in range(nts):
                 xyzuvw_cov[i,k] = np.dot(np.dot(xyzuvw_jac[i,k].T,cov_obs),xyzuvw_jac[i,k])
                 
-                
+            
+            #Test for problems...
+            if min(np.linalg.eigvalsh(xyzuvw_cov[i,k])[0]<0):
+                pdb.set_trace()
+            
             #Plot beginning and end points, plus their the uncertainties from the
             #covariance matrix.
         #    plt.plot(xyzuvw[i,0,0],xyzuvw[i,0,1],'go')
@@ -306,6 +375,8 @@ class TraceBack():
             fp = open(savefile,'w')
             pickle.dump((stars,times,xyzuvw,xyzuvw_cov),fp)
             fp.close()
+        else:
+            return xyzuvw
         
 def traceback2(params,times):
     """Trace forward a cluster. First column of returned array is the position of the cluster at a given age.
