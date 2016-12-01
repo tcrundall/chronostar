@@ -62,6 +62,7 @@ if fit_the_group:
      10.045, 10.319, 12.334,  5,  0.932,  0.735,  0.846, 20.589])
     #After one successful fit.
     beta_pic_group = np.array([ -0.908, 60.998, 27.105, -0.651,-11.470, -0.148,  8.055,  4.645,  8.221,  0.655,  0.792,  0.911,  0.843, 18.924])
+    beta_pic_group = np.array([ -1.96 ,  60.281,  25.242,   0.359, -11.864,  -0.175,   5.516,4.497,   7.993,   0.848,   0.51 ,   0.776,   0.765,  18.05 ])
 
     ol_swig = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=True, return_overlaps=True)
     ol_old  = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=False, return_overlaps=True)
@@ -84,8 +85,8 @@ if fit_the_group:
         print("MPI available for this code! - call this with e.g. mpirun -np 16 python test_betapic_TGAS.py")
 
     sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
-        nwalkers=30,nchain=50,nburn=5, return_sampler=True,pool=pool,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,.1]), background_density=5e-12, use_swig=True, \
+        nwalkers=30,nchain=10000,nburn=1000, return_sampler=True,pool=pool,\
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,.1])*0.1, background_density=1e-9, use_swig=True, \
         plotit=True)
     
     if using_mpi:

@@ -447,6 +447,7 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
         plt.figure(1)
         plt.clf()
         plt.plot(sampler.lnprobability.T)
+        plt.pause(0.001)
 	plt.savefig("plots/lnprobability.eps")
 
     #Best Model

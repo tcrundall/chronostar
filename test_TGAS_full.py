@@ -50,7 +50,7 @@ n_times=56
 max_time=165
 pklfile="TGAS_traceback_165Myr_delete.fits"
 ddir = "data/"
-#ddir = ""/Users/mireland/Google Drive/chronostar_catalogs/"
+ddir = "/Users/mireland/Google Drive/chronostar_catalogs/"
 #----
 
 #t=Table.read('Astrometry_with_RVs_subset.fits')

@@ -10,6 +10,17 @@ Then simply:
 (x-y)^T C^-1 (x-y) for a log(probability)
 
 This needs an npoints x 6 x 6 matrix
+
+ffmpeg -i d%03d.png -r 8 -y traceback.mp4
+
+
+Finding a new group...
+diff = xyzuvw - np.tile(xyzuvw_traceback_groups[4][-1],65310).reshape(65310,6)
+dist = np.array([np.sum(d**2/np.array([30,30,140,4,4,10])**2) for d in diff])
+poss_memb = np.where(dist<100)[0]
+wcore = (star_params['stars']['ra_adopt'][poss_memb]>175) * (star_params['stars']['ra_adopt'][poss_memb]<205)*(star_params['stars']['dec_adopt'][poss_memb]>18)*(star_params['stars']['dec_adopt'][poss_memb]<35)
+core_memb = poss_memb[np.where(wcore)[0]]
+noncore_memb = poss_memb[np.where(1- wcore)[0]]
 """
 
 from __future__ import division, print_function
@@ -24,13 +35,14 @@ plt.ion()
 #t_ixs = np.arange(1,2)  #Start with a fixed time index (5 is 15.0 Myr)
 
 target_times = np.arange(101)
+target_times = np.array([0,50])
 
 nsamp = 32 #Number of samples per star
 n_neighbors = 256
-axis_lim = 1000
-x_grid = np.linspace( -axis_lim, axis_lim, 250)
-y_grid = np.linspace(-axis_lim, axis_lim, 250)
-smooth_pc = 12
+axis_lim = 2000
+x_grid = np.linspace( -axis_lim, axis_lim, 400)
+y_grid = np.linspace(-axis_lim, axis_lim, 400)
+smooth_pc = 15
 plane_thickness=280 #2 Scale heights
 
 infile = '/Users/mireland/Google Drive/chronostar_catalogs/TGAS_traceback_165Myr_small.fits'
@@ -62,7 +74,12 @@ xyzuvw_groups = np.array([xyzuvw_bpic, xyzuvw_tha, xyzuvw_abdmg, xyzuvw_hyades, 
 for xyzuvw in xyzuvw_groups:
     xyzuvw += xyzuvw_sun
 xyzuvw_groups = np.concatenate((xyzuvw_groups, [xyzuvw_sun]))
-#--------
+
+savefigs = False
+compute_density = False
+
+#---------------------------
+
 #Trace back the groups
 xyzuvw_traceback_groups = []
 for xyzuvw in xyzuvw_groups:
@@ -103,7 +120,7 @@ for t_ix, target_time in enumerate(target_times):
                 sample_xyzuvw[i,j] = xyzuvw[i]
     sample_xyzuvw = sample_xyzuvw.reshape( (ns*nsamp, 6) )
 
-    if False:
+    if compute_density:
         print("Computing Density at each sample point...")
         stars_tree = cKDTree(xyzuvw)
         sample_density = np.zeros( (ns, nsamp) )
@@ -164,7 +181,8 @@ for t_ix, target_time in enumerate(target_times):
     plt.ylabel('y (pc)')
     plt.colorbar()
     plt.pause(0.001)
-    plt.savefig('imgs/d{0:03d}.png'.format(int(target_time)))
+    if savefigs:
+        plt.savefig('imgs/d{0:03d}.png'.format(int(target_time)))
     
     if density2:
         plt.figure(2)
@@ -175,4 +193,5 @@ for t_ix, target_time in enumerate(target_times):
         plt.ylabel('y (pc)')
         plt.colorbar()
         plt.pause(0.001)
-        plt.savefig('imgs/g{0:03d}.png'.format(int(target_time)))
+        if savefigs:
+            plt.savefig('imgs/g{0:03d}.png'.format(int(target_time)))

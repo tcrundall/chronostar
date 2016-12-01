@@ -347,7 +347,7 @@ class TraceBack():
                 
             
             #Test for problems...
-            if min(np.linalg.eigvalsh(xyzuvw_cov[i,k])[0]<0):
+            if (np.linalg.eigvalsh(xyzuvw_cov[i,k])[0]<0):
                 pdb.set_trace()
             
             #Plot beginning and end points, plus their the uncertainties from the
@@ -388,6 +388,8 @@ class TraceBack():
             else:
                 print("Unknown File Type!")
                 raise UserWarning
+        else:
+            return xyzuvw
         
 def traceback2(params,times):
     """Trace forward a cluster. First column of returned array is the position of the cluster at a given age.
