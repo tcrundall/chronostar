@@ -23,6 +23,7 @@ ToDo:
 from __future__ import print_function
 import emcee
 import numpy as np
+import corner
 import math
 import sys
 import pdb
@@ -40,33 +41,37 @@ class ToyFitter:
     The stars live in 1 dimension for now. The group models are gaussians.
   """
   # Data variables
-  NDIM    = 1
-  NGROUPS = 3
+  NDIM    = 1       # number of dimensions for each 'measured' star
+  NGROUPS = 3       # number of groups in the data
   NSTARS   = None
-  gr1_frac = None
+  gr1_frac = None   # fraction of stars [0.0, 1.0) in the first group
   gr2_frac = None
   gr3_frac = None
-  MEANS = None
-  STDS  = None
-  STARS = None
-  CUM_FRACS = None
+  MEANS = None      # true means of groups in the simulated data
+  STDS  = None      # true standard devs of groups in the simulated data
+  STARS = None      # simulated data
+  CUM_FRACS = None  # cumulative fraction of stars in the groups
 
+  #&
   # Fitting variables
   samples = None
-  mdl_means = None
-  mdl_stds  = None
+  mdl_means = None  # modelled means
+  mdl_stds  = None  # modelled standard deviations
   mdl_fracs = None 
-  best_fit  = np.zeros(9)
+  best_fit  = np.zeros(9) # best fitting group parameters, same order as 'pars'
 
   # emcee parameters
-  burnin = None
-  steps = None
+  burnin = None     # number of burnin steps
+  steps = None      # number of sampling steps
   nwalkers = None
-  NPAR = 8 
-  sampler = None
+  NPAR = 8          # number of parameters required to specify one sample 
+  sampler = None    # the emcee.sampler object (initialised in fit_group)
+
+  # some runtime flags
+  emcee_detail = False
 
   def __init__(self, nstars, means, stds, gr1_frac, gr2_frac,
-               nwalkers, burnin, steps):
+               nwalkers, burnin, steps, emcee_detail=True):
     self.NSTARS = nstars
     self.MEANS = means
     self.STDS = stds
@@ -78,8 +83,10 @@ class ToyFitter:
     self.burnin   = burnin
     self.steps    = steps
 
-  # Initialising a set of [nstars] stars to have UVWXYZ as determined by 
-  # means and standard devs
+    self.emcee_detail = emcee_detail
+
+  # Initialising a set of [nstars] stars to have 'measurments' as determined
+  # by means and standard devs
   def init_stars(self):
     self.CUM_FRACS = [0.0, self.gr1_frac, self.gr1_frac+self.gr2_frac, 1.]
     self.STARS = np.zeros(self.NSTARS)
@@ -97,9 +104,9 @@ class ToyFitter:
   # The prior, used to set bounds on the walkers
   def lnprior(self, pars):
     mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
-    if    -200 < mu1 < 200 and 0.0 < sig1 < 100.0 and 5.0 < w1 < 80.0 \
-      and -200 < mu2 < 200 and 0.0 < sig2 < 100.0 and 5.0 < w2 < 80.0 \
-      and -200 < mu1 < 200 and 0.0 < sig1 < 100.0 and (w2+w1) < 95.0:
+    if    -200 < mu1 < 200 and 0.0 < sig1 < 50.0 and 5.0 < w1 < 90.0 \
+      and -200 < mu2 < 200 and 0.0 < sig2 < 50.0 and 5.0 < w2 < 90.0 \
+      and -200 < mu3 < 200 and 0.0 < sig3 < 50.0 and (w2+w1) < 95.0:
       return 0.0
     return -np.inf 
   
@@ -119,8 +126,6 @@ class ToyFitter:
   # so that each factor is between 0 and 1.
   # Currently each star entry only has one value, will eventually extrapolate
   # to many stars
-  
-  # can mayber replace stars with self.stars
   def lnlike(self, pars):
     #nstars = stars.size
     mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
@@ -137,7 +142,6 @@ class ToyFitter:
       print("Got a bad'un...")
     return sumlnlike
   
-  # can mayber replace stars with self.stars
   def lnprob(self, pars):
     lp = self.lnprior(pars)
     if not np.isfinite(lp):
@@ -150,24 +154,40 @@ class ToyFitter:
     
     # Initialise the sampler with the chosen specs, run burn-in steps and start
     # sampling
-    sampler = emcee.EnsembleSampler(self.nwalkers, self.NPAR, self.lnprob)
+    self.sampler = emcee.EnsembleSampler(self.nwalkers, self.NPAR, self.lnprob)
                                     #args=[self.STARS])
-    pos, prob, state = sampler.run_mcmc(p0, self.burnin)
-    sampler.reset()
-    sampler.run_mcmc(pos, self.steps, rstate0=state)
+    pos, lnprob, state = self.sampler.run_mcmc(p0, self.burnin)
+    #pdb.set_trace()
+
+    # Mike Ireland's code:
+    if(self.emcee_detail):
+      plt.plot(self.sampler.lnprobability.T)
+      plt.title("Is burn in complete?")
+      plt.show()
+    # This is here to checkout any wayward walkers
+    pdb.set_trace()
+
+    best_chain = np.argmax(lnprob)
+    poor_chains = np.where(lnprob < np.percentile(lnprob, 33))
+    for ix in poor_chains:
+      pos[ix] = pos[best_chain]
+
+    pdb.set_trace()
+
+    self.sampler.reset()
+    self.sampler.run_mcmc(pos, self.steps, rstate0=state)
     
     # Print out the mean acceptance fraction. In general, acceptance_fraction
-    # has an entry for each walker so, in this case, it is a 250-dimensional
-    # vector.
+    # has an entry for each walker
     try:
-      print("Mean acceptance fraction:", np.mean(sampler.acceptance_fraction))
+      print("Mean acceptance fraction:", np.mean(self.sampler.acceptance_fraction))
     except:
       pass
     
     # Estimate the integrated autocorrelation time for the time series in each
     # paramter.
     try:
-      print("Autocorrelation time:", sampler.get_autocorr_time())
+      print("Autocorrelation time:", self.sampler.get_autocorr_time())
     except:
       pass
     
@@ -175,11 +195,14 @@ class ToyFitter:
     # parameters required to specify one position, and X is the number of samples
     # "align samples" is used to order groups by their mean within each sample
     self.samples = np.array(self.align_samples(
-                               sampler.chain[:, :, :].reshape((-1, self.NPAR))))
+                               self.sampler.chain[:, :, :].reshape((-1, self.NPAR))))
   
     for i in range(9):
       self.best_fit[i] = np.median(self.samples[:,i])
-    #return best_fit, samples
+
+    self.mdl_means  = self.best_fit[0::3]
+    self.mdl_stds = self.best_fit[1::3]
+    self.mdl_fracs  = self.best_fit[2::3]
 
   # Takes in [nstars][npar] array where each row is a sample and orders each
   # sample's parameter sets such that the parameters representing groups are
@@ -198,42 +221,95 @@ class ToyFitter:
     temp = temp.reshape(-1,3,3)
   
     # Sort each sample by the mean of each modelled group
-    #temp = temp[np.argsort(temp[:, 0])]
     temp = np.array([sorted(mat, key=lambda t: t[0]) for mat in temp])
-    res = temp.reshape(-1,9)
-    return res
+    return temp.reshape(-1,9)
+
+  def plot_simulated_data(self):
+    xs = np.linspace(-60,120,200)
+  
+    group1 = self.gr1_frac * self.gaussian_eval(xs, self.MEANS[0], self.STDS[0])
+    group2 = self.gr2_frac * self.gaussian_eval(xs, self.MEANS[1], self.STDS[1])
+    group3 = self.gr3_frac * self.gaussian_eval(xs, self.MEANS[2], self.STDS[2])
+  
+    plt.plot(xs, group1)
+    plt.plot(xs, group2)
+    plt.plot(xs, group3)
+    plt.plot(xs, group1 + group2 + group3)
+    plt.show()
+  
+    plt.hist(self.STARS, self.NSTARS/5)
+    plt.show()    
+
 
   # Print a list of each star and their predicted group by percentage
   # also print the success rate - the number of times a star's membership
   # is correctly calculated 
-  def print_table(self, mean, stds):
+  def print_table(self):
     print("Star #\tGroup 1\tGroup 2\tGroup 3")
     success_cnt = 0.0
   
     # To calculate the relative likelihoods for a star belonging to a group
     # we simply evaluate the modelled gaussian for each group at the stars
     # 'position'. Normalising these evaluations gives us the porbabilities.
-    for i, star in enumerate(stars):
-      likelihood1 = model_p1*gaussian_eval(stars[i], model_mu1, model_sig1)
-      likelihood2 = model_p2*gaussian_eval(stars[i], model_mu2, model_sig2)
-      likelihood3 = model_p3*gaussian_eval(stars[i], model_mu3, model_sig3)
-      prob1 = likelihood1 / (likelihood1 + likelihood2 + likelihood3) * 100
-      prob2 = likelihood2 / (likelihood1 + likelihood2 + likelihood3) * 100
-      prob3 = likelihood3 / (likelihood1 + likelihood2 + likelihood3) * 100
+    likelihood = np.zeros(3)
+    probs = np.zeros(3)
+    for i, star in enumerate(self.STARS):
+      for j in range(3):
+        likelihood[j] = self.mdl_fracs[j] *              \
+                        self.gaussian_eval(self.STARS[i],
+                                           self.mdl_means[j],
+                                           self.mdl_stds[j])
+      prob = 100* likelihood / (np.sum(likelihood))
   
       # We can also test to see if the most probable group was evaluated
       # correctly
-      if i<nstars*cum_fracs[1] and prob1>prob2 and prob1>prob3:
+      if i<self.NSTARS*self.CUM_FRACS[1] and prob[0]>prob[1] and prob[0]>prob[2]:
         success_cnt += 1.0
-      if i>=nstars*cum_fracs[1] and i < nstars*cum_fracs[2]\
-          and prob1<prob2 and prob2>prob3:
+      if i>=self.NSTARS*self.CUM_FRACS[1] and i < self.NSTARS*self.CUM_FRACS[2]\
+          and prob[0]<prob[1] and prob[1]>prob[2]:
         success_cnt += 1.0
-      if i >= nstars*cum_fracs[2] \
-          and prob1<prob3 and prob2<prob3:
+      if i >= self.NSTARS*self.CUM_FRACS[2] \
+          and prob[0]<prob[2] and prob[1]<prob[2]:
         success_cnt += 1.0
-      print("{}\t{:5.2f}%\t{:5.2f}%\t{:5.2f}%".format(i, prob1, prob2, prob3))
+      print("{}\t{:5.2f}%\t{:5.2f}%\t{:5.2f}%".format(i, prob[0], prob[1], prob[2]))
   
-    print("Success rate of {:6.2f}%".format(success_cnt/nstars * 100))
+    print("Success rate of {:6.2f}%".format(100*success_cnt/self.NSTARS))
+
+  #&
+  def print_results(self):
+    print(" ____ GROUP 1 _____ ")
+    print("Modelled mean: {:.2f}, modelled std: {:.2f}".format(self.mdl_means[0], self.mdl_stds[0]))
+    print("'True' mean: {}, 'true' std: {}".format(self.MEANS[0], self.STDS[0]))
+    print("Modelled {:.2f}% of the stars, of the true {}%".format(self.mdl_fracs[0],
+                                                              100*self.gr1_frac))
+    
+    print(" ____ GROUP 2 _____ ")
+    print("Modelled mean: {:.2f}, modelled std: {:.2f}".format(self.mdl_means[1], self.mdl_stds[1]))
+    print("'True' mean: {}, 'true' std: {}".format(self.MEANS[1], self.STDS[1]))
+    print("Modelled {:.2f}% of the stars, of the true {}%".format(self.mdl_fracs[1],
+                                                              100*self.gr2_frac))
+    
+    print(" ____ GROUP 3 _____ ")
+    print("Modelled mean: {:.2f}, modelled std: {:.2f}".format(self.mdl_means[2], self.mdl_stds[2]))
+    print("'True' mean: {}, 'true' std: {}".format(self.MEANS[2], self.STDS[2]))
+    print("Modelled {:.2f}% of the stars, of the true {}%".format(self.mdl_fracs[2],
+                                                              100*self.gr3_frac))
+
+
+  def corner_plots(self):
+    plt.plot(self.sampler.lnprobability.T)
+    plt.title("lnprob of walkers")
+    plt.show()
+    
+    true = [self.MEANS[0], self.STDS[0], 100*self.gr1_frac,
+            self.MEANS[1], self.STDS[1], 100*self.gr2_frac,
+            self.MEANS[2], self.STDS[2], 100*self.gr3_frac ]
+            
+    fig = corner.corner(self.samples, labels=["$\mu_1$", "$\sigma_1$", "$w_1$",
+                                              "$\mu_2$", "$\sigma_2$", "$w_2$",
+                                              "$\mu_3$", "$\sigma_3$", "$w_3$" ],
+                        truths=true)
+    fig.savefig("plots/triangle.png")
   
   def plot_fits(self):
     # Finally, you can plot the projected histograms of the samples using
