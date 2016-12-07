@@ -157,7 +157,6 @@ class ToyFitter:
     self.sampler = emcee.EnsembleSampler(self.nwalkers, self.NPAR, self.lnprob)
                                     #args=[self.STARS])
     pos, lnprob, state = self.sampler.run_mcmc(p0, self.burnin)
-    #pdb.set_trace()
 
     # Mike Ireland's code:
     if(self.emcee_detail):
@@ -165,14 +164,11 @@ class ToyFitter:
       plt.title("Is burn in complete?")
       plt.show()
     # This is here to checkout any wayward walkers
-    pdb.set_trace()
 
     best_chain = np.argmax(lnprob)
     poor_chains = np.where(lnprob < np.percentile(lnprob, 33))
     for ix in poor_chains:
       pos[ix] = pos[best_chain]
-
-    pdb.set_trace()
 
     self.sampler.reset()
     self.sampler.run_mcmc(pos, self.steps, rstate0=state)
@@ -239,7 +235,6 @@ class ToyFitter:
   
     plt.hist(self.STARS, self.NSTARS/5)
     plt.show()    
-
 
   # Print a list of each star and their predicted group by percentage
   # also print the success rate - the number of times a star's membership
