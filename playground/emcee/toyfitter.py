@@ -10,6 +10,7 @@ parameters.
 ToDo:
   trivial:
     - what is xrange?
+    - remove unecessary gr_frac  parameters
 
   important:
     - make a class so state is better encapsulated
@@ -47,6 +48,7 @@ class ToyFitter:
   gr1_frac = None   # fraction of stars [0.0, 1.0) in the first group
   gr2_frac = None
   gr3_frac = None
+  gr_fracs = None
   MEANS = None      # true means of groups in the simulated data
   STDS  = None      # true standard devs of groups in the simulated data
   STARS = None      # simulated data
@@ -78,6 +80,7 @@ class ToyFitter:
     self.gr1_frac = gr1_frac
     self.gr2_frac = gr2_frac
     self.gr3_frac = 1.0 - gr1_frac - gr2_frac
+    self.gr_fracs = [gr1_frac, gr2_frac, 1.0-gr1_frac-gr2_frac]
 
     self.nwalkers = nwalkers
     self.burnin   = burnin
@@ -192,13 +195,22 @@ class ToyFitter:
     # "align samples" is used to order groups by their mean within each sample
     self.samples = np.array(self.align_samples(
                                self.sampler.chain[:, :, :].reshape((-1, self.NPAR))))
+
+    self.fit = self.calc_best_fit()
+    #pdb.set_trace()
   
     for i in range(9):
       self.best_fit[i] = np.median(self.samples[:,i])
 
-    self.mdl_means  = self.best_fit[0::3]
-    self.mdl_stds = self.best_fit[1::3]
-    self.mdl_fracs  = self.best_fit[2::3]
+    self.mdl_means  = self.fit[0::3]
+    self.mdl_stds   = self.fit[1::3]
+    self.mdl_fracs  = self.fit[2::3]
+
+    self.mdl_means2  = self.best_fit[0::3]
+    self.mdl_stds2 = self.best_fit[1::3]
+    self.mdl_fracs2  = self.best_fit[2::3]
+
+    #pdb.set_trace()
 
   # Takes in [nstars][npar] array where each row is a sample and orders each
   # sample's parameter sets such that the parameters representing groups are
@@ -220,12 +232,16 @@ class ToyFitter:
     temp = np.array([sorted(mat, key=lambda t: t[0]) for mat in temp])
     return temp.reshape(-1,9)
 
+  def calc_best_fit(self):
+    return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+                     zip(*np.percentile(self.samples, [16,50,84], axis=0))) )
+
   def plot_simulated_data(self):
     xs = np.linspace(-60,120,200)
   
-    group1 = self.gr1_frac * self.gaussian_eval(xs, self.MEANS[0], self.STDS[0])
-    group2 = self.gr2_frac * self.gaussian_eval(xs, self.MEANS[1], self.STDS[1])
-    group3 = self.gr3_frac * self.gaussian_eval(xs, self.MEANS[2], self.STDS[2])
+    group1 = self.gr_fracs[0] * self.gaussian_eval(xs, self.MEANS[0], self.STDS[0])
+    group2 = self.gr_fracs[1] * self.gaussian_eval(xs, self.MEANS[1], self.STDS[1])
+    group3 = self.gr_fracs[2] * self.gaussian_eval(xs, self.MEANS[2], self.STDS[2])
   
     plt.plot(xs, group1)
     plt.plot(xs, group2)
@@ -250,10 +266,10 @@ class ToyFitter:
     probs = np.zeros(3)
     for i, star in enumerate(self.STARS):
       for j in range(3):
-        likelihood[j] = self.mdl_fracs[j] *              \
+        likelihood[j] = self.mdl_fracs[j][0] *              \
                         self.gaussian_eval(self.STARS[i],
-                                           self.mdl_means[j],
-                                           self.mdl_stds[j])
+                                           self.mdl_means[j][0],
+                                           self.mdl_stds[j][0])
       prob = 100* likelihood / (np.sum(likelihood))
   
       # We can also test to see if the most probable group was evaluated
@@ -272,24 +288,18 @@ class ToyFitter:
 
   #&
   def print_results(self):
-    print(" ____ GROUP 1 _____ ")
-    print("Modelled mean: {:.2f}, modelled std: {:.2f}".format(self.mdl_means[0], self.mdl_stds[0]))
-    print("'True' mean: {}, 'true' std: {}".format(self.MEANS[0], self.STDS[0]))
-    print("Modelled {:.2f}% of the stars, of the true {}%".format(self.mdl_fracs[0],
-                                                              100*self.gr1_frac))
-    
-    print(" ____ GROUP 2 _____ ")
-    print("Modelled mean: {:.2f}, modelled std: {:.2f}".format(self.mdl_means[1], self.mdl_stds[1]))
-    print("'True' mean: {}, 'true' std: {}".format(self.MEANS[1], self.STDS[1]))
-    print("Modelled {:.2f}% of the stars, of the true {}%".format(self.mdl_fracs[1],
-                                                              100*self.gr2_frac))
-    
-    print(" ____ GROUP 3 _____ ")
-    print("Modelled mean: {:.2f}, modelled std: {:.2f}".format(self.mdl_means[2], self.mdl_stds[2]))
-    print("'True' mean: {}, 'true' std: {}".format(self.MEANS[2], self.STDS[2]))
-    print("Modelled {:.2f}% of the stars, of the true {}%".format(self.mdl_fracs[2],
-                                                              100*self.gr3_frac))
-
+    for i in range(self.NGROUPS):
+      print(" ____ GROUP {} _____ ".format(i+1))
+      print("True mean:     {:> 7.2f},  modelled mean:     {:> 7.2f}  +{:>5.2f}  -{:>5.2f}".format(
+                        self.MEANS[i], self.mdl_means[i][0],
+                        self.mdl_means[i][1], self.mdl_means[i][2]))
+      print("True std:      {:> 7.2f},  modelled std:      {:> 7.2f}  +{:>5.2f}  -{:>5.2f}".format(
+                        self.STDS[i], self.mdl_stds[i][0],
+                        self.mdl_stds[i][1], self.mdl_stds[i][2]))
+      print("True fraction: {:> 7.2f}%, modelled fraction: {:> 7.2f}% +{:>5.2f}% -{:>5.2f}%".format(
+                        100*self.gr_fracs[i], self.mdl_fracs[i][0],
+                        self.mdl_fracs[i][1], self.mdl_fracs[i][2]))
+      print()
 
   def corner_plots(self):
     plt.plot(self.sampler.lnprobability.T)

@@ -22,21 +22,21 @@ except NameError:
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-s', '--nstars', dest='s', default=100,
+parser.add_argument('-s', '--nstars',    dest='s', default=100,
 												help='[100] number of stars')
-parser.add_argument('-f1', '--fraction1', dest='f1', default=0.25,
+parser.add_argument('-f1','--fraction1', dest='f1', default=0.25,
 												help='[0.25] fraction of stars in group 1')
-parser.add_argument('-f2', '--fraction2', dest='f2', default=0.5,
+parser.add_argument('-f2','--fraction2', dest='f2', default=0.5,
 												help='[0.5] fraction of stars in group 2')
-parser.add_argument('-w', '--nwalkers', dest='w', default=50,
+parser.add_argument('-w', '--nwalkers',  dest='w', default=50,
 												help='[50] number of walkers')
-parser.add_argument('-p', '--steps', dest='p', default=500,
+parser.add_argument('-p', '--steps',     dest='p', default=500,
 												help='[500] number of sampling steps')
-parser.add_argument('-b', '--burnin', dest='b', default=200,
+parser.add_argument('-b', '--burnin',    dest='b', default=200,
 												help='[200] number of burn-in steps')
-parser.add_argument('-t', '--plot', dest='plot', action='store_true',
+parser.add_argument('-t', '--plot',      dest='plot', action='store_true',
 											default=True, help='display and save the plots')
-parser.add_argument('-a', '--table', dest='table', action='store_true',
+parser.add_argument('-a', '--table',     dest='table', action='store_true',
 			default=True, help='print a table of stars with their probs')
 
 
@@ -79,14 +79,14 @@ stds = [10.0, 20.0, 5.0]
 
 # ------------ RUNNING THE FIT --------------- #
 myfit = ToyFitter(nstars, means, stds, gr1_frac, gr2_frac,
-                  nwalkers, burninsteps, samplingsteps)
+                  nwalkers, burninsteps, samplingsteps, emcee_detail=True)
 myfit.init_stars()
 myfit.fit_group()
-
-if (plot_it):
-  #myfit.plot_simulated_data()
-  myfit.corner_plots()
 
 if (print_table):
   myfit.print_table()
   myfit.print_results()
+
+if (plot_it):
+  #myfit.plot_simulated_data()
+  myfit.corner_plots()
