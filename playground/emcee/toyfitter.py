@@ -165,7 +165,8 @@ class ToyFitter:
     if(self.emcee_detail):
       plt.plot(self.sampler.lnprobability.T)
       plt.title("Is burn in complete?")
-      plt.show()
+      plt.savefig("plots/burn_in.png")
+      plt.clf()
     # This is here to checkout any wayward walkers
 
     best_chain = np.argmax(lnprob)
@@ -304,7 +305,7 @@ class ToyFitter:
   def corner_plots(self):
     plt.plot(self.sampler.lnprobability.T)
     plt.title("lnprob of walkers")
-    plt.show()
+    plt.savefig("plots/lnprob.png")
     
     true = [self.MEANS[0], self.STDS[0], 100*self.gr1_frac,
             self.MEANS[1], self.STDS[1], 100*self.gr2_frac,
