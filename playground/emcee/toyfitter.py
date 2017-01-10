@@ -198,7 +198,7 @@ class ToyFitter:
                                self.sampler.chain[:, :, :].reshape((-1, self.NPAR))))
 
     self.fit = self.calc_best_fit()
-    #pdb.set_trace()
+    pdb.set_trace()
   
     for i in range(9):
       self.best_fit[i] = np.median(self.samples[:,i])
@@ -234,6 +234,13 @@ class ToyFitter:
     return temp.reshape(-1,9)
 
   def calc_best_fit(self):
+    # some confusing magic which takes a flattened chain of all samples
+    # and gives the median and "error" (as defined by the 16th and 84th
+    # percentile mark) of each parameter
+    # [ [par1_med, par1_upper_error, par2_lower_error],
+    #   [par2_med ... etc                            ],
+    #     ...
+    # ]
     return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                      zip(*np.percentile(self.samples, [16,50,84], axis=0))) )
 

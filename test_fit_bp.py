@@ -12,14 +12,23 @@ import corner                             # for producing the corner plots :O
 import argparse                           # for calling script with arguments
 import matplotlib.pyplot as plt           # for plotting the lnprob
 
+"""
+    the main testing bed of fit_group, utilising the beta pic moving group
+    
+    TO DO:
+        - instead of printing median parameters with errors, save to file
+"""
+
 #Parsing arguments
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-p', '--steps',  dest = 'p', default=10000,
                                     help='[10000] number of sampling steps')
-parser.add_argument('-b', '--burnin', dest = 'b', default=1000,
-                                    help='[1000] number of burn-in steps')
+parser.add_argument('-b', '--burnin', dest = 'b', default=2000,
+                                    help='[2000] number of burn-in steps')
 
+# from experience, the betapic data set needs ~1800 burnin steps to settle
+# but it settles very well from then on
 args = parser.parse_args()
 nsteps = int(args.p)
 burnin = int(args.b)
@@ -36,6 +45,20 @@ def corner_plots(samples, best):
                                          "xCorr", "yCorr", "zCorr", "age"],
                         truths=best)
     fig.savefig("plots/bp_triangle_"+str(nsteps)+"_"+str(burnin)+".png")
+
+def calc_best_fit(samples):
+    return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+                     zip(*np.percentile(samples, [16,50,84], axis=0))) )
+
+def print_results(samples):
+    labels = ["X", "Y", "Z", "U", "V", "W",
+             "dX", "dY", "dZ", "dVel",
+             "xCorr", "yCorr", "zCorr", "age"]
+    bf = calc_best_fit(samples)
+    print(" _______ BETA PIC MOVING GROUP ________ ")
+    for i in range(14):
+        print("{:5}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}".format(labels[i],
+                                                bf[i][0], bf[i][1], bf[i][2]) )
 
 stars, times, xyzuvw, xyzuvw_cov = \
         pickle.load(open('results/bp_TGAS2_traceback_save.pkl'))
@@ -58,6 +81,7 @@ fitted_group = sampler.flatchain[best_ix]
 
 lnprob_plots(sampler)
 corner_plots(sampler.flatchain, fitted_group)
+print_results(sampler.flatchain)
 
 ol_dynamic = fit_group.lnprob_one_group(fitted_group, star_params, use_swig=True, return_overlaps=True)
 
