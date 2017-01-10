@@ -65,8 +65,8 @@ if (gr1_frac + gr2_frac > 1):
   sys.exit()
 
 # Useful runtime information
-print("Finding a fit for {} stars, with {} walkers for {} steps." \
-	.format(nstars, nwalkers, samplingsteps))
+print("Finding a fit for {} stars, with {} walkers for {} steps with {} burnin." \
+	.format(nstars, nwalkers, samplingsteps, burninsteps))
 if (plot_it):
 	print("Graphs will be plotted...")
 if (print_table):
@@ -75,7 +75,7 @@ if (print_table):
 # Simulating 3 groups as 1-dimensional Gaussian with hard coded mean
 # positions and some standard deviations
 means = [-20.0, 30.0, 100.0]
-stds = [10.0, 20.0, 5.0]
+stds = [10.0, 50.0, 5.0]
 
 # ------------ RUNNING THE FIT --------------- #
 myfit = ToyFitter(nstars, means, stds, gr1_frac, gr2_frac,

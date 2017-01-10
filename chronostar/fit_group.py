@@ -265,7 +265,7 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
     if use_swig:
         if (True):
             #NOT TESTED, JUST TO GIVE MIKE AN IDEA OF THE LAYOUT OF THE FUNCTION CALL
-            overlaps = overlap.get_overlaps(group_icov, group_mn, group_icov_det,
+            overlaps = overlap.overlap.get_overlaps(group_icov, group_mn, group_icov_det,
                                             Bs, bs, B_dets, ns)
             #note 'ns' at end, see 'overlap.c' for documentation
             lnprob = lnprob + np.sum(np.log(background_density + overlaps))

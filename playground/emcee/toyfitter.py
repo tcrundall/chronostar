@@ -107,9 +107,9 @@ class ToyFitter:
   # The prior, used to set bounds on the walkers
   def lnprior(self, pars):
     mu1, sig1, w1, mu2, sig2, w2, mu3, sig3 = pars
-    if    -200 < mu1 < 200 and 0.0 < sig1 < 50.0 and 5.0 < w1 < 90.0 \
-      and -200 < mu2 < 200 and 0.0 < sig2 < 50.0 and 5.0 < w2 < 90.0 \
-      and -200 < mu3 < 200 and 0.0 < sig3 < 50.0 and (w2+w1) < 95.0:
+    if    -200 < mu1 < 200 and 0.0 < sig1 < 100.0 and 5.0 < w1 < 90.0 \
+      and -200 < mu2 < 200 and 0.0 < sig2 < 100.0 and 5.0 < w2 < 90.0 \
+      and -200 < mu3 < 200 and 0.0 < sig3 < 100.0 and (w2+w1) < 95.0:
       return 0.0
     return -np.inf 
   
