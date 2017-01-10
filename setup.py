@@ -45,8 +45,9 @@ try:
 except AttributeError:
     numpy_include = numpy.get_numpy_include()
 
+# &TC added extra directory
 _overlap = Extension("chronostar/_overlap",
-                    ["chronostar/overlap.i", "chronostar/overlap.c"],
+                    ["chronostar/overlap/overlap.i", "chronostar/overlap/overlap.c"],
                     include_dirs = [numpy_include],
                     libraries = ['gsl', 'gslcblas'], 
                     extra_compile_args = ["-floop-parallelize-all","-ftree-parallelize-loops=4"],

@@ -11,5 +11,6 @@ __version__ = "0.1"
 import error_ellipse
 import traceback 
 import fit_group
+#import _overlap as overlap
 #Tim's code to play around with miscelaneous data sets neatly
 import play
