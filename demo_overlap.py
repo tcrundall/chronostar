@@ -1,5 +1,5 @@
 import numpy as np
-import overlap
+import chronostar._overlap as overlap
 
 def makeArray(instances, rows, cols):
     x = np.arange(instances*rows*cols)

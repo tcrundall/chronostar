@@ -7,11 +7,13 @@ import matplotlib.pyplot as plt
 from astropy.table import Table
 from chronostar.error_ellipse import plot_cov_ellipse
 import chronostar.traceback as traceback
-import chronostar.play as play
+import play
 plt.ion()
 
+crvad2 = play.read_crvad2()
+
 #This needs to be fixed! Vaguely correct below.
-pl = play.crvad2[play.get_pl_loc2()]
+pl = crvad2[play.get_pl_loc2(crvad2)]
 pl['HIP'].name = 'Name'
 #Which times are we plotting?
 times = np.linspace(0,5,11)
@@ -39,5 +41,5 @@ cov_ix1 = [[dims[0],dims[1]],[dims[0],dims[1]]]
 cov_ix2 = [[dims[0],dims[0]],[dims[1],dims[1]]]
 plot_cov_ellipse(xyz_cov[cov_ix1,cov_ix2],[xyz[dim1],xyz[dim2]],alpha=0.5,color='k')
 
-plt.savefig('plot.png')
+plt.savefig('plots/crvad4_plot.png')
 plt.show()

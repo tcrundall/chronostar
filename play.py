@@ -2,29 +2,29 @@ import numpy as np
 from astropy.table import Table
 import matplotlib.pyplot as plt
 
-def get_bad():
+def get_bad(crvad2):
     bad_stars = np.where( (crvad2['e_RV'] > 10) &
         ((crvad2['e_Plx']/crvad2['Plx'] >=  0.2) |
          (crvad2['e_Plx']/crvad2['Plx'] <= -0.2)))[0]
     return bad_stars
 
-def get_good():
+def get_good(crvad2):
     good_stars = (crvad2['e_RV'] < 5) & \
                    (crvad2['Plx']/crvad2['e_Plx'] >  5)
     return good_stars
 
-def get_close():
+def get_close(crvad2):
     boundary = 80
     close_stars = np.where( (crvad2['Plx'] < -boundary) |
                             (crvad2['Plx'] >  boundary))[0]
     return close
 
-def get_bright():
+def get_bright(crvad2):
     threshold = 6
     bright_stars = np.where( (crvad2['Bmag']) < threshold)[0]
     return bright_stars
 
-def get_pl_loc():
+def get_pl_loc(crvad2):
     width = 0.1
     height = 0.8
     threshold = 6
@@ -35,7 +35,7 @@ def get_pl_loc():
                              (crvad2['DEdeg'] > 24.123 - height) )[0]
     return pl_loc_stars
 
-def get_pl_loc2():
+def get_pl_loc2(crvad2):
     width = 1 
     height = 15 
     threshold = 6
@@ -48,13 +48,15 @@ def get_pl_loc2():
                              (crvad2['e_RV'] < 5) )[0]
     return pl_loc_stars
 
-if __name__ == "main":
-   
-    crvad2 = Table.read('crvad2.dat',
-                 readme='crvad2.ReadMe',
+def read_crvad2():
+    crvad2 = Table.read('data/crvad2.dat',
+                 readme='data/crvad2.ReadMe',
                  format='ascii.cds')
+    return crvad2
 
-
+if __name__ == "main":
+    read_crvad2() 
+    
     array1 = get_bright()
     plt.plot(crvad2['RAhour'][array1],crvad2['DEdeg'][array1],'.')
     array2 = get_pl_loc2()

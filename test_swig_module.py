@@ -7,7 +7,7 @@
 """
 
 import numpy as np
-import overlap
+import chronostar._overlap as overlap
 import time
 import argparse
 

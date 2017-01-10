@@ -10,7 +10,7 @@ import chronostar.traceback as traceback
 #plt.ion()
 
 #Read in numbers for RAVE. For HIPPARCOS, we have *no* radial velocities in general.
-t=Table.read('crvad2.dat', readme='crvad2.ReadMe', format='ascii.cds')
+t=Table.read('data/crvad2.dat', readme='data/crvad2.ReadMe', format='ascii.cds')
 t['Dist'] = 1/t['Plx']
 t['RAdeg'] = 15.0*t['RAhour']
 t['e_RAdeg'] = 15*t['e_RAhour']
