@@ -65,6 +65,14 @@ def print_results(samples):
         print("{:5}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}".format(labels[i],
                                                 bf[i][0], bf[i][1], bf[i][2]) )
 
+def print_membership(stars, overlaps):
+    # simply print the overlap with the group scaled such that ol + bgdens = 1
+    for i in range(np.size(stars)):
+        likeh = 100.0 * overlaps[i] / (overlaps[i] + bgdens)
+        print("{}: {}%".format(stars[i], likeh))
+        #pdb.set_trace()
+    return 0
+
 def write_results(samples):
     with open("logs/"+filestem+".log", 'w') as f:
         f.write("Log of output from bp with {} burn-in steps, {} sampling steps,\n"\
@@ -85,8 +93,15 @@ def write_results(samples):
                                                 use_swig=True, return_overlaps=True)
         
         bpstars = star_params["stars"]["Name1"][np.where(ol_dynamic > 1e-10)]
+        allstars = star_params["stars"]["Name1"]
+        ol_bp = ol_dynamic[np.where(ol_dynamic > 1e-10)]
         f.write("{} stars with overlaps > 1e-10:\n".format(np.size(bpstars)))
-        f.write(str(bpstars))
+        f.write(str(bpstars)+"\n")
+
+        f.write("\n")
+        #print_membership(allstars, ol_dynamic)
+        print("Just BP stars")
+        print_membership(bpstars, ol_bp)
 
 
 stars, times, xyzuvw, xyzuvw_cov = \

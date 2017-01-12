@@ -264,7 +264,6 @@ def lnprob_one_group(x, star_params, background_density=2e-12,use_swig=True,t_ix
     overlaps = np.empty(ns)
     if use_swig:
         if (True):
-            #NOT TESTED, JUST TO GIVE MIKE AN IDEA OF THE LAYOUT OF THE FUNCTION CALL
             overlaps = overlap.get_overlaps(group_icov, group_mn, group_icov_det,
                                             Bs, bs, B_dets, ns)
             #note 'ns' at end, see 'overlap.c' for documentation
@@ -447,8 +446,8 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
         plt.figure(1)
         plt.clf()
         plt.plot(sampler.lnprobability.T)
+        plt.savefig("plots/lnprobability.eps")
         plt.pause(0.001)
-	    plt.savefig("plots/lnprobability.eps")
 
     #Best Model
     best_ix = np.argmax(sampler.flatlnprobability)
@@ -470,7 +469,7 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
         plt.figure(2)       
         plt.clf()         
         plt.hist(sampler.chain[:,:,-1].flatten(),20)
-	    plt.savefig("plots/distribution_of_ages.eps")
+        plt.savefig("plots/distribution_of_ages.eps")
     
     #pdb.set_trace()
     if return_sampler:
