@@ -476,13 +476,220 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
         return sampler
     else:
         return sampler.flatchain[best_ix]
-        
+
+def lnprob_two_group(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False,\
+    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, print_times=False):
+    """Compute the log-likelihood for a fit to a group.
+
+    The x variables are:
+    xyzuvw (6), then xyz standard deviations (3), uvw_symmetrical_std (1), xyz_correlations (3)
+    for both the association and the background 
+
+    A 26th variable, if present, is the time at which the calculation is made. If not given, the
+    calculation is made at a fixed time index t_ix.
+
+    The probability of a model is the product of the probabilities
+    overlaps of every star in the group. 
+
+    Parameters
+    ----------
+    x : array-like
+        The group parameters, which are...
+        x[0] to x[5] : xyzuvw
+        x[6] to x[8] : positional variances in x,y,z
+        x[9]  : velocity dispersion (symmetrical for u,v,w)
+        x[10] to x[12] :  correlations between x,y,z
+        x[13] to x[18] : xyzuvw of background (BG)
+        x[19] to x[21] : positional variances in x,y,z of BG
+        x[22]  : velocity dispersion (symmetrical for u,v,w) of BG
+        x[23] to x[25] :  correlations between x,y,z of BG
+        x[26] : fraction of stars (0.0 - 1.0) in association
+        x[27] : (optional) birth time of group in Myr. 
+
+    t_ix : int
+        Time index (in the past) where we are computing the probabilities.
+    
+    return_overlaps : bool  
+        Return the overlaps (rather than the log probability)
+    
+    return_cov : bool
+        Return the covariance (rather than the log probability)
+    
+    """
+    t0=time.time()
+    practically_infinity = np.inf#1e20
+    
+    ns = len(star_params['xyzuvw'])    #Number of stars
+
+    #See if we have a time in Myr in the input vector, in which case we have
+    #to interpolate in time. Otherwise, just choose a single time snapshot given 
+    #by the input index t_ix.
+    if len(x)>13:
+        #If the input time is outside our range of traceback times, return
+        #zero likelihood.
+        if ( (x[13] < min(star_params['times'])) | (x[13] > max(star_params['times']))):
+            return -np.inf 
+        #Linearly interpolate in time to get bs and Bs
+        bs, cov = interp_cov(x[13], star_params)  
+        #WARNING: The next lines are slow, and should maybe be part of the overlap package,
+        #if numpy isn't fast enough. They are slow because an inverse and a determinant
+        #is computed for every star. 
+        Bs     = np.linalg.inv(cov)
+        B_dets = np.linalg.det(Bs)
+    else:
+        #Extract the time that we really care about.
+        #The result is a (ns,6) array for bs, and (ns,6,6) array for Bs.
+        bs     = star_params['xyzuvw'][:,t_ix]
+        Bs     = star_params['xyzuvw_icov'][:,t_ix]
+        B_dets = star_params['xyzuvw_icov_det'][:,t_ix]
+
+    xpos,  y,  z,  u,  v,  w,  dx,  dy,  dz,  duvw,  xcorr,  ycorr,  zcorr, \
+    xpos2, y2, z2, u2, v2, w2, dx2, dy2, dz2, duvw2, xcorr2, ycorr2, zcorr2, weight, t \
+        = x 
+    if not (2.0 < dx < 200.0 and 2.0 < dy < 200.0 and 2.0 < dz < 100.0 and 0.5 < duvw \
+     and -1.0 < xcorr < 1.0 and -1.0 < ycorr < 1.0 and -1.0 < zcorr < 1.0 \
+     and 200.0 < dx2 and 200.0 < dy2 and 100.0 < dz2 and 0.5 < duvw2 \
+     and -1.0 < xcorr2 < 1.0 and -1.0 < ycorr2 < 1.0 and -1.0 < zcorr2 < 1.0 \
+     and 0.0 < weight < 10.0 and 0.0 < age < 100.0):
+        return -practically_infinity 
+
+    #Sanity check inputs for out of bounds. If so, return zero likelihood.
+    if (np.min(x[6:9])<=min_axis):
+        if debug:
+            print("Positional Variance Too Low...")
+        return -practically_infinity
+    if (np.min(x[9])<min_v_disp):
+        if debug:
+            print("Velocity Variance Too Low...")
+        return -practically_infinity
+    if (np.max(np.abs(x[10:13])) >= 1):
+        if debug:
+            print("Correlations above 1...")
+        return -practically_infinity       
+
+    #Create the group_mn and group_cov from x. This looks a little tricky 
+    #because we're inputting correlations rather than elements of the covariance
+    #matrix.
+    #https://en.wikipedia.org/wiki/Correlation_and_dependence
+    x = np.array(x)
+    group_mn = x[0:6]
+    group_cov = np.eye( 6 )
+    #Fill in correlations
+    group_cov[np.tril_indices(3,-1)] = x[10:13]
+    group_cov[np.triu_indices(3,1)] = x[10:13]
+    #Convert correlation to covariance for position.
+    for i in range(3):
+        group_cov[i,:3] *= x[6:9]
+        group_cov[:3,i] *= x[6:9]
+    #Convert correlation to covariance for velocity.
+    for i in range(3,6):
+        group_cov[i,3:] *= x[9]
+        group_cov[3:,i] *= x[9]
+
+    bg_mn = x[13:19]
+    bg_cov = np.eye( 6 )
+    #Fill in correlations
+    bg_cov[np.tril_indices(3,-1)] = x[23:26]
+    bg_cov[np.triu_indices(3,1)] = x[23:26]
+    #Convert correlation to covariance for position.
+    for i in range(3):
+        bg_cov[i,:3] *= x[19:22]
+        bg_cov[:3,i] *= x[19:22]
+    #Convert correlation to covariance for velocity.
+    for i in range(3,6):
+        bg_cov[i,3:] *= x[22]
+        bg_cov[3:,i] *= x[22]
+
+
+    #Allow this covariance matrix to be returned.
+    if return_cov:
+        return group_cov
+
+    #Enforce some sanity check limits on prior...
+    if (np.min(np.linalg.eigvalsh(group_cov[:3,:3])) < min_axis**2):
+        if debug:
+            print("Minimum positional covariance too small in one direction...")
+        return -practically_infinity
+
+    #Enforce some sanity check limits on prior...
+    if (np.min(np.linalg.eigvalsh(bg_cov[:3,:3])) < min_axis**2):
+        if debug:
+            print("Minimum positional bg covariance too small in one direction...")
+        return -practically_infinity
+
+    #Invert the group covariance matrix and check for negative eigenvalues
+    group_icov = np.linalg.inv(group_cov)
+    group_icov_eig = np.linalg.eigvalsh(group_icov)
+    if np.min(group_icov_eig) < 0:
+        if debug:
+            print("Numerical error in inverse covariance matrix!")
+        return -practically_infinity
+    group_icov_det = np.prod(group_icov_eig)
+
+    #Invert the background covariance matrix and check for negative eigenvalues
+    bg_icov = np.linalg.inv(bg_cov)
+    bg_icov_eig = np.linalg.eigvalsh(bg_icov)
+    if np.min(bg_icov_eig) < 0:
+        if debug:
+            print("Numerical error in bg inverse covariance matrix!")
+        return -practically_infinity
+    bg_icov_det = np.prod(bg_icov_eig)
+
+    #Before starting, lets set the prior probability
+    #Given the way we're sampling the covariance matrix, I'm
+    #really not sure this is correct! But it is pretty close...
+    #it looks almost like 1/(product of standard deviations).
+    #See YangBerger1998
+    lnprob=np.log(np.abs(group_icov_det)**3.5)
+  
+    t1=time.time()  
+  
+    #overlaps_start = time.clock()
+    #Now loop through stars, and save the overlap integral for every star.
+    overlaps = np.empty(ns)
+    if use_swig:
+        if (True):
+            overlaps = overlap.get_overlaps(group_icov, group_mn, group_icov_det,
+                                            Bs, bs, B_dets, ns)
+            bg_overlaps = overlap.get_overlaps(bg_icov, bg_mn, bg_icov_det,
+                                            Bs, bs, B_dets, ns)
+            #note 'ns' at end, see 'overlap.c' for documentation
+            prob = weight*overlaps + (1.0 - weight)*bg_overlaps
+            #lnprob = lnprob + np.sum(np.log(background_density + overlaps))
+            lnprob = lnprob + np.sum(np.log(prob))
+        else:
+            print("oops, no code for no swig")
+            return -practically_infinity
+            for i in range(ns):
+                overlaps[i] = overlap.get_overlap(group_icov,
+                                                  group_mn,
+                                                  group_icov_det,
+                                                  Bs[i],
+                                                  bs[i],
+                                                  B_dets[i]) #&TC
+                lnprob += np.log(background_density + overlaps[i])
+    else:
+        print("oops, no code for no swig")
+        return -practically_infinity
+        for i in range(ns):
+            overlaps[i] = compute_overlap(group_icov,group_mn,group_icov_det,Bs[i],bs[i],B_dets[i])
+            lnprob += np.log(background_density + overlaps[i])
+    
+    #print (time.clock() - overlaps_start)
+    if print_times:
+	print("{0:9.6f}, {1:9.6f}".format(time.time()-t1, t1-t0))
+
+    if return_overlaps:
+        return overlaps    
+    
+    return lnprob
+
 def fit_two_groups(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.327,-11.427, -6.527, \
     10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589]),\
         nwalkers=100,nchain=1000,nburn=200, return_sampler=False,pool=None,\
         init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=True, \
         plotit=False):
-    """Fit a single group, using a affine invariant Monte-Carlo Markov chain.
+    """Fit two group, using a affine invariant Monte-Carlo Markov chain.
     
     Parameters
     ----------
@@ -493,8 +700,6 @@ def fit_two_groups(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.3
         
     init_mod : array-like
         Initial mean of models used to fit the group. See lnprob_one_group for parameter definitions.
-
-            
 
     nwalkers : int
         Number of walkers to characterise the parameter covariance matrix. Has to be
@@ -546,16 +751,16 @@ def fit_two_groups(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.3
     #Best Model
     best_ix = np.argmax(sampler.flatlnprobability)
     print('[' + ",".join(["{0:7.3f}".format(f) for f in sampler.flatchain[best_ix]]) + ']')
-    overlaps = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_overlaps=True,use_swig=use_swig)
-    group_cov = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_cov=True,use_swig=use_swig)
-    np.sqrt(np.linalg.eigvalsh(group_cov[:3,:3]))
-    ww = np.where(overlaps < background_density)[0]
-    print("The following {0:d} stars are more likely not group members...".format(len(ww)))
-    try:
-        print(star_params['stars'][ww]['Name'])
-    except:
-       print(star_params['stars'][ww]['Name1'])
-
+#    overlaps = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_overlaps=True,use_swig=use_swig)
+#    group_cov = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_cov=True,use_swig=use_swig)
+#    np.sqrt(np.linalg.eigvalsh(group_cov[:3,:3]))
+#    ww = np.where(overlaps < background_density)[0]
+#    print("The following {0:d} stars are more likely not group members...".format(len(ww)))
+#    try:
+#        print(star_params['stars'][ww]['Name'])
+#    except:
+#       print(star_params['stars'][ww]['Name1'])
+#
     print("Mean acceptance fraction: {0:.3f}"
                     .format(np.mean(sampler.acceptance_fraction)))
 
