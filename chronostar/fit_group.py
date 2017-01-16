@@ -477,7 +477,7 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
     else:
         return sampler.flatchain[best_ix]
 
-def lnprob_two_group(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False,\
+def lnprob_two_groups(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False,\
     return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, print_times=False):
     """Compute the log-likelihood for a fit to a group.
 
@@ -524,13 +524,13 @@ def lnprob_two_group(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False,
     #See if we have a time in Myr in the input vector, in which case we have
     #to interpolate in time. Otherwise, just choose a single time snapshot given 
     #by the input index t_ix.
-    if len(x)>13:
+    if len(x)>27:
         #If the input time is outside our range of traceback times, return
         #zero likelihood.
-        if ( (x[13] < min(star_params['times'])) | (x[13] > max(star_params['times']))):
+        if ( (x[27] < min(star_params['times'])) | (x[27] > max(star_params['times']))):
             return -np.inf 
         #Linearly interpolate in time to get bs and Bs
-        bs, cov = interp_cov(x[13], star_params)  
+        bs, cov = interp_cov(x[27], star_params)  
         #WARNING: The next lines are slow, and should maybe be part of the overlap package,
         #if numpy isn't fast enough. They are slow because an inverse and a determinant
         #is computed for every star. 
@@ -550,8 +550,11 @@ def lnprob_two_group(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False,
      and -1.0 < xcorr < 1.0 and -1.0 < ycorr < 1.0 and -1.0 < zcorr < 1.0 \
      and 200.0 < dx2 and 200.0 < dy2 and 100.0 < dz2 and 0.5 < duvw2 \
      and -1.0 < xcorr2 < 1.0 and -1.0 < ycorr2 < 1.0 and -1.0 < zcorr2 < 1.0 \
-     and 0.0 < weight < 10.0 and 0.0 < age < 100.0):
+     and 0.0 < weight < 10.0 and 0.0 < t < 100.0):
         return -practically_infinity 
+
+    if (t < 0.0):
+        print("Time is negative...?")
 
     #Sanity check inputs for out of bounds. If so, return zero likelihood.
     if (np.min(x[6:9])<=min_axis):
@@ -684,10 +687,9 @@ def lnprob_two_group(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False,
     
     return lnprob
 
-def fit_two_groups(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.327,-11.427, -6.527, \
-    10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589]),\
+def fit_two_groups(star_params, init_mod,\
         nwalkers=100,nchain=1000,nburn=200, return_sampler=False,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=True, \
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), use_swig=True, \
         plotit=False):
     """Fit two group, using a affine invariant Monte-Carlo Markov chain.
     
@@ -730,7 +732,7 @@ def fit_two_groups(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.3
     p0 = [init_mod + (np.random.random(size=ndim) - 0.5)*init_sdev for i in range(nwalkers)]
 
     #NB we can't set e.g. "threads=4" because the function isn't "pickleable"
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_one_group,pool=pool,args=[star_params,background_density,use_swig])
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_two_groups,pool=pool,args=[star_params,use_swig])
 
     #Burn in...
     pos, prob, state = sampler.run_mcmc(p0, nburn)

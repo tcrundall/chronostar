@@ -23,9 +23,9 @@ import matplotlib.pyplot as plt           # for plotting the lnprob
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-p', '--steps',  dest = 'p', default=10000,
-                                    help='[10000] number of sampling steps')
+                                    help='[1000] number of sampling steps')
 parser.add_argument('-b', '--burnin', dest = 'b', default=2000,
-                                    help='[2000] number of burn-in steps')
+                                    help='[700] number of burn-in steps')
 #parser.add_argument('-d', '--bgdens', dest = 'd', default=2e-08,
 #                                    help='[2e-08] background density')
 
@@ -120,11 +120,11 @@ beta_pic_group = np.array([-6.574, 66.560, 23.436, \
                             -1.327, -11.427,     0, \
                              10.045, 10.319, 12.334, 5, \
                             0.932,  0.735, 0.846, \
-                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, \
-                            300.0, 300.0, 250.0, \
+                            0.0, 60.0, 30.0, 0.0, -15.0, 0.0, \
+                            250.0, 450.0, 250.0, \
                             5, \
-                            0.5, 0.5, 0.5, \
-                            0.001, \
+                            0.1, 0.1, 0.1, \
+                            0.01, \
                             20.589]) # birth time
 
 #xyzuvw (6), then xyz standard deviations (3), uvw_symmetrical_std (1), xyz_correlations (3)
@@ -133,7 +133,7 @@ beta_pic_group = np.array([-6.574, 66.560, 23.436, \
 
 sampler = fit_group.fit_two_groups(star_params, init_mod=beta_pic_group,\
         nwalkers=60,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.0005,1]),\
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.005,1]),\
         use_swig=True, plotit=False)
 
 best_ix = np.argmax(sampler.flatlnprobability)
