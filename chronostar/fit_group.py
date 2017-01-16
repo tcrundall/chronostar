@@ -477,7 +477,100 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
     else:
         return sampler.flatchain[best_ix]
         
-#Some test calculations applicable to the ARC DP17 proposal.
+def fit_two_groups(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.327,-11.427, -6.527, \
+    10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589]),\
+        nwalkers=100,nchain=1000,nburn=200, return_sampler=False,pool=None,\
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=True, \
+        plotit=False):
+    """Fit a single group, using a affine invariant Monte-Carlo Markov chain.
+    
+    Parameters
+    ----------
+    star_params: dict
+        A dictionary of star parameters from read_stars. This should of course be a
+        class, but it doesn't work with MPI etc as class instances are not 
+        "pickleable"
+        
+    init_mod : array-like
+        Initial mean of models used to fit the group. See lnprob_one_group for parameter definitions.
+
+            
+
+    nwalkers : int
+        Number of walkers to characterise the parameter covariance matrix. Has to be
+        at least 2 times the number of dimensions.
+    
+    nchain : int
+        Number of elements in the chain. For characteristing a distribution near a 
+        minimum, 1000 is a rough minimum number (giving ~10% uncertainties on 
+        standard deviation estimates).
+        
+    nburn : int
+        Number of burn in steps, before saving any chain output. If the beam acceptance
+        fraction is too low (e.g. significantly lower in burn in than normal, e.g. 
+        less than 0.1) then this has to be increased.
+    
+    Returns
+    -------
+    best_params: array-like
+        The best set of group parameters.
+    sampler: emcee.EmsembleSampler
+        Returned if return_sampler=True
+    """
+    nparams = len(init_mod)
+    #Set up the MCMC...
+    ndim=nparams
+
+    #Set an initial series of models
+    p0 = [init_mod + (np.random.random(size=ndim) - 0.5)*init_sdev for i in range(nwalkers)]
+
+    #NB we can't set e.g. "threads=4" because the function isn't "pickleable"
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_one_group,pool=pool,args=[star_params,background_density,use_swig])
+
+    #Burn in...
+    pos, prob, state = sampler.run_mcmc(p0, nburn)
+    print("Mean burn-in acceptance fraction: {0:.3f}"
+                    .format(np.mean(sampler.acceptance_fraction)))
+
+    sampler.reset()
+
+    #Run...
+    sampler.run_mcmc(pos, nchain)
+    if plotit:
+        plt.figure(1)
+        plt.clf()
+        plt.plot(sampler.lnprobability.T)
+        plt.savefig("plots/lnprobability.eps")
+        plt.pause(0.001)
+
+    #Best Model
+    best_ix = np.argmax(sampler.flatlnprobability)
+    print('[' + ",".join(["{0:7.3f}".format(f) for f in sampler.flatchain[best_ix]]) + ']')
+    overlaps = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_overlaps=True,use_swig=use_swig)
+    group_cov = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_cov=True,use_swig=use_swig)
+    np.sqrt(np.linalg.eigvalsh(group_cov[:3,:3]))
+    ww = np.where(overlaps < background_density)[0]
+    print("The following {0:d} stars are more likely not group members...".format(len(ww)))
+    try:
+        print(star_params['stars'][ww]['Name'])
+    except:
+       print(star_params['stars'][ww]['Name1'])
+
+    print("Mean acceptance fraction: {0:.3f}"
+                    .format(np.mean(sampler.acceptance_fraction)))
+
+    if plotit:
+        plt.figure(2)       
+        plt.clf()         
+        plt.hist(sampler.chain[:,:,-1].flatten(),20)
+        plt.savefig("plots/distribution_of_ages.eps")
+    
+    #pdb.set_trace()
+    if return_sampler:
+        return sampler
+    else:
+        return sampler.flatchain[best_ix]
+ #Some test calculations applicable to the ARC DP17 proposal.
 if __name__ == "__main__":
     star_params = read_stars("traceback_save.pkl")
     

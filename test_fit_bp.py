@@ -26,8 +26,8 @@ parser.add_argument('-p', '--steps',  dest = 'p', default=10000,
                                     help='[10000] number of sampling steps')
 parser.add_argument('-b', '--burnin', dest = 'b', default=2000,
                                     help='[2000] number of burn-in steps')
-parser.add_argument('-d', '--bgdens', dest = 'd', default=2e-12,
-                                    help='[2e-12] background density')
+parser.add_argument('-d', '--bgdens', dest = 'd', default=2e-08,
+                                    help='[2e-08] background density')
 
 # from experience, the betapic data set needs ~1800 burnin steps to settle
 # but it settles very well from then on
@@ -126,7 +126,7 @@ null_init = np.array([0.0, 0.0, 0.0, 0.0, \
 
 ol_swig = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=True, return_overlaps=True)
 
-sampler = fit_group.fit_one_group(star_params, init_mod=nullish_init,\
+sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
         nwalkers=30,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
         init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]),\
         background_density=bgdens, use_swig=True, plotit=False)
