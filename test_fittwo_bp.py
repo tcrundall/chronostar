@@ -26,15 +26,23 @@ parser.add_argument('-p', '--steps',  dest = 'p', default=10000,
                                     help='[1000] number of sampling steps')
 parser.add_argument('-b', '--burnin', dest = 'b', default=2000,
                                     help='[700] number of burn-in steps')
+parser.add_argument('-t', '--time', dest = 't',
+                                    help='[] specified time to fit to')
 #parser.add_argument('-d', '--bgdens', dest = 'd', default=2e-08,
 #                                    help='[2e-08] background density')
+
 
 # from experience, the betapic data set needs ~1800 burnin steps to settle
 # but it settles very well from then on (if starting with help)
 args = parser.parse_args()
 nsteps = int(args.p)
 burnin = int(args.b)
-#bgdens = float(args.d)
+if args.t:
+    time = float(args.t)
+    istime = True
+else:
+    istime = False
+pdb.set_trace()
 bgdens = False
 
 filestem = "bp_two_"+str(nsteps)+"_"+str(burnin)
@@ -116,22 +124,27 @@ stars, times, xyzuvw, xyzuvw_cov = \
         pickle.load(open('results/bp_TGAS2_traceback_save.pkl'))
 star_params = fit_group.read_stars('results/bp_TGAS2_traceback_save.pkl')
 
-beta_pic_group = np.array([-6.574, 66.560, 23.436, \
-                            -1.327, -11.427,     0, \
-                             10.045, 10.319, 12.334, 5, \
-                            0.932,  0.735, 0.846, \
-                            0.0, 60.0, 30.0, 0.0, -15.0, 0.0, \
-                            250.0, 450.0, 250.0, \
-                            5, \
-                            0.1, 0.1, 0.1, \
-                            0.01, \
-                            20.589]) # birth time
+beta_pic_group = np.array([-30.0, -6.0, 22.0, \
+                            -0.0, -14.0,   -1.0, \
+                             46.0, 41.0, 26.0, 3, \
+                            0.2,  -0.1, -0.2, \
+                            -100.0, 70.0, -50.0, -8.0, -17.0, -8.0, \
+                            205.0, 205.0, 104.0, \
+                            10, \
+                            -0.7, 0.5, -0.6, \
+                            0.40, \
+                            5.0]) # birth time
 
-#xyzuvw (6), then xyz standard deviations (3), uvw_symmetrical_std (1), xyz_correlations (3)
-
-#ol_swig = fit_group.lnprob_two_group(beta_pic_group, star_params, use_swig=True, return_overlaps=True)
-
-sampler = fit_group.fit_two_groups(star_params, init_mod=beta_pic_group,\
+if istime:
+    pdb.set_trace()
+    beta_pic_group = beta_pic_group[:-1]
+    sampler = fit_group.fit_two_groups(star_params, init_mod=beta_pic_group,\
+        nwalkers=60,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.005,1]),\
+        use_swig=True, plotit=False, t_ix=time)
+else:
+    pdb.set_trace()
+    sampler = fit_group.fit_two_groups(star_params, init_mod=beta_pic_group,\
         nwalkers=60,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
         init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.005,1]),\
         use_swig=True, plotit=False)
