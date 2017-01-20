@@ -536,6 +536,7 @@ def lnprob_two_groups(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False
         #is computed for every star. 
         Bs     = np.linalg.inv(cov)
         B_dets = np.linalg.det(Bs)
+        #pdb.set_trace()
     else:
         #Extract the time that we really care about.
         #The result is a (ns,6) array for bs, and (ns,6,6) array for Bs.
@@ -543,14 +544,20 @@ def lnprob_two_groups(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False
         Bs     = star_params['xyzuvw_icov'][:,t_ix]
         B_dets = star_params['xyzuvw_icov_det'][:,t_ix]
 
+    #Get the stars to be fitted to the background's data at time 0
+    #pdb.set_trace()
+    background_bs     = star_params['xyzuvw'][:,0]
+    background_Bs     = star_params['xyzuvw_icov'][:,0]
+    background_B_dets = star_params['xyzuvw_icov_det'][:,0]
+
     xpos,  y,  z,  u,  v,  w,  dx,  dy,  dz,  duvw,  xcorr,  ycorr,  zcorr, \
     xpos2, y2, z2, u2, v2, w2, dx2, dy2, dz2, duvw2, xcorr2, ycorr2, zcorr2, weight, t \
         = x 
     if not (2.0 < dx < 200.0 and 2.0 < dy < 200.0 and 2.0 < dz < 100.0 and 0.5 < duvw \
      and -1.0 < xcorr < 1.0 and -1.0 < ycorr < 1.0 and -1.0 < zcorr < 1.0 \
-     and 200.0 < dx2 and 200.0 < dy2 and 100.0 < dz2 and 0.5 < duvw2 \
+     and 10.0 < dx2 and 10.0 < dy2 and 10.0 < dz2 and 0.5 < duvw2 \
      and -1.0 < xcorr2 < 1.0 and -1.0 < ycorr2 < 1.0 and -1.0 < zcorr2 < 1.0 \
-     and 0.0 < weight < 10.0 and 0.0 < t < 100.0):
+     and 0.0 < weight < 1.0 and 20.0 < t < 25.0):
         return -practically_infinity 
 
     if (t < 0.0):
@@ -652,10 +659,12 @@ def lnprob_two_groups(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False
     overlaps = np.empty(ns)
     if use_swig:
         if (True):
+            #pdb.set_trace()
             overlaps = overlap.get_overlaps(group_icov, group_mn, group_icov_det,
                                             Bs, bs, B_dets, ns)
             bg_overlaps = overlap.get_overlaps(bg_icov, bg_mn, bg_icov_det,
-                                            Bs, bs, B_dets, ns)
+                                            background_Bs, background_bs, 
+                                            background_B_dets, ns)
             #note 'ns' at end, see 'overlap.c' for documentation
             prob = weight*overlaps + (1.0 - weight)*bg_overlaps
             #lnprob = lnprob + np.sum(np.log(background_density + overlaps))
@@ -683,7 +692,7 @@ def lnprob_two_groups(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False
 	print("{0:9.6f}, {1:9.6f}".format(time.time()-t1, t1-t0))
 
     if return_overlaps:
-        return overlaps    
+        return (overlaps, bg_overlaps)
     
     return lnprob
 

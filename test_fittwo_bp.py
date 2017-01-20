@@ -26,8 +26,8 @@ parser.add_argument('-p', '--steps',  dest = 'p', default=10000,
                                     help='[1000] number of sampling steps')
 parser.add_argument('-b', '--burnin', dest = 'b', default=2000,
                                     help='[700] number of burn-in steps')
-parser.add_argument('-t', '--time', dest = 't',
-                                    help='[] specified time to fit to')
+#parser.add_argument('-t', '--time', dest = 't',
+#                                    help='[] specified time to fit to')
 #parser.add_argument('-d', '--bgdens', dest = 'd', default=2e-08,
 #                                    help='[2e-08] background density')
 
@@ -37,12 +37,12 @@ parser.add_argument('-t', '--time', dest = 't',
 args = parser.parse_args()
 nsteps = int(args.p)
 burnin = int(args.b)
-if args.t:
-    time = float(args.t)
-    istime = True
-else:
-    istime = False
-pdb.set_trace()
+#if args.t:
+#    time = float(args.t)
+#    istime = True
+#else:
+#    istime = False
+#pdb.set_trace()
 bgdens = False
 
 filestem = "bp_two_"+str(nsteps)+"_"+str(burnin)
@@ -54,7 +54,7 @@ def lnprob_plots(sampler):
     plt.clf()
 
 def corner_plots(samples):
-    fig = corner.corner(samples)
+    #fig = corner.corner(samples)
     #fig = corner.corner(samples, labels=["X", "Y", "Z", "U", "V", "W",
     #                                     "dX", "dY", "dZ", "dVel",
     #                                     "xCorr", "yCorr", "zCorr", 
@@ -62,6 +62,9 @@ def corner_plots(samples):
     #                                     "dX2", "dY2", "dZ2", "dVel2",
     #                                     "xCorr2", "yCorr2", "zCorr2", "weight", "age"],
     #                     truths=best)
+    fig = corner.corner(samples, labels=["X", "Y", "Z",
+                                         "dX", "dY", "dZ",
+                                         "weight", "age"])
     fig.savefig("plots/corner_"+filestem+".png")
 
 def calc_best_fit(samples):
@@ -78,6 +81,16 @@ def print_results(samples):
         print("{:5}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}".format(labels[i],
                                                 bf[i][0], bf[i][1], bf[i][2]) )
 
+def calculate_membership(stars, ass_overlaps, bg_overlaps):
+    likeh = 100.0 * ass_overlaps / (ass_overlaps+bg_overlaps)
+    pdb.set_trace()
+    print("Stars with membership likelihood greater than 80%: {}"\
+                        .format(np.size(np.where(likeh>80.0))))
+    print("Stars with membership likelihood greater than 50%: {}"\
+                        .format(np.size(np.where(likeh>50.0))))
+    print("  out of {} stars".format(np.size(stars)))
+    return 0
+
 def print_membership(stars, overlaps):
     # simply print the overlap with the group scaled such that ol + bgdens = 1
     for i in range(np.size(stars)):
@@ -91,6 +104,7 @@ def write_results(samples):
         f.write("Log of output from bp with {} burn-in steps, {} sampling steps,\n"\
                     .format(burnin, nsteps) )
         f.write("\tand {} set for background dens\n".format(bgdens))
+        f.write("Using starting parameters:\n{}".format(str(beta_pic_group)))
         f.write("\n")
         
         labels = ["X", "Y", "Z", "U", "V", "W",
@@ -100,10 +114,11 @@ def write_results(samples):
                  "dX2", "dY2", "dZ2", "dVel2",
                  "xCorr2", "yCorr2", "zCorr2", "weight", "age"] 
         bf = calc_best_fit(samples)
-        f.write(" _______ BETA PIC MOVING GROUP ________ \n")
+        f.write(" _______ BETA PIC MOVING GROUP ________ {starting parameters}\n")
         for i in range(len(labels)):
-            f.write("{:6}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\n".format(labels[i],
-                                                    bf[i][0], bf[i][1], bf[i][2]) )
+            f.write("{:6}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\t\t\t{:>7.2f}\n".format(labels[i],
+                                                    bf[i][0], bf[i][1], bf[i][2],
+                                                    beta_pic_group[i]) )
 
         #ol_dynamic = fit_group.lnprob_one_group(fitted_group, star_params,
         #                                        use_swig=True, return_overlaps=True)
@@ -124,26 +139,26 @@ stars, times, xyzuvw, xyzuvw_cov = \
         pickle.load(open('results/bp_TGAS2_traceback_save.pkl'))
 star_params = fit_group.read_stars('results/bp_TGAS2_traceback_save.pkl')
 
-beta_pic_group = np.array([-30.0, -6.0, 22.0, \
-                            -0.0, -14.0,   -1.0, \
-                             46.0, 41.0, 26.0, 3, \
-                            0.2,  -0.1, -0.2, \
-                            -100.0, 70.0, -50.0, -8.0, -17.0, -8.0, \
-                            205.0, 205.0, 104.0, \
-                            10, \
-                            -0.7, 0.5, -0.6, \
-                            0.40, \
-                            5.0]) # birth time
+beta_pic_group = np.array([-6.0, 66.0, 23.0, \
+                            -1.0, -11.0,   0.0, \
+                             10.0, 10.0, 12.0, 5, \
+                            0.9,  0.7, 0.8, \
+                            -35.0, 1.0, -30.0, -4.0, -15.0, -5.0, \
+                            80.0, 60.0, 50.0, \
+                            7, \
+                            -0.2, 0.3, -0.1, \
+                            0.30, \
+                            23.0]) # birth time
 
-if istime:
+if False:
     pdb.set_trace()
     beta_pic_group = beta_pic_group[:-1]
     sampler = fit_group.fit_two_groups(star_params, init_mod=beta_pic_group,\
         nwalkers=60,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.005,1]),\
+        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.1,1]),\
         use_swig=True, plotit=False, t_ix=time)
 else:
-    pdb.set_trace()
+    #pdb.set_trace()
     sampler = fit_group.fit_two_groups(star_params, init_mod=beta_pic_group,\
         nwalkers=60,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
         init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.005,1]),\
@@ -161,6 +176,10 @@ weight_and_age = chain[:,-2:]
 chain_of_interest = np.hstack((np.hstack((xyzs, dxyzs)), weight_and_age)) 
 lnprob_plots(sampler)
 corner_plots(chain_of_interest)
+
+overlaps_tuple = fit_group.lnprob_two_groups(fitted_group, star_params, return_overlaps=True)
+all_stars = star_params["stars"]["Name1"]
+calculate_membership(all_stars, overlaps_tuple[0], overlaps_tuple[1])
 
 #age_T = np.reshape(age, (600,1))
 #np.hstack((xyz, age_T))
