@@ -557,7 +557,7 @@ def lnprob_two_groups(x,star_params,use_swig=True,t_ix = 0,return_overlaps=False
      and -1.0 < xcorr < 1.0 and -1.0 < ycorr < 1.0 and -1.0 < zcorr < 1.0 \
      and 10.0 < dx2 and 10.0 < dy2 and 10.0 < dz2 and 0.5 < duvw2 \
      and -1.0 < xcorr2 < 1.0 and -1.0 < ycorr2 < 1.0 and -1.0 < zcorr2 < 1.0 \
-     and 0.0 < weight < 1.0 and 20.0 < t < 25.0):
+     and 0.0 < weight < 1.0 and 0.0 < t < 25.0):
         return -practically_infinity 
 
     if (t < 0.0):
