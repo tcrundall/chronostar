@@ -853,10 +853,10 @@ def lnprob_three_groups(x,star_params,use_swig=True,return_overlaps=False,\
     #pdb.set_trace()
 
     # GROUP 2:
-    if ( (x[29] < min(star_params['times'])) | (x[29] > max(star_params['times']))):
+    if ( (x[28] < min(star_params['times'])) | (x[28] > max(star_params['times']))):
         return -np.inf 
     #Linearly interpolate in time to get bs and Bs
-    b2s, cov2 = interp_cov(x[13], star_params)  
+    b2s, cov2 = interp_cov(x[28], star_params)  
     #WARNING: The next lines are slow, and should maybe be part of the overlap package,
     #if numpy isn't fast enough. They are slow because an inverse and a determinant
     #is computed for every star. 
@@ -868,15 +868,15 @@ def lnprob_three_groups(x,star_params,use_swig=True,return_overlaps=False,\
     background_Bs     = star_params['xyzuvw_icov'][:,0]
     background_B_dets = star_params['xyzuvw_icov_det'][:,0]
 
-    xpos,  y,  z,  u,  v,  w,  dx,  dy,  dz,  duvw,  xcorr,  ycorr,  zcorr, age1, weight1\
-    xpos2, y2, z2, u2, v2, w2, dx2, dy2, dz2, duvw2, xcorr2, ycorr2, zcorr2,age2, weight2\
+    xpos,  y,  z,  u,  v,  w,  dx,  dy,  dz,  duvw,  xcorr,  ycorr,  zcorr, age1, weight1,\
+    xpos2, y2, z2, u2, v2, w2, dx2, dy2, dz2, duvw2, xcorr2, ycorr2, zcorr2,age2, weight2,\
     xposBG, yBG, zBG, uBG, vBG, wBG, dxBG, dyBG, dzBG, duvwBG, xcorrBG, ycorrBG, zcorrBG\
          = x 
 
     if not (2.0 < dx < 200.0 and 2.0 < dy < 200.0 and 2.0 < dz < 100.0 and 0.5 < duvw \
      and -1.0 < xcorr < 1.0 and -1.0 < ycorr < 1.0 and -1.0 < zcorr < 1.0 \
-     and 0.0 < age1 < 25.0 and 0.05 < weight1 < 0.9 \ 
-     and 10.0 < dx2 and 10.0 < dy2 and 10.0 < dz2 and 0.5 < duvw2 \
+     and 0.0 < age1 < 25.0 and 0.05 < weight1 < 0.9 \
+     and 2.0 < dx2 < 200.0 and 2.0 < dy2 < 200.0 and 2.0 < dz2 < 200.0 and 0.5 < duvw2 \
      and -1.0 < xcorr2 < 1.0 and -1.0 < ycorr2 < 1.0 and -1.0 < zcorr2 < 1.0 \
      and age1 + 1.0 < age2 < 25.0 and 0.05 < weight2 < 0.9 \
      and 10.0 < dxBG and 10.0 < dyBG and 10.0 < dzBG and 0.5 < duvwBG \
@@ -931,21 +931,27 @@ def lnprob_three_groups(x,star_params,use_swig=True,return_overlaps=False,\
         bg_cov[i,3:] *= x[39]
         bg_cov[3:,i] *= x[39]
 
-
     #Allow this covariance matrix to be returned.
     if return_cov:
         return group1_cov, group2_cov, bg_cov
 
     #Invert the group covariance matrix and check for negative eigenvalues
-    group1_icov = np.linalg.inv(group_cov)
-    group1_icov_eig = np.linalg.eigvalsh(group_icov)
-    if np.min(group_icov_eig) < 0:
+    group1_icov = np.linalg.inv(group2_cov)
+    group1_icov_eig = np.linalg.eigvalsh(group1_icov)
+    if np.min(group1_icov_eig) < 0:
         if debug:
             print("Numerical error in inverse covariance matrix!")
         return -practically_infinity
-    group1_icov_det = np.prod(group_icov_eig)
+    group1_icov_det = np.prod(group1_icov_eig)
 
-#GOT UP TO HERE
+    group2_icov = np.linalg.inv(group2_cov)
+    group2_icov_eig = np.linalg.eigvalsh(group2_icov)
+    if np.min(group2_icov_eig) < 0:
+        if debug:
+            print("Numerical error in inverse covariance matrix!")
+        return -practically_infinity
+    group2_icov_det = np.prod(group2_icov_eig)
+
     #Invert the background covariance matrix and check for negative eigenvalues
     bg_icov = np.linalg.inv(bg_cov)
     bg_icov_eig = np.linalg.eigvalsh(bg_icov)
@@ -960,23 +966,26 @@ def lnprob_three_groups(x,star_params,use_swig=True,return_overlaps=False,\
     #really not sure this is correct! But it is pretty close...
     #it looks almost like 1/(product of standard deviations).
     #See YangBerger1998
-    lnprob=np.log(np.abs(group_icov_det)**3.5)
+    lnprob=np.log(np.abs(group1_icov_det)**3.5) + np.log(np.abs(group2_icov_det)**3.5)
   
     t1=time.time()  
   
     #overlaps_start = time.clock()
     #Now loop through stars, and save the overlap integral for every star.
-    overlaps = np.empty(ns)
+    #overlaps = np.empty(ns) #not needed I beleive...
     if use_swig:
         if (True):
             #pdb.set_trace()
-            overlaps = overlap.get_overlaps(group_icov, group_mn, group_icov_det,
-                                            Bs, bs, B_dets, ns)
+            g1_overlaps = overlap.get_overlaps(group1_icov, group1_mn, group1_icov_det,
+                                            B1s, b1s, B1_dets, ns)
+            g2_overlaps = overlap.get_overlaps(group2_icov, group2_mn, group2_icov_det,
+                                            B2s, b2s, B2_dets, ns)
             bg_overlaps = overlap.get_overlaps(bg_icov, bg_mn, bg_icov_det,
                                             background_Bs, background_bs, 
                                             background_B_dets, ns)
             #note 'ns' at end, see 'overlap.c' for documentation
-            prob = weight*overlaps + (1.0 - weight)*bg_overlaps
+            prob = weight1*g1_overlaps + weight2*g2_overlaps +\
+                    (1.0 - weight1 - weight2)*bg_overlaps
             #lnprob = lnprob + np.sum(np.log(background_density + overlaps))
             lnprob = lnprob + np.sum(np.log(prob))
         else:
@@ -1002,13 +1011,13 @@ def lnprob_three_groups(x,star_params,use_swig=True,return_overlaps=False,\
 	print("{0:9.6f}, {1:9.6f}".format(time.time()-t1, t1-t0))
 
     if return_overlaps:
-        return (overlaps, bg_overlaps)
+        return (g1_overlaps, g2_overlaps, bg_overlaps)
     
     return lnprob
 
 def fit_three_groups(star_params, init_mod,\
         nwalkers=100,nchain=1000,nburn=200, return_sampler=False,pool=None,\
-        init_sdev, use_swig=True, \
+        init_sdev=[], use_swig=True, \
         plotit=False):
     """Fit three groups, using a affine invariant Monte-Carlo Markov chain.
     

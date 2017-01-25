@@ -49,7 +49,7 @@ burnin = int(args.b)
 #pdb.set_trace()
 bgdens = False
 
-filestem = "bp_two_"+str(nsteps)+"_"+str(burnin)
+filestem = "bp_three_"+str(nsteps)+"_"+str(burnin)
 
 def lnprob_plots(sampler):
     plt.plot(sampler.lnprobability.T)
@@ -75,25 +75,6 @@ def calc_best_fit(samples):
     return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                      zip(*np.percentile(samples, [16,50,84], axis=0))) )
 
-def print_results(samples):
-    labels = ["X", "Y", "Z", "U", "V", "W",
-             "dX", "dY", "dZ", "dVel",
-             "xCorr", "yCorr", "zCorr", "age"]
-    bf = calc_best_fit(samples)
-    print(" _______ BETA PIC MOVING GROUP ________ ")
-    for i in range(14):
-        print("{:5}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}".format(labels[i],
-                                                bf[i][0], bf[i][1], bf[i][2]) )
-
-def calculate_membership(stars, ass_overlaps, bg_overlaps):
-    likeh = 100.0 * ass_overlaps / (ass_overlaps+bg_overlaps)
-    #pdb.set_trace()
-    print("Stars with membership likelihood greater than 80%: {}"\
-                        .format(np.size(np.where(likeh>80.0))))
-    print("Stars with membership likelihood greater than 50%: {}"\
-                        .format(np.size(np.where(likeh>50.0))))
-    print("  out of {} stars".format(np.size(stars)))
-    return 0
 
 def print_membership(stars, overlaps):
     # simply print the overlap with the group scaled such that ol + bgdens = 1
@@ -103,7 +84,7 @@ def print_membership(stars, overlaps):
         #pdb.set_trace()
     return 0
 
-def write_results(samples, stars, ass_overlaps, bg_overlaps):
+def write_results(samples, stars, g1_overlaps, g2_overlaps, bg_overlaps):
     with open("logs/"+filestem+".log", 'w') as f:
         f.write("Log of output from bp with {} burn-in steps, {} sampling steps,\n"\
                     .format(burnin, nsteps) )
@@ -111,28 +92,41 @@ def write_results(samples, stars, ass_overlaps, bg_overlaps):
         f.write("Using starting parameters:\n{}".format(str(beta_pic_group)))
         f.write("\n")
         
-        labels = ["X", "Y", "Z", "U", "V", "W",
-                 "dX", "dY", "dZ", "dVel",
-                 "xCorr", "yCorr", "zCorr",
+        labels = ["X1", "Y1", "Z1", "U1", "V1", "W1",
+                 "dX1", "dY1", "dZ1", "dVel1",
+                 "xCorr1", "yCorr1", "zCorr1",
+                 "age1", "weight1",
                  "X2", "Y2", "Z2", "U2", "V2", "W2",
                  "dX2", "dY2", "dZ2", "dVel2",
-                 "xCorr2", "yCorr2", "zCorr2", "weight", "age"] 
+                 "xCorr2", "yCorr2", "zCorr2",
+                 "age2", "weight2",
+                 "BGX", "BGY", "BGZ", "BGU", "BGV", "BGW",
+                 "BGdX", "BGdY", "BGdZ", "BGdVel",
+                 "BGxCorr", "BGyCorr", "BGzCorr" ] 
         bf = calc_best_fit(samples)
         f.write(" _______ BETA PIC MOVING GROUP ________ {starting parameters}\n")
         for i in range(len(labels)):
-            f.write("{:6}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\t\t\t{:>7.2f}\n".format(labels[i],
+            f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\t\t\t{:>7.2f}\n".format(labels[i],
                                                     bf[i][0], bf[i][1], bf[i][2],
                                                     big_beta_group[i]) )
-        likeh = 100.0 * ass_overlaps / (ass_overlaps+bg_overlaps)
+        total_ols = g1_overlaps + g2_overlaps + bg_overlaps
+        likeh1 = 100.0 * g1_overlaps / total_ols
+        likeh2 = 100.0 * g2_overlaps / total_ols
         #pdb.set_trace()
 
         nstars = np.size(stars)
-        defbp = np.size(np.where(likeh>80.0))
-        maybp = np.size(np.where(likeh>50.0))
+        defg1 = np.size(np.where(likeh1>80.0))
+        mayg1 = np.size(np.where(likeh1>50.0))
+        defg2 = np.size(np.where(likeh2>80.0))
+        mayg2 = np.size(np.where(likeh2>50.0))
 
-        f.write("Stars with membership likelihood greater than 80%: {} or {:5.2f}%\n"\
+        f.write("Stars with group 1 membership likelihood greater than 80%: {} or {:5.2f}%\n"\
                             .format(defbp, 100.0 * defbp / nstars))
-        f.write("Stars with membership likelihood greater than 50%: {} or {:5.2f}%\n"\
+        f.write("Stars with group 1 membership likelihood greater than 50%: {} or {:5.2f}%\n"\
+                            .format(maybp, 100.0 * maybp / nstars))
+        f.write("Stars with group 2 membership likelihood greater than 80%: {} or {:5.2f}%\n"\
+                            .format(defbp, 100.0 * defbp / nstars))
+        f.write("Stars with group 2 membership likelihood greater than 50%: {} or {:5.2f}%\n"\
                             .format(maybp, 100.0 * maybp / nstars))
         f.write("  out of {} stars\n".format(nstars))
 
@@ -150,7 +144,6 @@ def write_results(samples, stars, ass_overlaps, bg_overlaps):
         #print("Just BP stars")
         #print_membership(bpstars, ol_bp)
 
-
 stars, times, xyzuvw, xyzuvw_cov = \
         pickle.load(open('results/bp_TGAS2_traceback_save.pkl'))
 star_params = fit_group.read_stars('results/bp_TGAS2_traceback_save.pkl')
@@ -166,31 +159,24 @@ beta_pic_group = np.array([-6.0, 66.0, 23.0, \
                             0.30, \
                             23.0]) # birth time
 
-# The fit being fitted by two gaussians
-big_beta_group = np.array([-22, 34, 26, \
-                             0.61, -14, 0.01, \
-                            27, 35, 20, 3.6,\
+big_beta_group = np.array([-22, 34, 26, 0.61, -14, 0.01, \
+                            27, 35, 20,\
+                            3.6,\
                             0.39, 0.19, 0.18, \
-                            -19, -22, -46, \
-                            -6.3, -16.5, -6.9, \
+                            10.6, 0.5, \
+                            -6.0, 66.0, 23.0, -1.0, -11.0, 0.0, \
+                            10.0, 10.0, 12.0,\
+                            5, \
+                            0.9,  0.7, 0.8, \
+                            23.0, 0.15, \
+                            -19, -22, -46, -6.3, -16.5, -6.9, \
                             107, 60, 47, \
                             9.2, \
-                            -0.27, 0.02, 0.18, \
-                            0.5, \
-                            10.6])
+                            -0.27, 0.02, 0.18])
 
-big_beta_group = np.array([ -24.74, 34.35, 25.33,
-                              0.49, -14.01, 0.39,
-                             28.46, 32.98, 21.15, 2.66,
-                              0.33, 0.30, 0.27,
-                             -8.79, -19.53, -41.58,
-                             -6.03, -16.13, -6.90,
-                             87.48, 59.63, 43.47,
-                              8.55, -0.22, 0.05,
-                              0.12,
-                              0.51,
-                             11.45] )
-
+init_sdev = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 1, 0.05, \
+                       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 1, 0.05, \
+                       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01])
 
 using_mpi = True
 try:
@@ -210,19 +196,11 @@ else:
     print("MPI available for this code! - call this with e.g. mpirun -np 16 python test_fittwo_bp.py")
 
 
-if False:
-    pdb.set_trace()
-    beta_pic_group = beta_pic_group[:-1]
-    sampler = fit_group.fit_two_groups(star_params, init_mod=beta_pic_group,\
-        nwalkers=60,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.1,1]),\
-        use_swig=True, plotit=False, t_ix=time)
-else:
-    #pdb.set_trace()
-    sampler = fit_group.fit_two_groups(star_params, init_mod=big_beta_group,\
-        nwalkers=60,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.005,1]),\
-        use_swig=True, plotit=False)
+#pdb.set_trace()
+sampler = fit_group.fit_three_groups(star_params, init_mod=big_beta_group,\
+    nwalkers=150,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
+    init_sdev = init_sdev,
+    use_swig=True, plotit=False)
 
 if using_mpi:
     # Close the processes
@@ -232,22 +210,22 @@ best_ix = np.argmax(sampler.flatlnprobability)
 fitted_group = sampler.flatchain[best_ix]
 
 #extracting interesting parameters
-chain = sampler.flatchain
-xyzs = chain[:,0:3]
-dxyzs = chain[:,6:9]
-weight_and_age = chain[:,-2:]
+#chain = sampler.flatchain
+#xyzs = chain[:,0:3]
+#dxyzs = chain[:,6:9]
+#weight_and_age = chain[:,-2:]
 
-chain_of_interest = np.hstack((np.hstack((xyzs, dxyzs)), weight_and_age)) 
+#chain_of_interest = np.hstack((np.hstack((xyzs, dxyzs)), weight_and_age)) 
 lnprob_plots(sampler)
-corner_plots(chain_of_interest)
+#corner_plots(chain_of_interest)
 
-overlaps_tuple = fit_group.lnprob_two_groups(fitted_group, star_params, return_overlaps=True)
+overlaps_tuple = fit_group.lnprob_three_groups(fitted_group, star_params, return_overlaps=True)
 all_stars = star_params["stars"]["Name1"]
-calculate_membership(all_stars, overlaps_tuple[0], overlaps_tuple[1])
+#calculate_membership(all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
 
 #age_T = np.reshape(age, (600,1))
 #np.hstack((xyz, age_T))
 
 #corner_plots(sampler.flatchain, fitted_group)
-write_results(sampler.flatchain, all_stars, overlaps_tuple[0], overlaps_tuple[1])
+write_results(sampler.flatchain, all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
 pickle.dump((sampler.chain, sampler.lnprobability), open("logs/" + filestem + ".pkl", 'w'))
