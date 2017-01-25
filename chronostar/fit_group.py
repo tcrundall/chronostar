@@ -710,7 +710,7 @@ def fit_two_groups(star_params, init_mod,\
         "pickleable"
         
     init_mod : array-like
-        Initial mean of models used to fit the group. See lnprob_one_group for parameter definitions.
+        Initial mean of models used to fit the group. See lnprob_two_groups for parameter definitions.
 
     nwalkers : int
         Number of walkers to characterise the parameter covariance matrix. Has to be
@@ -786,6 +786,308 @@ def fit_two_groups(star_params, init_mod,\
         return sampler
     else:
         return sampler.flatchain[best_ix]
+
+def lnprob_three_groups(x,star_params,use_swig=True,return_overlaps=False,\
+    return_cov=False, min_axis=2.0,min_v_disp=0.5,debug=False, print_times=False):
+    """Compute the log-likelihood for a fit to a group.
+
+    The x variables are:
+    xyzuvw (6), then xyz standard deviations (3), uvw_symmetrical_std (1), xyz_correlations (3)
+    for two groups and the background 
+
+    A 43rd variable, if present, is the time at which the calculation is made. If not given, the
+    calculation is made at a fixed time index t_ix.
+
+    The probability of a model is the product of the probabilities
+    overlaps of every star in the group. 
+
+    Parameters
+    ----------
+    x : array-like
+        The group parameters, which are...
+        GROUP 1:
+        x[0] to x[5] : xyzuvw
+        x[6] to x[8] : positional variances in x,y,z
+        x[9]  : velocity dispersion (symmetrical for u,v,w)
+        x[10] to x[12] :  correlations between x,y,z
+        x[13] : birth time of group in Myr
+        x[14] : fraction of stars in group 1
+        GROUP 2:
+        x[15] to x[20] : xyzuvw
+        x[21] to x[23] : positional variances in x,y,z
+        x[24]  : velocity dispersion (symmetrical for u,v,w)
+        x[25] to x[27] :  correlations between x,y,z
+        x[28] : birth time of group in Myr
+        x[29] : fraction of stars in group 2
+        BACKGROUND:
+        x[30] to x[35] : xyzuvw of background (BG)
+        x[36] to x[38] : positional variances in x,y,z of BG
+        x[39]  : velocity dispersion (symmetrical for u,v,w) of BG
+        x[40] to x[42] :  correlations between x,y,z of BG
+
+    return_overlaps : bool  
+        Return the overlaps (rather than the log probability)
+    
+    return_cov : bool
+        Return the covariance (rather than the log probability)
+    
+    """
+    t0=time.time()
+    practically_infinity = np.inf#1e20
+    
+    ns = len(star_params['xyzuvw'])    #Number of stars
+
+    # Interpolate for the each birth time of the groups
+    #If the input time is outside our range of traceback times, return
+    #zero likelihood.
+    # GROUP 1:
+    if ( (x[13] < min(star_params['times'])) | (x[13] > max(star_params['times']))):
+        return -np.inf 
+    #Linearly interpolate in time to get bs and Bs
+    b1s, cov1 = interp_cov(x[13], star_params)  
+    #WARNING: The next lines are slow, and should maybe be part of the overlap package,
+    #if numpy isn't fast enough. They are slow because an inverse and a determinant
+    #is computed for every star. 
+    B1s     = np.linalg.inv(cov1)
+    B1_dets = np.linalg.det(B1s)
+    #pdb.set_trace()
+
+    # GROUP 2:
+    if ( (x[29] < min(star_params['times'])) | (x[29] > max(star_params['times']))):
+        return -np.inf 
+    #Linearly interpolate in time to get bs and Bs
+    b2s, cov2 = interp_cov(x[13], star_params)  
+    #WARNING: The next lines are slow, and should maybe be part of the overlap package,
+    #if numpy isn't fast enough. They are slow because an inverse and a determinant
+    #is computed for every star. 
+    B2s     = np.linalg.inv(cov2)
+    B2_dets = np.linalg.det(B2s)
+
+    #Get the stars to be fitted to the background's data at time 0
+    background_bs     = star_params['xyzuvw'][:,0]
+    background_Bs     = star_params['xyzuvw_icov'][:,0]
+    background_B_dets = star_params['xyzuvw_icov_det'][:,0]
+
+    xpos,  y,  z,  u,  v,  w,  dx,  dy,  dz,  duvw,  xcorr,  ycorr,  zcorr, age1, weight1\
+    xpos2, y2, z2, u2, v2, w2, dx2, dy2, dz2, duvw2, xcorr2, ycorr2, zcorr2,age2, weight2\
+    xposBG, yBG, zBG, uBG, vBG, wBG, dxBG, dyBG, dzBG, duvwBG, xcorrBG, ycorrBG, zcorrBG\
+         = x 
+
+    if not (2.0 < dx < 200.0 and 2.0 < dy < 200.0 and 2.0 < dz < 100.0 and 0.5 < duvw \
+     and -1.0 < xcorr < 1.0 and -1.0 < ycorr < 1.0 and -1.0 < zcorr < 1.0 \
+     and 0.0 < age1 < 25.0 and 0.05 < weight1 < 0.9 \ 
+     and 10.0 < dx2 and 10.0 < dy2 and 10.0 < dz2 and 0.5 < duvw2 \
+     and -1.0 < xcorr2 < 1.0 and -1.0 < ycorr2 < 1.0 and -1.0 < zcorr2 < 1.0 \
+     and age1 + 1.0 < age2 < 25.0 and 0.05 < weight2 < 0.9 \
+     and 10.0 < dxBG and 10.0 < dyBG and 10.0 < dzBG and 0.5 < duvwBG \
+     and -1.0 < xcorrBG < 1.0 and -1.0 < ycorrBG < 1.0 and -1.0 < zcorrBG < 1.0 \
+     and weight1 + weight2 < 0.9):
+        return -practically_infinity 
+
+    #Create the group_mn and group_cov from x. This looks a little tricky 
+    #because we're inputting correlations rather than elements of the covariance
+    #matrix.
+    #https://en.wikipedia.org/wiki/Correlation_and_dependence
+    x = np.array(x)
+    group1_mn = x[0:6]
+    group1_cov = np.eye( 6 )
+    #Fill in correlations
+    group1_cov[np.tril_indices(3,-1)] = x[10:13]
+    group1_cov[np.triu_indices(3,1)] = x[10:13]
+    #Convert correlation to covariance for position.
+    for i in range(3):
+        group1_cov[i,:3] *= x[6:9]
+        group1_cov[:3,i] *= x[6:9]
+    #Convert correlation to covariance for velocity.
+    for i in range(3,6):
+        group1_cov[i,3:] *= x[9]
+        group1_cov[3:,i] *= x[9]
+
+    group2_mn = x[15:21]
+    group2_cov = np.eye( 6 )
+    #Fill in correlations
+    group2_cov[np.tril_indices(3,-1)] = x[25:28]
+    group2_cov[np.triu_indices(3,1)] = x[25:28]
+    #Convert correlation to covariance for position.
+    for i in range(3):
+        group2_cov[i,:3] *= x[21:24]
+        group2_cov[:3,i] *= x[21:24]
+    #Convert correlation to covariance for velocity.
+    for i in range(3,6):
+        group2_cov[i,3:] *= x[24]
+        group2_cov[3:,i] *= x[24]
+
+    bg_mn = x[30:35]
+    bg_cov = np.eye( 6 )
+    #Fill in correlations
+    bg_cov[np.tril_indices(3,-1)] = x[40:43]
+    bg_cov[np.triu_indices(3,1)] = x[40:43]
+    #Convert correlation to covariance for position.
+    for i in range(3):
+        bg_cov[i,:3] *= x[36:39]
+        bg_cov[:3,i] *= x[36:39]
+    #Convert correlation to covariance for velocity.
+    for i in range(3,6):
+        bg_cov[i,3:] *= x[39]
+        bg_cov[3:,i] *= x[39]
+
+
+    #Allow this covariance matrix to be returned.
+    if return_cov:
+        return group1_cov, group2_cov, bg_cov
+
+    #Invert the group covariance matrix and check for negative eigenvalues
+    group1_icov = np.linalg.inv(group_cov)
+    group1_icov_eig = np.linalg.eigvalsh(group_icov)
+    if np.min(group_icov_eig) < 0:
+        if debug:
+            print("Numerical error in inverse covariance matrix!")
+        return -practically_infinity
+    group1_icov_det = np.prod(group_icov_eig)
+
+#GOT UP TO HERE
+    #Invert the background covariance matrix and check for negative eigenvalues
+    bg_icov = np.linalg.inv(bg_cov)
+    bg_icov_eig = np.linalg.eigvalsh(bg_icov)
+    if np.min(bg_icov_eig) < 0:
+        if debug:
+            print("Numerical error in bg inverse covariance matrix!")
+        return -practically_infinity
+    bg_icov_det = np.prod(bg_icov_eig)
+
+    #Before starting, lets set the prior probability
+    #Given the way we're sampling the covariance matrix, I'm
+    #really not sure this is correct! But it is pretty close...
+    #it looks almost like 1/(product of standard deviations).
+    #See YangBerger1998
+    lnprob=np.log(np.abs(group_icov_det)**3.5)
+  
+    t1=time.time()  
+  
+    #overlaps_start = time.clock()
+    #Now loop through stars, and save the overlap integral for every star.
+    overlaps = np.empty(ns)
+    if use_swig:
+        if (True):
+            #pdb.set_trace()
+            overlaps = overlap.get_overlaps(group_icov, group_mn, group_icov_det,
+                                            Bs, bs, B_dets, ns)
+            bg_overlaps = overlap.get_overlaps(bg_icov, bg_mn, bg_icov_det,
+                                            background_Bs, background_bs, 
+                                            background_B_dets, ns)
+            #note 'ns' at end, see 'overlap.c' for documentation
+            prob = weight*overlaps + (1.0 - weight)*bg_overlaps
+            #lnprob = lnprob + np.sum(np.log(background_density + overlaps))
+            lnprob = lnprob + np.sum(np.log(prob))
+        else:
+            print("oops, no code for no swig")
+            return -practically_infinity
+            for i in range(ns):
+                overlaps[i] = overlap.get_overlap(group_icov,
+                                                  group_mn,
+                                                  group_icov_det,
+                                                  Bs[i],
+                                                  bs[i],
+                                                  B_dets[i]) #&TC
+                lnprob += np.log(background_density + overlaps[i])
+    else:
+        print("oops, no code for no swig")
+        return -practically_infinity
+        for i in range(ns):
+            overlaps[i] = compute_overlap(group_icov,group_mn,group_icov_det,Bs[i],bs[i],B_dets[i])
+            lnprob += np.log(background_density + overlaps[i])
+    
+    #print (time.clock() - overlaps_start)
+    if print_times:
+	print("{0:9.6f}, {1:9.6f}".format(time.time()-t1, t1-t0))
+
+    if return_overlaps:
+        return (overlaps, bg_overlaps)
+    
+    return lnprob
+
+def fit_three_groups(star_params, init_mod,\
+        nwalkers=100,nchain=1000,nburn=200, return_sampler=False,pool=None,\
+        init_sdev, use_swig=True, \
+        plotit=False):
+    """Fit three groups, using a affine invariant Monte-Carlo Markov chain.
+    
+    Parameters
+    ----------
+    star_params: dict
+        A dictionary of star parameters from read_stars. This should of course be a
+        class, but it doesn't work with MPI etc as class instances are not 
+        "pickleable"
+        
+    init_mod : array-like
+        Initial mean of models used to fit the group. See lnprob_one_group for parameter definitions.
+
+    nwalkers : int
+        Number of walkers to characterise the parameter covariance matrix. Has to be
+        at least 2 times the number of dimensions.
+    
+    nchain : int
+        Number of elements in the chain. For characteristing a distribution near a 
+        minimum, 1000 is a rough minimum number (giving ~10% uncertainties on 
+        standard deviation estimates).
+        
+    nburn : int
+        Number of burn in steps, before saving any chain output. If the beam acceptance
+        fraction is too low (e.g. significantly lower in burn in than normal, e.g. 
+        less than 0.1) then this has to be increased.
+    
+    Returns
+    -------
+    best_params: array-like
+        The best set of group parameters.
+    sampler: emcee.EmsembleSampler
+        Returned if return_sampler=True
+    """
+    nparams = len(init_mod)
+    #Set up the MCMC...
+    ndim=nparams
+
+    #Set an initial series of models
+    p0 = [init_mod + (np.random.random(size=ndim) - 0.5)*init_sdev for i in range(nwalkers)]
+
+    #NB we can't set e.g. "threads=4" because the function isn't "pickleable"
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_three_groups,pool=pool,args=[star_params,use_swig])
+
+    #Burn in...
+    pos, prob, state = sampler.run_mcmc(p0, nburn)
+    print("Mean burn-in acceptance fraction: {0:.3f}"
+                    .format(np.mean(sampler.acceptance_fraction)))
+
+    sampler.reset()
+
+    #Run...
+    sampler.run_mcmc(pos, nchain)
+    if plotit:
+        plt.figure(1)
+        plt.clf()
+        plt.plot(sampler.lnprobability.T)
+        plt.savefig("plots/lnprobability.eps")
+        plt.pause(0.001)
+
+    #Best Model
+    best_ix = np.argmax(sampler.flatlnprobability)
+    print('[' + ",".join(["{0:7.3f}".format(f) for f in sampler.flatchain[best_ix]]) + ']')
+    print("Mean acceptance fraction: {0:.3f}"
+                    .format(np.mean(sampler.acceptance_fraction)))
+
+    if plotit:
+        plt.figure(2)       
+        plt.clf()         
+        plt.hist(sampler.chain[:,:,-1].flatten(),20)
+        plt.savefig("plots/distribution_of_ages.eps")
+    
+    #pdb.set_trace()
+    if return_sampler:
+        return sampler
+    else:
+        return sampler.flatchain[best_ix]
+ 
+
  #Some test calculations applicable to the ARC DP17 proposal.
 if __name__ == "__main__":
     star_params = read_stars("traceback_save.pkl")
