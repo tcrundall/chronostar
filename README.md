@@ -8,7 +8,8 @@ For a local build, do:
 	python setup.py build_ext -b .
 
 Building on Raijin:
-	-- everytime
+	append the following to .profile file in home directory:
+
 	module load python/2.7.11
 	module load python/2.7.11-matplotlib
 	module load gsl/1.15
@@ -17,6 +18,7 @@ Building on Raijin:
 	pip install --user astropy
 	pip install --user galpy
 	pip install --user emcee
+	pip install --user corner
 
 	-- build
 	python setup.py build_ext -b .

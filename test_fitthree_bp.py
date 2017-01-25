@@ -8,7 +8,13 @@ import chronostar.fit_group as fit_group
 import astropy.io.fits as pyfits          # for reading in .fts files
 import pickle                             # for reading in .pkl files
 import pdb
-import corner                             # for producing the corner plots :O
+try:
+    import corner                             # for producing the corner plots :O
+    using_corner = True
+except:
+    print("No corner plots on Raijin... :(")
+    using_corner = False
+
 import argparse                           # for calling script with arguments
 import matplotlib.pyplot as plt           # for plotting the lnprob
 
@@ -121,13 +127,13 @@ def write_results(samples, stars, g1_overlaps, g2_overlaps, bg_overlaps):
         mayg2 = np.size(np.where(likeh2>50.0))
 
         f.write("Stars with group 1 membership likelihood greater than 80%: {} or {:5.2f}%\n"\
-                            .format(defbp, 100.0 * defbp / nstars))
+                            .format(defg1, 100.0 * defg1 / nstars))
         f.write("Stars with group 1 membership likelihood greater than 50%: {} or {:5.2f}%\n"\
-                            .format(maybp, 100.0 * maybp / nstars))
+                            .format(mayg1, 100.0 * mayg1 / nstars))
         f.write("Stars with group 2 membership likelihood greater than 80%: {} or {:5.2f}%\n"\
-                            .format(defbp, 100.0 * defbp / nstars))
+                            .format(defg2, 100.0 * defg2 / nstars))
         f.write("Stars with group 2 membership likelihood greater than 50%: {} or {:5.2f}%\n"\
-                            .format(maybp, 100.0 * maybp / nstars))
+                            .format(mayg2, 100.0 * mayg2 / nstars))
         f.write("  out of {} stars\n".format(nstars))
 
         #ol_dynamic = fit_group.lnprob_one_group(fitted_group, star_params,
@@ -193,7 +199,7 @@ if using_mpi:
         pool.wait()
         sys.exit(0)
 else:
-    print("MPI available for this code! - call this with e.g. mpirun -np 16 python test_fittwo_bp.py")
+    print("MPI available for this code! - call this with e.g. mpirun -np 16 python test_fitthree_bp.py")
 
 
 #pdb.set_trace()

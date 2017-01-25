@@ -8,7 +8,13 @@ import chronostar.fit_group as fit_group
 import astropy.io.fits as pyfits          # for reading in .fts files
 import pickle                             # for reading in .pkl files
 import pdb
-import corner                             # for producing the corner plots :O
+try:
+    using_corner = True
+    import corner                             # for producing the corner plots :O
+except:
+    print("no corner plotting on Raijin.... :( ")
+    using_corner = False
+
 import argparse                           # for calling script with arguments
 import matplotlib.pyplot as plt           # for plotting the lnprob
 
@@ -239,7 +245,8 @@ weight_and_age = chain[:,-2:]
 
 chain_of_interest = np.hstack((np.hstack((xyzs, dxyzs)), weight_and_age)) 
 lnprob_plots(sampler)
-corner_plots(chain_of_interest)
+if using_corner:
+    corner_plots(chain_of_interest)
 
 overlaps_tuple = fit_group.lnprob_two_groups(fitted_group, star_params, return_overlaps=True)
 all_stars = star_params["stars"]["Name1"]
