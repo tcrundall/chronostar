@@ -11,7 +11,8 @@ import numpy as np
 import sys 
 import matplotlib.pyplot as plt 
 
-star_params = chronostar.fit_group.read_stars("results/traceback_save.pkl")
+#star_params = chronostar.fit_group.read_stars("results/traceback_save.pkl")
+star_params = chronostar.fit_group.read_stars("results/bp_TGAS2_traceback_save.pkl")
     
 if(True):
     using_mpi = True
