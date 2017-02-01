@@ -63,18 +63,10 @@ def lnprob_plots(sampler):
     plt.savefig("plots/lnprob_"+filestem+".png")
     plt.clf()
 
-def corner_plots(samples):
-    #fig = corner.corner(samples)
-    #fig = corner.corner(samples, labels=["X", "Y", "Z", "U", "V", "W",
-    #                                     "dX", "dY", "dZ", "dVel",
-    #                                     "xCorr", "yCorr", "zCorr", 
-    #                                     "X2", "Y2", "Z2", "U2", "V2", "W2",
-    #                                     "dX2", "dY2", "dZ2", "dVel2",
-    #                                     "xCorr2", "yCorr2", "zCorr2", "weight", "age"],
-    #                     truths=best)
-    fig = corner.corner(samples, labels=["X", "Y", "Z",
-                                         "dX", "dY", "dZ",
-                                         "weight", "age"])
+def corner_plots(samples, init):
+    wanted_pars = [6,7,8,9,13,14,21,22,23,24,28,29]
+    labels=["dX1", "dY1", "dZ1", "dV1", "age1", "weight1", "dX2", "dY2", "dZ2", "dV2", "age2", "weight2"]
+    fig = corner.corner(samples[:,wanted_pars], truths=init[wanted_pars], labels=labels)
     fig.savefig("plots/corner_"+filestem+".png")
 
 def calc_best_fit(samples):
@@ -197,6 +189,38 @@ big_beta_group = np.array([ -25.17, 45.34, 13.39, 1.01, -15.37, 2.20,    \
                               7.56,                                      \
                              -0.23, -0.09, 0.14])
 
+#taking the top 1% best lnprob fits and taking the medians
+big_beta_group - np.array([  -23.57, 40.88, 9.51, 1.16, -15.60, 1.92,\
+                             27.45, 44.64, 28.66,\
+                             31.48,\
+                             0.27, 0.10, 0.55,\
+                             14.56, 0.21,\
+                             -3.25, 59.41, 27.43, -0.56, -11.26, -0.35,\
+                             15.62, 19.05, 12.85,\
+                             1.60,\
+                             0.46, 0.99, 0.35,\
+                             19.99, 0.13,\
+                             -17.36, -16.99, -24.09, -3.63, -15.84, -5.03,\
+                             77.36, 53.67, 52.56,\
+                             7.24,\
+                             -0.23, -0.06, 0.20])
+
+#the fit with highest lnprob from bp_three_20000_10000.log (-10656.8)
+big_beta_group = np.array([ -22.24, 69.32, 11.49, 0.89, -15.44, 2.38,
+                            58.24, 90.23, 53.96,
+                            47.62,
+                            0.71, -0.44, 0.57,
+                            17.82, 0.26,
+                            -0.73, 72.37, 26.99, 0.47, -10.99, -0.14,
+                            2.07, 20.41, 16.50,
+                            1.32,
+                            0.61, 0.93, 0.28,
+                            20.37, 0.08,
+                            -15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
+                            73.34, 51.61, 48.83,
+                            7.20,
+                            -0.21, -0.09, 0.12])
+
 init_sdev = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 1, 0.05, \
                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 1, 0.05, \
                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01])
@@ -221,7 +245,7 @@ else:
 
 #pdb.set_trace()
 sampler = fit_group.fit_three_groups(star_params, init_mod=big_beta_group,\
-    nwalkers=150,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
+    nwalkers=100,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
     init_sdev = init_sdev,
     use_swig=True, plotit=False)
 
@@ -240,7 +264,6 @@ fitted_group = sampler.flatchain[best_ix]
 
 #chain_of_interest = np.hstack((np.hstack((xyzs, dxyzs)), weight_and_age)) 
 lnprob_plots(sampler)
-#corner_plots(chain_of_interest)
 
 overlaps_tuple = fit_group.lnprob_three_groups(fitted_group, star_params, return_overlaps=True)
 all_stars = star_params["stars"]["Name1"]
@@ -249,6 +272,6 @@ all_stars = star_params["stars"]["Name1"]
 #age_T = np.reshape(age, (600,1))
 #np.hstack((xyz, age_T))
 
-#corner_plots(sampler.flatchain, fitted_group)
+corner_plots(sampler.flatchain, big_beta_group)
 write_results(sampler.flatchain, all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
 pickle.dump((sampler.chain, sampler.lnprobability), open("logs/" + filestem + ".pkl", 'w'))
