@@ -24,9 +24,9 @@ from emcee.utils import MPIPool
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-p', '--steps',  dest = 'p', default=10000,
-                                    help='[10000] number of sampling steps')
+                                    help='[5000] number of sampling steps')
 parser.add_argument('-b', '--burnin', dest = 'b', default=2000,
-                                    help='[2000] number of burn-in steps')
+                                    help='[1000] number of burn-in steps')
 parser.add_argument('-d', '--bgdens', dest = 'd', default=2e-08,
                                     help='[2e-08] background density')
 
