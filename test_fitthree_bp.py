@@ -47,6 +47,7 @@ parser.add_argument('-b', '--burnin', dest = 'b', default=2000,
 args = parser.parse_args()
 nsteps = int(args.p)
 burnin = int(args.b)
+ndims = 43
 #if args.t:
 #    time = float(args.t)
 #    istime = True
@@ -55,7 +56,7 @@ burnin = int(args.b)
 #pdb.set_trace()
 bgdens = False
 
-filestem = "bp_three_"+str(nsteps)+"_"+str(burnin)
+filestem = "partemp_bp_three_"+str(nsteps)+"_"+str(burnin)
 
 def lnprob_plots(sampler):
     plt.plot(sampler.lnprobability.T)
@@ -253,25 +254,23 @@ if using_mpi:
     # Close the processes
     pool.close()
 
-best_ix = np.argmax(sampler.flatlnprobability)
-fitted_group = sampler.flatchain[best_ix]
+flatlnprob = np.reshape(sampler.lnprobability, (-1, nsteps))
+best_ix = np.argmax(flatlnprob)
+flatchain = np.reshape(sampler.chain, (-1, ndims))
+fitted_group = flatchain[best_ix]
 
 #extracting interesting parameters
 #chain = sampler.flatchain
-#xyzs = chain[:,0:3]
-#dxyzs = chain[:,6:9]
-#weight_and_age = chain[:,-2:]
 
-#chain_of_interest = np.hstack((np.hstack((xyzs, dxyzs)), weight_and_age)) 
-lnprob_plots(sampler)
+#pdb.set_trace()
+#lnprob_plots(sampler)
 
-overlaps_tuple = fit_group.lnprob_three_groups(fitted_group, star_params, return_overlaps=True)
-all_stars = star_params["stars"]["Name1"]
-#calculate_membership(all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
+#overlaps_tuple = fit_group.lnprob_three_groups(fitted_group, star_params, return_overlaps=True)
+#all_stars = star_params["stars"]["Name1"]
 
 #age_T = np.reshape(age, (600,1))
 #np.hstack((xyz, age_T))
 
-corner_plots(sampler.flatchain, big_beta_group)
-write_results(sampler.flatchain, all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
+corner_plots(flatchain, big_beta_group)
+#write_results(sampler.flatchain, all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
 pickle.dump((sampler.chain, sampler.lnprobability), open("logs/" + filestem + ".pkl", 'w'))

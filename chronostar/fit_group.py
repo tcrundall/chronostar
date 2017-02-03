@@ -800,6 +800,8 @@ def lnprob_three_groups(x,star_params,use_swig=True,return_overlaps=False,\
 
     The probability of a model is the product of the probabilities
     overlaps of every star in the group. 
+    
+    &FLAG
 
     Parameters
     ----------
@@ -873,6 +875,7 @@ def lnprob_three_groups(x,star_params,use_swig=True,return_overlaps=False,\
     xposBG, yBG, zBG, uBG, vBG, wBG, dxBG, dyBG, dzBG, duvwBG, xcorrBG, ycorrBG, zcorrBG\
          = x 
 
+    #&FLAG
     if not (2.0 < dx < 200.0 and 2.0 < dy < 200.0 and 2.0 < dz < 100.0 and 0.5 < duvw \
      and -1.0 < xcorr < 1.0 and -1.0 < ycorr < 1.0 and -1.0 < zcorr < 1.0 \
      and 0.0 < age1 < 25.0 and 0.05 < weight1 < 0.9 \
@@ -975,6 +978,7 @@ def lnprob_three_groups(x,star_params,use_swig=True,return_overlaps=False,\
     #overlaps = np.empty(ns) #not needed I beleive...
     if use_swig:
         if (True):
+            #&FLAG
             #pdb.set_trace()
             g1_overlaps = overlap.get_overlaps(group1_icov, group1_mn, group1_icov_det,
                                             B1s, b1s, B1_dets, ns)
@@ -1014,6 +1018,10 @@ def lnprob_three_groups(x,star_params,use_swig=True,return_overlaps=False,\
         return (g1_overlaps, g2_overlaps, bg_overlaps)
     
     return lnprob
+
+# a dummy prior function required to suit syntax of PTSampler init
+def logp(dummy):
+    return 0
 
 def fit_three_groups(star_params, init_mod,\
         nwalkers=100,nchain=1000,nburn=200, return_sampler=False,pool=None,\
@@ -1055,12 +1063,16 @@ def fit_three_groups(star_params, init_mod,\
     nparams = len(init_mod)
     #Set up the MCMC...
     ndim=nparams
+    ntemps = 20
 
     #Set an initial series of models
-    p0 = [init_mod + (np.random.random(size=ndim) - 0.5)*init_sdev for i in range(nwalkers)]
+    #p0 = [init_mod + (np.random.random(size=ndim) - 0.5)*init_sdev for i in range(nwalkers)]
+    p0 = [[init_mod + (np.random.random(size=ndim) - 0.5)*init_sdev for i in range(nwalkers)] for j in range(ntemps)]
 
+    #&FLAG 
     #NB we can't set e.g. "threads=4" because the function isn't "pickleable"
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_three_groups,pool=pool,args=[star_params,use_swig])
+    #sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_three_groups,pool=pool,args=[star_params,use_swig])
+    sampler = emcee.PTSampler(ntemps, nwalkers, ndim, lnprob_three_groups, logp, pool=pool,loglargs=[star_params,use_swig])
 
     #Burn in...
     pos, prob, state = sampler.run_mcmc(p0, nburn)
@@ -1071,6 +1083,9 @@ def fit_three_groups(star_params, init_mod,\
 
     #Run...
     sampler.run_mcmc(pos, nchain)
+
+    assert sampler.chain.shape == (ntemps, nwalkers, nchain, ndim)
+    #pdb.set_trace()
     if plotit:
         plt.figure(1)
         plt.clf()
@@ -1079,8 +1094,8 @@ def fit_three_groups(star_params, init_mod,\
         plt.pause(0.001)
 
     #Best Model
-    best_ix = np.argmax(sampler.flatlnprobability)
-    print('[' + ",".join(["{0:7.3f}".format(f) for f in sampler.flatchain[best_ix]]) + ']')
+    #best_ix = np.argmax(sampler.flatlnprobability)
+    #print('[' + ",".join(["{0:7.3f}".format(f) for f in sampler.flatchain[best_ix]]) + ']')
     print("Mean acceptance fraction: {0:.3f}"
                     .format(np.mean(sampler.acceptance_fraction)))
 
@@ -1091,6 +1106,9 @@ def fit_three_groups(star_params, init_mod,\
         plt.savefig("plots/distribution_of_ages.eps")
     
     #pdb.set_trace()
+    return sampler
+
+    #skipping this for now
     if return_sampler:
         return sampler
     else:
