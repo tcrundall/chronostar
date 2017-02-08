@@ -1,6 +1,10 @@
 #Special directories
 results/*
 
+# Output files
+*.txt.e*
+*.txt.o*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -14,6 +18,11 @@ __pycache__/
 
 # C extensions
 *.so
+
+# Wrappers
+*_wrap.c
+*_wrap.o
+*.o
 
 # Distribution / packaging
 .Python

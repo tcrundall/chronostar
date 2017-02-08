@@ -3,14 +3,14 @@
 
 from __future__ import print_function, division
 
+#import matplotlib
+#matplotlib.use('Agg')		  # sposed to stop plt.savefig() from displaying
 import numpy as np
 import chronostar.fit_group as fit_group
 import astropy.io.fits as pyfits  # for reading in .fts files
 import pickle                     # for reading in .pkl files
 import pdb
 import argparse                   # for calling script with arguments
-import matplotlib
-matplotlib.use('Agg')		  # sposed to stop plt.savefig() from displaying
 import corner                     # for producing the corner plots :O
 import matplotlib.pyplot as plt   # for plotting the lnprob
 import sys
@@ -221,6 +221,8 @@ init_sdev = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 1, 0.05, \
                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 1, 0.05, \
                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01])
 
+print("About to set up mpi")
+
 using_mpi = True
 try:
     # Initialize the MPI-based pool used for parallelization.
@@ -238,6 +240,7 @@ if using_mpi:
 else:
     print("MPI available for this code! - call this with e.g. mpirun -np 16 python test_fitthree_bp.py")
 
+print("About to run sampler")
 
 #pdb.set_trace()
 sampler = fit_group.fit_three_groups(star_params, init_mod=big_beta_group,\
@@ -249,10 +252,14 @@ if using_mpi:
     # Close the processes
     pool.close()
 
+print("Closed MPI processes")
+
 flatlnprob = np.reshape(sampler.lnprobability, (-1, nsteps))
 best_ix = np.argmax(flatlnprob)
 flatchain = np.reshape(sampler.chain, (-1, ndims))
 fitted_group = flatchain[best_ix]
+
+print("About to dump data")
 
 #extracting interesting parameters
 #chain = sampler.flatchain
