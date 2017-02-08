@@ -1,7 +1,7 @@
 #!/bin/bash 
 #PBS -P kc5
 #PBS -q express
-#PBS -l walltime=00:10:00
+#PBS -l walltime=00:02:00
 #PBS -l mem=8GB
 #PBS -l jobfs=4GB
 #PBS -l ncpus=4
@@ -10,4 +10,4 @@ module load python/2.7.11-matplotlib
 module load gsl/1.15
 module load openmpi/1.10.2
 cd python/chronostar
-mpirun python test_fit_bp.py
+mpirun python test_fit_bp.py -b 20 -p 20
