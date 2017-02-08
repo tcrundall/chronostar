@@ -5,21 +5,16 @@ from __future__ import print_function, division
 
 import numpy as np
 import chronostar.fit_group as fit_group
-import astropy.io.fits as pyfits          # for reading in .fts files
-import pickle                             # for reading in .pkl files
+import astropy.io.fits as pyfits  # for reading in .fts files
+import pickle                     # for reading in .pkl files
 import pdb
-try:
-    import corner                             # for producing the corner plots :O
-    using_corner = True
-except:
-    print("No corner plots on Raijin... :(")
-    using_corner = False
-
-import argparse                           # for calling script with arguments
-import matplotlib.pyplot as plt           # for plotting the lnprob
-
-from emcee.utils import MPIPool
+import argparse                   # for calling script with arguments
+import matplotlib
+matplotlib.use('Agg')		  # sposed to stop plt.savefig() from displaying
+import corner                     # for producing the corner plots :O
+import matplotlib.pyplot as plt   # for plotting the lnprob
 import sys
+from emcee.utils import MPIPool
 
 """
     the main testing bed of fit_group, utilising the beta pic moving group
@@ -246,7 +241,7 @@ else:
 
 #pdb.set_trace()
 sampler = fit_group.fit_three_groups(star_params, init_mod=big_beta_group,\
-    nwalkers=100,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
+    nwalkers=100,nchain=nsteps, nburn=burnin, return_sampler=True,pool=pool,\
     init_sdev = init_sdev,
     use_swig=True, plotit=False)
 
@@ -271,6 +266,6 @@ fitted_group = flatchain[best_ix]
 #age_T = np.reshape(age, (600,1))
 #np.hstack((xyz, age_T))
 
-corner_plots(flatchain, big_beta_group)
-#write_results(sampler.flatchain, all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
 pickle.dump((sampler.chain, sampler.lnprobability), open("logs/" + filestem + ".pkl", 'w'))
+#corner_plots(flatchain, big_beta_group)
+#write_results(sampler.flatchain, all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
