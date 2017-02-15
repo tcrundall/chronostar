@@ -11,7 +11,8 @@ import pdb
 import corner                             # for producing the corner plots :O
 import argparse                           # for calling script with arguments
 import matplotlib.pyplot as plt           # for plotting the lnprob
-
+import sys
+from emcee.utils import MPIPool
 """
     the main testing bed of fit_group, utilising the beta pic moving group
     
@@ -23,9 +24,9 @@ import matplotlib.pyplot as plt           # for plotting the lnprob
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-p', '--steps',  dest = 'p', default=10000,
-                                    help='[10000] number of sampling steps')
+                                    help='[5000] number of sampling steps')
 parser.add_argument('-b', '--burnin', dest = 'b', default=2000,
-                                    help='[2000] number of burn-in steps')
+                                    help='[1000] number of burn-in steps')
 parser.add_argument('-d', '--bgdens', dest = 'd', default=2e-08,
                                     help='[2e-08] background density')
 
@@ -103,6 +104,24 @@ def write_results(samples):
         print("Just BP stars")
         print_membership(bpstars, ol_bp)
 
+using_mpi = True
+try:
+    # Initialize the MPI-based pool used for parallelization.
+    pool = MPIPool()
+except:
+    print("MPI doesn't seem to be installed... maybe install it?")
+    using_mpi = False
+    pool=None
+    
+if using_mpi:
+    if not pool.is_master():
+        # Wait for instructions from the master process.
+        pool.wait()
+        sys.exit(0)
+    else:
+        print("MPI available! - call this with e.g. mpirun -np 4 python fit_group.py")
+
+
 
 stars, times, xyzuvw, xyzuvw_cov = \
         pickle.load(open('results/bp_TGAS2_traceback_save.pkl'))
@@ -127,17 +146,21 @@ null_init = np.array([0.0, 0.0, 0.0, 0.0, \
 ol_swig = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=True, return_overlaps=True)
 
 sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
-        nwalkers=30,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
+        nwalkers=32,nchain=nsteps, nburn=burnin, return_sampler=True,pool=pool,\
         init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]),\
         background_density=bgdens, use_swig=True, plotit=False)
 
 best_ix = np.argmax(sampler.flatlnprobability)
 fitted_group = sampler.flatchain[best_ix]
 
-lnprob_plots(sampler)
-corner_plots(sampler.flatchain, fitted_group)
+#lnprob_plots(sampler)
+#corner_plots(sampler.flatchain, fitted_group)
 write_results(sampler.flatchain)
 
 #print(ol_swig)
 #print()
 #print(fitted_group)
+
+if using_mpi:
+    #Close the processes
+    pool.close()

@@ -19,6 +19,7 @@ Building on Raijin:
 	pip install --user galpy
 	pip install --user emcee
 	pip install --user corner
+	pip install --user mpi4py
 
 	-- build
 	python setup.py build_ext -b .
