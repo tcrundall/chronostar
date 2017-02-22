@@ -43,10 +43,11 @@ steps = int(args.p)
 burn_in = int(args.b)
 dims = 43
 
-
+pdb.set_trace()
 samples, lnprob = pickle.load(open("logs/bp_three_{}_{}.pkl".format(steps,burn_in)))
 flat_samples = np.reshape(samples,(-1,dims))
 flat_lnprob  = np.reshape(lnprob, (-1,))
+pdb.set_trace()
 
 best_ix = np.argmax(flat_lnprob)
 best_sample = flat_samples[best_ix]

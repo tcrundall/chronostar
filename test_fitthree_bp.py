@@ -186,7 +186,7 @@ big_beta_group = np.array([ -25.17, 45.34, 13.39, 1.01, -15.37, 2.20,    \
                              -0.23, -0.09, 0.14])
 
 #taking the top 1% best lnprob fits and taking the medians
-big_beta_group - np.array([  -23.57, 40.88, 9.51, 1.16, -15.60, 1.92,\
+big_beta_group = np.array([  -23.57, 40.88, 9.51, 1.16, -15.60, 1.92,\
                              27.45, 44.64, 28.66,\
                              31.48,\
                              0.27, 0.10, 0.55,\
