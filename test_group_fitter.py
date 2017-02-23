@@ -36,6 +36,9 @@ dummy_params = [-15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
                              -0.21, -0.09, 0.12]
 
 print(myFitter.lnprob(dummy_params))
+
+pdb.set_trace()
+
 result = myFitter.fitGroups()
 
 plt.plot(myFitter.sampler.lnprobability.T)
