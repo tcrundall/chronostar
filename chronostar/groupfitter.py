@@ -22,13 +22,13 @@ Note that this *doesn't* work yet due to a "pickling" problem.
 
 from __future__ import print_function, division
 
-import emcee
-import sys
+import emcee        # ... duh
+import sys          # for MPI
 import numpy as np
 import matplotlib.pyplot as plt
-import pickle
-import pdb
-import corner
+import pdb          # for debugging
+import corner       # for pretty corner plots
+import pickle       # for dumping and reading data
 try:
     import astropy.io.fits as pyfits
 except:
@@ -38,7 +38,6 @@ try:
     import _overlap as overlap #&TC
 except:
     print("overlap not imported, SWIG not possible. Need to make in directory...")
-import time    #&TC
 from emcee.utils import MPIPool
 
 try:                # don't know why we use xrange to initialise walkers
@@ -122,6 +121,7 @@ class GroupFitter:
     FILE_STEM = None
     NDIM    = 6       # number of dimensions for each 'measured' star
     NGROUPS = None       # number of groups in the data
+    NFIXED_GROUPS = 0
     GROUPS       = []
     FIXED_GROUPS = []
     NSTARS      = None
@@ -137,15 +137,17 @@ class GroupFitter:
     NPAR = 13
 
     # Fitting variables
-    samples  = None
-    means    = None  # modelled means [a NGROUPSx6 matrix]
-    cov_mats = None # modelled cov_matrices [a NGROUPSx6x6 matrix]
-    weights  = None # the amplitude of each gaussian [a NGROUP matrix]
-    best_fit = np.zeros(14) # best fitting group parameters, same order as 'pars'
+    samples    = None
+    means      = None  # modelled means [a NGROUPSx6 matrix]
+    cov_mats   = None # modelled cov_matrices [a NGROUPSx6x6 matrix]
+    weights    = None # the amplitude of each gaussian [a NGROUP matrix]
+    best_model = None # best fitting group parameters, same order as 'pars'
     
-    def __init__(self, burnin=100, steps=200, ngroups=1, plotit=False,
+    def __init__(self, burnin=100, steps=200, ngroups=1, plotit=True,
                  infile='results/bp_TGAS2_traceback_save.pkl'):
-        self.PLOTIT = PLOTIT
+        self.PLOTIT = plotit 
+        self.burnin = burnin
+        self.steps  = steps
         self.NGROUPS = ngroups
         self.STAR_PARAMS = self.read_stars(infile)
         self.NSTARS = len(self.STAR_PARAMS['xyzuvw'])
@@ -211,6 +213,10 @@ class GroupFitter:
         return 0.0
 
     def lnlike(self, pars):
+        """ Using the parameters passed in by the emcee run, finds the
+            bayesian likelihood that the model defined by these parameters
+            could have given rise to the stellar data
+        """
         model_group = Group(pars, 1.0, 0.0)
         group_icov = model_group.icov
         group_mn   = model_group.mean
@@ -240,7 +246,7 @@ class GroupFitter:
             return -np.inf
         return lp + self.lnlike(pars)
 
-    def fitGroups(self):
+    def fit_groups(self):
         init_mod = self.GROUPS[0].params
         init_sdev = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01]
         p0 = [init_mod + (np.random.random(size=self.NPAR) - 0.5)*init_sdev
@@ -261,9 +267,14 @@ class GroupFitter:
 
         #Best Model
         best_ix = np.argmax(self.sampler.flatlnprobability)
+        self.best_model = self.samples[best_ix]
         print('[' + ",".join(["{0:7.3f}".format(f) for f in self.sampler.flatchain[best_ix]]) + ']')
+
+        self.update_best_model(self.best_model, self.sampler.flatlnprobability[best_ix])
         
         self.write_results()
+        if (self.PLOTIT):
+            self.make_plots()
 
     def write_results(self):
         with open("logs/"+self.FILE_STEM+".log", 'w') as f:
@@ -275,7 +286,7 @@ class GroupFitter:
             labels = ["X", "Y", "Z", "U", "V", "W",
                  "dX", "dY", "dZ", "dVel",
                  "xCorr", "yCorr", "zCorr"]
-            bf = self.calc_best_fit()
+            bf = self.calc_best_params()
             f.write(" _______ BETA PIC MOVING GROUP ________ {starting parameters}\n")
             for i in range(len(labels)):
                 f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\t\t\t{:>7.2f}\n".format(
@@ -283,7 +294,7 @@ class GroupFitter:
                                                     bf[i][0], bf[i][1], bf[i][2],
                                                     self.GROUPS[0].params[i]) )
 
-    def calc_best_fit(self):
+    def calc_best_params(self):
         return np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                         zip(*np.percentile(self.samples, [16,50,84], axis=0))))
 
@@ -317,150 +328,15 @@ class GroupFitter:
         interp_icov_dets = self.STAR_ICOV_DETS[:,ix0]*(1-frac) +\
                                 self.STAR_ICOV_DETS[:,ix0+1]*frac
         return interp_mns, interp_icovs, interp_icov_dets
-       
 
-def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.327,-11.427, -6.527, \
-    10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589]),\
-        nwalkers=100,nchain=1000,nburn=200, return_sampler=False,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), background_density=2e-12, use_swig=True, \
-        plotit=False):
-    """Fit a single group, using a affine invariant Monte-Carlo Markov chain.
-    
-    Parameters
-    ----------
-    star_params: dict
-        A dictionary of star parameters from read_stars. This should of course be a
-        class, but it doesn't work with MPI etc as class instances are not 
-        "pickleable"
-        
-    init_mod : array-like
-        Initial mean of models used to fit the group. See lnprob_one_group for parameter definitions.
-
-    nwalkers : int
-        Number of walkers to characterise the parameter covariance matrix. Has to be
-        at least 2 times the number of dimensions.
-    
-    nchain : int
-        Number of elements in the chain. For characteristing a distribution near a 
-        minimum, 1000 is a rough minimum number (giving ~10% uncertainties on 
-        standard deviation estimates).
-        
-    nburn : int
-        Number of burn in steps, before saving any chain output. If the beam acceptance
-        fraction is too low (e.g. significantly lower in burn in than normal, e.g. 
-        less than 0.1) then this has to be increased.
-    
-    Returns
-    -------
-    best_params: array-like
-        The best set of group parameters.
-    sampler: emcee.EmsembleSampler
-        Returned if return_sampler=True
-    """
-    nparams = len(init_mod)
-    #Set up the MCMC...
-    ndim=nparams
-
-    #Set an initial series of models
-    p0 = [init_mod + (np.random.random(size=ndim) - 0.5)*init_sdev for i in range(nwalkers)]
-
-    #NB we can't set e.g. "threads=4" because the function isn't "pickleable"
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_one_group,pool=pool,args=[star_params,background_density,use_swig])
-
-    #Burn in...
-    pos, prob, state = sampler.run_mcmc(p0, nburn)
-    print("Mean burn-in acceptance fraction: {0:.3f}"
-                    .format(np.mean(sampler.acceptance_fraction)))
-
-    sampler.reset()
-
-    #Run...
-    sampler.run_mcmc(pos, nchain)
-    if plotit:
-        plt.figure(1)
-        plt.clf()
-        plt.plot(sampler.lnprobability.T)
-        plt.savefig("plots/lnprobability.eps")
-        plt.pause(0.001)
-
-    #Best Model
-    best_ix = np.argmax(sampler.flatlnprobability)
-    print('[' + ",".join(["{0:7.3f}".format(f) for f in sampler.flatchain[best_ix]]) + ']')
-    overlaps = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_overlaps=True,use_swig=use_swig)
-    group_cov = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_cov=True,use_swig=use_swig)
-    np.sqrt(np.linalg.eigvalsh(group_cov[:3,:3]))
-    ww = np.where(overlaps < background_density)[0]
-    print("The following {0:d} stars are more likely not group members...".format(len(ww)))
-    try:
-        print(star_params['stars'][ww]['Name'])
-    except:
-       print(star_params['stars'][ww]['Name1'])
-
-    print("Mean acceptance fraction: {0:.3f}"
-                    .format(np.mean(sampler.acceptance_fraction)))
-
-    if plotit:
-        plt.figure(2)       
-        plt.clf()         
-        plt.hist(sampler.chain[:,:,-1].flatten(),20)
-        plt.savefig("plots/distribution_of_ages.eps")
-    
-    if return_sampler:
-        return sampler
-    else:
-        return sampler.flatchain[best_ix]
-
-
-    #Set an initial series of models
-    p0 = [init_mod + (np.random.random(size=ndim) - 0.5)*init_sdev for i in range(nwalkers)]
-
-    #NB we can't set e.g. "threads=4" because the function isn't "pickleable"
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob_two_groups,pool=pool,args=[star_params,use_swig])
-
-    #Burn in...
-    pos, prob, state = sampler.run_mcmc(p0, nburn)
-    print("Mean burn-in acceptance fraction: {0:.3f}"
-                    .format(np.mean(sampler.acceptance_fraction)))
-
-    sampler.reset()
-
-    #Run...
-    sampler.run_mcmc(pos, nchain)
-    if plotit:
-        plt.figure(1)
-        plt.clf()
-        plt.plot(sampler.lnprobability.T)
-        plt.savefig("plots/lnprobability.eps")
-        plt.pause(0.001)
-
-    #Best Model
-    best_ix = np.argmax(sampler.flatlnprobability)
-    print('[' + ",".join(["{0:7.3f}".format(f) for f in sampler.flatchain[best_ix]]) + ']')
-#    overlaps = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_overlaps=True,use_swig=use_swig)
-#    group_cov = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_cov=True,use_swig=use_swig)
-#    np.sqrt(np.linalg.eigvalsh(group_cov[:3,:3]))
-#    ww = np.where(overlaps < background_density)[0]
-#    print("The following {0:d} stars are more likely not group members...".format(len(ww)))
-#    try:
-#        print(star_params['stars'][ww]['Name'])
-#    except:
-#       print(star_params['stars'][ww]['Name1'])
-#
-    print("Mean acceptance fraction: {0:.3f}"
-                    .format(np.mean(sampler.acceptance_fraction)))
-
-    if plotit:
-        plt.figure(2)       
-        plt.clf()         
-        plt.hist(sampler.chain[:,:,-1].flatten(),20)
-        plt.savefig("plots/distribution_of_ages.eps")
-    
-    if return_sampler:
-        return sampler
-    else:
-        return sampler.flatchain[best_ix]
-
-    if return_overlaps:
-        return (g1_overlaps, g2_overlaps, bg_overlaps)
-    
-    return lnprob
+    def update_best_model(self, best_model, best_lnprob):
+        file_stem = "results/bp_old_best_model_{}_{}".format(self.NGROUPS, self.NFIXED_GROUPS)
+        try:
+            old_best_lnprob, old_bet_model = pickle.load(open(file_stem))
+            print("Checking old best")
+            if (old_best_lnprob < best_lnprob):
+                print("Updating with new best: {}".format(best_lnprob))
+                pickle.dump((best_lnprob, best_model), open(file_stem, 'w'))
+        except:
+            print("Storing new best for the first time")
+            pickle.dump((best_lnprob, best_model), open(file_stem, 'w'))

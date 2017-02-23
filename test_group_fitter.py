@@ -20,9 +20,9 @@ parser.add_argument('-p', '--steps',  dest = 'p', default=100,
                                     help='[100] number of sampling steps')
 args = parser.parse_args() 
 burnin = int(args.b) 
-nsteps = int(args.p) 
+steps = int(args.p) 
 
-myFitter = GroupFitter()
+myFitter = GroupFitter(burnin=burnin, steps=steps)
 
 dummy_params = [-15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
                               73.34, 51.61, 48.83,
@@ -33,7 +33,6 @@ print(myFitter.lnprob(dummy_params))
 
 #pdb.set_trace()
 
-result = myFitter.fitGroups()
-myFitter.make_plots()
+result = myFitter.fit_groups()
 
 #pdb.set_trace()
