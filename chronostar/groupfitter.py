@@ -28,6 +28,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import pdb
+import corner
 try:
     import astropy.io.fits as pyfits
 except:
@@ -114,7 +115,11 @@ class GroupFitter:
         designed to find the instance in time when a set of stars occupied
         the smallest volume
     """
+    # Flags
+    PLOTIT = None
+
     # Data variables
+    FILE_STEM = None
     NDIM    = 6       # number of dimensions for each 'measured' star
     NGROUPS = None       # number of groups in the data
     GROUPS       = []
@@ -126,8 +131,8 @@ class GroupFitter:
     STAR_ICOV_DETS = None  # a [NSTARS*NTIMES] matrix
 
     # emcee parameters
-    burnin = 20
-    steps  = 50
+    burnin = 100
+    steps  = 200
     NWALKERS = 30
     NPAR = 13
 
@@ -138,10 +143,11 @@ class GroupFitter:
     weights  = None # the amplitude of each gaussian [a NGROUP matrix]
     best_fit = np.zeros(14) # best fitting group parameters, same order as 'pars'
     
-    def __init__(self, ngroups=1, infile='results/bp_TGAS2_traceback_save.pkl'):
+    def __init__(self, burnin=100, steps=200, ngroups=1, plotit=False,
+                 infile='results/bp_TGAS2_traceback_save.pkl'):
+        self.PLOTIT = PLOTIT
         self.NGROUPS = ngroups
         self.STAR_PARAMS = self.read_stars(infile)
-        pdb.set_trace()
         self.NSTARS = len(self.STAR_PARAMS['xyzuvw'])
         init_group_params = [-15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
                               73.34, 51.61, 48.83,
@@ -149,6 +155,7 @@ class GroupFitter:
                              -0.21, -0.09, 0.12]
         self.GROUPS = [None] * self.NGROUPS
         self.GROUPS[0] = Group(init_group_params, 1.0, 0.0)
+        self.FILE_STEM = "gf_bp_{}_{}".format(self.burnin, self.steps)
 
     def __str__(self):
         return "A groupfitter with {} stars".format(self.NSTARS)
@@ -250,11 +257,50 @@ class GroupFitter:
     
         self.sampler.reset()
         self.sampler.run_mcmc(pos, self.steps, rstate0=state)
+        self.samples = self.sampler.flatchain
 
         #Best Model
         best_ix = np.argmax(self.sampler.flatlnprobability)
         print('[' + ",".join(["{0:7.3f}".format(f) for f in self.sampler.flatchain[best_ix]]) + ']')
-        #overlaps = lnprob_one_group(sampler.flatchain[best_ix], star_params,return_overlaps=True,use_swig=use_swig)
+        
+        self.write_results()
+
+    def write_results(self):
+        with open("logs/"+self.FILE_STEM+".log", 'w') as f:
+            f.write("Log of output from bp with {} burn-in steps, {} sampling steps,\n"\
+                        .format(self.burnin, self.steps) )
+            f.write("Using starting parameters:\n{}".format(str(self.GROUPS)))
+            f.write("\n")
+
+            labels = ["X", "Y", "Z", "U", "V", "W",
+                 "dX", "dY", "dZ", "dVel",
+                 "xCorr", "yCorr", "zCorr"]
+            bf = self.calc_best_fit()
+            f.write(" _______ BETA PIC MOVING GROUP ________ {starting parameters}\n")
+            for i in range(len(labels)):
+                f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\t\t\t{:>7.2f}\n".format(
+                                                    labels[i],
+                                                    bf[i][0], bf[i][1], bf[i][2],
+                                                    self.GROUPS[0].params[i]) )
+
+    def calc_best_fit(self):
+        return np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+                        zip(*np.percentile(self.samples, [16,50,84], axis=0))))
+
+    def make_plots(self):
+        plt.plot(self.sampler.lnprobability.T)
+        plt.title("Lnprob of walkers")
+        plt.savefig("plots/lnprob_{}.png".format(self.FILE_STEM))
+        plt.clf()
+
+        best_ix = np.argmax(self.sampler.flatlnprobability)
+        best_sample = self.samples[best_ix]
+        labels = ["X", "Y", "Z", "U", "V", "W",
+                 "dX", "dY", "dZ", "dVel",
+                 "xCorr", "yCorr", "zCorr"]
+        fig = corner.corner(self.samples, truths=best_sample, labels=labels)
+        fig.savefig("plots/corner_"+self.FILE_STEM+".png")
+
 
     def interp_icov(self, target_time):
         """
@@ -272,21 +318,6 @@ class GroupFitter:
                                 self.STAR_ICOV_DETS[:,ix0+1]*frac
         return interp_mns, interp_icovs, interp_icov_dets
        
-
-def interp_cov(target_time, star_params):
-    """
-    Interpolate in time to get a xyzuvw vector and covariance matrix.
-    
-    Note that there is a fast scipy package (in ndimage?) that might be good for this.
-    """         
-    times = star_params['times']
-    ix = np.interp(target_time,times,np.arange(len(times)))
-    ix0 = np.int(ix)
-    frac = ix-ix0
-    bs     = star_params['xyzuvw'][:,ix0]*(1-frac) + star_params['xyzuvw'][:,ix0+1]*frac
-    cov    = star_params['xyzuvw_cov'][:,ix0]*(1-frac) + star_params['xyzuvw_cov'][:,ix0+1]*frac
-    return bs, cov
-
 
 def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.327,-11.427, -6.527, \
     10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589]),\
@@ -374,7 +405,6 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
         plt.hist(sampler.chain[:,:,-1].flatten(),20)
         plt.savefig("plots/distribution_of_ages.eps")
     
-    #pdb.set_trace()
     if return_sampler:
         return sampler
     else:
@@ -425,7 +455,6 @@ def fit_one_group(star_params, init_mod=np.array([ -6.574, 66.560, 23.436, -1.32
         plt.hist(sampler.chain[:,:,-1].flatten(),20)
         plt.savefig("plots/distribution_of_ages.eps")
     
-    #pdb.set_trace()
     if return_sampler:
         return sampler
     else:
