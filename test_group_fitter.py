@@ -29,10 +29,17 @@ dummy_params = [-15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
                               7.20,
                              -0.21, -0.09, 0.12]
 
-print(myFitter.lnprob(dummy_params))
+result = myFitter.fit_groups() # result could be filename of samples
 
-#pdb.set_trace()
+#myAnalyser = SamplerAnalyser(result) # I could initialise an Analyser object
+                                      # to investigate the sample/produce plots
+                                      # etc. It would be useful to have them
+                                      # separate so I can run a bunch of runs
+                                      # automated and investigate afterwards
 
-result = myFitter.fit_groups()
+#myAnalyser.makePlots(show=True)
+#myAnalyser.write
+
+
 
 #pdb.set_trace()

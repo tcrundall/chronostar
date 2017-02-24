@@ -8,10 +8,11 @@ the group formation based on Bayesian analysis, which in this case involves
 computing overlap integrals. 
     
 TODO:
-0) Once the group is found, output the probability of each star being in the group.
-1) Add in multiple groups 
-2) Change from a group to a cluster, which can evaporate e.g. exponentially.
-3) Add in a fixed background which is the Galaxy (from Robin et al 2003).
+0) Use multiple groups
+1) make input parameters scale invariant
+    - use arccos/arcsin for correlations e.g., 1/x for pos/vel dispersion
+    - then tidy up samples at end by reconverting into "physical" parameters
+2) Allow groups to be fixed in shape but vary only amplitude
 
 To use MPI, try:
 
@@ -145,19 +146,42 @@ class GroupFitter:
     
     def __init__(self, burnin=100, steps=200, ngroups=1, plotit=True,
                  infile='results/bp_TGAS2_traceback_save.pkl'):
+        # set key values and flags
+        self.FILE_STEM = "gf_bp_{}_{}".format(burnin, steps)
         self.PLOTIT = plotit 
         self.burnin = burnin
         self.steps  = steps
         self.NGROUPS = ngroups
+
+        # read in stars from file
         self.STAR_PARAMS = self.read_stars(infile)
         self.NSTARS = len(self.STAR_PARAMS['xyzuvw'])
+
+        # dynamically set initial emcee parameters
         init_group_params = [-15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
                               73.34, 51.61, 48.83,
                               7.20,
                              -0.21, -0.09, 0.12]
+        init_group_params = [0,0,0,0,0,0,
+                              30, 30, 30,
+                              5,
+                              0, 0, 0]
+        
         self.GROUPS = [None] * self.NGROUPS
         self.GROUPS[0] = Group(init_group_params, 1.0, 0.0)
-        self.FILE_STEM = "gf_bp_{}_{}".format(self.burnin, self.steps)
+
+        # a way to try and capitalise on groups fitted in the past
+        saved_best = "results/bp_old_best_model_{}_{}".format(self.NGROUPS, self.NFIXED_GROUPS)
+        try:
+            print("Trying to open last saved_best")
+            old_best_lnprob, old_best_model = pickle.load(open(saved_best))
+            new_best_lnprob = self.lnprob(init_group_params)
+            if (old_best_lnprob > new_best_lnprob):
+                print("Replacing initial parameters")
+                init_group_params = old_best_model
+        except:
+            print("Unable to open last saved_best")
+
 
     def __str__(self):
         return "A groupfitter with {} stars".format(self.NSTARS)
@@ -332,7 +356,7 @@ class GroupFitter:
     def update_best_model(self, best_model, best_lnprob):
         file_stem = "results/bp_old_best_model_{}_{}".format(self.NGROUPS, self.NFIXED_GROUPS)
         try:
-            old_best_lnprob, old_bet_model = pickle.load(open(file_stem))
+            old_best_lnprob, old_best_model = pickle.load(open(file_stem))
             print("Checking old best")
             if (old_best_lnprob < best_lnprob):
                 print("Updating with new best: {}".format(best_lnprob))
