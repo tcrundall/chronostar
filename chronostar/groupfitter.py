@@ -108,6 +108,9 @@ class Group(MVGaussian):
         self.amplitude = amplitude
         self.age = age
 
+    def update_amplitude(self, amplitude):
+        self.amplitude = amplitude
+
 class GroupFitter:
     """
         This class will find the best fitting group models to a set of stars.
@@ -123,8 +126,9 @@ class GroupFitter:
     NDIM    = 6       # number of dimensions for each 'measured' star
     NGROUPS = None       # number of groups in the data
     NFIXED_GROUPS = 0
-    GROUPS       = []
-    FIXED_GROUPS = []
+    NFREE_GROUPS  = 0
+    FREE_GROUPS   = []
+    FIXED_GROUPS  = []
     NSTARS      = None
     STAR_PARAMS = None
     STAR_MNS    = None   # a [NSTARSxNTIMESx6] matrix
@@ -144,14 +148,17 @@ class GroupFitter:
     weights    = None # the amplitude of each gaussian [a NGROUP matrix]
     best_model = None # best fitting group parameters, same order as 'pars'
     
-    def __init__(self, burnin=100, steps=200, ngroups=1, plotit=True,
+    def __init__(self, burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
+                 fixed_groups=[],
                  infile='results/bp_TGAS2_traceback_save.pkl'):
         # set key values and flags
-        self.FILE_STEM = "gf_bp_{}_{}".format(burnin, steps)
+        self.FILE_STEM = "gf_bp_{}_{}_{}_{}".format(nfixed, nfree,
+                                                    burnin, steps)
         self.PLOTIT = plotit 
         self.burnin = burnin
         self.steps  = steps
-        self.NGROUPS = ngroups
+        self.NFREE_GROUPS = nfree
+        self.NFIXED_GROUPS = nfixed
 
         # read in stars from file
         self.STAR_PARAMS = self.read_stars(infile)
@@ -167,8 +174,13 @@ class GroupFitter:
                               5,
                               0, 0, 0]
         
-        self.GROUPS = [None] * self.NGROUPS
-        self.GROUPS[0] = Group(init_group_params, 1.0, 0.0)
+        self.FIXED_GROUPS = [None] * self.NFIXED_GROUPS
+        for i in range(self.NFIXED_GROUPS):
+            self.FIXED_GROUPS[i] = Group(fixed_groups[i], 1.0, 0.0)
+
+        self.FREE_GROUPS = [None] * self.NFREE_GROUPS
+        for i in range(self.NFREE_GROUPS):
+            self.FREE_GROUPS[0] = Group(init_group_params, 1.0, 0.0)
 
         # a way to try and capitalise on groups fitted in the past
         saved_best = "results/bp_old_best_model_{}_{}".format(self.NGROUPS, self.NFIXED_GROUPS)
@@ -177,14 +189,10 @@ class GroupFitter:
             old_best_lnprob, old_best_model = pickle.load(open(saved_best))
             new_best_lnprob = self.lnprob(init_group_params)
             if (old_best_lnprob > new_best_lnprob):
-                print("Replacing initial parameters")
+                print("-- replacing initial parameters")
                 init_group_params = old_best_model
         except:
-            print("Unable to open last saved_best")
-
-
-    def __str__(self):
-        return "A groupfitter with {} stars".format(self.NSTARS)
+            print("-- unable to open last saved_best")
 
     def read_stars(self, infile):
         """Read stars from a previous pickle file into a dictionary.
@@ -241,7 +249,34 @@ class GroupFitter:
             bayesian likelihood that the model defined by these parameters
             could have given rise to the stellar data
         """
-        model_group = Group(pars, 1.0, 0.0)
+        npars_wo_age = 13
+        free_groups = []
+
+        amplitudes = pars[self.NFREE_GROUPS*13:]
+        assert(len(amplitudes) == self.NFREE_GROUPS + self.NFIXED_GROUPS-1), "*** Wrong number of amps"
+
+        total_amplitude = sum(amplitudes)
+        assert(total_amplitude < 1.0), "*** Total amp is: {}".format(total_amplitude)
+        derived_amp = 1.0 - total_amplitude
+        pars_len = len(pars)
+        pars = np.append(pars, derived_amp)
+        amplitudes = pars[self.NFREE_GROUPS*13:]
+        assert(len(pars) == pars_len + 1), "*** pars length didn't increase: {}".format(len(pars))
+        
+        model_groups = [None] * (self.NFIXED_GROUPS + self.NFREE_GROUPS)
+
+        for i in range(self.NFREE_GROUPS):
+            group_pars = pars[npars_wo_age*i:npars_wo_age*(i+1)]
+            model_groups[i] = Group(group_pars, amplitudes[i], 0)
+
+        for i in range(self.NFIXED_GROUPS):
+            pos = i + self.NFREE_GROUPS
+            model_groups[pos] = (self.FIXED_GROUPS[i].params, amplitudes[pos], 0)
+
+        pdb.set_trace()
+
+        # GOT ALL GROUPS PRIMED, JUST NEED TO CALCULATE OVERLAPS NOW
+
         group_icov = model_group.icov
         group_mn   = model_group.mean
         group_icov_det = model_group.icov_det
@@ -270,10 +305,29 @@ class GroupFitter:
             return -np.inf
         return lp + self.lnlike(pars)
 
-    def fit_groups(self):
-        init_mod = self.GROUPS[0].params
-        init_sdev = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01]
-        p0 = [init_mod + (np.random.random(size=self.NPAR) - 0.5)*init_sdev
+    def generate_parameter_list(self, nfixed, nfree):
+        # all groups fixed at age = 0
+        if nfixed > self.NFIXED_GROUPS:
+            print("-- not enough fixed groups provided")
+            nfixed = self.NFIXED_GROUPS
+
+        init_amp = 1.0 / (nfixed + nfree)
+        default_pars = [0,0,0,0,0,0,30,30,30,5,   0,   0,   0]
+        default_sdev = [1,1,1,1,1,1, 1, 1, 1,1,0.01,0.01,0.01]
+
+        init_pars = [] + default_pars * nfree + [init_amp]*(nfree+nfixed-1)
+        init_sdev = [] + default_sdev * nfree + [0.05]*(nfree+nfixed-1)
+
+        return init_pars, init_sdev
+
+    def fit_groups(self, nfixed, nfree):
+        # setting up initial params from intial conditions
+        init_pars, init_sdev = self.generate_parameter_list(nfixed, nfree)
+        assert(len(init_pars) == len(init_sdev))
+
+        # final parameter is amplitude
+        
+        p0 = [init_pars + (np.random.random(size=len(init_sdev)) - 0.5)*init_sdev
                                                     for i in range(self.NWALKERS)]
 
         self.sampler = emcee.EnsembleSampler(self.NWALKERS, self.NPAR, self.lnprob)
