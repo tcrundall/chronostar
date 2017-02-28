@@ -242,6 +242,10 @@ class GroupFitter:
                        xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
 
     def lnprior(self, pars):
+        ngroups = self.NFREE_GROUPS + self.NFIXED_GROUPS
+        for amplitude in pars[-(ngroups-1):]:
+            if amplitude < 0.05 or  np.sum(amplitude) > 1.0:
+                return -np.inf
         return 0.0
 
     def lnlike(self, pars):
@@ -252,9 +256,11 @@ class GroupFitter:
         npars_wo_age = 13
         free_groups = []
 
+        # extract all the amplitudes from parameter list
         amplitudes = pars[self.NFREE_GROUPS*13:]
         assert(len(amplitudes) == self.NFREE_GROUPS + self.NFIXED_GROUPS-1), "*** Wrong number of amps"
 
+        # derive the remaining amplitude
         total_amplitude = sum(amplitudes)
         assert(total_amplitude < 1.0), "*** Total amp is: {}".format(total_amplitude)
         derived_amp = 1.0 - total_amplitude
@@ -263,6 +269,7 @@ class GroupFitter:
         amplitudes = pars[self.NFREE_GROUPS*13:]
         assert(len(pars) == pars_len + 1), "*** pars length didn't increase: {}".format(len(pars))
         
+        # generate set of Groups based on params and global fixed Groups
         model_groups = [None] * (self.NFIXED_GROUPS + self.NFREE_GROUPS)
 
         for i in range(self.NFREE_GROUPS):
@@ -271,28 +278,41 @@ class GroupFitter:
 
         for i in range(self.NFIXED_GROUPS):
             pos = i + self.NFREE_GROUPS
-            model_groups[pos] = (self.FIXED_GROUPS[i].params, amplitudes[pos], 0)
+            #model_groups[pos] = (self.FIXED_GROUPS[i].params, amplitudes[pos], 0)
+            self.FIXED_GROUPS[i].update_amplitude(amplitudes[pos])
+            model_groups[pos] = self.FIXED_GROUPS[i]
 
-        pdb.set_trace()
+        ngroups = self.NFREE_GROUPS + self.NFIXED_GROUPS
+        overlaps = np.zeros((ngroups, self.NSTARS))
 
-        # GOT ALL GROUPS PRIMED, JUST NEED TO CALCULATE OVERLAPS NOW
+        # A BUG IN HERE SOMEWHERE, IMPOSSIBLE MVGAUSSIANS MAYBE?
+        for i in range(ngroups):
+            # prepare group MVGaussian elements
+            group_icov = model_groups[i].icov
+            group_mn   = model_groups[i].mean
+            group_icov_det = model_groups[i].icov_det
+            # extract the traceback positions of the stars we're after
+            star_icovs = self.STAR_ICOVS[:,0,:,:]
+            star_mns = self.STAR_MNS[:,0,:]
+            star_icov_dets = self.STAR_ICOV_DETS[:,0]
+            
+            # use swig to calculate overlaps
+            overlaps[i] = overlap.get_overlaps(group_icov, group_mn, group_icov_det,
+                                               star_icovs, star_mns,
+                                               star_icov_dets, self.NSTARS) 
+            try:
+                assert(np.isfinite(np.sum(overlaps[i])))
+            except:
+                pdb.set_trace()
 
-        group_icov = model_group.icov
-        group_mn   = model_group.mean
-        group_icov_det = model_group.icov_det
+        star_overlaps = np.zeros(self.NSTARS)
+    
+        # compile weighted totals of overlaps for each star
+        for i in range(self.NSTARS):
+            star_overlaps[i] = np.sum(overlaps[:,i] * amplitudes)
 
-        #extract the time we're interested in
-        star_icovs = self.STAR_ICOVS[:,0,:,:]
-        star_mns = self.STAR_MNS[:,0,:]
-        star_icov_dets = self.STAR_ICOV_DETS[:,0]
-
-        # use swig module to calculate overlaps of each star with model
-        overlaps = overlap.get_overlaps(group_icov, group_mn, group_icov_det,
-                                        star_icovs, star_mns,
-                                        star_icov_dets, self.NSTARS)
-
-        # calculate the product of the likelihoods
-        return np.sum(np.log(overlaps))
+        # return combined product of each star's overlap (or sum of the logs)
+        return np.sum(np.log(star_overlaps))
     
     def lnprob(self, pars):
         """Compute the log-likelihood for a fit to a group.
@@ -302,7 +322,9 @@ class GroupFitter:
         """
         lp = self.lnprior(pars)
         if not np.isfinite(lp):
+            print("Failed priors")
             return -np.inf
+        print("Succeeded")
         return lp + self.lnlike(pars)
 
     def generate_parameter_list(self, nfixed, nfree):
@@ -317,6 +339,8 @@ class GroupFitter:
 
         init_pars = [] + default_pars * nfree + [init_amp]*(nfree+nfixed-1)
         init_sdev = [] + default_sdev * nfree + [0.05]*(nfree+nfixed-1)
+
+        self.NPAR = len(init_pars)
 
         return init_pars, init_sdev
 
@@ -350,7 +374,7 @@ class GroupFitter:
 
         self.update_best_model(self.best_model, self.sampler.flatlnprobability[best_ix])
         
-        self.write_results()
+        # self.write_results()
         if (self.PLOTIT):
             self.make_plots()
 
@@ -381,7 +405,9 @@ class GroupFitter:
         plt.title("Lnprob of walkers")
         plt.savefig("plots/lnprob_{}.png".format(self.FILE_STEM))
         plt.clf()
+        pdb.set_trace()
 
+        """
         best_ix = np.argmax(self.sampler.flatlnprobability)
         best_sample = self.samples[best_ix]
         labels = ["X", "Y", "Z", "U", "V", "W",
@@ -389,7 +415,7 @@ class GroupFitter:
                  "xCorr", "yCorr", "zCorr"]
         fig = corner.corner(self.samples, truths=best_sample, labels=labels)
         fig.savefig("plots/corner_"+self.FILE_STEM+".png")
-
+        """
 
     def interp_icov(self, target_time):
         """
