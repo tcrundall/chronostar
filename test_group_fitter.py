@@ -22,10 +22,14 @@ args = parser.parse_args()
 burnin = int(args.b) 
 steps = int(args.p) 
 
+# testing covariance matricies and their determinants
+
+
 fixed_bg_group= [-15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
                   73.34, 51.61, 48.83,
                   7.20,
-                 -0.21, -0.09, 0.12]
+                 -0.21, -0.09, 0.12,
+                  0.0]
 nfixed = 1
 
 myFitter = GroupFitter(burnin=burnin, steps=steps, nfixed=nfixed, nfree=1,
@@ -47,7 +51,7 @@ myFitter = GroupFitter(burnin=burnin, steps=steps, nfixed=nfixed, nfree=1,
 #myAnalyser.makePlots(show=True)
 #myAnalyser.write
 
-free_group_npars = 14
+free_group_npars = 15
 
 max_nfixed = nfixed
 print("Testing generate_parameter_list()")
@@ -59,7 +63,7 @@ for i in range(1,3):
         res_len = len(res_pars)
         if nfixed > max_nfixed:
             nfixed = max_nfixed
-        expected = 14 * nfree + nfixed - 1
+        expected = free_group_npars * nfree + nfixed - 1
         assert(res_len ==  expected), "*** Expected: {}, got: {}".format(expected, res_len)
 
 # res_pars, res_sdev = myFitter.generate_parameter_list(1,1)

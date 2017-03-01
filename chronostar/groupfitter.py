@@ -8,6 +8,8 @@ the group formation based on Bayesian analysis, which in this case involves
 computing overlap integrals. 
     
 TODO:
+-0.5) Un-hardcode lnprior (OR make input pars scale invariant)
+-0.25) Save a log, save the samples
 0) Use multiple groups
 1) make input parameters scale invariant
     - use arccos/arcsin for correlations e.g., 1/x for pos/vel dispersion
@@ -90,24 +92,44 @@ class MVGaussian(object):
             cov[3:,i] *= self.params[9]
         #Generate inverse cov matrix and its determinant
 
-        min_axis = 2.0
+        neg_cov = 0 + cov
+        neg_cov[np.tril_indices(3,-1)] *= -1
+        neg_cov[np.triu_indices(3,1)]  *= -1
+
+        cov_det = np.prod(np.linalg.eigvalsh(cov))
         try:
-            assert(np.min(np.linalg.eigvalsh(cov[:3,:3])) > min_axis**2)
+            assert((self.cov_det(cov) - self.cov_det_ident(self.params[6:13]))/cov_det < 1e-8)
         except:
-            print("Minimum positional covariance too small in one direction...")
+            print("Determinant formula is wrong...?")
             pdb.set_trace()
+
+        min_axis = 2.0
+        #try:
+        #    assert(np.min(np.linalg.eigvalsh(cov[:3,:3])) > min_axis**2)
+        #except:
+        #    print("Minimum positional covariance too small in one direction...")
+        #    pdb.set_trace()
 
         self.icov = np.linalg.inv(cov)
         self.icov_det = np.prod(np.linalg.eigvalsh(self.icov))
         try:
             assert(self.icov_det > 0.0), "negative icov_det"
         except:
-            print("Negative icov_det")
-            pdb.set_trace()
+            pass
+            #print("Negative icov_det")
+            #pdb.set_trace()
 
     def __str__(self):
         return "MVGauss with icov:\n{}\nand icov_det: {}".format(
                     self.icov, self.icov_det)
+
+    def cov_det_ident(self, pars):
+        dX,dY,dZ,dV,xy,xz,yz = pars
+        det = dV**6 * dX**2 * dY**2 * dZ**2 * (1 + 2*xy*xz*yz - xy**2 - xz**2 - yz**2)
+        return det
+
+    def cov_det(self, cov):
+        return np.prod(np.linalg.eigvalsh(cov))
 
 class Star(MVGaussian):
     """
@@ -123,10 +145,10 @@ class Group(MVGaussian):
     amplitude = None
     age       = None
 
-    def __init__(self, params, amplitude, age): 
-        super(self.__class__,self).__init__(params)
+    def __init__(self, params, amplitude): 
+        super(self.__class__,self).__init__(params[:-1])
         self.amplitude = amplitude
-        self.age = age
+        self.age = params[-1] 
 
     def update_amplitude(self, amplitude):
         self.amplitude = amplitude
@@ -156,10 +178,10 @@ class GroupFitter:
     STAR_ICOV_DETS = None  # a [NSTARS*NTIMES] matrix
 
     # emcee parameters
-    burnin = 100
-    steps  = 200
-    NWALKERS = 30
-    NPAR = 13
+    burnin = None
+    steps  = None
+    NWALKERS = None
+    NPAR = None
 
     # Fitting variables
     samples    = None
@@ -188,19 +210,21 @@ class GroupFitter:
         init_group_params = [-15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
                               73.34, 51.61, 48.83,
                               7.20,
-                             -0.21, -0.09, 0.12]
+                             -0.21, -0.09, 0.12,
+                              0.0]
         init_group_params = [0,0,0,0,0,0,
                               30, 30, 30,
                               5,
-                              0, 0, 0]
+                              0, 0, 0,
+                              5.0]
         
         self.FIXED_GROUPS = [None] * self.NFIXED_GROUPS
         for i in range(self.NFIXED_GROUPS):
-            self.FIXED_GROUPS[i] = Group(fixed_groups[i], 1.0, 0.0)
+            self.FIXED_GROUPS[i] = Group(fixed_groups[i], 1.0)
 
         self.FREE_GROUPS = [None] * self.NFREE_GROUPS
         for i in range(self.NFREE_GROUPS):
-            self.FREE_GROUPS[0] = Group(init_group_params, 1.0, 0.0)
+            self.FREE_GROUPS[0] = Group(init_group_params, 1.0)
 
         # a way to try and capitalise on groups fitted in the past
         saved_best = "results/bp_old_best_model_{}_{}".format(self.NGROUPS, self.NFIXED_GROUPS)
@@ -271,11 +295,16 @@ class GroupFitter:
         for amplitude in pars[-(ngroups-1):]:
             if amplitude < 0.05 or  np.sum(amplitude) > 1.0:
                 return -np.inf
-        if (np.min(pars[6:9])<=min_axis):
+        if (np.min(pars[6:10])<=0):
             return -np.inf
-        if (np.min(pars[9])<min_v_disp):
-            return -np.inf
+        # FROM MIKE'S CODE, IF INCLUDED THEN ICOVMAT ISSUES DISAPPEAR
+        #if (np.min(pars[6:9])<=min_axis):
+        #    return -np.inf
+        #if (np.min(pars[9])<min_v_disp):
+        #    return -np.inf
         if (np.max(np.abs(pars[10:13])) >= 1):
+            return -np.inf
+        if (pars[14] < 0.0):
             return -np.inf
 
         return 0.0
@@ -286,10 +315,11 @@ class GroupFitter:
             could have given rise to the stellar data
         """
         npars_wo_age = 13
+        npars_w_age = 14
         free_groups = []
 
         # extract all the amplitudes from parameter list
-        amplitudes = pars[self.NFREE_GROUPS*13:]
+        amplitudes = pars[self.NFREE_GROUPS*npars_w_age:]
         assert(len(amplitudes) == self.NFREE_GROUPS + self.NFIXED_GROUPS-1), "*** Wrong number of amps"
 
         # derive the remaining amplitude
@@ -298,21 +328,28 @@ class GroupFitter:
         derived_amp = 1.0 - total_amplitude
         pars_len = len(pars)
         pars = np.append(pars, derived_amp)
-        amplitudes = pars[self.NFREE_GROUPS*13:]
+        amplitudes = pars[self.NFREE_GROUPS*npars_w_age:]
         assert(len(pars) == pars_len + 1), "*** pars length didn't increase: {}".format(len(pars))
         
         # generate set of Groups based on params and global fixed Groups
         model_groups = [None] * (self.NFIXED_GROUPS + self.NFREE_GROUPS)
 
+        # this line ensures determinant of icov matrix is positive...
+        # TODO: WORK OUT THE MATHS AS TO WHY THIS IS EVEN A THING
         for i in range(self.NFREE_GROUPS):
-            group_pars = pars[npars_wo_age*i:npars_wo_age*(i+1)]
-            model_groups[i] = Group(group_pars, amplitudes[i], 0)
+            group_pars = pars[npars_w_age*i:npars_w_age*(i+1)]
+            model_groups[i] = Group(group_pars, amplitudes[i])
 
         for i in range(self.NFIXED_GROUPS):
             pos = i + self.NFREE_GROUPS
             #model_groups[pos] = (self.FIXED_GROUPS[i].params, amplitudes[pos], 0)
             self.FIXED_GROUPS[i].update_amplitude(amplitudes[pos])
             model_groups[pos] = self.FIXED_GROUPS[i]
+
+        for group in model_groups:
+            group_icov_eig = np.linalg.eigvalsh(group.icov)
+            if np.min(group_icov_eig) < 0:
+                return -np.inf
 
         ngroups = self.NFREE_GROUPS + self.NFIXED_GROUPS
         overlaps = np.zeros((ngroups, self.NSTARS))
@@ -324,12 +361,18 @@ class GroupFitter:
             group_mn   = model_groups[i].mean
             group_icov_det = model_groups[i].icov_det
             # extract the traceback positions of the stars we're after
-            star_icovs = self.STAR_ICOVS[:,0,:,:]
-            star_mns = self.STAR_MNS[:,0,:]
-            star_icov_dets = self.STAR_ICOV_DETS[:,0]
+
+            if (model_groups[i].age == 0):
+                star_icovs = self.STAR_ICOVS[:,0,:,:]
+                star_mns = self.STAR_MNS[:,0,:]
+                star_icov_dets = self.STAR_ICOV_DETS[:,0]
+            else:
+                star_mns, star_icovs, star_icov_dets =\
+                                      self.interp_icov(model_groups[i].age)
             
             # use swig to calculate overlaps
-            overlaps[i] = overlap.get_overlaps(group_icov, group_mn, group_icov_det,
+            overlaps[i] = overlap.get_overlaps(group_icov, group_mn,
+                                               group_icov_det,
                                                star_icovs, star_mns,
                                                star_icov_dets, self.NSTARS) 
             try:
@@ -366,13 +409,14 @@ class GroupFitter:
             nfixed = self.NFIXED_GROUPS
 
         init_amp = 1.0 / (nfixed + nfree)
-        default_pars = [0,0,0,0,0,0,30,30,30,5,   0,   0,   0]
-        default_sdev = [1,1,1,1,1,1, 1, 1, 1,1,0.01,0.01,0.01]
+        default_pars = [0,0,0,0,0,0,30,30,30,5,   0,   0,   0, 5]
+        default_sdev = [1,1,1,1,1,1, 1, 1, 1,1,0.01,0.01,0.01, 0.05] #final 0 is for age
 
         init_pars = [] + default_pars * nfree + [init_amp]*(nfree+nfixed-1)
         init_sdev = [] + default_sdev * nfree + [0.05]*(nfree+nfixed-1)
 
         self.NPAR = len(init_pars)
+        self.NWALKERS = 2*self.NPAR
 
         return init_pars, init_sdev
 
@@ -437,17 +481,14 @@ class GroupFitter:
         plt.title("Lnprob of walkers")
         plt.savefig("plots/lnprob_{}.png".format(self.FILE_STEM))
         plt.clf()
-        pdb.set_trace()
 
-        """
         best_ix = np.argmax(self.sampler.flatlnprobability)
         best_sample = self.samples[best_ix]
         labels = ["X", "Y", "Z", "U", "V", "W",
                  "dX", "dY", "dZ", "dVel",
-                 "xCorr", "yCorr", "zCorr"]
+                 "xCorr", "yCorr", "zCorr", "age", "weight1"]
         fig = corner.corner(self.samples, truths=best_sample, labels=labels)
         fig.savefig("plots/corner_"+self.FILE_STEM+".png")
-        """
 
     def interp_icov(self, target_time):
         """
