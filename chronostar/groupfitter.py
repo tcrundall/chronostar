@@ -68,6 +68,13 @@ class MVGaussian(object):
 
     def generateIcovAndMean(self):
         self.mean = self.params[0:6]        
+        
+        for stdev in self.params[6:10]:
+            try:
+                assert(stdev > 0.0), "negative stdev"
+            except:
+                print("Negative stdev")
+                pdb.set_trace()
 
         cov = np.eye( 6 )
         #Fill in correlations
@@ -82,8 +89,21 @@ class MVGaussian(object):
             cov[i,3:] *= self.params[9]
             cov[3:,i] *= self.params[9]
         #Generate inverse cov matrix and its determinant
+
+        min_axis = 2.0
+        try:
+            assert(np.min(np.linalg.eigvalsh(cov[:3,:3])) > min_axis**2)
+        except:
+            print("Minimum positional covariance too small in one direction...")
+            pdb.set_trace()
+
         self.icov = np.linalg.inv(cov)
         self.icov_det = np.prod(np.linalg.eigvalsh(self.icov))
+        try:
+            assert(self.icov_det > 0.0), "negative icov_det"
+        except:
+            print("Negative icov_det")
+            pdb.set_trace()
 
     def __str__(self):
         return "MVGauss with icov:\n{}\nand icov_det: {}".format(
@@ -243,9 +263,21 @@ class GroupFitter:
 
     def lnprior(self, pars):
         ngroups = self.NFREE_GROUPS + self.NFIXED_GROUPS
+        min_axis = 2.0
+        min_v_disp = 0.5
+
+        #CURRENTLY HARDCODED TO ONLY WORK FOR FIRST GROUP AND ONLY IF ITS FREE
+
         for amplitude in pars[-(ngroups-1):]:
             if amplitude < 0.05 or  np.sum(amplitude) > 1.0:
                 return -np.inf
+        if (np.min(pars[6:9])<=min_axis):
+            return -np.inf
+        if (np.min(pars[9])<min_v_disp):
+            return -np.inf
+        if (np.max(np.abs(pars[10:13])) >= 1):
+            return -np.inf
+
         return 0.0
 
     def lnlike(self, pars):
@@ -322,9 +354,9 @@ class GroupFitter:
         """
         lp = self.lnprior(pars)
         if not np.isfinite(lp):
-            print("Failed priors")
+            #print("Failed priors")
             return -np.inf
-        print("Succeeded")
+        #print("Succeeded")
         return lp + self.lnlike(pars)
 
     def generate_parameter_list(self, nfixed, nfree):
