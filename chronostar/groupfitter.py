@@ -8,13 +8,12 @@ the group formation based on Bayesian analysis, which in this case involves
 computing overlap integrals. 
     
 TODO:
--0.5) Un-hardcode lnprior (OR make input pars scale invariant)
--0.25) Save a log, save the samples
-0) Use multiple groups
-1) make input parameters scale invariant
+0) Save a log, save the samples
+1) Make corner plot generic
+2) make input parameters scale invariant
     - use arccos/arcsin for correlations e.g., 1/x for pos/vel dispersion
     - then tidy up samples at end by reconverting into "physical" parameters
-2) Allow groups to be fixed in shape but vary only amplitude
+3) Work out actual physical constraints for correlations
 
 To use MPI, try:
 
@@ -98,7 +97,7 @@ class MVGaussian(object):
 
         cov_det = np.prod(np.linalg.eigvalsh(cov))
         try:
-            assert((self.cov_det(cov) - self.cov_det_ident(self.params[6:13]))/cov_det < 1e-8)
+            assert((self.cov_det(cov) - self.cov_det_ident(self.params[6:13]))/cov_det < 1e-6)
         except:
             print("Determinant formula is wrong...?")
             pdb.set_trace()
