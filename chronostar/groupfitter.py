@@ -81,14 +81,15 @@ class MVGaussian(object):
         #Fill in correlations
         cov[np.tril_indices(3,-1)] = self.params[10:13]
         cov[np.triu_indices(3,1)] = self.params[10:13]
+        #Note that 'pars' stores the inverse of the standard deviation
         #Convert correlation to covariance for position.
         for i in range(3):
-            cov[i,:3] *= self.params[6:9]
-            cov[:3,i] *= self.params[6:9]
+            cov[i,:3] *= 1 / self.params[6:9]
+            cov[:3,i] *= 1 / self.params[6:9]
         #Convert correlation to covariance for velocity.
         for i in range(3,6):
-            cov[i,3:] *= self.params[9]
-            cov[3:,i] *= self.params[9]
+            cov[i,3:] *= 1 / self.params[9]
+            cov[3:,i] *= 1 / self.params[9]
         #Generate inverse cov matrix and its determinant
 
         neg_cov = 0 + cov
@@ -123,8 +124,13 @@ class MVGaussian(object):
                     self.icov, self.icov_det)
 
     def cov_det_ident(self, pars):
-        dX,dY,dZ,dV,xy,xz,yz = pars
-        det = dV**6 * dX**2 * dY**2 * dZ**2 * (1 + 2*xy*xz*yz - xy**2 - xz**2 - yz**2)
+        dXinv,dYinv,dZinv,dVinv,xy,xz,yz = pars
+        dX = 1/dXinv
+        dY = 1/dYinv
+        dZ = 1/dZinv
+        dV = 1/dVinv
+        det = dV**6 * dX**2 * dY**2 * dZ**2 *\
+                (1 + 2*xy*xz*yz - xy**2 - xz**2 - yz**2)
         return det
 
     def cov_det(self, cov):
@@ -175,6 +181,7 @@ class GroupFitter:
     STAR_MNS    = None   # a [NSTARSxNTIMESx6] matrix
     STAR_ICOVS  = None   # a [NSTARSxNTIMESx6x6] matrix
     STAR_ICOV_DETS = None  # a [NSTARS*NTIMES] matrix
+    MAX_AGE     = None   # the furthest age being tracced back to
 
     # emcee parameters
     burnin = None
@@ -188,6 +195,15 @@ class GroupFitter:
     cov_mats   = None # modelled cov_matrices [a NGROUPSx6x6 matrix]
     weights    = None # the amplitude of each gaussian [a NGROUP matrix]
     best_model = None # best fitting group parameters, same order as 'pars'
+
+    # Debugging trackers
+    bad_amps  = 0
+    bad_ages  = 0
+    bad_corrs = 0
+    bad_stds  = 0
+    bad_eigs  = 0
+    bad_dets  = 0
+    success   = 0
     
     def __init__(self, burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
                  fixed_groups=[],
@@ -203,6 +219,8 @@ class GroupFitter:
 
         # read in stars from file
         self.STAR_PARAMS = self.read_stars(infile)
+        print("Work out highest age")
+        self.MAX_AGE = np.max(self.STAR_PARAMS['times'])
         self.NSTARS = len(self.STAR_PARAMS['xyzuvw'])
 
         # dynamically set initial emcee parameters
@@ -212,7 +230,7 @@ class GroupFitter:
                              -0.21, -0.09, 0.12,
                               0.0]
         init_group_params = [0,0,0,0,0,0,
-                              30, 30, 30,
+                              0.03, 0.03, 0.03,
                               5,
                               0, 0, 0,
                               5.0]
@@ -225,17 +243,19 @@ class GroupFitter:
         for i in range(self.NFREE_GROUPS):
             self.FREE_GROUPS[0] = Group(init_group_params, 1.0)
 
+        # BROKEN!!! NOT ABLE TO DYNAMICALLY CHECK DIFFERENT NUMBER OF GROUPS ATM
         # a way to try and capitalise on groups fitted in the past
-        saved_best = "results/bp_old_best_model_{}_{}".format(self.NGROUPS, self.NFIXED_GROUPS)
-        try:
-            print("Trying to open last saved_best")
-            old_best_lnprob, old_best_model = pickle.load(open(saved_best))
-            new_best_lnprob = self.lnprob(init_group_params)
-            if (old_best_lnprob > new_best_lnprob):
-                print("-- replacing initial parameters")
-                init_group_params = old_best_model
-        except:
-            print("-- unable to open last saved_best")
+        # saved_best = "results/bp_old_best_model_{}_{}".format(self.NGROUPS,
+        #                 self.NFIXED_GROUPS)
+        # try:
+        #     print("Trying to open last saved_best")
+        #     old_best_lnprob, old_best_model = pickle.load(open(saved_best))
+        #     new_best_lnprob = self.lnprob(init_group_params)
+        #     if (old_best_lnprob > new_best_lnprob):
+        #         print("-- replacing initial parameters")
+        #         init_group_params = old_best_model
+        # except:
+        #     print("-- unable to open last saved_best")
 
     def read_stars(self, infile):
         """Read stars from a previous pickle file into a dictionary.
@@ -251,8 +271,10 @@ class GroupFitter:
         Returns
         -------
         star_dictionary: dict
-            stars: (nstars) high astropy table including columns as documented in the Traceback class.
-            times: (ntimes) numpy array, containing times that have been traced back, in Myr
+            stars: (nstars) high astropy table including columns as 
+                        documented in the Traceback class.
+            times: (ntimes) numpy array, containing times that have 
+                        been traced back, in Myr
             xyzuvw (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
             xyzuvw_cov (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
         """
@@ -286,81 +308,149 @@ class GroupFitter:
 
     def lnprior(self, pars):
         ngroups = self.NFREE_GROUPS + self.NFIXED_GROUPS
-        min_axis = 2.0
-        min_v_disp = 0.5
+        pars = np.array(pars)
 
-        #CURRENTLY HARDCODED TO ONLY WORK FOR FIRST GROUP AND ONLY IF ITS FREE
+        # Generating boolean masks to extract approriate parameters
+        # First checking numbers which must be positive (e.g. stddev)
+        # the "default_mask" is the mask that would be applied to a single
+        # free group. It will be replicated based on the number of free
+        # groups currently being fit
+        pos_free_mask = [False, False, False, False, False, False,
+                            True, True, True, True, 
+                            False, False, False,
+                            False]
+        pos_ampl_mask = [True]
+        positive_mask = self.NFREE_GROUPS * pos_free_mask +\
+                                (ngroups -1) * pos_ampl_mask
 
-        for amplitude in pars[-(ngroups-1):]:
-            if amplitude < 0.05 or  np.sum(amplitude) > 1.0:
+        # Now generating mask for correlations to ensure in (-1,1) range
+        corr_free_mask = [False, False, False, False, False, False,
+                            False, False, False, False, 
+                            True, True, True,
+                            False]
+        corr_ampl_mask = [True]
+        correlation_mask = self.NFREE_GROUPS * corr_free_mask +\
+                                (ngroups-1) * corr_ampl_mask
+
+        # Generating an age mask to ensure age in (0, self.MAX_AGE)
+        age_free_mask = [False, False, False, False, False, False,
+                            False, False, False, False, 
+                            False, False, False,
+                            True]
+        age_ampl_mask = [False]
+        age_mask = self.NFREE_GROUPS * age_free_mask +\
+                                (ngroups-1) * age_ampl_mask
+
+        for par in pars[np.where(positive_mask)]:
+            if par <= 0:
+                self.bad_stds += 1
                 return -np.inf
-        if (np.min(pars[6:10])<=0):
-            return -np.inf
-        # FROM MIKE'S CODE, IF INCLUDED THEN ICOVMAT ISSUES DISAPPEAR
-        #if (np.min(pars[6:9])<=min_axis):
-        #    return -np.inf
-        #if (np.min(pars[9])<min_v_disp):
-        #    return -np.inf
-        if (np.max(np.abs(pars[10:13])) >= 1):
-            return -np.inf
-        if (pars[14] < 0.0):
-            return -np.inf
+
+        for par in pars[np.where(correlation_mask)]:
+            if par <= -1 or par >= 1:
+                self.bad_corrs += 1
+                return -np.inf
+
+        for age in pars[np.where(age_mask)]:
+            if age < 0 or age > self.MAX_AGE:
+                print("Age: {}".format(age))
+                self.bad_ages += 1
+                return -np.inf
+
+        if ngroups > 1:
+            amps = pars[-(ngroups-1):]
+            if np.sum(amps) > 1:
+                self.bad_amps += 1
+                return -np.inf
 
         return 0.0
 
-    def lnlike(self, pars):
-        """ Using the parameters passed in by the emcee run, finds the
-            bayesian likelihood that the model defined by these parameters
-            could have given rise to the stellar data
+    # a function used to set prior on the eigen values
+    # of the inverse covariance matrix
+    def eig_prior(self, char_min, inv_eig_val):
         """
-        npars_wo_age = 13
+        Used to set the prior on the eigen-values of the covariance
+        matrix for groups
+        """
+        eig_val = 1 / inv_eig_val
+        prior = eig_val / (char_min**2 + eig_val**2)
+        return prior
+
+    def lnlike(self, pars):
+        """ 
+        Using the parameters passed in by the emcee run, finds the
+        bayesian likelihood that the model defined by these parameters
+        could have given rise to the stellar data
+        """
+        lnlike = 0
+
         npars_w_age = 14
         free_groups = []
-
+        min_axis = 1.0
+        min_v_disp = 0.5
+        
         # extract all the amplitudes from parameter list
         amplitudes = pars[self.NFREE_GROUPS*npars_w_age:]
-        assert(len(amplitudes) == self.NFREE_GROUPS + self.NFIXED_GROUPS-1), "*** Wrong number of amps"
+        assert(len(amplitudes) == self.NFREE_GROUPS + self.NFIXED_GROUPS-1),\
+                    "*** Wrong number of amps"
 
-        # derive the remaining amplitude
+        # derive the remaining amplitude and append to parameter list
         total_amplitude = sum(amplitudes)
-        assert(total_amplitude < 1.0), "*** Total amp is: {}".format(total_amplitude)
+        assert(total_amplitude < 1.0),\
+                    "*** Total amp is: {}".format(total_amplitude)
         derived_amp = 1.0 - total_amplitude
         pars_len = len(pars)
         pars = np.append(pars, derived_amp)
         amplitudes = pars[self.NFREE_GROUPS*npars_w_age:]
-        assert(len(pars) == pars_len + 1), "*** pars length didn't increase: {}".format(len(pars))
+        assert(len(pars) == pars_len + 1),\
+                    "*** pars length didn't increase: {}".format(len(pars))
         
         # generate set of Groups based on params and global fixed Groups
         model_groups = [None] * (self.NFIXED_GROUPS + self.NFREE_GROUPS)
 
-        # this line ensures determinant of icov matrix is positive...
-        # TODO: WORK OUT THE MATHS AS TO WHY THIS IS EVEN A THING
+        # generating the free groups
         for i in range(self.NFREE_GROUPS):
             group_pars = pars[npars_w_age*i:npars_w_age*(i+1)]
             model_groups[i] = Group(group_pars, amplitudes[i])
 
+        # generating the fixed groups
         for i in range(self.NFIXED_GROUPS):
             pos = i + self.NFREE_GROUPS
-            #model_groups[pos] = (self.FIXED_GROUPS[i].params, amplitudes[pos], 0)
+            #model_groups[pos] = (self.FIXED_GROUPS[i].params,
+            #                           amplitudes[pos], 0)
             self.FIXED_GROUPS[i].update_amplitude(amplitudes[pos])
             model_groups[pos] = self.FIXED_GROUPS[i]
 
+        # Handling priors for covariance matrix
+        #   if determinant is < 0 then return -np.inf
+        #   also incorporates a prior on the eigenvalues being
+        #   larger than minimum position/velocity dispersions
         for group in model_groups:
             group_icov_eig = np.linalg.eigvalsh(group.icov)
+
+            # incorporate prior for the eigenvalues
+            #   position dispersion
+            for inv_eig in group_icov_eig[:3]:
+                lnlike += self.eig_prior(min_axis, inv_eig)
+
+            #   velocity dispersion
+            lnlike += self.eig_prior(min_v_disp, group_icov_eig[3])
+
             if np.min(group_icov_eig) < 0:
+                print("negative determinant...")
+                self.bad_dets += 1
                 return -np.inf
 
         ngroups = self.NFREE_GROUPS + self.NFIXED_GROUPS
         overlaps = np.zeros((ngroups, self.NSTARS))
 
-        # A BUG IN HERE SOMEWHERE, IMPOSSIBLE MVGAUSSIANS MAYBE?
         for i in range(ngroups):
             # prepare group MVGaussian elements
             group_icov = model_groups[i].icov
             group_mn   = model_groups[i].mean
             group_icov_det = model_groups[i].icov_det
-            # extract the traceback positions of the stars we're after
 
+            # extract the traceback positions of the stars we're after
             if (model_groups[i].age == 0):
                 star_icovs = self.STAR_ICOVS[:,0,:,:]
                 star_mns = self.STAR_MNS[:,0,:]
@@ -386,13 +476,12 @@ class GroupFitter:
             star_overlaps[i] = np.sum(overlaps[:,i] * amplitudes)
 
         # return combined product of each star's overlap (or sum of the logs)
+        self.success += 1
         return np.sum(np.log(star_overlaps))
     
     def lnprob(self, pars):
         """Compute the log-likelihood for a fit to a group.
            pars are the parameters being fitted for by MCMC 
-
-            for simplicity, simply looking at time=0
         """
         lp = self.lnprior(pars)
         if not np.isfinite(lp):
@@ -402,14 +491,26 @@ class GroupFitter:
         return lp + self.lnlike(pars)
 
     def generate_parameter_list(self, nfixed, nfree):
+        """
+            Generates the initial sample around which the walkers will
+            be initialised. This function uses the number of free groups
+            and number of fixed groups to dynamically generate a parameter
+            list of appropriate length
+        """
         # all groups fixed at age = 0
         if nfixed > self.NFIXED_GROUPS:
             print("-- not enough fixed groups provided")
             nfixed = self.NFIXED_GROUPS
 
         init_amp = 1.0 / (nfixed + nfree)
-        default_pars = [0,0,0,0,0,0,30,30,30,5,   0,   0,   0, 5]
-        default_sdev = [1,1,1,1,1,1, 1, 1, 1,1,0.01,0.01,0.01, 0.05] #final 0 is for age
+        default_pars = [0,0,0,0,0,0,
+                        1./30,1./30,1./30,1./5,
+                        0,0,0,
+                        5]
+        default_sdev = [1,1,1,1,1,1,
+                        0.005, 0.005, 0.005, 0.005,
+                        0.01,0.01,0.01,
+                        0.05] #final 0 is for age
 
         init_pars = [] + default_pars * nfree + [init_amp]*(nfree+nfixed-1)
         init_sdev = [] + default_sdev * nfree + [0.05]*(nfree+nfixed-1)
@@ -426,10 +527,13 @@ class GroupFitter:
 
         # final parameter is amplitude
         
-        p0 = [init_pars + (np.random.random(size=len(init_sdev)) - 0.5)*init_sdev
-                                                    for i in range(self.NWALKERS)]
+        p0 = [init_pars+(np.random.random(size=len(init_sdev))- 0.5)*init_sdev
+                                                for i in range(self.NWALKERS)]
 
-        self.sampler = emcee.EnsembleSampler(self.NWALKERS, self.NPAR, self.lnprob)
+        print("In fit_groups")
+        #pdb.set_trace()
+        self.sampler = emcee.EnsembleSampler(self.NWALKERS, self.NPAR,
+                                             self.lnprob)
 
         pos, lnprob, state = self.sampler.run_mcmc(p0, self.burnin)
 
@@ -445,49 +549,125 @@ class GroupFitter:
         #Best Model
         best_ix = np.argmax(self.sampler.flatlnprobability)
         self.best_model = self.samples[best_ix]
-        print('[' + ",".join(["{0:7.3f}".format(f) for f in self.sampler.flatchain[best_ix]]) + ']')
+        print('[' + ",".join(["{0:7.3f}".format(f)\
+                for f in self.sampler.flatchain[best_ix]]) + ']')
 
-        self.update_best_model(self.best_model, self.sampler.flatlnprobability[best_ix])
+        self.update_best_model(self.best_model,
+                               self.sampler.flatlnprobability[best_ix])
+
+        # # Debugging trackers
+        # bad_amps  = 0
+        # bad_ages  = 0
+        # bad_corrs = 0
+        # bad_stds  = 0
+        # bad_eigs  = 0
+        # bad_dets  = 0
+        print("Bad priors")
+        print("Amps: {}\nAges: {}\nCorrs: {}\nStds: {}\nEigs: {}\nDets: {}"\
+                .format( self.bad_amps, self.bad_ages, self.bad_corrs,
+                         self.bad_stds, self.bad_eigs, self.bad_dets))
+        print("Success: {}".format(self.success))
         
+        tidied_samples = self.tidy_samples(self.samples, self.NFREE_GROUPS,
+                                           self.NFIXED_GROUPS)
+
         # self.write_results()
         if (self.PLOTIT):
-            self.make_plots()
+            self.make_plots(tidied_samples)
+
+    def tidy_samples(self, samples, nfree, nfixed):
+        """
+        Currently deriving final weight for plotting reasons.
+        Will eventually also convert 1/stds to stds.
+        will either convert sampled parameter sto physcial values
+        or help "reset" samples after a diverging run...
+
+        Parameters
+        ----------
+        samples: [(nwalkers*nsteps) x nparams] array of floats
+            the flattened array of samples
+        """
+        # Making room for final weight
+        tidied_samples = np.zeros((np.shape(samples)[0],
+                                   np.shape(samples)[1]+1))
+        # Deriving the remaining weight
+        ngroups = nfree + nfixed
+        for i, sample in enumerate(samples):
+            weights = sample[-(ngroups-1):]
+            derived_weight = 1 - np.sum(weights)
+            tidied_samples[i] = np.append(sample, derived_weight)
+
+        return tidied_samples
 
     def write_results(self):
+        """
+        not yet made generic... not even being called atm
+        """
         with open("logs/"+self.FILE_STEM+".log", 'w') as f:
-            f.write("Log of output from bp with {} burn-in steps, {} sampling steps,\n"\
-                        .format(self.burnin, self.steps) )
-            f.write("Using starting parameters:\n{}".format(str(self.GROUPS)))
+            f.write("Log of output from bp with {} burn-in steps," ++\
+                    "{} sampling steps,\n".format(self.burnin, self.steps) )
+            #f.write("Using starting parameters:\n{}".format(str(self.GROUPS)))
             f.write("\n")
 
-            labels = ["X", "Y", "Z", "U", "V", "W",
-                 "dX", "dY", "dZ", "dVel",
-                 "xCorr", "yCorr", "zCorr"]
+            labels = self.generate_labels(self.NFREE_GROUPS,
+                                          self.NFIXED_GROUPS)
+
             bf = self.calc_best_params()
-            f.write(" _______ BETA PIC MOVING GROUP ________ {starting parameters}\n")
+            f.write(" _______ BETA PIC MOVING GROUP ________" ++
+                       " {starting parameters}\n")
             for i in range(len(labels)):
-                f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\t\t\t{:>7.2f}\n".format(
-                                                    labels[i],
-                                                    bf[i][0], bf[i][1], bf[i][2],
-                                                    self.GROUPS[0].params[i]) )
+                f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\t\t\t{:>7.2f}\n"\
+                             .format( labels[i], bf[i][0], bf[i][1], bf[i][2],
+                                      self.GROUPS[0].params[i]) )
 
     def calc_best_params(self):
         return np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                         zip(*np.percentile(self.samples, [16,50,84], axis=0))))
 
-    def make_plots(self):
+    def make_plots(self, samples):
+        """
+        Not yet made generic
+        """
         plt.plot(self.sampler.lnprobability.T)
         plt.title("Lnprob of walkers")
         plt.savefig("plots/lnprob_{}.png".format(self.FILE_STEM))
         plt.clf()
 
+        #pdb.set_trace()
+
+        # since this function is not yet generic w.r.t. number of groups
+        # etc, I've simply hardcoded it to only display the 
+        # first 14 parameter fits
+        limit = 14
         best_ix = np.argmax(self.sampler.flatlnprobability)
-        best_sample = self.samples[best_ix]
-        labels = ["X", "Y", "Z", "U", "V", "W",
-                 "dX", "dY", "dZ", "dVel",
-                 "xCorr", "yCorr", "zCorr", "age", "weight1"]
-        fig = corner.corner(self.samples, truths=best_sample, labels=labels)
+        best_sample = samples[best_ix]
+        labels = self.generate_labels(self.NFREE_GROUPS, self.NFIXED_GROUPS)
+        fig = corner.corner(samples[:,:limit], truths=best_sample[:limit],
+                             labels=labels[:limit])
         fig.savefig("plots/corner_"+self.FILE_STEM+".png")
+
+    def generate_labels(self, nfree, nfixed):
+        """
+        Dynamically generates a set of labels for an arbitrary number
+        of free and fixed groups.
+        e.g. 1 free and 1 fixed:
+        ["X0", "Y0", "Z0', ...
+        ... "age0", "weight0", "weight1"]
+        weight's will all appear consecutively at the very end. Note that
+        there will be a "weight" for the derived weight for the final group
+        """
+        base_label = ["X", "Y", "Z", "U", "V", "W",
+                      "dX", "dY", "dZ", "dVel",
+                      "xCorr", "yCorr", "zCorr", "age"]
+
+        labels = []
+        for i in range(nfree):
+            labels += [lb + str(i) for lb in base_label]
+
+        # includes a label for the derived weight
+        for i in range(nfree + nfixed):
+            labels += ["weight" + str(i)]
+        return labels
 
     def interp_icov(self, target_time):
         """
@@ -506,7 +686,8 @@ class GroupFitter:
         return interp_mns, interp_icovs, interp_icov_dets
 
     def update_best_model(self, best_model, best_lnprob):
-        file_stem = "results/bp_old_best_model_{}_{}".format(self.NGROUPS, self.NFIXED_GROUPS)
+        file_stem = "results/bp_old_best_model_{}_{}"\
+                        .format(self.NGROUPS, self.NFIXED_GROUPS)
         try:
             old_best_lnprob, old_best_model = pickle.load(open(file_stem))
             print("Checking old best")
