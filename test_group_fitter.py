@@ -54,9 +54,12 @@ if (test_run):
     print("About to test lnprior")
     
     # Testing lnprior
-    good_pars = [ [0,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
-                  [10,10,10,10,10,10, 1,1,1,1, 0.5,0.5,0.5, 15, 0.5]
-                ]
+    good_pars = np.array([
+                  [0,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
+                  [10,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
+                  [10,10,10,10,10,10, 1,1,1,1, 0.5,0.5,0.5, 15, 0.5],
+                  [20,10,10,10,10,10, 1,1,1,1, -0.5,0.5,0.5, 15, 0.5]
+                ])
     
     bad_pars = [ [0,0,0,0,0,0,-1,1,1,1,0,0,0,10,0.5], # negative dX
                   [10,10,10,10,10,10,1,1,1,1,1.5,0.5,0.5, 15, 0.5],# xycorr > 1
@@ -66,13 +69,48 @@ if (test_run):
     
     #pdb.set_trace()
     for i in range(2):
-        assert(myFitter.lnprior(good_pars[i]) == 0)
+        assert(myTestFitter.lnprior(good_pars[i]) == 0)
     
     
     for pars in bad_pars:
-        assert(myFitter.lnprior(pars) == -np.inf), "par: {}".format(pars)
+        assert(myTestFitter.lnprior(pars) == -np.inf), "par: {}".format(pars)
     
     print("lnprior seems fine...")
+
+    # testing group_metric
+    print("Testing group_metric") 
+    assert(myTestFitter.group_metric(good_pars[0], good_pars[0]) == 0.0),\
+            myTestFitter.group_metric(good_pars[0], good_pars[0])    
+    assert(myTestFitter.group_metric(good_pars[1], good_pars[1]) == 0.0),\
+            myTestFitter.group_metric(good_pars[1], good_pars[1])
+    ngood_pars = 4
+    results = np.zeros((4,4))
+    for i in range(4):
+        for j in range(4):
+            results[i,j] = myTestFitter.group_metric(good_pars[i],
+                                                     good_pars[j])
+
+    # checking triangle inequality
+    for i in range(4):
+        for j in range(i,4):
+            for k in range(4):
+                if (k != j and k != i):
+                    assert (results[i,j] <= results[i,k] + results[k,j]),\
+                            "i: {}, j: {}, k: {}\n".format(i,j,k) + \
+                            "{} , {}, {}".format(results[i,j], results[i,k],
+                                                 results[k,j])
+
+    print(results)
+#    print(myTestFitter.group_metric(good_pars[0], good_pars[1]))
+#    print(myTestFitter.group_metric(good_pars[0], good_pars[2]))
+#    print(myTestFitter.group_metric(good_pars[0], good_pars[3]))
+#    print(myTestFitter.group_metric(good_pars[1], good_pars[2]))
+#    print(myTestFitter.group_metric(good_pars[1], good_pars[3]))
+#    print(myTestFitter.group_metric(good_pars[2], good_pars[3]))
+#
+    print("-------------------")
+
+    
     
     #failed_sample = [ -8.47140941e+00,  6.09690031e+00, -1.64964204e+01, -8.16606704e+00,
     #                  -7.45727052e+00, -9.74301271e+00,  3.27440988e+01,  4.21552194e+01,
@@ -98,7 +136,8 @@ if (test_run):
         for nfree in range(1,3):
             nfixed = i
             print("-- {} fixed and {} free".format(nfixed, nfree))
-            res_pars, res_sdev = myFitter.generate_parameter_list(nfixed,nfree)
+            res_pars, res_sdev = myTestFitter.\
+                                    generate_parameter_list(nfixed,nfree)
             res_len = len(res_pars)
             if nfixed > max_nfixed:
                 nfixed = max_nfixed

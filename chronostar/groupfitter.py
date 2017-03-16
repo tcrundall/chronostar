@@ -597,7 +597,37 @@ class GroupFitter:
             derived_weight = 1 - np.sum(weights)
             tidied_samples[i] = np.append(sample, derived_weight)
 
+        best_ix = np.argmax(self.sampler.flatlnprobability)
+        best_sample = tidied_samples[best_ix]
+
+        #pdb.set_trace()
+
         return tidied_samples
+
+    def group_metric(self, group1, group2):
+        means1 = group1[:6];      means2 = group2[:6]
+        stds1  = 1/group1[6:10];  stds2  = 1/group2[6:10]
+        corrs1 = group1[10:13];   corrs2 = group2[10:13]
+        age1   = group1[13];      age2   = group2[13]
+
+        total_dist = 0
+        for i in range(3):
+            total_dist += (means1[i] - means2[i])**2 /\
+                            (stds1[i]**2 + stds2[i]**2)
+
+        for i in range(3,6):
+            total_dist += (means1[i] - means2[i])**2 /\
+                            (stds1[3]**2 + stds2[3]**2)
+
+        for i in range(4):
+            total_dist += (np.log(stds1[i] / stds2[i]))**2
+
+        for i in range(3):
+            total_dist += (corrs1[i] - corrs2[i])**2
+
+        total_dist += (np.log(age1/age2))**2
+
+        return np.sqrt(total_dist)
 
     def write_results(self):
         """
