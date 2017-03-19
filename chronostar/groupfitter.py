@@ -31,6 +31,8 @@ import matplotlib.pyplot as plt
 import pdb          # for debugging
 import corner       # for pretty corner plots
 import pickle       # for dumping and reading data
+# for permuting samples when realigning
+from sympy.utilities.iterables import multiset_permutations 
 try:
     import astropy.io.fits as pyfits
 except:
@@ -600,9 +602,50 @@ class GroupFitter:
         best_ix = np.argmax(self.sampler.flatlnprobability)
         best_sample = tidied_samples[best_ix]
 
-        #pdb.set_trace()
+        for i, sample in enumerate(samples):
+            tidied_samples[i] = self.permute(sample, best_sample, nfree, nfixed)
 
         return tidied_samples
+
+    def permute(self, sample, best_sample, nfree, nfixed):
+        """
+        Takes a sample and the best_sample (the one with the highest
+        lnprob) and returns the perumtation of sample which is the closest
+        to best_sample.
+
+        The reason this is necessary is because, if sample has more than one
+        free group, there is nothing distinguishing which group is character-
+        ised by which parameters
+        """
+        if (nfixed < 2):
+            print("Not generic with nfixed yet")
+            return sample
+
+        npars_wo_amp = 14
+        free_groups = np.reshape(sample[:npars_wo_amp * nfree],(nfree,-1))
+        free_amps   = sample[-(nfree + nfixed - 1):-(nfixed -1)]
+        fixed_amps  = sample[-(nfixed-1):]
+
+        best_fgs = np.reshape(best_sample[:npars_wo_amp * nfree],(nfree,-1))
+        best_fas = best_sample[-(nfree + nfixed - 1):-(nfixed -1)]
+        best_xas = best_sample[-(nfixed-1):]
+
+        # try using the np.fromfunction here?
+        Dmat = np.zeros((nfree,nfree))
+        for i in range(nfree):
+            for j in range(nfree):
+                Dmat[i,j] = self.group_metric(free_groups[i], best_fgs[j])
+
+        ps = [p for p in multiset_permutations(range(nfree))]
+        traces = [np.trace(Dmat[p]) for p in ps]
+        best_perm = ps[np.argmin(traces)]
+
+        # ... should I rearrange the layout of the parameters?
+        perm_sample = np.append(np.append(free_groups[best_perm],
+                                          free_amps[best_perm]),
+                                fixed_amps)
+        
+        return perm_sample
 
     def group_metric(self, group1, group2):
         means1 = group1[:6];      means2 = group2[:6]

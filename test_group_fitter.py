@@ -8,6 +8,7 @@ import argparse
 import pdb
 import numpy as np
 import matplotlib.pyplot as plt
+from sympy.utilities.iterables import multiset_permutations
 
 params = [-6.574, 66.560, 23.436, -1.327,-11.427, -6.527,\
         10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846]
@@ -100,30 +101,13 @@ if (test_run):
                             "{} , {}, {}".format(results[i,j], results[i,k],
                                                  results[k,j])
 
-    print(results)
-#    print(myTestFitter.group_metric(good_pars[0], good_pars[1]))
-#    print(myTestFitter.group_metric(good_pars[0], good_pars[2]))
-#    print(myTestFitter.group_metric(good_pars[0], good_pars[3]))
-#    print(myTestFitter.group_metric(good_pars[1], good_pars[2]))
-#    print(myTestFitter.group_metric(good_pars[1], good_pars[3]))
-#    print(myTestFitter.group_metric(good_pars[2], good_pars[3]))
-#
-    print("-------------------")
+    #myAnalyser = SamplerAnalyser(result) # I could initialise an Analyser
+                                          # object to investigate the 
+                                          # sample/produce plots etc. It would
+                                          #  be useful to have them separate so
+                                          # I can run a bunch of runs automated
+                                          # and investigate afterwards
 
-    
-    
-    #failed_sample = [ -8.47140941e+00,  6.09690031e+00, -1.64964204e+01, -8.16606704e+00,
-    #                  -7.45727052e+00, -9.74301271e+00,  3.27440988e+01,  4.21552194e+01,
-    #                   3.52616945e+01, -2.80981542e+00,  2.26040337e-01,  2.35967711e-02,
-    #                  -1.98462993e-01, -2.67278810e-02]
-    #
-    #failed_lnprob = myFitter.lnprob(failed_sample)
-    
-    #myAnalyser = SamplerAnalyser(result) # I could initialise an Analyser object
-                                          # to investigate the sample/produce plots
-                                          # etc. It would be useful to have them
-                                          # separate so I can run a bunch of runs
-                                          # automated and investigate afterwards
     
     #myAnalyser.makePlots(show=True)
     #myAnalyser.write
@@ -150,21 +134,29 @@ if (test_run):
     if not debugging:
         result = myTestFitter.fit_groups(nfixed, 1) # result could be filename of samples
 
-#pdb.set_trace()
+    print("Testing permute")
+    
+    # groups without amplitude
+    nfree = 4
+    nfixed = 2
+    best_groups = np.array([
+                  [0,0,0,0,0,0, 1,1,1,1, 0,0,0, 10],
+                  [10,0,0,0,0,0, 1,1,1,1, 0,0,0, 10],
+                  [10,10,10,10,10,10, 1,1,1,1, 0.5,0.5,0.5, 15],
+                  [20,10,10,10,10,10, 1,1,1,1, -0.5,0.5,0.5, 15]
+                ])
 
-# Failed param list:
-# failed_params = [   6.26384977e+02,  -9.98266769e+02,  -1.31659708e+02,  1.36050771e+03,
-#    1.02290243e+02, -6.75402094e+02,   4.68336488e+02,   6.31595410e+01,
-#    3.27252726e+02,  1.14134135e+02,   5.35106689e-01,  -6.83504092e-01,
-#    1.23966913e-01,  4.07786862e+01,   1.25097761e-03]
-# 
-# 
-# 
-#     return self.f(x, *self.args, **self.kwargs)
-#   File "/home/tcrun/chronostar/chronostar/groupfitter.py", line 451, in lnprob
-#     return lp + self.lnlike(pars)
-#   File "/home/tcrun/chronostar/chronostar/groupfitter.py", line 419, in lnlike
-#     self.interp_icov(model_groups[i].age)
-#   File "/home/tcrun/chronostar/chronostar/groupfitter.py", line 554, in interp_icov
-#     self.STAR_MNS[:,ix0+1]*frac
-# IndexError: index 41 is out of bounds for axis 1 with size 41
+    # generate 5 amplitudes between 0 and 0.2
+    free_amps = np.random.rand(4)/5
+    fixed_amps = np.random.rand(1)/5
+    best_sample = np.append(np.append(best_groups, free_amps), fixed_amps)
+    ps = [p for p in multiset_permutations(range(nfree))]
+
+    # for each permutation, confirm that permute() retrieves the best_sample
+    for p in ps:
+        permuted_sample = np.append(
+                            np.append(best_groups[p], free_amps[p]),
+                            fixed_amps)
+        res = myTestFitter.permute(permuted_sample, best_sample, nfree, nfixed)
+        assert(np.array_equal(res,best_sample))
+
