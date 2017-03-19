@@ -138,11 +138,6 @@ class MVGaussian(object):
     def cov_det(self, cov):
         return np.prod(np.linalg.eigvalsh(cov))
 
-class Star(MVGaussian):
-    """
-        Specific to stars and interpolation nonsense
-    """
-
 class Group(MVGaussian):
     """
         Encapsulates the various forms a group model can take
@@ -545,8 +540,14 @@ class GroupFitter:
             pos[ix] = pos[best_chain]
     
         self.sampler.reset()
-        self.sampler.run_mcmc(pos, self.steps, rstate0=state)
+        pos,lnprob,rstate = self.sampler.run_mcmc(pos, self.steps,
+                                                  rstate0=state)
         self.samples = self.sampler.flatchain
+
+        # Dumping sampler to a pickle file for later use
+        pickle.dump((self.sampler.chain, self.sampler.lnprobability, pos,
+                      nfree, nfixed),
+                     open("logs/" + self.FILE_STEM + ".pkl", 'w'))
 
         #Best Model
         best_ix = np.argmax(self.sampler.flatlnprobability)
@@ -557,13 +558,7 @@ class GroupFitter:
         self.update_best_model(self.best_model,
                                self.sampler.flatlnprobability[best_ix])
 
-        # # Debugging trackers
-        # bad_amps  = 0
-        # bad_ages  = 0
-        # bad_corrs = 0
-        # bad_stds  = 0
-        # bad_eigs  = 0
-        # bad_dets  = 0
+        # Displaying the trackers of when hard limits are reached
         print("Bad priors")
         print("Amps: {}\nAges: {}\nCorrs: {}\nStds: {}\nEigs: {}\nDets: {}"\
                 .format( self.bad_amps, self.bad_ages, self.bad_corrs,

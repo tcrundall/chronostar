@@ -2,7 +2,6 @@
 
 from chronostar.groupfitter import MVGaussian
 from chronostar.groupfitter import GroupFitter
-from chronostar.groupfitter import Star
 from chronostar.groupfitter import Group
 import argparse
 import pdb
