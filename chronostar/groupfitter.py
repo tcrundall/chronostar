@@ -100,7 +100,7 @@ class MVGaussian(object):
 
         cov_det = np.prod(np.linalg.eigvalsh(cov))
         try:
-            assert((self.cov_det(cov) - self.cov_det_ident(self.params[6:13]))/cov_det < 1e-6)
+            assert((self.cov_det(cov) - self.cov_det_ident(self.params[6:13]))/cov_det < 1e-4)
         except:
             print("Determinant formula is wrong...?")
             pdb.set_trace()
@@ -579,10 +579,11 @@ class GroupFitter:
 
     def tidy_samples(self, samples, nfree, nfixed):
         """
-        Currently deriving final weight for plotting reasons.
         Will eventually also convert 1/stds to stds.
-        will either convert sampled parameter sto physcial values
-        or help "reset" samples after a diverging run...
+
+        Appends the final derived 'weight' parameter
+        Permutes the parameters for each free group such that
+        the sample is as close as possible to the "best sample"
 
         Parameters
         ----------
@@ -602,8 +603,13 @@ class GroupFitter:
         best_ix = np.argmax(self.sampler.flatlnprobability)
         best_sample = tidied_samples[best_ix]
 
-        for i, sample in enumerate(samples):
-            tidied_samples[i] = self.permute(sample, best_sample, nfree, nfixed)
+        for i, sample in enumerate(tidied_samples):
+            
+            tidied_sample = self.permute(sample, best_sample, nfree, nfixed)
+            try:
+                tidied_samples[i] = tidied_sample
+            except:
+                pdb.set_trace()
 
         return tidied_samples
 
@@ -613,22 +619,27 @@ class GroupFitter:
         lnprob) and returns the perumtation of sample which is the closest
         to best_sample.
 
+        Input samples should already have derived weight appeneded.
+
         The reason this is necessary is because, if sample has more than one
         free group, there is nothing distinguishing which group is character-
         ised by which parameters
         """
-        if (nfixed < 2):
-            print("Not generic with nfixed yet")
-            return sample
-
         npars_wo_amp = 14
-        free_groups = np.reshape(sample[:npars_wo_amp * nfree],(nfree,-1))
-        free_amps   = sample[-(nfree + nfixed - 1):-(nfixed -1)]
-        fixed_amps  = sample[-(nfixed-1):]
-
+        assert(np.size(best_sample) == npars_wo_amp * nfree + (nfree + nfixed))
+        free_groups = np.reshape(  sample[:npars_wo_amp * nfree],(nfree,-1))
         best_fgs = np.reshape(best_sample[:npars_wo_amp * nfree],(nfree,-1))
-        best_fas = best_sample[-(nfree + nfixed - 1):-(nfixed -1)]
-        best_xas = best_sample[-(nfixed-1):]
+
+        if (nfixed == 0):
+            free_amps   = sample[-nfree:]
+            fixed_amps  = sample[:0]        # an empty array
+            best_fas = best_sample[-nfree:]
+            best_xas = best_sample[:0]      # an empty array
+        else:
+            free_amps   = sample[-(nfree + nfixed):-nfixed]
+            fixed_amps  = sample[-nfixed:]
+            best_fas = best_sample[-(nfree + nfixed):-nfixed]
+            best_xas = best_sample[-nfixed:] 
 
         # try using the np.fromfunction here?
         Dmat = np.zeros((nfree,nfree))
@@ -644,6 +655,11 @@ class GroupFitter:
         perm_sample = np.append(np.append(free_groups[best_perm],
                                           free_amps[best_perm]),
                                 fixed_amps)
+        try:
+            assert(np.size(perm_sample) == np.size(sample)),\
+                    "Wrong size...\n{}\n{}".format(sample, perm_sample)
+        except:
+            pdb.set_trace()
         
         return perm_sample
 
