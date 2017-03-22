@@ -85,6 +85,9 @@ def permute(sample, best_sample, nfree, nfixed):
     """
     npars_wo_amp = 14
     assert(np.size(best_sample) == npars_wo_amp * nfree + (nfree + nfixed))
+
+    # Reshape the parameters for free groups into an array with each row
+    # corresponding to a specific group
     free_groups = np.reshape(  sample[:npars_wo_amp * nfree],(nfree,-1))
     best_fgs = np.reshape(best_sample[:npars_wo_amp * nfree],(nfree,-1))
 
@@ -101,16 +104,25 @@ def permute(sample, best_sample, nfree, nfixed):
         best_xas = best_sample[:0]      # an empty array
 
     # try using the np.fromfunction here?
+    # This is a distance matrix where Dmat[i,j] is the metric distance
+    # between the ith free_group and the jth best_free_group
     Dmat = np.zeros((nfree,nfree))
     for i in range(nfree):
         for j in range(nfree):
             Dmat[i,j] = group_metric(free_groups[i], best_fgs[j])
 
+    # Generate a list of all possible permutations of the matrix rows
     ps = [p for p in multiset_permutations(range(nfree))]
+
+    # Find the matrix permutation which yields the smallest trace
+    # This permutation will correspond to the rearrangement of free_groups
+    # which is most similar to the best_free_groups
     traces = [np.trace(Dmat[p]) for p in ps]
     best_perm = ps[np.argmin(traces)]
 
-    # ... should I rearrange the layout of the parameters?
+    # Recombine the rearranged free_groups,
+    # note that the amplitudes to the free_gorups must also be
+    # rearranged with the identical permutation
     perm_sample = np.append(np.append(free_groups[best_perm],
                                       free_amps[best_perm]),
                             fixed_amps)
