@@ -599,7 +599,6 @@ class GroupFitter:
         best_sample = tidied_samples[best_ix]
 
         for i, sample in enumerate(tidied_samples):
-            
             tidied_sample = self.permute(sample, best_sample, nfree, nfixed)
             try:
                 tidied_samples[i] = tidied_sample

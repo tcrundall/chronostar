@@ -21,6 +21,19 @@ realigned_samples, permute_count = realign_samples(flatchain, flatlnprob,
 
 print("Permutations: {} out of: {}".format(permute_count,
                                            np.shape(flatchain)[0]) )
-assert(np.shape(realigned_samples)[1] == np.shape(flatchain)[1]+1),\
+assert(np.shape(realigned_samples)[1] == np.shape(flatchain)[1]),\
             "Difference: {}".format(np.shape(realigned_samples)[1] -\
                                     np.shape(flatchain)[1])
+
+# Test convert_samples
+converted_samples = convert_samples(realigned_samples, nfree, nfixed, npars)
+# 6:10 is where the stdevs are, groups are spaced 14 parameters apart
+for i in range(nfree):
+    assert(np.allclose(  realigned_samples[:, 14*i+6 : 14*i+10],
+                       1/converted_samples[:, 14*i+6 : 14*i+10]))
+
+assert(np.shape(converted_samples)[1] == np.shape(flatchain)[1] + 1),\
+            "Difference: {}".format(np.shape(realigned_samples)[1] -\
+                                    np.shape(flatchain)[1])
+assert(np.array_equal(np.sum(converted_samples[:,-(nfree+nfixed):],axis=1),
+                      np.ones(nwalkers*nsteps)) )

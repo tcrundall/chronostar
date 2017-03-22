@@ -25,6 +25,15 @@ import pickle       # for dumping and reading data
 import numpy as np
 from sympy.utilities.iterables import multiset_permutations
 
+# Bunch of global masks for extracting specific elements from
+# sample
+# Structure of a group: 6*means, 4*stdevs, 3*corr, 1*age
+#                         (amplitudes at end of parameter list)
+base_msk_means  = 6 * [True]  + 4 * [False] + 3 * [False] + [False]
+base_msk_stdevs = 6 * [False] + 4 * [True]  + 3 * [False] + [False]
+base_msk_corrs  = 6 * [False] + 4 * [False] + 3 * [True]  + [False]
+base_msk_ages   = 6 * [False] + 4 * [False] + 3 * [False] + [True]
+
 def read_sampler(infile='logs/gf_bp_2_3_10_10.pkl'):
     """
     Read in sampler from .pkl file
@@ -41,22 +50,17 @@ def realign_samples(flatchain, flatlnprob, nfree, nfixed, npars):
     permuted sample are the closest they can be to the
     groups represented by the sample with the highest lnprob
     """
-    # Initialising array for realigned samples, extra space for weight
-    # to be derived
-    # GET MIKE TO HELP WORK OUT HOW TO SIMPLY APPEND EXTRA PARAMETER
-    # USING NP.APPEND OR SOME SHIT
-    realigned_samples = np.zeros((np.shape(flatchain)[0],
-                                  np.shape(flatchain)[1]+1))
-    ngroups = nfree+nfixed
-
-    # no need to realign anything if there's only the one group
-    if ngroups == 0:
+    # no need to realign anything if there's only the one free group
+    if nfree < 2:
         return flatchain
 
-    for i, sample in enumerate(flatchain):
-        weights = sample[-(ngroups-1):]
-        derived_weight = 1 - np.sum(weights)
-        realigned_samples[i] = np.append(sample, derived_weight)
+    ngroups = nfree+nfixed
+
+    # Deriving missing amplitudes and appending to end
+    amplitudes   = flatchain[:,-(ngroups-1):]
+    derived_amps = np.reshape(1 - np.sum(amplitudes, axis=1),
+                              (np.shape(flatchain)[0],-1) )
+    realigned_samples = np.append(flatchain, derived_amps, axis=1)
 
     best_ix = np.argmax(flatlnprob)
     best_sample = realigned_samples[best_ix]
@@ -69,7 +73,9 @@ def realign_samples(flatchain, flatlnprob, nfree, nfixed, npars):
             permute_count += 1
         realigned_samples[i] = realigned_sample
     
-    return realigned_samples, permute_count
+    # Shave off extra weight parameter off the end so samples
+    # can be used to start a new run
+    return realigned_samples[:,:-1], permute_count
 
 def permute(sample, best_sample, nfree, nfixed):
     """
@@ -141,6 +147,8 @@ def group_metric(group1, group2):
     Note that the group inputs are raw parametes, that is stds are
     parametrised as 1/std in the emcee chain so must be inverted
     """
+
+    # REWRITE USING BOOLEAN MASKS
     means1 = group1[:6];      means2 = group2[:6]
     stds1  = 1/group1[6:10];  stds2  = 1/group2[6:10]
     corrs1 = group1[10:13];   corrs2 = group2[10:13]
@@ -164,6 +172,24 @@ def group_metric(group1, group2):
     total_dist += (np.log(age1/age2))**2
 
     return np.sqrt(total_dist)
+
+def convert_samples(flatchain, nfree, nfixed, npars):
+    ngroups = nfree + nfixed
+    
+    # Derive missing amplitudes
+    amplitudes   = flatchain[:,-(ngroups-1):]
+    derived_amps = np.reshape(1 - np.sum(amplitudes, axis=1),
+                              (np.shape(flatchain)[0],-1) )
+    converted_samples = np.append(flatchain, derived_amps, axis=1)
+
+    # invert standard deviations
+    mask_stdevs = nfree * base_msk_stdevs + (ngroups-1) * [False]
+
+    for i, sample in enumerate(flatchain):
+        converted_samples[i][np.where(mask_stdevs)] =\
+                                         1/(sample[np.where(mask_stdevs)])
+
+    return converted_samples
 
 def calc_bet_fit():
     """
