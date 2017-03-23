@@ -23,6 +23,7 @@ import pdb          # for debugging
 import corner       # for pretty corner plots
 import pickle       # for dumping and reading data
 import numpy as np
+import matplotlib.pyplot as plt
 from sympy.utilities.iterables import multiset_permutations
 
 # Bunch of global masks for extracting specific elements from
@@ -146,6 +147,8 @@ def group_metric(group1, group2):
     Inputs are two np.arrays of size 14.
     Note that the group inputs are raw parametes, that is stds are
     parametrised as 1/std in the emcee chain so must be inverted
+
+    TO DO: USE BOOLEAN MASKS TO EXTRACT PARAMETERS IN A NEATER MANNER
     """
 
     # REWRITE USING BOOLEAN MASKS
@@ -191,22 +194,109 @@ def convert_samples(flatchain, nfree, nfixed, npars):
 
     return converted_samples
 
-def calc_bet_fit():
+def calc_best_fit(samples):
     """
-    Given a set of aligned samples, calculate the median and errors of each
-    parameter
+    Given a set of aligned (converted?) samples, calculate the median and
+    errors of each parameter
     """
-    return 0
+    return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+                     zip(*np.percentile(samples, [16,50,84], axis=0))) )
 
-def plot_lnprob():
+def plot_lnprob(lnprob, file_stem=None):
     """
     Generate lnprob and lnprob.T plots, save them to file as necessary
     """
+    nwalkers = lnprob.shape[0]
+    nsteps   = lnprob.shape[1]
+    # if filename not provided, conjure up our own
+    if not file_stem:
+        file_stem  = "/plots/lnprob_{}_{}".format(nwalkers, nsteps)
+
+    flatlnprob = lnprob.flatten()
+    plt.plot(lnprob.T)
+    plt.title("{} walkers for {} steps".format(nwalkers, nsteps) )
+    plt.xlabel("nsteps")
+    plt.ylabel("lnprob")
+    plt.savefig(file_stem + ".png")
+
+    plt.clf()
+
+    plt.plot(lnprob)
+    plt.title("{} walkers for {} steps".format(nwalkers, nsteps) )
+    plt.xlabel("walkers")
+    plt.ylabel("lnprob")
+    plt.savefig(file_stem + "T.png")
+
     return 0
 
-def plot_corner():
+def generate_labels(nfree, nfixed):
+    """
+    Dynamically generates a set of labels for an arbitrary number
+    of free and fixed groups.
+    e.g. 1 free and 1 fixed:
+    ["X0", "Y0", "Z0', ...
+    ... "age0", "weight0", "weight1"]
+    weight's will all appear consecutively at the very end. Note that
+    there will be a "weight" for the derived weight for the final group
+    """
+    base_label = ["X", "Y", "Z", "U", "V", "W",
+                  "dX", "dY", "dZ", "dVel",
+                  "xCorr", "yCorr", "zCorr", "age"]
+
+    labels = []
+    for i in range(nfree):
+        labels += [lb + str(i) for lb in base_label]
+
+    # includes a label for the derived weight
+    for i in range(nfree + nfixed):
+        labels += ["weight" + str(i)]
+
+    return np.array(labels)
+
+def generate_param_mask(nfree, nfixed, means, stds, corrs, ages, weights):
+    # generating boolean flags from base masks and boolean inputs
+    # base_msk_means  = 6 * [True]  + 4 * [False] + 3 * [False] + [False]
+    # base_msk_stdevs = 6 * [False] + 4 * [True]  + 3 * [False] + [False]
+    # base_msk_corrs  = 6 * [False] + 4 * [False] + 3 * [True]  + [False]
+    # base_msk_ages   = 6 * [False] + 4 * [False] + 3 * [False] + [True]
+    group_mask = ( (means  and base_msk_means)  or
+                   (stds   and base_msk_stdevs) or
+                   (corrs  and base_msk_corrs)  or
+                   (ages   and base_msk_ages) )
+
+    param_mask = nfree * group_mask + (nfree+nfixed)*[weights]
+    return np.array(param_mask)
+
+def plot_corner(nfree, nfixed, converted_samples, lnprob,
+                means=False, stds=False, corrs=False,
+                ages=False,  weights=False):
     """
     Generate corner plots with dynamically generated parameter list
     e.g. ONly plotting stds or ages, or weights, or any combinations
     """
+    # Checking at least one value is being plotted
+    if not (means or stds or corrs or ages or weights):
+        print("Need to include a boolean flag for desired parameters")
+        return 0
+
+    labels = generate_labels(nfree, nfixed)
+    param_mask = generate_param_mask(nfree, nfixed, means, stds,
+                                     corrs, ages, weights)
+
+    best_ix = np.argmax(lnprob.flatten())
+    best_sample = converted_samples[best_ix] 
+    # fig = corner.corner(converted_samples[:, np.where(param_mask)],
+    #                     truths = best_sample[np.where(param_mask)],
+    #                     labels =      labels[np.where(param_mask)] )
+    fig = corner.corner(converted_samples[:, np.where(param_mask)][:,0],
+                        truths = best_sample[np.where(param_mask)],
+                        labels =      labels[np.where(param_mask)] )
+
+    file_stem = "{}_{}_{}".format(nfree, nfixed, lnprob.shape[1])
+
+    fig.savefig("plots/corner_" + file_stem + ".png")
+    pdb.set_trace()
+    return 0
+
+def write_results():
     return 0

@@ -4,6 +4,7 @@ import numpy as np
 
 # Test read_sampler
 samples_file = 'logs/gf_bp_2_3_10_10.pkl'
+
 # Check read_sampler returnss some variables
 assert(read_sampler(samples_file) != 0), "Read_sampler not functioning"
 
@@ -15,6 +16,8 @@ flatchain = np.reshape(chain, (nwalkers*nsteps,npars))
 flatlnprob = np.reshape(lnprob, (nwalkers*nsteps))
 
 assert(nfree == 3 and nfixed == 2)
+
+file_stem = "{}_{}_{}".format(nfree, nfixed, nsteps)
 
 realigned_samples, permute_count = realign_samples(flatchain, flatlnprob,
                                                    nfree, nfixed, npars)
@@ -37,3 +40,24 @@ assert(np.shape(converted_samples)[1] == np.shape(flatchain)[1] + 1),\
                                     np.shape(flatchain)[1])
 assert(np.array_equal(np.sum(converted_samples[:,-(nfree+nfixed):],axis=1),
                       np.ones(nwalkers*nsteps)) )
+
+# Test calc_best_fit
+best_fit = calc_best_fit(converted_samples)
+assert(best_fit.shape == (converted_samples.shape[1], 3))
+
+for i in range(converted_samples.shape[1]):
+    assert(best_fit[i,0] == np.median(converted_samples[:,i]))
+
+# Test plot_lnprob
+plot_file_stem = "plots/lnprob_"  + file_stem
+
+plot_lnprob(lnprob, plot_file_stem)
+
+# Test generate_param_mask
+assert(np.size(generate_param_mask(nfree, nfixed,
+                                   True, False, False, False, True))
+       == converted_samples.shape[1])
+
+# Test plot_corner
+plot_corner(nfree, nfixed, converted_samples, lnprob, weights=True)
+
