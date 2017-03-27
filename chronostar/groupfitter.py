@@ -487,7 +487,7 @@ class GroupFitter:
         #print("Succeeded")
         return lp + self.lnlike(pars)
 
-    def generate_parameter_list(self, nfixed, nfree):
+    def generate_parameter_list(self, nfixed, nfree, bg):
         """
             Generates the initial sample around which the walkers will
             be initialised. This function uses the number of free groups
@@ -509,6 +509,14 @@ class GroupFitter:
                         0.01,0.01,0.01,
                         0.05] #final 0 is for age
 
+        # If free groups are fitting background set age initval and sdev to 0
+        # because emcee generates new samples through linear interpolation
+        # between two existing samples, a parameter with 0 init_sdev will not
+        # change.
+        if bg:
+            default_pars[-1] = 0
+            default_sdev[-1] = 0
+
         init_pars = [] + default_pars * nfree + [init_amp]*(nfree+nfixed-1)
         init_sdev = [] + default_sdev * nfree + [0.05]*(nfree+nfixed-1)
 
@@ -517,9 +525,9 @@ class GroupFitter:
 
         return init_pars, init_sdev
 
-    def fit_groups(self, nfixed, nfree):
+    def fit_groups(self, nfixed, nfree, bg=False):
         # setting up initial params from intial conditions
-        init_pars, init_sdev = self.generate_parameter_list(nfixed, nfree)
+        init_pars, init_sdev = self.generate_parameter_list(nfixed, nfree, bg)
         assert(len(init_pars) == len(init_sdev))
 
         # final parameter is amplitude

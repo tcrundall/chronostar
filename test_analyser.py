@@ -2,6 +2,8 @@
 from chronostar.analyser import *
 import numpy as np
 
+plotit = False
+
 # Test read_sampler
 samples_file = 'logs/gf_bp_2_3_10_10.pkl'
 
@@ -17,7 +19,7 @@ flatlnprob = np.reshape(lnprob, (nwalkers*nsteps))
 
 assert(nfree == 3 and nfixed == 2)
 
-file_stem = "{}_{}_{}".format(nfree, nfixed, nsteps)
+file_stem = "{}_{}_{}_{}".format(nfree, nfixed, nsteps, nwalkers)
 
 realigned_samples, permute_count = realign_samples(flatchain, flatlnprob,
                                                    nfree, nfixed, npars)
@@ -48,16 +50,19 @@ assert(best_fit.shape == (converted_samples.shape[1], 3))
 for i in range(converted_samples.shape[1]):
     assert(best_fit[i,0] == np.median(converted_samples[:,i]))
 
-# Test plot_lnprob
-plot_file_stem = "plots/lnprob_"  + file_stem
+if plotit:
+    # Test plot_lnprob
+    plot_file_stem = "plots/lnprob_"  + file_stem
 
-plot_lnprob(lnprob, plot_file_stem)
+    plot_lnprob(lnprob, nfree, nfixed, plot_file_stem)
 
-# Test generate_param_mask
-assert(np.size(generate_param_mask(nfree, nfixed,
-                                   True, False, False, False, True))
-       == converted_samples.shape[1])
+    # Test generate_param_mask
+    assert(np.size(generate_param_mask(nfree, nfixed,
+                                       True, False, False, False, True))
+           == converted_samples.shape[1])
 
-# Test plot_corner
-plot_corner(nfree, nfixed, converted_samples, lnprob, weights=True)
+    # Test plot_corner
+    plot_corner(nfree, nfixed, converted_samples, lnprob, weights=True)
 
+# Test save_results
+save_results(nfree, nfixed, nsteps, nwalkers, converted_samples)

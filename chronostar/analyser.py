@@ -15,6 +15,14 @@ conditions from the median values and erros of parameters.
 It is conceivable that a full algorithmic fit would alternate
 between runs of group_fitter generating samples, and runs of analyser, tidying
 and neatening, and consolidating
+
+
+TODO:
+    - test again using a different run
+    - write a write_results function
+    - neat and tidy
+    - write a demo for whole algorithm and see if it has all required
+        basic functionality
 """
 
 from __future__ import print_function, division
@@ -202,7 +210,7 @@ def calc_best_fit(samples):
     return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                      zip(*np.percentile(samples, [16,50,84], axis=0))) )
 
-def plot_lnprob(lnprob, file_stem=None):
+def plot_lnprob(lnprob, nfree, nfixed, file_stem=None):
     """
     Generate lnprob and lnprob.T plots, save them to file as necessary
     """
@@ -210,8 +218,8 @@ def plot_lnprob(lnprob, file_stem=None):
     nsteps   = lnprob.shape[1]
     # if filename not provided, conjure up our own
     if not file_stem:
-        file_stem  = "/plots/lnprob_{}_{}".format(nwalkers, nsteps)
-
+        file_stem  = "/plots/lnprob_{}_{}_{}_{}".format(nfree, nfixed,
+                                                        nwalkers, nsteps)
     flatlnprob = lnprob.flatten()
     plt.plot(lnprob.T)
     plt.title("{} walkers for {} steps".format(nwalkers, nsteps) )
@@ -298,5 +306,29 @@ def plot_corner(nfree, nfixed, converted_samples, lnprob,
     pdb.set_trace()
     return 0
 
-def write_results():
-    return 0
+def save_results(nfree, nfixed, nsteps, nwalkers, samples, file_stem=None,
+                 to_convert=False):
+    if not file_stem:
+        file_stem = "{}_{}_{}_{}".format(nfree, nfixed, nsteps, nwalkers)
+    with open("logs/"+file_stem+".log", 'w') as f:
+        f.write("Log of output from bp with {} sampling steps,\n"
+                    .format(nsteps) )
+        labels = generate_labels(nfree, nfixed)
+
+        # If samples hasn't already been converted then do so
+        if to_convert:
+            samples = convert_samples(samples)
+        
+        # Calculate the median and errors for parameters
+        bf = calc_best_fit(samples)
+        
+        f.write(" _______ BETA PIC MOVING GROUP ______ {starting parameters}\n")
+        for i in range(len(labels)):
+            f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\n"
+                     .format(labels[i], bf[i][0], bf[i][1], bf[i][2]) )
+
+    pickle.dump((samples, bf), open("results/"+file_stem+".pkl", 'w'))
+
+    return  0
+
+
