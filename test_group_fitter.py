@@ -8,6 +8,7 @@ import pdb
 import numpy as np
 import matplotlib.pyplot as plt
 from sympy.utilities.iterables import multiset_permutations
+from emcee.utils import MPIPool
 
 params = [-6.574, 66.560, 23.436, -1.327,-11.427, -6.527,\
         10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846]
@@ -24,6 +25,7 @@ parser.add_argument('-x', '--fixed', dest = 'fixed', default=1,
                                     help='[1] number of fixed groups')
 parser.add_argument('-d', '--debug', dest = 'd', action='store_true')
 parser.add_argument('-t', '--test', dest = 't', action='store_true')
+parser.add_argument('-i', '--input', dest='infile', default='results/bp_TGAS2_traceback_save.pkl')
 args = parser.parse_args() 
 burnin = int(args.b) 
 steps = int(args.p) 
@@ -31,6 +33,7 @@ nfree = int(args.free)
 nfixed = int(args.fixed)
 debugging = args.d
 test_run  = args.t
+infile=args.infile
 
 # pdb.set_trace()
 # testing covariance matricies and their determinants
@@ -43,10 +46,10 @@ fixed_bg_group= [-15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
 
 print("Initialising myFitter...")
 if not test_run:
-    myFitter = GroupFitter(burnin=burnin, steps=steps, nfixed=nfixed,
+    myFitter = GroupFitter(burnin=burnin, steps=steps, nfixed=nfixed, infile=infile,
                            nfree=nfree, fixed_groups=nfixed*[fixed_bg_group])
     # result could be filename of samples
-    result = myFitter.fit_groups(nfixed, nfree)
+    result = myFitter.fit_groups(nfixed, nfree, pool=pool)
 
 if (test_run):
     myTestFitter = GroupFitter(burnin=10, steps=10, nfixed=1, nfree=1,

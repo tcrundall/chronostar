@@ -525,7 +525,7 @@ class GroupFitter:
 
         return init_pars, init_sdev
 
-    def fit_groups(self, nfixed, nfree, bg=False):
+    def fit_groups(self, nfixed, nfree, bg=False, pool=None):
         # setting up initial params from intial conditions
         init_pars, init_sdev = self.generate_parameter_list(nfixed, nfree, bg)
         assert(len(init_pars) == len(init_sdev))
@@ -538,7 +538,7 @@ class GroupFitter:
         print("In fit_groups")
         #pdb.set_trace()
         self.sampler = emcee.EnsembleSampler(self.NWALKERS, self.NPAR,
-                                             self.lnprob)
+                                             self.lnprob, pool=pool)
 
         pos, lnprob, state = self.sampler.run_mcmc(p0, self.burnin)
 
