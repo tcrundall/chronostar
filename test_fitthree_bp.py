@@ -3,23 +3,18 @@
 
 from __future__ import print_function, division
 
+#import matplotlib
+#matplotlib.use('Agg')		  # sposed to stop plt.savefig() from displaying
 import numpy as np
 import chronostar.fit_group as fit_group
-import astropy.io.fits as pyfits          # for reading in .fts files
-import pickle                             # for reading in .pkl files
+import astropy.io.fits as pyfits  # for reading in .fts files
+import pickle                     # for reading in .pkl files
 import pdb
-try:
-    import corner                             # for producing the corner plots :O
-    using_corner = True
-except:
-    print("No corner plots on Raijin... :(")
-    using_corner = False
-
-import argparse                           # for calling script with arguments
-import matplotlib.pyplot as plt           # for plotting the lnprob
-
-from emcee.utils import MPIPool
+import argparse                   # for calling script with arguments
+import corner                     # for producing the corner plots :O
+import matplotlib.pyplot as plt   # for plotting the lnprob
 import sys
+from emcee.utils import MPIPool
 
 """
     the main testing bed of fit_group, utilising the beta pic moving group
@@ -47,6 +42,7 @@ parser.add_argument('-b', '--burnin', dest = 'b', default=2000,
 args = parser.parse_args()
 nsteps = int(args.p)
 burnin = int(args.b)
+ndims = 43
 #if args.t:
 #    time = float(args.t)
 #    istime = True
@@ -55,7 +51,7 @@ burnin = int(args.b)
 #pdb.set_trace()
 bgdens = False
 
-filestem = "bp_three_"+str(nsteps)+"_"+str(burnin)
+filestem = "partemp_bp_three_"+str(nsteps)+"_"+str(burnin)
 
 def lnprob_plots(sampler):
     plt.plot(sampler.lnprobability.T)
@@ -190,7 +186,7 @@ big_beta_group = np.array([ -25.17, 45.34, 13.39, 1.01, -15.37, 2.20,    \
                              -0.23, -0.09, 0.14])
 
 #taking the top 1% best lnprob fits and taking the medians
-big_beta_group - np.array([  -23.57, 40.88, 9.51, 1.16, -15.60, 1.92,\
+big_beta_group = np.array([  -23.57, 40.88, 9.51, 1.16, -15.60, 1.92,\
                              27.45, 44.64, 28.66,\
                              31.48,\
                              0.27, 0.10, 0.55,\
@@ -225,6 +221,8 @@ init_sdev = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 1, 0.05, \
                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 1, 0.05, \
                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01])
 
+print("About to set up mpi")
+
 using_mpi = True
 try:
     # Initialize the MPI-based pool used for parallelization.
@@ -242,10 +240,11 @@ if using_mpi:
 else:
     print("MPI available for this code! - call this with e.g. mpirun -np 16 python test_fitthree_bp.py")
 
+print("About to run sampler")
 
 #pdb.set_trace()
 sampler = fit_group.fit_three_groups(star_params, init_mod=big_beta_group,\
-    nwalkers=100,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
+    nwalkers=100,nchain=nsteps, nburn=burnin, return_sampler=True,pool=pool,\
     init_sdev = init_sdev,
     use_swig=True, plotit=False)
 
@@ -253,25 +252,27 @@ if using_mpi:
     # Close the processes
     pool.close()
 
-best_ix = np.argmax(sampler.flatlnprobability)
-fitted_group = sampler.flatchain[best_ix]
+print("Closed MPI processes")
+
+flatlnprob = np.reshape(sampler.lnprobability, (-1, nsteps))
+best_ix = np.argmax(flatlnprob)
+flatchain = np.reshape(sampler.chain, (-1, ndims))
+fitted_group = flatchain[best_ix]
+
+print("About to dump data")
 
 #extracting interesting parameters
 #chain = sampler.flatchain
-#xyzs = chain[:,0:3]
-#dxyzs = chain[:,6:9]
-#weight_and_age = chain[:,-2:]
 
-#chain_of_interest = np.hstack((np.hstack((xyzs, dxyzs)), weight_and_age)) 
-lnprob_plots(sampler)
+#pdb.set_trace()
+#lnprob_plots(sampler)
 
-overlaps_tuple = fit_group.lnprob_three_groups(fitted_group, star_params, return_overlaps=True)
-all_stars = star_params["stars"]["Name1"]
-#calculate_membership(all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
+#overlaps_tuple = fit_group.lnprob_three_groups(fitted_group, star_params, return_overlaps=True)
+#all_stars = star_params["stars"]["Name1"]
 
 #age_T = np.reshape(age, (600,1))
 #np.hstack((xyz, age_T))
 
-corner_plots(sampler.flatchain, big_beta_group)
-write_results(sampler.flatchain, all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
 pickle.dump((sampler.chain, sampler.lnprobability), open("logs/" + filestem + ".pkl", 'w'))
+#corner_plots(flatchain, big_beta_group)
+#write_results(sampler.flatchain, all_stars, overlaps_tuple[0], overlaps_tuple[1], overlaps_tuple[2])
