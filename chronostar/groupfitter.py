@@ -552,213 +552,28 @@ class GroupFitter:
                                                   rstate0=state)
         self.samples = self.sampler.flatchain
 
-        # Dumping sampler to a pickle file for later use
-        pickle.dump((self.sampler.chain, self.sampler.lnprobability, pos,
-                      nfree, nfixed),
-                     open("logs/" + self.FILE_STEM + ".pkl", 'w'))
-
-        #Best Model
-        best_ix = np.argmax(self.sampler.flatlnprobability)
-        self.best_model = self.samples[best_ix]
-        print('[' + ",".join(["{0:7.3f}".format(f)\
-                for f in self.sampler.flatchain[best_ix]]) + ']')
-
-        self.update_best_model(self.best_model,
-                               self.sampler.flatlnprobability[best_ix])
-
-        # Displaying the trackers of when hard limits are reached
-        print("Bad priors")
-        print("Amps: {}\nAges: {}\nCorrs: {}\nStds: {}\nEigs: {}\nDets: {}"\
-                .format( self.bad_amps, self.bad_ages, self.bad_corrs,
-                         self.bad_stds, self.bad_eigs, self.bad_dets))
-        print("Success: {}".format(self.success))
-        
-        tidied_samples = self.tidy_samples(self.samples, self.NFREE_GROUPS,
-                                           self.NFIXED_GROUPS)
-
-        # self.write_results()
-        if (self.PLOTIT):
-            self.make_plots(tidied_samples)
-
-    def tidy_samples(self, samples, nfree, nfixed):
-        """
-        Will eventually also convert 1/stds to stds.
-
-        Appends the final derived 'weight' parameter
-        Permutes the parameters for each free group such that
-        the sample is as close as possible to the "best sample"
-
-        Parameters
-        ----------
-        samples: [(nwalkers*nsteps) x nparams] array of floats
-            the flattened array of samples
-        """
-        # Making room for final weight
-        tidied_samples = np.zeros((np.shape(samples)[0],
-                                   np.shape(samples)[1]+1))
-        # Deriving the remaining weight
-        ngroups = nfree + nfixed
-        for i, sample in enumerate(samples):
-            weights = sample[-(ngroups-1):]
-            derived_weight = 1 - np.sum(weights)
-            tidied_samples[i] = np.append(sample, derived_weight)
-
-        best_ix = np.argmax(self.sampler.flatlnprobability)
-        best_sample = tidied_samples[best_ix]
-
-        for i, sample in enumerate(tidied_samples):
-            tidied_sample = self.permute(sample, best_sample, nfree, nfixed)
-            try:
-                tidied_samples[i] = tidied_sample
-            except:
-                pdb.set_trace()
-
-        return tidied_samples
-
-    def permute(self, sample, best_sample, nfree, nfixed):
-        """
-        Takes a sample and the best_sample (the one with the highest
-        lnprob) and returns the perumtation of sample which is the closest
-        to best_sample.
-
-        Input samples should already have derived weight appeneded.
-
-        The reason this is necessary is because, if sample has more than one
-        free group, there is nothing distinguishing which group is character-
-        ised by which parameters
-        """
-        npars_wo_amp = 14
-        assert(np.size(best_sample) == npars_wo_amp * nfree + (nfree + nfixed))
-        free_groups = np.reshape(  sample[:npars_wo_amp * nfree],(nfree,-1))
-        best_fgs = np.reshape(best_sample[:npars_wo_amp * nfree],(nfree,-1))
-
-        if (nfixed == 0):
-            free_amps   = sample[-nfree:]
-            fixed_amps  = sample[:0]        # an empty array
-            best_fas = best_sample[-nfree:]
-            best_xas = best_sample[:0]      # an empty array
-        else:
-            free_amps   = sample[-(nfree + nfixed):-nfixed]
-            fixed_amps  = sample[-nfixed:]
-            best_fas = best_sample[-(nfree + nfixed):-nfixed]
-            best_xas = best_sample[-nfixed:] 
-
-        # try using the np.fromfunction here?
-        Dmat = np.zeros((nfree,nfree))
-        for i in range(nfree):
-            for j in range(nfree):
-                Dmat[i,j] = self.group_metric(free_groups[i], best_fgs[j])
-
-        ps = [p for p in multiset_permutations(range(nfree))]
-        traces = [np.trace(Dmat[p]) for p in ps]
-        best_perm = ps[np.argmin(traces)]
-
-        # ... should I rearrange the layout of the parameters?
-        perm_sample = np.append(np.append(free_groups[best_perm],
-                                          free_amps[best_perm]),
-                                fixed_amps)
-        try:
-            assert(np.size(perm_sample) == np.size(sample)),\
-                    "Wrong size...\n{}\n{}".format(sample, perm_sample)
-        except:
-            pdb.set_trace()
-        
-        return perm_sample
-
-    def group_metric(self, group1, group2):
-        means1 = group1[:6];      means2 = group2[:6]
-        stds1  = 1/group1[6:10];  stds2  = 1/group2[6:10]
-        corrs1 = group1[10:13];   corrs2 = group2[10:13]
-        age1   = group1[13];      age2   = group2[13]
-
-        total_dist = 0
-        for i in range(3):
-            total_dist += (means1[i] - means2[i])**2 /\
-                            (stds1[i]**2 + stds2[i]**2)
-
-        for i in range(3,6):
-            total_dist += (means1[i] - means2[i])**2 /\
-                            (stds1[3]**2 + stds2[3]**2)
-
-        for i in range(4):
-            total_dist += (np.log(stds1[i] / stds2[i]))**2
-
-        for i in range(3):
-            total_dist += (corrs1[i] - corrs2[i])**2
-
-        total_dist += (np.log(age1/age2))**2
-
-        return np.sqrt(total_dist)
-
-    def write_results(self):
-        """
-        not yet made generic... not even being called atm
-        """
-        with open("logs/"+self.FILE_STEM+".log", 'w') as f:
-            f.write("Log of output from bp with {} burn-in steps," ++\
-                    "{} sampling steps,\n".format(self.burnin, self.steps) )
-            #f.write("Using starting parameters:\n{}".format(str(self.GROUPS)))
-            f.write("\n")
-
-            labels = self.generate_labels(self.NFREE_GROUPS,
-                                          self.NFIXED_GROUPS)
-
-            bf = self.calc_best_params()
-            f.write(" _______ BETA PIC MOVING GROUP ________" ++
-                       " {starting parameters}\n")
-            for i in range(len(labels)):
-                f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\t\t\t{:>7.2f}\n"\
-                             .format( labels[i], bf[i][0], bf[i][1], bf[i][2],
-                                      self.GROUPS[0].params[i]) )
-
-    def calc_best_params(self):
-        return np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-                        zip(*np.percentile(self.samples, [16,50,84], axis=0))))
-
-    def make_plots(self, samples):
-        """
-        Not yet made generic
-        """
-        plt.plot(self.sampler.lnprobability.T)
-        plt.title("Lnprob of walkers")
-        plt.savefig("plots/lnprob_{}.png".format(self.FILE_STEM))
-        plt.clf()
-
-        #pdb.set_trace()
-
-        # since this function is not yet generic w.r.t. number of groups
-        # etc, I've simply hardcoded it to only display the 
-        # first 14 parameter fits
-        limit = 14
-        best_ix = np.argmax(self.sampler.flatlnprobability)
-        best_sample = samples[best_ix]
-        labels = self.generate_labels(self.NFREE_GROUPS, self.NFIXED_GROUPS)
-        fig = corner.corner(samples[:,:limit], truths=best_sample[:limit],
-                             labels=labels[:limit])
-        fig.savefig("plots/corner_"+self.FILE_STEM+".png")
-
-    def generate_labels(self, nfree, nfixed):
-        """
-        Dynamically generates a set of labels for an arbitrary number
-        of free and fixed groups.
-        e.g. 1 free and 1 fixed:
-        ["X0", "Y0", "Z0', ...
-        ... "age0", "weight0", "weight1"]
-        weight's will all appear consecutively at the very end. Note that
-        there will be a "weight" for the derived weight for the final group
-        """
-        base_label = ["X", "Y", "Z", "U", "V", "W",
-                      "dX", "dY", "dZ", "dVel",
-                      "xCorr", "yCorr", "zCorr", "age"]
-
-        labels = []
-        for i in range(nfree):
-            labels += [lb + str(i) for lb in base_label]
-
-        # includes a label for the derived weight
-        for i in range(nfree + nfixed):
-            labels += ["weight" + str(i)]
-        return labels
+#        # Dumping sampler to a pickle file for later use
+#        pickle.dump((self.sampler.chain, self.sampler.lnprobability, pos,
+#                      nfree, nfixed),
+#                     open("logs/" + self.FILE_STEM + ".pkl", 'w'))
+#
+#        #Best Model
+#        best_ix = np.argmax(self.sampler.flatlnprobability)
+#        self.best_model = self.samples[best_ix]
+#        print('[' + ",".join(["{0:7.3f}".format(f)\
+#                for f in self.sampler.flatchain[best_ix]]) + ']')
+#
+#        self.update_best_model(self.best_model,
+#                               self.sampler.flatlnprobability[best_ix])
+#
+#        # Displaying the trackers of when hard limits are reached
+#        print("Bad priors")
+#        print("Amps: {}\nAges: {}\nCorrs: {}\nStds: {}\nEigs: {}\nDets: {}"\
+#                .format( self.bad_amps, self.bad_ages, self.bad_corrs,
+#                         self.bad_stds, self.bad_eigs, self.bad_dets))
+#        print("Success: {}".format(self.success))
+#        
+#        tidied_samples = self.tidy_samples(self.samples, self.NFREE_GROUPS,
 
     def interp_icov(self, target_time):
         """
@@ -776,15 +591,15 @@ class GroupFitter:
                                 self.STAR_ICOV_DETS[:,ix0+1]*frac
         return interp_mns, interp_icovs, interp_icov_dets
 
-    def update_best_model(self, best_model, best_lnprob):
-        file_stem = "results/bp_old_best_model_{}_{}"\
-                        .format(self.NGROUPS, self.NFIXED_GROUPS)
-        try:
-            old_best_lnprob, old_best_model = pickle.load(open(file_stem))
-            print("Checking old best")
-            if (old_best_lnprob < best_lnprob):
-                print("Updating with new best: {}".format(best_lnprob))
-                pickle.dump((best_lnprob, best_model), open(file_stem, 'w'))
-        except:
-            print("Storing new best for the first time")
-            pickle.dump((best_lnprob, best_model), open(file_stem, 'w'))
+    # def update_best_model(self, best_model, best_lnprob):
+    #     file_stem = "results/bp_old_best_model_{}_{}"\
+    #                     .format(self.NGROUPS, self.NFIXED_GROUPS)
+    #     try:
+    #         old_best_lnprob, old_best_model = pickle.load(open(file_stem))
+    #         print("Checking old best")
+    #         if (old_best_lnprob < best_lnprob):
+    #             print("Updating with new best: {}".format(best_lnprob))
+    #             pickle.dump((best_lnprob, best_model), open(file_stem, 'w'))
+    #     except:
+    #         print("Storing new best for the first time")
+    #         pickle.dump((best_lnprob, best_model), open(file_stem, 'w'))
