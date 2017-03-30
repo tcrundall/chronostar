@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sympy.utilities.iterables import multiset_permutations
 from emcee.utils import MPIPool
+import sys          # used for mpi things
+import pickle
 
 params = [-6.574, 66.560, 23.436, -1.327,-11.427, -6.527,\
         10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846]
@@ -45,10 +47,40 @@ fixed_bg_group= [-15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
 
 print("Initialising myFitter...")
 if not test_run:
-    result = groupfitter.fit_groups(burnin=burnin, steps=steps, nfixed=nfixed,
-                           nfree=nfree, fixed_groups=nfixed*[fixed_bg_group],
-                           infile=infile)
-    #result = groupfitter.fit_groups(nfixed, nfree)
+    print("About to set up mpi")
+
+    using_mpi = True
+    try:
+        # Initialize the MPI-based pool used for parallelization.
+        pool = MPIPool()
+    except:
+        print("Either MPI doesn't seem to be installed or you aren't"
+              "running with MPI... ")
+        using_mpi = False
+        pool=None
+
+    if using_mpi:
+        if not pool.is_master():
+            # Wait for instructions from the master process.
+            pool.wait()
+            sys.exit(0)
+    else:
+        print("MPI available for this code! - call this with"
+              "e.g. mpirun -np 16 python test_fitthree_bp.py")
+
+    samples, pos, lnprob = groupfitter.fit_groups(
+                            burnin=burnin, steps=steps, nfixed=nfixed,
+                            nfree=nfree, fixed_groups=nfixed*[fixed_bg_group],
+                            infile=infile, pool=pool)
+
+    if using_mpi:
+        # Close the processes
+        pool.close()
+
+    file_stem = "{}_{}_{}_{}".format(nfree, nfixed, burnin, steps)
+    pickle.dump((samples, pos, lnprob), open("logs/"+file_stem+".pkl", 'w'))
+
+    print("Closed MPI processes")
 
 
 if (test_run):

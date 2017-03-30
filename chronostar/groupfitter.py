@@ -167,42 +167,18 @@ class Group(MVGaussian):
 
 def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
              fixed_groups=[],
-             infile='results/bp_TGAS2_traceback_save.pkl'):
+             infile='results/bp_TGAS2_traceback_save.pkl', pool=None):
     """
     DONE
+    returns:
+        samples - [NWALKERS x NSTEPS x NPARS] array of all samples
+        pos     - the final position of walkers
+        lnprob  - [NWALKERS x NSTEPS] array of lnprobablities at each step
     """
     # Data variables
-#   FILE_STEM = None
     NDIM    = 6       # number of dimensions for each 'measured' star
-#   NGROUPS = None       # number of groups in the data
-#   NFIXED_GROUPS = 0
-#   NFREE_GROUPS  = 0
     FREE_GROUPS   = []
     FIXED_GROUPS  = []
-#    NSTARS      = None
-#    STAR_MNS    = None   # a [NSTARSxNTIMESx6] matrix
-#    STAR_ICOVS  = None   # a [NSTARSxNTIMESx6x6] matrix
-#    STAR_ICOV_DETS = None  # a [NSTARS*NTIMES] matrix
-#    MAX_AGE     = None   # the furthest age being tracced back to
-
-    # emcee parameters
-
-    # Fitting variables
-#   samples    = None
-#   means      = None  # modelled means [a NGROUPSx6 matrix]
-#   cov_mats   = None # modelled cov_matrices [a NGROUPSx6x6 matrix]
-#   weights    = None # the amplitude of each gaussian [a NGROUP matrix]
-#   best_model = None # best fitting group parameters, same order as 'pars'
-
-    # Debugging trackers
-#   bad_amps  = 0
-#   bad_ages  = 0
-#   bad_corrs = 0
-#   bad_stds  = 0
-#   bad_eigs  = 0
-#   bad_dets  = 0
-#   success   = 0
-
     # set key values and flags
     FILE_STEM = "gf_bp_{}_{}_{}_{}".format(nfixed, nfree,
                                                 burnin, steps)
@@ -230,9 +206,11 @@ def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
 #    for i in range(NFREE_GROUPS):
 #        FREE_GROUPS[0] = Group(init_group_params, 1.0)
 
-    run_fit(burnin, steps, nfixed, nfree, FIXED_GROUPS, STAR_PARAMS,
-            bg=False, pool=None)
+    samples, pos, lnprob =\
+             run_fit(burnin, steps, nfixed, nfree, FIXED_GROUPS, STAR_PARAMS,
+                     bg=False, pool=pool)
 
+    return samples, pos, lnprob
     # BROKEN!!! NOT ABLE TO DYNAMICALLY CHECK DIFFERENT NUMBER OF GROUPS ATM
     # a way to try and capitalise on groups fitted in the past
     # saved_best = "results/bp_old_best_model_{}_{}".format(NGROUPS,
@@ -560,7 +538,12 @@ def run_fit(burnin, steps, nfixed, nfree,
     sampler.reset()
     pos,lnprob,rstate = sampler.run_mcmc(pos, steps,
                                               rstate0=state)
-    samples = sampler.flatchain
+    samples = sampler.chain
+
+    # samples is shape [NWALKERS x NSTEPS x NPARS]
+    # lnprob is shape [NWALKERS x NSTEPS]
+    # pos is the final position of walkers
+    return samples, pos, lnprob
 
 def interp_icov(target_time, STAR_PARAMS):
     """
