@@ -19,6 +19,65 @@ flatlnprob = np.reshape(lnprob, (nwalkers*nsteps))
 
 assert(nfree == 3 and nfixed == 2)
 
+# Testing group_metric
+good_pars = np.array([
+              [0,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
+              [10,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
+              [10,10,10,10,10,10, 1,1,1,1, 0.5,0.5,0.5, 15, 0.5],
+              [20,10,10,10,10,10, 1,1,1,1, -0.5,0.5,0.5, 15, 0.5]
+            ])
+
+bad_pars = [ [0,0,0,0,0,0,-1,1,1,1,0,0,0,10,0.5], # negative dX
+              [10,10,10,10,10,10,1,1,1,1,1.5,0.5,0.5, 15, 0.5],# xycorr > 1
+              [0,0,0,0,0,0,1,1,1,1, 0,0,0,10,1.5], # amplitude > 1
+              [10,10,10,10,10,10,1,1,1,1,0.5,0.5,0.5,-15,0.5]# negative age
+             ]
+assert(group_metric(good_pars[0], good_pars[0]) == 0.0),\
+        group_metric(good_pars[0], good_pars[0])
+assert(group_metric(good_pars[1], good_pars[1]) == 0.0),\
+        group_metric(good_pars[1], good_pars[1])
+ngood_pars = 4
+results = np.zeros((4,4))
+for i in range(4):
+    for j in range(4):
+        results[i,j] = group_metric(good_pars[i], good_pars[j])
+
+# checking triangle inequality
+for i in range(4):
+    for j in range(i,4):
+        for k in range(4):
+            if (k != j and k != i):
+                assert (results[i,j] <= results[i,k] + results[k,j]),\
+                        "i: {}, j: {}, k: {}\n".format(i,j,k) + \
+                        "{} , {}, {}".format(results[i,j], results[i,k],
+                                             results[k,j])
+
+# testing permute
+# groups without amplitude
+nfree_test = 4
+nfixed_test = 2
+best_groups = np.array([
+              [0,0,0,0,0,0, 1,1,1,1, 0,0,0, 10],
+              [10,0,0,0,0,0, 1,1,1,1, 0,0,0, 10],
+              [10,10,10,10,10,10, 1,1,1,1, 0.5,0.5,0.5, 15],
+              [20,10,10,10,10,10, 1,1,1,1, -0.5,0.5,0.5, 15]
+            ])
+
+# generate 6 amplitudes between 0 and 0.2
+# note that these samples won't satisfy all amplitudes summing to 1
+free_amps = np.random.rand(nfree_test)/5
+fixed_amps = np.random.rand(nfixed_test)/5
+best_sample = np.append(np.append(best_groups, free_amps), fixed_amps)
+ps = [p for p in multiset_permutations(range(nfree_test))]
+
+# for each permutation, confirm that permute() retrieves the best_sample
+for p in ps:
+    permuted_sample = np.append(
+                        np.append(best_groups[p], free_amps[p]),
+                        fixed_amps)
+    res = permute(permuted_sample, best_sample, nfree_test, nfixed_test)
+    assert(np.array_equal(res,best_sample))
+
 file_stem = "{}_{}_{}_{}".format(nfree, nfixed, nsteps, nwalkers)
 
 realigned_samples, permute_count = realign_samples(flatchain, flatlnprob,

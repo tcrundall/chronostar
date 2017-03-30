@@ -92,7 +92,7 @@ def permute(sample, best_sample, nfree, nfixed):
     lnprob) and returns the perumtation of sample which is the closest
     to best_sample.
 
-    Input samples should already have derived weight appeneded.
+    ***Input samples must already have derived weight appended***
 
     The reason this is necessary is because, if sample has more than one
     free group, there is nothing distinguishing which group is character-
@@ -105,7 +105,6 @@ def permute(sample, best_sample, nfree, nfixed):
     # corresponding to a specific group
     free_groups = np.reshape(  sample[:npars_wo_amp * nfree],(nfree,-1))
     best_fgs = np.reshape(best_sample[:npars_wo_amp * nfree],(nfree,-1))
-
     if (nfixed != 0):
         free_amps   = sample[-(nfree + nfixed):-nfixed]
         fixed_amps  = sample[-nfixed:]

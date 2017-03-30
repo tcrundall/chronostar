@@ -20,6 +20,8 @@ To use MPI, try:
 mpirun -np 2 python fit_group.py
 
 Note that this *doesn't* work yet due to a "pickling" problem.
+
+Must be procedural for MPI to work
 """
 
 from __future__ import print_function, division
@@ -487,12 +489,16 @@ class GroupFitter:
         #print("Succeeded")
         return lp + self.lnlike(pars)
 
-    def generate_parameter_list(self, nfixed, nfree, bg):
+    def generate_parameter_list(self, nfixed, nfree, bg=False):
         """
             Generates the initial sample around which the walkers will
             be initialised. This function uses the number of free groups
             and number of fixed groups to dynamically generate a parameter
             list of appropriate length
+    
+            bg: Bool, informs the fitter if we are fitting free groups
+                      to the background. If we are, the ages of (all) free
+                      groups will be fixed at 0.
         """
         # all groups fixed at age = 0
         if nfixed > self.NFIXED_GROUPS:

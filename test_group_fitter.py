@@ -49,7 +49,8 @@ if not test_run:
     myFitter = GroupFitter(burnin=burnin, steps=steps, nfixed=nfixed, infile=infile,
                            nfree=nfree, fixed_groups=nfixed*[fixed_bg_group])
     # result could be filename of samples
-    result = myFitter.fit_groups(nfixed, nfree, pool=pool)
+    #result = myFitter.fit_groups(nfixed, nfree, pool=pool)
+    result = myFitter.fit_groups(nfixed, nfree)
 
 if (test_run):
     myTestFitter = GroupFitter(burnin=10, steps=10, nfixed=1, nfree=1,
@@ -80,28 +81,28 @@ if (test_run):
     
     print("lnprior seems fine...")
 
-    # testing group_metric
-    print("Testing group_metric") 
-    assert(myTestFitter.group_metric(good_pars[0], good_pars[0]) == 0.0),\
-            myTestFitter.group_metric(good_pars[0], good_pars[0])    
-    assert(myTestFitter.group_metric(good_pars[1], good_pars[1]) == 0.0),\
-            myTestFitter.group_metric(good_pars[1], good_pars[1])
-    ngood_pars = 4
-    results = np.zeros((4,4))
-    for i in range(4):
-        for j in range(4):
-            results[i,j] = myTestFitter.group_metric(good_pars[i],
-                                                     good_pars[j])
-
-    # checking triangle inequality
-    for i in range(4):
-        for j in range(i,4):
-            for k in range(4):
-                if (k != j and k != i):
-                    assert (results[i,j] <= results[i,k] + results[k,j]),\
-                            "i: {}, j: {}, k: {}\n".format(i,j,k) + \
-                            "{} , {}, {}".format(results[i,j], results[i,k],
-                                                 results[k,j])
+#    # testing group_metric
+#    print("Testing group_metric") 
+#    assert(myTestFitter.group_metric(good_pars[0], good_pars[0]) == 0.0),\
+#            myTestFitter.group_metric(good_pars[0], good_pars[0])    
+#    assert(myTestFitter.group_metric(good_pars[1], good_pars[1]) == 0.0),\
+#            myTestFitter.group_metric(good_pars[1], good_pars[1])
+#    ngood_pars = 4
+#    results = np.zeros((4,4))
+#    for i in range(4):
+#        for j in range(4):
+#            results[i,j] = myTestFitter.group_metric(good_pars[i],
+#                                                     good_pars[j])
+#
+#    # checking triangle inequality
+#    for i in range(4):
+#        for j in range(i,4):
+#            for k in range(4):
+#                if (k != j and k != i):
+#                    assert (results[i,j] <= results[i,k] + results[k,j]),\
+#                            "i: {}, j: {}, k: {}\n".format(i,j,k) + \
+#                            "{} , {}, {}".format(results[i,j], results[i,k],
+#                                                 results[k,j])
 
     #myAnalyser = SamplerAnalyser(result) # I could initialise an Analyser
                                           # object to investigate the 
@@ -123,7 +124,8 @@ if (test_run):
             nfixed = i
             print("-- {} fixed and {} free".format(nfixed, nfree))
             res_pars, res_sdev = myTestFitter.\
-                                    generate_parameter_list(nfixed,nfree)
+                                    generate_parameter_list(nfixed,nfree,
+                                                            bg=False)
             res_len = len(res_pars)
             if nfixed > max_nfixed:
                 nfixed = max_nfixed
@@ -136,29 +138,29 @@ if (test_run):
     if not debugging:
         result = myTestFitter.fit_groups(nfixed, 1) # result could be filename of samples
 
-    print("Testing permute")
-    
-    # groups without amplitude
-    nfree = 4
-    nfixed = 2
-    best_groups = np.array([
-                  [0,0,0,0,0,0, 1,1,1,1, 0,0,0, 10],
-                  [10,0,0,0,0,0, 1,1,1,1, 0,0,0, 10],
-                  [10,10,10,10,10,10, 1,1,1,1, 0.5,0.5,0.5, 15],
-                  [20,10,10,10,10,10, 1,1,1,1, -0.5,0.5,0.5, 15]
-                ])
-
-    # generate 5 amplitudes between 0 and 0.2
-    free_amps = np.random.rand(4)/5
-    fixed_amps = np.random.rand(1)/5
-    best_sample = np.append(np.append(best_groups, free_amps), fixed_amps)
-    ps = [p for p in multiset_permutations(range(nfree))]
-
-    # for each permutation, confirm that permute() retrieves the best_sample
-    for p in ps:
-        permuted_sample = np.append(
-                            np.append(best_groups[p], free_amps[p]),
-                            fixed_amps)
-        res = myTestFitter.permute(permuted_sample, best_sample, nfree, nfixed)
-        assert(np.array_equal(res,best_sample))
+#    print("Testing permute")
+#    
+#    # groups without amplitude
+#    nfree = 4
+#    nfixed = 2
+#    best_groups = np.array([
+#                  [0,0,0,0,0,0, 1,1,1,1, 0,0,0, 10],
+#                  [10,0,0,0,0,0, 1,1,1,1, 0,0,0, 10],
+#                  [10,10,10,10,10,10, 1,1,1,1, 0.5,0.5,0.5, 15],
+#                  [20,10,10,10,10,10, 1,1,1,1, -0.5,0.5,0.5, 15]
+#                ])
+#
+#    # generate 5 amplitudes between 0 and 0.2
+#    free_amps = np.random.rand(4)/5
+#    fixed_amps = np.random.rand(1)/5
+#    best_sample = np.append(np.append(best_groups, free_amps), fixed_amps)
+#    ps = [p for p in multiset_permutations(range(nfree))]
+#
+#    # for each permutation, confirm that permute() retrieves the best_sample
+#    for p in ps:
+#        permuted_sample = np.append(
+#                            np.append(best_groups[p], free_amps[p]),
+#                            fixed_amps)
+#        res = myTestFitter.permute(permuted_sample, best_sample, nfree, nfixed)
+#        assert(np.array_equal(res,best_sample))
 
