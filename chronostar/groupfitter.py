@@ -432,6 +432,10 @@ def lnlike(pars, NFREE_GROUPS, NFIXED_GROUPS, FIXED_GROUPS, star_params):
                                            group_icov_det,
                                            star_icovs, star_mns,
                                            star_icov_dets, NSTARS) 
+
+	# very nasty hack to replace any 'nan' overlaps with a flat 0
+	#   ... we'll see if this is fine
+	overlaps[i][np.where(np.isnan(overlaps[i]))] = 0.0
         try:
             assert(np.isfinite(np.sum(overlaps[i])))
         except:
