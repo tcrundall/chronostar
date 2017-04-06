@@ -286,8 +286,8 @@ def generate_param_mask(nfree, nfixed, means, stds, corrs, ages, weights):
     return np.array(param_mask)
 
 def plot_corner(nfree, nfixed, converted_samples, lnprob,
-                means=False, stds=False, corrs=False,
-                ages=False,  weights=False, tstamp=None):
+                means=False, stds=False,    corrs=False,
+                ages=False,  weights=False, tstamp='nostamp'):
     """
     Generate corner plots with dynamically generated parameter list
     e.g. ONly plotting stds or ages, or weights, or any combinations
@@ -310,10 +310,10 @@ def plot_corner(nfree, nfixed, converted_samples, lnprob,
                         truths = best_sample[np.where(param_mask)],
                         labels =      labels[np.where(param_mask)] )
 
-    file_stem = "{}_corner_{}_{}_{}".format(tstamp, nfree, nfixed,
-                                            lnprob.shape[1])
+    file_name = "plots/{}_corner_{}_{}_{}.png".format(tstamp, nfree, nfixed,
+                                                      lnprob.shape[1])
 
-    fig.savefig("plots/" + file_stem + ".png")
+    fig.savefig(file_name)
     fig.clf()
     return 0
 
