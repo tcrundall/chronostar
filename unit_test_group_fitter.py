@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+#!/usr/bin/env python 
 from chronostar.groupfitter import Group
 import chronostar.groupfitter as groupfitter
 import argparse
@@ -10,6 +9,8 @@ from sympy.utilities.iterables import multiset_permutations
 from emcee.utils import MPIPool
 import sys          # used for mpi things
 import pickle
+
+print("___ Testing chronostar/groupfitter.py ___")
 
 params = [-6.574, 66.560, 23.436, -1.327,-11.427, -6.527,\
         10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846]
@@ -25,16 +26,17 @@ parser.add_argument('-f', '--free', dest = 'free', default=1,
 parser.add_argument('-x', '--fixed', dest = 'fixed', default=1,
                                     help='[1] number of fixed groups')
 parser.add_argument('-d', '--debug', dest = 'd', action='store_true')
-parser.add_argument('-t', '--test', dest = 't', action='store_true')
+parser.add_argument('-r', '--run', dest = 'r', action='store_true')
 parser.add_argument('-g', '--background', dest = 'g', action='store_true')
-parser.add_argument('-i', '--input', dest='infile', default='results/bp_TGAS2_traceback_save.pkl')
+parser.add_argument('-i', '--input', dest='infile',
+                    default='results/bp_TGAS2_traceback_save.pkl')
 args = parser.parse_args() 
 burnin = int(args.b) 
 steps = int(args.p) 
 nfree = int(args.free)
 nfixed = int(args.fixed)
 debugging = args.d
-test_run  = args.t
+test_run = args.r
 background = args.g
 infile=args.infile
 
@@ -47,8 +49,7 @@ fixed_bg_group= [-15.41, -17.22, -21.32, -4.27, -14.39, -5.83,
                  -0.21, -0.09, 0.12,
                   0.0]
 
-print("Initialising myFitter...")
-if not test_run:
+if test_run:
     print("About to set up mpi")
 
     using_mpi = True
@@ -84,18 +85,25 @@ if not test_run:
     print("Closed MPI processes")
 
 
-if (test_run):
-    myTestFitter = GroupFitter(burnin=10, steps=10, nfixed=1, nfree=1,
-                        fixed_groups = [fixed_bg_group])
-    print("About to test lnprior")
+if not test_run:
+#   groupfitter = groupfitter.fit_groups(
+#       burnin=10, steps=10, nfixed=1, nfree=1,
+#       fixed_groups = [fixed_bg_group]
+#       )
+    print("Testing lnprior()")
+     
+    lp_nfree = 1
+    lp_nfixed = 1
+    lp_max_age = 20
     
     # Testing lnprior
+    # dummy pars are for 1 free group and 1 fixed group
     good_pars = np.array([
-                  [0,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
-                  [10,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
-                  [10,10,10,10,10,10, 1,1,1,1, 0.5,0.5,0.5, 15, 0.5],
-                  [20,10,10,10,10,10, 1,1,1,1, -0.5,0.5,0.5, 15, 0.5]
-                ])
+        [0,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
+        [10,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
+        [10,10,10,10,10,10, 1,1,1,1, 0.5,0.5,0.5, 15, 0.5],
+        [20,10,10,10,10,10, 1,1,1,1, -0.5,0.5,0.5, 15, 0.5]
+        ])
     
     bad_pars = [ [0,0,0,0,0,0,-1,1,1,1,0,0,0,10,0.5], # negative dX
                   [10,10,10,10,10,10,1,1,1,1,1.5,0.5,0.5, 15, 0.5],# xycorr > 1
@@ -105,32 +113,25 @@ if (test_run):
     
     #pdb.set_trace()
     for i in range(2):
-        assert(myTestFitter.lnprior(good_pars[i]) == 0)
-    
+        res = groupfitter.lnprior(good_pars[i], lp_nfree, lp_nfixed, lp_max_age)
+        assert(res == 0)
     
     for pars in bad_pars:
-        assert(myTestFitter.lnprior(pars) == -np.inf), "par: {}".format(pars)
+        res = groupfitter.lnprior(pars, lp_nfree, lp_nfixed, lp_max_age)
+        assert(res == -np.inf), "par: {}, res: {}".format(pars, res)
     
-    print("lnprior seems fine...")
-
     free_group_npars = 15
     
-    max_nfixed = nfixed
+    #max_nfixed = nfixed
     print("Testing generate_parameter_list()")
-    for i in range(1,3):
-        for nfree in range(1,3):
-            nfixed = i
-            print("-- {} fixed and {} free".format(nfixed, nfree))
-            res_pars, res_sdev = myTestFitter.\
-                                    generate_parameter_list(nfixed,nfree,
-                                                            bg=False)
+    for gpl_nfixed in range(1,5):
+        for gpl_nfree in range(1,5):
+            res_pars, res_sdev, nwalkers  = groupfitter.generate_parameter_list(
+                gpl_nfixed, gpl_nfree, bg=False
+                )
             res_len = len(res_pars)
-            if nfixed > max_nfixed:
-                nfixed = max_nfixed
-            expected = free_group_npars * nfree + nfixed - 1
-            assert(res_len ==  expected), "*** Expected: {}, got: {}".format(expected, res_len)
-    
-    if not debugging:
-        # result could be filename of samples
-        result = myTestFitter.fit_groups(nfixed, 1) 
+            expected = free_group_npars * gpl_nfree + gpl_nfixed - 1
+            assert(res_len ==  expected),\
+                "*** Expected: {}, got: {}".format(expected, res_len)
 
+    print("___ chronostar/groupfitter.py passing all tests ___")

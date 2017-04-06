@@ -3,11 +3,13 @@ from chronostar.analyser import *
 import numpy as np
 
 plotit = False
+print("___ Testing chronostar/analyser.py ___")
 
 # Test read_sampler
 samples_file = 'logs/gf_bp_2_3_10_10.pkl'
 
 # Check read_sampler returnss some variables
+print("Testing read_sampler()")
 assert(read_sampler(samples_file) != 0), "Read_sampler not functioning"
 
 chain, lnprob, pos, nfree, nfixed, nsteps, npars  = read_sampler(samples_file)
@@ -19,7 +21,7 @@ flatlnprob = np.reshape(lnprob, (nwalkers*nsteps))
 
 assert(nfree == 3 and nfixed == 2)
 
-# Testing group_metric
+print("Testing group_metric()")
 good_pars = np.array([
               [0,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
               [10,0,0,0,0,0, 1,1,1,1, 0,0,0, 10, 0.5],
@@ -52,7 +54,7 @@ for i in range(4):
                         "{} , {}, {}".format(results[i,j], results[i,k],
                                              results[k,j])
 
-# testing permute
+print("Testing permute()")
 # groups without amplitude
 nfree_test = 4
 nfixed_test = 2
@@ -89,7 +91,7 @@ assert(np.shape(realigned_samples)[1] == np.shape(flatchain)[1]),\
             "Difference: {}".format(np.shape(realigned_samples)[1] -\
                                     np.shape(flatchain)[1])
 
-# Test convert_samples
+print("Testing convert_samples()")
 converted_samples = convert_samples(realigned_samples, nfree, nfixed, npars)
 # 6:10 is where the stdevs are, groups are spaced 14 parameters apart
 for i in range(nfree):
@@ -102,7 +104,7 @@ assert(np.shape(converted_samples)[1] == np.shape(flatchain)[1] + 1),\
 assert(np.array_equal(np.sum(converted_samples[:,-(nfree+nfixed):],axis=1),
                       np.ones(nwalkers*nsteps)) )
 
-# Test calc_best_fit
+print("Testing calc_best_fit()")
 best_fit = calc_best_fit(converted_samples)
 assert(best_fit.shape == (converted_samples.shape[1], 3))
 
@@ -110,18 +112,20 @@ for i in range(converted_samples.shape[1]):
     assert(best_fit[i,0] == np.median(converted_samples[:,i]))
 
 if plotit:
-    # Test plot_lnprob
+    print("Testing plot_lnprob")
     plot_file_stem = "plots/lnprob_"  + file_stem
 
     plot_lnprob(lnprob, nfree, nfixed, plot_file_stem)
 
-    # Test generate_param_mask
+    print("Testing generate_param_mask")
     assert(np.size(generate_param_mask(nfree, nfixed,
                                        True, False, False, False, True))
            == converted_samples.shape[1])
-
+    print("Testing plot_corner()")
     # Test plot_corner
     plot_corner(nfree, nfixed, converted_samples, lnprob, weights=True)
 
-# Test save_results
+print("Testing save_results()")
 save_results(nfree, nfixed, nsteps, nwalkers, converted_samples)
+
+print("___ chronostar/analyser.py passing all tests ___")

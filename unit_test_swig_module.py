@@ -48,31 +48,32 @@ def correctness(group_icov, group_mean, group_icov_det, star_icovs,
         Displays the result for each function, no differences should
         occur.
     """
+    
+    # Using swig-numpy module with multiple stars per call
+    swig_np_ms_ols =  overlap.get_overlaps(
+        group_icov, group_mean, group_icov_det, star_icovs,
+        star_means, star_icov_dets, nstars)
+
     for i in range(nstars):
-        print "Using numpy:"
-        print compute_overlap(group_icov, group_mean, group_icov_det,
-                              star_icovs[i], star_means[i], star_icov_dets[i])
-        print "Using swig module:"
-        print overlap.get_overlap2(group_icov.flatten().tolist(),
-                                   group_mean.flatten().tolist(),
-                                   group_icov_det,
-                                   star_icovs[i].flatten().tolist(),
-                                   star_means[i].flatten().tolist(),
-                                   star_icov_dets[i])
+        # Using numpy
+        numpy_ols =  compute_overlap(
+            group_icov, group_mean, group_icov_det,
+            star_icovs[i], star_means[i], star_icov_dets[i])
 
-        print "Using swig-numpy module:"
-        print overlap.get_overlap(group_icov, group_mean, group_icov_det,
-                              star_icovs[i], star_means[i], star_icov_dets[i])
+        # Using swig module
+        swig_ols =  overlap.get_overlap2(
+            group_icov.flatten().tolist(), group_mean.flatten().tolist(),
+            group_icov_det, star_icovs[i].flatten().tolist(),
+            star_means[i].flatten().tolist(), star_icov_dets[i])
 
+        # Using swig-numpy module
+        swig_np_ols =  overlap.get_overlap(
+            group_icov, group_mean, group_icov_det, star_icovs[i],
+            star_means[i], star_icov_dets[i])
 
-    print "Using swig-numpy module with multiple stars:"
-    print overlap.get_overlaps(group_icov,
-                              group_mean,
-                              group_icov_det,
-                              star_icovs,
-                              star_means,
-                              star_icov_dets,
-                              nstars)
+        assert (numpy_ols - swig_np_ms_ols[i])/numpy_ols < 1e-8
+        assert (numpy_ols - swig_ols)/numpy_ols < 1e-8
+        assert (numpy_ols - swig_np_ols)/numpy_ols < 1e-8
 
 def timings(group_icov, group_mean, group_icov_det,
               star_icovs, star_means, star_icov_dets, batch_size, noverlaps=10000):
@@ -120,6 +121,7 @@ def timings(group_icov, group_mean, group_icov_det,
 
 # ------------- MAIN PROGRAM -----------------------
 
+print("___ Testing swig module ___")
 #Parsing arguments
 
 parser = argparse.ArgumentParser()
@@ -194,17 +196,17 @@ star_means = np.array(
 
 nstars = 2
 
-
-print("___ CORRECTNESS ___")
+print("Testing correctnesss")
 correctness(group_icov, group_mean, group_icov_det, star_icovs,
                                   star_means, star_icov_dets, nstars)
-print
-
 star_icovs = np.tile(star_icovs[0], (batch_size,1,1))
 star_means = np.tile(star_means[0], (batch_size,1))
 star_icov_dets = np.tile(star_icov_dets[0], batch_size)
 
-print("____ TIMINGS ______")
+print("Teting timings")
 print("# of overlaps: {}".format(noverlaps))
-timings(group_icov, group_mean, group_icov_det, star_icovs,
-                         star_means, star_icov_dets, batch_size, noverlaps)
+timings(
+    group_icov, group_mean, group_icov_det, star_icovs,
+    star_means, star_icov_dets, batch_size, noverlaps)
+
+print("___ swig module passsing all tests ___")
