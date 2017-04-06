@@ -51,6 +51,8 @@ try:                # don't know why we use xrange to initialise walkers
 except NameError:
     xrange = range
 
+debug = False
+
 class MVGaussian(object):
     """
         This class aims to encapsulate the complicated maths used to convert
@@ -75,11 +77,12 @@ class MVGaussian(object):
         self.mean = self.params[0:6]        
         
         for stdev in self.params[6:10]:
-            try:
-                assert(stdev > 0.0), "negative stdev"
-            except:
-                print("Negative stdev")
-                pdb.set_trace()
+            if debug:
+                try:
+                    assert(stdev > 0.0), "negative stdev"
+                except:
+                    print("Negative stdev")
+                    pdb.set_trace()
 
         cov = np.eye( 6 )
         #Fill in correlations
@@ -101,28 +104,18 @@ class MVGaussian(object):
         neg_cov[np.triu_indices(3,1)]  *= -1
 
         cov_det = np.prod(np.linalg.eigvalsh(cov))
-        try:
-            covariance_identity = self.cov_det_ident(self.params[6:13])
-            assert((self.cov_det(cov) - covariance_identity)/cov_det < 1e-4)
-        except:
-            print("Determinant formula is wrong...?")
-            pdb.set_trace()
+        if debug:
+            try:
+                covariance_identity = self.cov_det_ident(self.params[6:13])
+                assert((self.cov_det(cov) - covariance_identity)/cov_det < 1e-4)
+            except:
+                print("Determinant formula is wrong...?")
+                pdb.set_trace()
 
         min_axis = 2.0
-        #try:
-        #    assert(np.min(np.linalg.eigvalsh(cov[:3,:3])) > min_axis**2)
-        #except:
-        #    print("Minimum positional covariance too small in one direction...")
-        #    pdb.set_trace()
 
         self.icov = np.linalg.inv(cov)
         self.icov_det = np.prod(np.linalg.eigvalsh(self.icov))
-        try:
-            assert(self.icov_det > 0.0), "negative icov_det"
-        except:
-            pass
-            #print("Negative icov_det")
-            #pdb.set_trace()
 
     def __str__(self):
         return "MVGauss with icov:\n{}\nand icov_det: {}".format(
@@ -168,13 +161,17 @@ class Group(MVGaussian):
 
 def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
              fixed_groups=[],
-             infile='results/bp_TGAS2_traceback_save.pkl', pool=None, bg=False):
+             infile='results/bp_TGAS2_traceback_save.pkl', pool=None, bg=False,
+             loc_debug=False):
     """
     returns:
         samples - [nwalkers x nsteps x npars] array of all samples
         pos     - the final position of walkers
         lnprob  - [nwalkers x nsteps] array of lnprobablities at each step
     """
+    global debug
+    debug = loc_debug
+
     # set key values and flags
     # read in stars from file
     star_params = read_stars(infile)
@@ -319,18 +316,21 @@ def lnlike(pars, nfree, nfixed, FIXED_GROUPS, star_params):
     
     # extract all the amplitudes from parameter list
     amplitudes = pars[nfree*npars_w_age:]
-    assert(len(amplitudes) == nfree + nfixed-1),\
+    if debug:
+        assert(len(amplitudes) == nfree + nfixed-1),\
                 "*** Wrong number of amps"
 
     # derive the remaining amplitude and append to parameter list
     total_amplitude = sum(amplitudes)
-    assert(total_amplitude < 1.0),\
+    if debug:
+        assert(total_amplitude < 1.0),\
                 "*** Total amp is: {}".format(total_amplitude)
     derived_amp = 1.0 - total_amplitude
     pars_len = len(pars)
     pars = np.append(pars, derived_amp)
     amplitudes = pars[nfree*npars_w_age:]
-    assert(len(pars) == pars_len + 1),\
+    if debug:
+        assert(len(pars) == pars_len + 1),\
                 "*** pars length didn't increase: {}".format(len(pars))
     
     # generate set of Groups based on params and global fixed Groups
@@ -397,10 +397,11 @@ def lnlike(pars, nfree, nfixed, FIXED_GROUPS, star_params):
 	# very nasty hack to replace any 'nan' overlaps with a flat 0
 	#   ... we'll see if this is fine
 	overlaps[i][np.where(np.isnan(overlaps[i]))] = 0.0
-        try:
-            assert(np.isfinite(np.sum(overlaps[i])))
-        except:
-            pdb.set_trace()
+        if debug:
+            try:
+                assert(np.isfinite(np.sum(overlaps[i])))
+            except:
+                pdb.set_trace()
 
     star_overlaps = np.zeros(nstars)
 
@@ -488,7 +489,8 @@ def run_fit(burnin, steps, nfixed, nfree,
     """
     # setting up initial params from intial conditions
     init_pars, init_sdev, nwalkers = generate_parameter_list(nfixed, nfree, bg)
-    assert(len(init_pars) == len(init_sdev))
+    if debug:
+        assert(len(init_pars) == len(init_sdev))
     npar = len(init_pars)
 
     # final parameter is amplitude

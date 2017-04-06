@@ -23,7 +23,8 @@ parser.add_argument('-n', '--noplots',  dest = 'n', action='store_true',
 parser.add_argument('-i', '--infile',  dest = 'i',
 		    default="results/bp_TGAS2_traceback_save.pkl",
                     help='Set this flag if running on a server')
-
+parser.add_argument('-d', '--debug',  dest = 'd', action='store_true',
+                    help='Set this flag if debugging')
 args = parser.parse_args()
 burnin = int(args.b)
 steps = int(args.p)
@@ -31,6 +32,7 @@ ngroups = int(args.g)
 nbg_groups = int(args.r)
 noplots = args.n
 infile = args.i
+debug  = args.d
 
 npars_per_group = 14
 
@@ -50,7 +52,7 @@ for nfixed in range(ngroups):
     
     samples, pos, lnprob = groupfitter.fit_groups(
         burnin, steps, nfree, nfixed, infile,
-        fixed_groups=fixed_groups, bg=bg)
+        fixed_groups=fixed_groups, bg=bg, loc_debug=debug)
 
     nwalkers = np.shape(samples)[0]
     nsteps   = np.shape(samples)[1]
@@ -96,6 +98,8 @@ for nfixed in range(ngroups):
     
 # Write up final results
 anl.write_results(steps, ngroups, nbg_groups, best_fits, tstamp)
+
+pickle.dump(fixed_groups, open("results/groups_"+file_stem+".pkl",'w'))
 
 # Go back and plot everything if desired
 if not noplots:

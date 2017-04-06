@@ -19,7 +19,6 @@ and neatening, and consolidating
 
 TODO:
     - test again using a different run
-    - write a write_results function
     - neat and tidy
     - write a demo for whole algorithm and see if it has all required
         basic functionality

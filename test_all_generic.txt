@@ -1,7 +1,7 @@
 #!/bin/bash 
 #PBS -P kc5
 #PBS -q normal
-#PBS -l walltime=01:00:00
+#PBS -l walltime=06:00:00
 #PBS -l mem=16GB
 #PBS -l jobfs=4GB
 #PBS -l ncpus=32
@@ -10,4 +10,4 @@ module load python/2.7.11-matplotlib
 module load gsl/1.15
 module load openmpi/1.10.2
 cd python/chronostar
-mpirun python fitting_bp.py -b 500 -p 2000 -g 1 -r 1 -i /short/kc5/TGAS_traceback_165Myr_small.fits -n
+mpirun python fitting_bp.py -b 2000 -p 4000 -g 6 -r 3 -i /short/kc5/TGAS_traceback_165Myr_small.fits -n
