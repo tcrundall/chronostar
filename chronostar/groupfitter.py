@@ -102,7 +102,8 @@ class MVGaussian(object):
 
         cov_det = np.prod(np.linalg.eigvalsh(cov))
         try:
-            assert((self.cov_det(cov) - self.cov_det_ident(self.params[6:13]))/cov_det < 1e-4)
+            covariance_identity = self.cov_det_ident(self.params[6:13])
+            assert((self.cov_det(cov) - covariance_identity)/cov_det < 1e-4)
         except:
             print("Determinant formula is wrong...?")
             pdb.set_trace()
@@ -169,65 +170,30 @@ def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
              fixed_groups=[],
              infile='results/bp_TGAS2_traceback_save.pkl', pool=None, bg=False):
     """
-    DONE
     returns:
-        samples - [NWALKERS x NSTEPS x NPARS] array of all samples
+        samples - [nwalkers x nsteps x npars] array of all samples
         pos     - the final position of walkers
-        lnprob  - [NWALKERS x NSTEPS] array of lnprobablities at each step
+        lnprob  - [nwalkers x nsteps] array of lnprobablities at each step
     """
-    # Data variables
-    NDIM    = 6       # number of dimensions for each 'measured' star
-    FREE_GROUPS   = []
-    FIXED_GROUPS  = []
     # set key values and flags
-    FILE_STEM = "gf_bp_{}_{}_{}_{}".format(nfixed, nfree,
-                                                burnin, steps)
-    NFREE_GROUPS = nfree
-    NFIXED_GROUPS = nfixed
-
     # read in stars from file
-    STAR_PARAMS = read_stars(infile)
+    star_params = read_stars(infile)
     print("Work out highest age")
-    MAX_AGE = np.max(STAR_PARAMS['times'])
-    NSTARS = len(STAR_PARAMS['xyzuvw'])
+    max_age = np.max(star_params['times'])
 
     # dynamically set initial emcee parameters
-    FIXED_GROUPS = [None] * NFIXED_GROUPS
-    for i in range(NFIXED_GROUPS):
+    FIXED_GROUPS = [None] * nfixed
+    for i in range(nfixed):
         FIXED_GROUPS[i] = Group(fixed_groups[i], 1.0)
 
-#    init_free_group_params = [0,0,0,0,0,0,
-#                              0.03, 0.03, 0.03,
-#                              5,
-#                              0, 0, 0,
-#                              5.0]
-#
-#    FREE_GROUPS = [None] * NFREE_GROUPS
-#    for i in range(NFREE_GROUPS):
-#        FREE_GROUPS[0] = Group(init_group_params, 1.0)
-
     samples, pos, lnprob =\
-             run_fit(burnin, steps, nfixed, nfree, FIXED_GROUPS, STAR_PARAMS,
+             run_fit(burnin, steps, nfixed, nfree, FIXED_GROUPS, star_params,
                      bg=bg, pool=pool)
 
     return samples, pos, lnprob
-    # BROKEN!!! NOT ABLE TO DYNAMICALLY CHECK DIFFERENT NUMBER OF GROUPS ATM
-    # a way to try and capitalise on groups fitted in the past
-    # saved_best = "results/bp_old_best_model_{}_{}".format(NGROUPS,
-    #                 NFIXED_GROUPS)
-    # try:
-    #     print("Trying to open last saved_best")
-    #     old_best_lnprob, old_best_model = pickle.load(open(saved_best))
-    #     new_best_lnprob = lnprob(init_group_params)
-    #     if (old_best_lnprob > new_best_lnprob):
-    #         print("-- replacing initial parameters")
-    #         init_group_params = old_best_model
-    # except:
-    #     print("-- unable to open last saved_best")
 
 def read_stars(infile):
     """
-    DONE
     Read stars from a previous pickle file into a dictionary.
     
     The input is an error ellipse in 6D (X,Y,Z,U,V,W) of a list of stars, at
@@ -282,11 +248,10 @@ def read_stars(infile):
     return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov,
                    xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
 
-def lnprior(pars, NFREE_GROUPS, NFIXED_GROUPS, MAX_AGE):
+def lnprior(pars, nfree, nfixed, max_age):
     """
-    DONE 
     """
-    ngroups = NFREE_GROUPS + NFIXED_GROUPS
+    ngroups = nfree + nfixed
     pars = np.array(pars)
 
     # Generating boolean masks to extract approriate parameters
@@ -294,44 +259,36 @@ def lnprior(pars, NFREE_GROUPS, NFIXED_GROUPS, MAX_AGE):
     # the "default_mask" is the mask that would be applied to a single
     # free group. It will be replicated based on the number of free
     # groups currently being fit
-    pos_free_mask = 6*[False] + 4*[True] + 3*[False] + [False]
+    base_msk_means  = 6  * [True]  + 4 * [False] + 3 * [False] + [False]
+    base_msk_stdevs = 6  * [False] + 4 * [True]  + 3 * [False] + [False]
+    base_msk_corrs  = 6  * [False] + 4 * [False] + 3 * [True]  + [False]
+    base_msk_ages   = 6  * [False] + 4 * [False] + 3 * [False] + [True]
+    base_msk_amps   = 14 * [False]
 
-    pos_ampl_mask = [True]
-    positive_mask = NFREE_GROUPS * pos_free_mask +\
-                            (ngroups -1) * pos_ampl_mask
-
-    # Now generating mask for correlations to ensure in (-1,1) range
-    corr_free_mask = 6*[False] + 4*[False] + 3*[True] + [False]
-    corr_ampl_mask = [True]
-    correlation_mask = NFREE_GROUPS * corr_free_mask +\
-                            (ngroups-1) * corr_ampl_mask
-
-    # Generating an age mask to ensure age in (0, MAX_AGE)
-    age_free_mask = 6*[False] + 4*[False] + 3*[False] + [True]
-    age_ampl_mask = [False]
-    age_mask = NFREE_GROUPS * age_free_mask +\
-                            (ngroups-1) * age_ampl_mask
-
-    for par in pars[np.where(positive_mask)]:
-        if par <= 0:
-#           bad_stds += 1
-            return -np.inf
-
-    for par in pars[np.where(correlation_mask)]:
-        if par <= -1 or par >= 1:
-#           bad_corrs += 1
-            return -np.inf
-
-    for age in pars[np.where(age_mask)]:
-        if age < 0 or age > MAX_AGE:
-#           print("Age: {}".format(age))
-#           bad_ages += 1
-            return -np.inf
-
+    mask_means  = nfree * base_msk_means  + (ngroups-1) * [False]
+    mask_stdevs = nfree * base_msk_stdevs + (ngroups-1) * [False]
+    mask_corrs  = nfree * base_msk_corrs  + (ngroups-1) * [False]
+    mask_ages   = nfree * base_msk_ages   + (ngroups-1) * [False]
+    mask_amps   = nfree * base_msk_amps   + (ngroups-1) * [True]
+    
     if ngroups > 1:
-        amps = pars[-(ngroups-1):]
-        if np.sum(amps) > 1:
-#           bad_amps += 1
+        amps = pars[np.where(mask_amps)]
+        if np.sum(amps) > 0.98:
+            return -np.inf
+        for amp in amps:
+            if amp < 0.02:
+                return -np.inf
+
+    for stdev in pars[np.where(mask_stdevs)]:
+        if stdev <= 0:
+            return -np.inf
+
+    for corr in pars[np.where(mask_corrs)]:
+        if corr <= -1 or corr >= 1:
+            return -np.inf
+
+    for age in pars[np.where(mask_ages)]:
+        if age < 0 or age > max_age:
             return -np.inf
 
     return 0.0
@@ -340,7 +297,6 @@ def lnprior(pars, NFREE_GROUPS, NFIXED_GROUPS, MAX_AGE):
 # of the inverse covariance matrix
 def eig_prior(char_min, inv_eig_val):
     """
-    DONE
     Used to set the prior on the eigen-values of the covariance
     matrix for groups
     """
@@ -348,9 +304,8 @@ def eig_prior(char_min, inv_eig_val):
     prior = eig_val / (char_min**2 + eig_val**2)
     return prior
 
-def lnlike(pars, NFREE_GROUPS, NFIXED_GROUPS, FIXED_GROUPS, star_params):
+def lnlike(pars, nfree, nfixed, FIXED_GROUPS, star_params):
     """ 
-    DONE
     Using the parameters passed in by the emcee run, finds the
     bayesian likelihood that the model defined by these parameters
     could have given rise to the stellar data
@@ -363,8 +318,8 @@ def lnlike(pars, NFREE_GROUPS, NFIXED_GROUPS, FIXED_GROUPS, star_params):
     min_v_disp = 0.5
     
     # extract all the amplitudes from parameter list
-    amplitudes = pars[NFREE_GROUPS*npars_w_age:]
-    assert(len(amplitudes) == NFREE_GROUPS + NFIXED_GROUPS-1),\
+    amplitudes = pars[nfree*npars_w_age:]
+    assert(len(amplitudes) == nfree + nfixed-1),\
                 "*** Wrong number of amps"
 
     # derive the remaining amplitude and append to parameter list
@@ -374,21 +329,21 @@ def lnlike(pars, NFREE_GROUPS, NFIXED_GROUPS, FIXED_GROUPS, star_params):
     derived_amp = 1.0 - total_amplitude
     pars_len = len(pars)
     pars = np.append(pars, derived_amp)
-    amplitudes = pars[NFREE_GROUPS*npars_w_age:]
+    amplitudes = pars[nfree*npars_w_age:]
     assert(len(pars) == pars_len + 1),\
                 "*** pars length didn't increase: {}".format(len(pars))
     
     # generate set of Groups based on params and global fixed Groups
-    model_groups = [None] * (NFIXED_GROUPS + NFREE_GROUPS)
+    model_groups = [None] * (nfixed + nfree)
 
     # generating the free groups
-    for i in range(NFREE_GROUPS):
+    for i in range(nfree):
         group_pars = pars[npars_w_age*i:npars_w_age*(i+1)]
         model_groups[i] = Group(group_pars, amplitudes[i])
 
     # generating the fixed groups
-    for i in range(NFIXED_GROUPS):
-        pos = i + NFREE_GROUPS
+    for i in range(nfixed):
+        pos = i + nfree
         #model_groups[pos] = (FIXED_GROUPS[i].params,
         #                           amplitudes[pos], 0)
         FIXED_GROUPS[i].update_amplitude(amplitudes[pos])
@@ -414,9 +369,9 @@ def lnlike(pars, NFREE_GROUPS, NFIXED_GROUPS, FIXED_GROUPS, star_params):
 #            bad_dets += 1
             return -np.inf
 
-    NSTARS = len(star_params['xyzuvw'])
-    ngroups = NFREE_GROUPS + NFIXED_GROUPS
-    overlaps = np.zeros((ngroups, NSTARS))
+    nstars = len(star_params['xyzuvw'])
+    ngroups = nfree + nfixed
+    overlaps = np.zeros((ngroups, nstars))
 
     for i in range(ngroups):
         # prepare group MVGaussian elements
@@ -437,7 +392,7 @@ def lnlike(pars, NFREE_GROUPS, NFIXED_GROUPS, FIXED_GROUPS, star_params):
         overlaps[i] = overlap.get_overlaps(group_icov, group_mn,
                                            group_icov_det,
                                            star_icovs, star_mns,
-                                           star_icov_dets, NSTARS) 
+                                           star_icov_dets, nstars) 
 
 	# very nasty hack to replace any 'nan' overlaps with a flat 0
 	#   ... we'll see if this is fine
@@ -447,10 +402,10 @@ def lnlike(pars, NFREE_GROUPS, NFIXED_GROUPS, FIXED_GROUPS, star_params):
         except:
             pdb.set_trace()
 
-    star_overlaps = np.zeros(NSTARS)
+    star_overlaps = np.zeros(nstars)
 
     # compile weighted totals of overlaps for each star
-    for i in range(NSTARS):
+    for i in range(nstars):
         star_overlaps[i] = np.sum(overlaps[:,i] * amplitudes)
 
     # return combined product of each star's overlap (or sum of the logs)
@@ -459,7 +414,6 @@ def lnlike(pars, NFREE_GROUPS, NFIXED_GROUPS, FIXED_GROUPS, star_params):
 
 def lnprobfunc(pars, nfree, nfixed, fixed_groups, star_params):
     """
-        DONE
         Compute the log-likelihood for a fit to a group.
         pars are the parameters being fitted for by MCMC 
     """
@@ -475,7 +429,6 @@ def lnprobfunc(pars, nfree, nfixed, fixed_groups, star_params):
 
 def generate_parameter_list(nfixed, nfree, bg=False):
     """
-        DONE 
         Generates the initial sample around which the walkers will
         be initialised. This function uses the number of free groups
         and number of fixed groups to dynamically generate a parameter
@@ -485,65 +438,68 @@ def generate_parameter_list(nfixed, nfree, bg=False):
                   to the background. If we are, the ages of (all) free
                   groups will be fixed at 0.
     """
-    # all groups fixed at age = 0
-#    if nfixed > NFIXED_GROUPS:
-#        print("-- not enough fixed groups provided")
-#        nfixed = NFIXED_GROUPS
+    #init_amp = 1.0 / (nfixed + nfree)
+    if nfixed == 0:
+        init_amp_free = 1.0 / (nfree)
 
-    init_amp = 1.0 / (nfixed + nfree)
+    else:
+        init_amp_free  = 0.2 / (nfree)
+        init_amp_fixed = 0.8 / (nfixed)
+
     default_pars = [0,0,0,0,0,0,
                     1./30,1./30,1./30,1./5,
                     0,0,0,
                     5]
 
     # default_pars for fitting whole background of large dataset
-    default_pars = [-49.16, -2.57, 38.40, 38.86, 39.71, 40.98,
-                    1./30,1./30,1./30,1./5,
-                    0,0,0,
-                    5]
+    # default_pars = [-49.16, -2.57, 38.40, 38.86, 39.71, 40.98,
+    #                 1./30,1./30,1./30,1./5,
+    #                 0,0,0,
+    #                 5]
 
     default_sdev = [1,1,1,1,1,1,
                     0.005, 0.005, 0.005, 0.005,
                     0.01,0.01,0.01,
-                    0.05] #final 0 is for age
+                    0.1]
 
-    # If free groups are fitting background set age initval and sdev to 0
+    # If free groups are fitting background set and fix age to 0
     # because emcee generates new samples through linear interpolation
     # between two existing samples, a parameter with 0 init_sdev will not
     # change.
-
-    # HARDCODED TO JUST FIT BACKGROUND DUE TO WEIRD BUG
-    if True:
+    if bg:
         default_pars[-1] = 0
         default_sdev[-1] = 0
 
-    init_pars = [] + default_pars * nfree + [init_amp]*(nfree+nfixed-1)
+    if nfixed == 0:
+        init_pars = [] + default_pars * nfree + [init_amp_free]*(nfree-1)
+    else:
+        init_pars = [] + default_pars * nfree + [init_amp_free]*nfree +\
+                    [init_amp_fixed]*(nfixed-1)
     init_sdev = [] + default_sdev * nfree + [0.05]*(nfree+nfixed-1)
 
-    NPAR = len(init_pars)
-    NWALKERS = 2*NPAR
+    npar = len(init_pars)
+    nwalkers = 2*npar
 
-    return init_pars, init_sdev, NWALKERS
+    return init_pars, init_sdev, nwalkers
 
 def run_fit(burnin, steps, nfixed, nfree,
             fixed_groups, star_params, bg=False, pool=None):
     """
-        DONE
     """
     # setting up initial params from intial conditions
-    init_pars, init_sdev, NWALKERS = generate_parameter_list(nfixed, nfree, bg)
+    init_pars, init_sdev, nwalkers = generate_parameter_list(nfixed, nfree, bg)
     assert(len(init_pars) == len(init_sdev))
-    NPAR = len(init_pars)
+    npar = len(init_pars)
 
     # final parameter is amplitude
     
     p0 = [init_pars+(np.random.random(size=len(init_sdev))- 0.5)*init_sdev
-                                            for i in range(NWALKERS)]
+                                            for i in range(nwalkers)]
 
     print("In run_fit")
     #pdb.set_trace()
     sampler = emcee.EnsembleSampler(
-                        NWALKERS, NPAR, lnprobfunc,
+                        nwalkers, npar, lnprobfunc,
                         args=[nfree, nfixed, fixed_groups, star_params],
                         pool=pool)
 
@@ -555,28 +511,30 @@ def run_fit(burnin, steps, nfixed, nfree,
         pos[ix] = pos[best_chain]
 
     sampler.reset()
-    pos,lnprob,rstate = sampler.run_mcmc(pos, steps,
+    pos,final_lnprob,rstate = sampler.run_mcmc(pos, steps,
                                               rstate0=state)
     samples = sampler.chain
+    lnprob  = sampler.lnprobability
 
-    # samples is shape [NWALKERS x NSTEPS x NPARS]
-    # lnprob is shape [NWALKERS x NSTEPS]
+    # samples is shape [nwalkers x nsteps x npars]
+    # lnprob is shape [nwalkers x nsteps]
     # pos is the final position of walkers
     return samples, pos, lnprob
 
-def interp_icov(target_time, STAR_PARAMS):
+def interp_icov(target_time, star_params):
     """
-    DONE
     Interpolate in time to get the xyzuvw vector and incovariance matrix.
     """
-    times = STAR_PARAMS['times']
+    times = star_params['times']
     ix = np.interp(target_time, times, np.arange(len(times)))
     ix0 = np.int(ix)
     frac = ix-ix0
-    interp_mns       = STAR_PARAMS['xyzuvw'][:,ix0]*(1-frac) +\
-                            STAR_PARAMS['xyzuvw'][:,ix0+1]*frac
-    interp_icovs     = STAR_PARAMS['xyzuvw_icov'][:,ix0]*(1-frac) +\
-                            STAR_PARAMS['xyzuvw_icov'][:,ix0+1]*frac
-    interp_icov_dets = STAR_PARAMS['xyzuvw_icov_det'][:,ix0]*(1-frac) +\
-                            STAR_PARAMS['xyzuvw_icov_det'][:,ix0+1]*frac
+    interp_mns       = star_params['xyzuvw'][:,ix0]*(1-frac) +\
+                       star_params['xyzuvw'][:,ix0+1]*frac
+
+    interp_icovs     = star_params['xyzuvw_icov'][:,ix0]*(1-frac) +\
+                       star_params['xyzuvw_icov'][:,ix0+1]*frac
+
+    interp_icov_dets = star_params['xyzuvw_icov_det'][:,ix0]*(1-frac) +\
+                       star_params['xyzuvw_icov_det'][:,ix0+1]*frac
     return interp_mns, interp_icovs, interp_icov_dets

@@ -184,12 +184,21 @@ def group_metric(group1, group2):
     return np.sqrt(total_dist)
 
 def convert_samples(flatchain, nfree, nfixed, npars):
+    """
+    Takes a chain of samples, converts 1/stdev to stdev, and appends
+    the implied, derived amplitude of the final group
+    """
     ngroups = nfree + nfixed
     
     # Derive missing amplitudes
-    amplitudes   = flatchain[:,-(ngroups-1):]
-    derived_amps = np.reshape(1 - np.sum(amplitudes, axis=1),
+    if ngroups > 1:
+        amplitudes   = flatchain[:,-(ngroups-1):]
+        derived_amps = np.reshape(1 - np.sum(amplitudes, axis=1),
                               (np.shape(flatchain)[0],-1) )
+
+    else:
+        derived_amps = np.ones((np.shape(flatchain)[0],1))
+
     converted_samples = np.append(flatchain, derived_amps, axis=1)
 
     # invert standard deviations
@@ -201,15 +210,15 @@ def convert_samples(flatchain, nfree, nfixed, npars):
 
     return converted_samples
 
-def calc_best_fit(samples):
+def calc_best_fit(flat_samples):
     """
     Given a set of aligned (converted?) samples, calculate the median and
     errors of each parameter
     """
     return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-                     zip(*np.percentile(samples, [16,50,84], axis=0))) )
+                     zip(*np.percentile(flat_samples, [16,50,84], axis=0))) )
 
-def plot_lnprob(lnprob, nfree, nfixed, file_stem=None):
+def plot_lnprob(lnprob, nfree, nfixed, tstamp, file_stem=None):
     """
     Generate lnprob and lnprob.T plots, save them to file as necessary
     """
@@ -217,8 +226,8 @@ def plot_lnprob(lnprob, nfree, nfixed, file_stem=None):
     nsteps   = lnprob.shape[1]
     # if filename not provided, conjure up our own
     if not file_stem:
-        file_stem  = "/plots/lnprob_{}_{}_{}_{}".format(nfree, nfixed,
-                                                        nwalkers, nsteps)
+        file_stem  = "plots/{}_lnprob_{}_{}_{}".format(tstamp, nfree, nfixed,
+                                                       nsteps)
     flatlnprob = lnprob.flatten()
     plt.plot(lnprob.T)
     plt.title("{} walkers for {} steps".format(nwalkers, nsteps) )
@@ -233,6 +242,8 @@ def plot_lnprob(lnprob, nfree, nfixed, file_stem=None):
     plt.xlabel("walkers")
     plt.ylabel("lnprob")
     plt.savefig(file_stem + "T.png")
+
+    plt.clf()
 
     return 0
 
@@ -262,21 +273,21 @@ def generate_labels(nfree, nfixed):
 
 def generate_param_mask(nfree, nfixed, means, stds, corrs, ages, weights):
     # generating boolean flags from base masks and boolean inputs
-    # base_msk_means  = 6 * [True]  + 4 * [False] + 3 * [False] + [False]
-    # base_msk_stdevs = 6 * [False] + 4 * [True]  + 3 * [False] + [False]
-    # base_msk_corrs  = 6 * [False] + 4 * [False] + 3 * [True]  + [False]
-    # base_msk_ages   = 6 * [False] + 4 * [False] + 3 * [False] + [True]
-    group_mask = ( (means  and base_msk_means)  or
-                   (stds   and base_msk_stdevs) or
-                   (corrs  and base_msk_corrs)  or
+    base_msk_means  = np.array(6*[True]  + 4*[False] + 3*[False] + [False])
+    base_msk_stdevs = np.array(6*[False] + 4*[True]  + 3*[False] + [False])
+    base_msk_corrs  = np.array(6*[False] + 4*[False] + 3*[True]  + [False])
+    base_msk_ages   = np.array(6*[False] + 4*[False] + 3*[False] + [True] )
+    group_mask = ( (means  and base_msk_means)  +
+                   (stds   and base_msk_stdevs) +
+                   (corrs  and base_msk_corrs)  +
                    (ages   and base_msk_ages) )
 
-    param_mask = nfree * group_mask + (nfree+nfixed)*[weights]
+    param_mask = nfree * group_mask.tolist() + (nfree+nfixed)*[weights]
     return np.array(param_mask)
 
 def plot_corner(nfree, nfixed, converted_samples, lnprob,
                 means=False, stds=False, corrs=False,
-                ages=False,  weights=False):
+                ages=False,  weights=False, tstamp=None):
     """
     Generate corner plots with dynamically generated parameter list
     e.g. ONly plotting stds or ages, or weights, or any combinations
@@ -299,35 +310,34 @@ def plot_corner(nfree, nfixed, converted_samples, lnprob,
                         truths = best_sample[np.where(param_mask)],
                         labels =      labels[np.where(param_mask)] )
 
-    file_stem = "{}_{}_{}".format(nfree, nfixed, lnprob.shape[1])
+    file_stem = "{}_corner_{}_{}_{}".format(tstamp, nfree, nfixed,
+                                            lnprob.shape[1])
 
-    fig.savefig("plots/corner_" + file_stem + ".png")
-    pdb.set_trace()
+    fig.savefig("plots/" + file_stem + ".png")
+    fig.clf()
     return 0
 
-def save_results(nfree, nfixed, nsteps, nwalkers, samples, file_stem=None,
-                 to_convert=False):
-    if not file_stem:
-        file_stem = "{}_{}_{}_{}".format(nfree, nfixed, nsteps, nwalkers)
-    with open("logs/"+file_stem+".log", 'w') as f:
-        f.write("Log of output from bp with {} sampling steps,\n"
-                    .format(nsteps) )
-        labels = generate_labels(nfree, nfixed)
+def save_results(nfree, nfixed, nsteps, nwalkers, samples, tstamp):
+    file_stem = "{}_{}_{}_{}".format(tstamp, nfree, nfixed, nsteps)
+    pickle.dump((samples), open("results/"+file_stem+".pkl", 'w'))
 
-        # If samples hasn't already been converted then do so
-        if to_convert:
-            samples = convert_samples(samples)
-        
-        # Calculate the median and errors for parameters
-        bf = calc_best_fit(samples)
-        
-        f.write(" _______ BETA PIC MOVING GROUP ______ {starting parameters}\n")
+def write_results(nsteps, ngroups, bg_groups, bf, tstamp):
+    """
+    Saves the results of a fit to file.
+    
+    """
+
+    # Generate a label for all of our groups 
+    labels = generate_labels(ngroups, 0)
+
+    with open( "logs/{}_{}_{}_{}.txt".\
+              format(tstamp, ngroups, bg_groups, nsteps), 'w') as f:
+        f.write("Log of output from bp with {} groups, {} bg_groups and {} "
+                "sampling steps,\n".format(ngroups, nsteps, bg_groups) )
+        f.write("\n")
+
+        f.write("______ BETA PIC MOVING GROUP ______\n")
         for i in range(len(labels)):
-            f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\n"
-                     .format(labels[i], bf[i][0], bf[i][1], bf[i][2]) )
-
-    pickle.dump((samples, bf), open("results/"+file_stem+".pkl", 'w'))
-
-    return  0
-
+            f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\n"\
+                    .format(labels[i], bf[i][0], bf[i][1], bf[i][2]))
 

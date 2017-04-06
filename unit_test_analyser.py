@@ -111,11 +111,13 @@ assert(best_fit.shape == (converted_samples.shape[1], 3))
 for i in range(converted_samples.shape[1]):
     assert(best_fit[i,0] == np.median(converted_samples[:,i]))
 
+
+tstamp = "test"
 if plotit:
     print("Testing plot_lnprob")
     plot_file_stem = "plots/lnprob_"  + file_stem
 
-    plot_lnprob(lnprob, nfree, nfixed, plot_file_stem)
+    plot_lnprob(lnprob, nfree, nfixed, tstamp)
 
     print("Testing generate_param_mask")
     assert(np.size(generate_param_mask(nfree, nfixed,
@@ -123,9 +125,14 @@ if plotit:
            == converted_samples.shape[1])
     print("Testing plot_corner()")
     # Test plot_corner
-    plot_corner(nfree, nfixed, converted_samples, lnprob, weights=True)
+    plot_corner(
+        nfree, nfixed, converted_samples, lnprob, weights=True, tstamp=tstamp)
 
 print("Testing save_results()")
-save_results(nfree, nfixed, nsteps, nwalkers, converted_samples)
+save_results(nfree, nfixed, nsteps, nwalkers, converted_samples, tstamp)
+
+print("Testing generate_param_mask()")
+print("FAILED... need a unit test for generate_param_mask()")
+#assert False, "Need a unit test for generate_param_mask()"
 
 print("___ chronostar/analyser.py passing all tests ___")

@@ -124,7 +124,7 @@ if not test_run:
     
     #max_nfixed = nfixed
     print("Testing generate_parameter_list()")
-    for gpl_nfixed in range(1,5):
+    for gpl_nfixed in range(0,5):
         for gpl_nfree in range(1,5):
             res_pars, res_sdev, nwalkers  = groupfitter.generate_parameter_list(
                 gpl_nfixed, gpl_nfree, bg=False

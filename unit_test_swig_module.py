@@ -90,7 +90,7 @@ def timings(group_icov, group_mean, group_icov_det,
         print "Numpy: " + str(time.clock() - npstart)
     else:
         print "Numpy: practically infinity seconds"
-        print " -- (approximately 5x 'Swig')"
+        print "  -> (approximately 5x 'Swig')"
 
     swigstart = time.clock()
     for i in range(noverlaps):
@@ -115,9 +115,10 @@ def timings(group_icov, group_mean, group_icov_det,
     end = time.clock()
 
     print "Swigging numpy multi: {} s".format(end - swignpmultistart)
-    print(" -- total module calls: {}".format(noverlaps/batch_size))
-    print(" -- {} microsec per overlap".format((end - swignpmultistart)/noverlaps*1e6))
-    print(" -- {} stars per module call".format(batch_size))
+    print("  -> total module calls: {}".format(noverlaps/batch_size))
+    print("  -> {} microsec per overlap".\
+            format((end - swignpmultistart)/noverlaps*1e6))
+    print("  -> {} stars per module call".format(batch_size))
 
 # ------------- MAIN PROGRAM -----------------------
 
