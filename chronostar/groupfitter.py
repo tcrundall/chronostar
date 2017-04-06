@@ -167,7 +167,7 @@ class Group(MVGaussian):
 
 def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
              fixed_groups=[],
-             infile='results/bp_TGAS2_traceback_save.pkl', pool=None):
+             infile='results/bp_TGAS2_traceback_save.pkl', pool=None, bg=False):
     """
     DONE
     returns:
@@ -208,7 +208,7 @@ def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
 
     samples, pos, lnprob =\
              run_fit(burnin, steps, nfixed, nfree, FIXED_GROUPS, STAR_PARAMS,
-                     bg=False, pool=pool)
+                     bg=bg, pool=pool)
 
     return samples, pos, lnprob
     # BROKEN!!! NOT ABLE TO DYNAMICALLY CHECK DIFFERENT NUMBER OF GROUPS ATM
@@ -248,6 +248,8 @@ def read_stars(infile):
         xyzuvw (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
         xyzuvw_cov (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
     """
+    print("Reading in file")
+
     if len(infile)==0:
         print("Input a filename...")
         raise UserWarning
@@ -272,6 +274,10 @@ def read_stars(infile):
 #   STAR_MNS       = xyzuvw
 #   STAR_ICOVS     = xyzuvw_icov
 #   STAR_ICOV_DETS = xyzuvw_icov_det 
+
+    xyzuvw0 = xyzuvw[:][0]
+
+    print("File read")
 
     return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov,
                    xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
@@ -489,6 +495,13 @@ def generate_parameter_list(nfixed, nfree, bg=False):
                     1./30,1./30,1./30,1./5,
                     0,0,0,
                     5]
+
+    # default_pars for fitting whole background of large dataset
+    default_pars = [-49.16, -2.57, 38.40, 38.86, 39.71, 40.98,
+                    1./30,1./30,1./30,1./5,
+                    0,0,0,
+                    5]
+
     default_sdev = [1,1,1,1,1,1,
                     0.005, 0.005, 0.005, 0.005,
                     0.01,0.01,0.01,
@@ -498,7 +511,9 @@ def generate_parameter_list(nfixed, nfree, bg=False):
     # because emcee generates new samples through linear interpolation
     # between two existing samples, a parameter with 0 init_sdev will not
     # change.
-    if bg:
+
+    # HARDCODED TO JUST FIT BACKGROUND DUE TO WEIRD BUG
+    if True:
         default_pars[-1] = 0
         default_sdev[-1] = 0
 

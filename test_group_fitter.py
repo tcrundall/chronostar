@@ -26,6 +26,7 @@ parser.add_argument('-x', '--fixed', dest = 'fixed', default=1,
                                     help='[1] number of fixed groups')
 parser.add_argument('-d', '--debug', dest = 'd', action='store_true')
 parser.add_argument('-t', '--test', dest = 't', action='store_true')
+parser.add_argument('-g', '--background', dest = 'g', action='store_true')
 parser.add_argument('-i', '--input', dest='infile', default='results/bp_TGAS2_traceback_save.pkl')
 args = parser.parse_args() 
 burnin = int(args.b) 
@@ -34,6 +35,7 @@ nfree = int(args.free)
 nfixed = int(args.fixed)
 debugging = args.d
 test_run  = args.t
+background = args.g
 infile=args.infile
 
 # pdb.set_trace()
@@ -67,11 +69,10 @@ if not test_run:
     else:
         print("MPI available for this code! - call this with"
               "e.g. mpirun -np 16 python test_fitthree_bp.py")
-
     samples, pos, lnprob = groupfitter.fit_groups(
                             burnin=burnin, steps=steps, nfixed=nfixed,
                             nfree=nfree, fixed_groups=nfixed*[fixed_bg_group],
-                            infile=infile, pool=pool)
+                            infile=infile, pool=pool, bg=background)
 
     if using_mpi:
         # Close the processes
