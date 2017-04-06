@@ -20,14 +20,18 @@ parser.add_argument('-r', '--background',  dest = 'r', default=1,
                     help='[1] number of groups to be fitted to background')
 parser.add_argument('-n', '--noplots',  dest = 'n', action='store_true',
                     help='Set this flag if running on a server')
+parser.add_argument('-i', '--infile',  dest = 'i',
+		    default="results/bp_TGAS2_traceback_save.pkl",
+                    help='Set this flag if running on a server')
+
 args = parser.parse_args()
 burnin = int(args.b)
 steps = int(args.p)
 ngroups = int(args.g)
 nbg_groups = int(args.r)
 noplots = args.n
+infile = args.i
 
-infile = "results/bp_TGAS2_traceback_save.pkl"
 npars_per_group = 14
 
 #fixed_groups = ngroups*[None]
