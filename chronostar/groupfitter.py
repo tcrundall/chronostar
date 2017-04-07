@@ -175,7 +175,6 @@ def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
     # set key values and flags
     # read in stars from file
     star_params = read_stars(infile)
-    print("Work out highest age")
     max_age = np.max(star_params['times'])
 
     # dynamically set initial emcee parameters
@@ -211,8 +210,6 @@ def read_stars(infile):
         xyzuvw (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
         xyzuvw_cov (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
     """
-    print("Reading in file")
-
     if len(infile)==0:
         print("Input a filename...")
         raise UserWarning
@@ -239,8 +236,6 @@ def read_stars(infile):
 #   STAR_ICOV_DETS = xyzuvw_icov_det 
 
     xyzuvw0 = xyzuvw[:][0]
-
-    print("File read")
 
     return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov,
                    xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
@@ -365,8 +360,6 @@ def lnlike(pars, nfree, nfixed, FIXED_GROUPS, star_params):
         lnlike += eig_prior(min_v_disp, group_icov_eig[3])
 
         if np.min(group_icov_eig) < 0:
-            print("negative determinant...")
-#            bad_dets += 1
             return -np.inf
 
     nstars = len(star_params['xyzuvw'])
@@ -423,9 +416,7 @@ def lnprobfunc(pars, nfree, nfixed, fixed_groups, star_params):
 
     lp = lnprior(pars, nfree, nfixed, max_age)
     if not np.isfinite(lp):
-        #print("Failed priors")
         return -np.inf
-    #print("Succeeded")
     return lp + lnlike(pars, nfree, nfixed, fixed_groups, star_params)
 
 def generate_parameter_list(nfixed, nfree, bg=False):
@@ -495,24 +486,28 @@ def run_fit(burnin, steps, nfixed, nfree,
 
     # final parameter is amplitude
     
-    p0 = [init_pars+(np.random.random(size=len(init_sdev))- 0.5)*init_sdev
-                                            for i in range(nwalkers)]
-
-    print("In run_fit")
-    #pdb.set_trace()
     sampler = emcee.EnsembleSampler(
                         nwalkers, npar, lnprobfunc,
                         args=[nfree, nfixed, fixed_groups, star_params],
                         pool=pool)
 
-    pos, lnprob, state = sampler.run_mcmc(p0, burnin)
+    pos = [init_pars+(np.random.random(size=len(init_sdev))- 0.5)*init_sdev
+                                            for i in range(nwalkers)]
+    nburnins = 4 # arbirtrarily picked this
+    burnin_steps_per_run = int(burnin / nburnins)
+    state = None
+    for i in range(nburnins):
+        pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps_per_run, state)
 
-    best_chain = np.argmax(lnprob)
-    poor_chains = np.where(lnprob < np.percentile(lnprob, 33))
-    for ix in poor_chains:
-        pos[ix] = pos[best_chain]
+        best_chain = np.argmax(lnprob)
+        poor_chains = np.where(lnprob < np.percentile(lnprob, 33))
+        for ix in poor_chains:
+            pos[ix] = pos[best_chain]
+    
+        # could have a simple test here to check if all lnprobs are within
+        #   5 stdevs of mean lnprob, if not, then burnin some more
+        sampler.reset()
 
-    sampler.reset()
     pos,final_lnprob,rstate = sampler.run_mcmc(pos, steps,
                                               rstate0=state)
     samples = sampler.chain
