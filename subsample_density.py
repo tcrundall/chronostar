@@ -83,7 +83,7 @@ compute_density = False
 #Trace back the groups
 xyzuvw_traceback_groups = []
 for xyzuvw in xyzuvw_groups:
-    params = chronostar.traceback.xyzuvw_to_skycoord(xyzuvw)
+    params = chronostar.traceback.xyzuvw_to_skycoord(xyzuvw, solarmotion='schoenrich', reverse_x_sign=True)
     xyzuvw_traceback_groups.append(chronostar.traceback.TraceBack(target_times, params=params).traceback(target_times)[0])
 
 #Read in the parameters

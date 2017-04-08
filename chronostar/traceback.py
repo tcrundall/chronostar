@@ -5,6 +5,7 @@ from __future__ import print_function, division
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.table import Table
+import astropy.io.fits as pyfits
 import pdb
 from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014
@@ -13,11 +14,10 @@ from galpy.util import bovy_coords
 from error_ellipse import plot_cov_ellipse
 import pickle
 import time
-import astropy.io.fits as pyfits
 plt.ion()
 
-def xyzuvw_to_skycoord(xyzuvw_in, solarmotion='schoenrich'):
-    """Converts XYZUVW with respect to the LSR 
+def xyzuvw_to_skycoord(xyzuvw_in, solarmotion=None, reverse_x_sign=False):
+    """Converts XYZUVW with respect to the LSR or the sun
     to RAdeg, DEdeg, plx, pmra, pmdec, RV
     
     Parameters
@@ -25,19 +25,28 @@ def xyzuvw_to_skycoord(xyzuvw_in, solarmotion='schoenrich'):
     xyzuvw_in:
         XYZUVW with respect to the LSR.
     """
-    if solarmotion=='schoenrich':
+    if solarmotion==None:
+        xyzuvw_sun = np.zeros(6)
+    elif solarmotion=='schoenrich':
         xyzuvw_sun = [0,0,25,11.1,12.24,7.25]
     else:
         raise UserWarning
+        
     #Make coordinates relative to sun
     xyzuvw = xyzuvw_in - xyzuvw_sun
+    
     #Special for the sun itself...
-    if np.sum(xyzuvw**2) < 1:
+    #FIXME: This seems like a hack. 
+    if (np.sum(xyzuvw**2) < 1) and solarmotion != None:
         return [0,0,1e5, 0,0,0]
+    
     #Find l, b and distance.
-    #!!! WARNING: the X-coordinate is reversed here, just like everywhere else, 
+    #!!! WARNING: the X-coordinate may have to be reversed here, just like everywhere else, 
     #because of the convention in Orbit.x(), which doesn't seem to match X.
-    lbd = bovy_coords.XYZ_to_lbd(-xyzuvw[0]/1e3, xyzuvw[1]/1e3, xyzuvw[2]/1e3, degree=True)
+    if reverse_x_sign:
+        lbd = bovy_coords.XYZ_to_lbd(-xyzuvw[0]/1e3, xyzuvw[1]/1e3, xyzuvw[2]/1e3, degree=True)
+    else:
+        lbd = bovy_coords.XYZ_to_lbd(xyzuvw[0]/1e3, xyzuvw[1]/1e3, xyzuvw[2]/1e3, degree=True)
     radec = bovy_coords.lb_to_radec(lbd[0], lbd[1], degree=True)
     vrpmllpmbb = bovy_coords.vxvyvz_to_vrpmllpmbb(xyzuvw[3],xyzuvw[4], xyzuvw[5],\
                     lbd[0],lbd[1],lbd[2], degree=True)
@@ -390,6 +399,22 @@ class TraceBack():
                 raise UserWarning
         else:
             return xyzuvw
+        
+def traceback_group(xyzuvw, age):
+    """Trace back a modern moving group, using standard co-ordinate conventions e.g. 
+    from http://www.astro.umontreal.ca/~malo/banyan.php.
+    
+    Parameters
+    ----------
+    xyzuvw: numpy float array
+        Input X,Y,Z,U,V,W in (pc,pc,pc,km/s,km/s,km/s)
+    
+    age: float
+        Age in Myr.
+    """
+    radecpipmrv = xyzuvw_to_skycoord(xyzuvw)
+    tb = TraceBack(params=radecpipmrv)
+    return tb.traceback(np.array([0,age]))[0,-1]
         
 def traceback2(params,times):
     """Trace forward a cluster. First column of returned array is the position of the cluster at a given age.
