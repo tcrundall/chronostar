@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 """This will test coordinates along the lines of subsample_density.py
 
 This is important because of co-ordinate system reversals between systems for
@@ -25,16 +27,19 @@ star_radecpipmrv_all = [[86.82, -51.067, 51.44, 4.65, 83.1, 20], \
     [82.187, -65.45, 65.93, 33.16, 150.83, 32.4], \
     [100.94, -71.977, 17.17, 6.17, 61.15, 20.7]]
 
-for group_name, star_name, xyzuvw_group, star_radecpipmrv in zip(group_names, star_names, xyzuvw_group_all, star_radecpipmrv_all):
+for group_name, star_name, xyzuvw_group, star_radecpipmrv in zip(
+         group_names, star_names, xyzuvw_group_all, star_radecpipmrv_all):
     if reverse_malo_sign:
         xyzuvw_group[0] *= -1
 
-    #What does astropy think that the XYZ means? Nothing. We unfortunately have to 
-    #do the trigonometry ourselves, as version 1.2.1 only supports cartesian coordinates 
-    #for ra, dec, degs.
+    # What does astropy think that the XYZ means? Nothing. We unfortunately
+    # have to do the trigonometry ourselves, as version 1.2.1 only supports
+    # cartesian coordinates for ra, dec, degs.
     dist = np.sqrt(np.sum(xyzuvw_group[:3]**2))
     l = np.degrees(np.arctan2(xyzuvw_group[1], xyzuvw_group[0]))
-    b = np.degrees(np.arctan2(xyzuvw_group[2], np.sqrt(np.sum(xyzuvw_group[:2]**2))))
+    b = np.degrees(
+        np.arctan2(xyzuvw_group[2], np.sqrt(np.sum(xyzuvw_group[:2]**2)))
+        )
     c = SkyCoord(l, b, dist, unit=['deg','deg','pc'], frame='galactic')
     print("\n*** Star: " + star_name + " in Group: " + group_name + " ***")
     print("*** Manual computation ***")
