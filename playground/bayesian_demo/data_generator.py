@@ -8,6 +8,24 @@ def gaussian(x, mu, sig):
     amp = 1 / np.sqrt(2. * np.pi * np.power(sig, 2.))
     return amp * np.exp(-np.power(x-mu, 2.) / (2 * np.power(sig,2.)))
 
+def generate_stars(nstars, pos_mu, pos_sig, vel_mu, vel_sig):
+    """
+    Generate a group of [nstars] stars with initial positions and velocities
+    normally distributed with appropriate means and stdevs.
+    Generated stars will have negligible but non-zero position and velocitie
+    uncertainties
+    """
+    init_pos_mu  = np.random.normal(pos_mu, pos_sig, nstars)
+    init_vel_mu  = np.random.normal(vel_mu, 1, nstars)
+    init_pos_sig = np.zeros(nstars) + 0.01
+    init_vel_sig = np.zeros(nstars) + 0.01
+
+    gen_stars = np.vstack([
+        init_pos_mu, init_pos_sig, init_vel_mu, init_vel_sig
+        ]).T
+    return gen_stars
+
+
 def project_star(pars, time, back=False):
     """
     Purpose: Take a star's currnet position, velocity and uncertainties
