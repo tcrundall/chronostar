@@ -56,8 +56,6 @@ def xyzuvw_to_skycoord(xyzuvw_in, solarmotion=None, reverse_x_sign=False):
 def integrate_xyzuvw(params,ts,lsr_orbit=None,Potential=MWPotential2014):
     """Convenience function. Integrates the motion of a star backwards in time.
     
-    
-    
     Parameters
     ----------
     params: numpy array 
@@ -399,6 +397,19 @@ class TraceBack():
                 raise UserWarning
         else:
             return xyzuvw
+        
+def trace_forward(sky_coord, time_in_past):
+    """Trace forward one star in xyzuvw coords"""
+    #Times in Myr
+    ts = (np.array([0,time_in_past])/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
+    
+    #Trace back the local standard of rest.
+    lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion='schoenrich')
+    lsr_orbit.integrate(ts,MWPotential2014,method='odeint')
+
+    xyzuvw_now = integrate_xyzuvw(sky_coord,ts,lsr_orbit,MWPotential2014)
+
+    return xyzuvw_now[-1]
         
 def traceback_group(xyzuvw, age):
     """Trace back a modern moving group, using standard co-ordinate conventions e.g. 
