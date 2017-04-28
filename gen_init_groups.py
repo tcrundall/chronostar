@@ -3,6 +3,7 @@
 import chronostar.traceback as tb
 import numpy as np
 import pickle
+import pdb
 
 group_names = [
    'bPic', 'TW Hya', 'Tuc Hor', 'Columba','Carina', 'Argus', 'AB Dor']
@@ -30,5 +31,6 @@ for i in range(np.shape(xyzuvw_group_all)[0]):
     initial_groups[i] = tb.traceback_group(
         xyzuvw_group_all[i], ages_all[i] )
 
+save_file = "/short/kc5/init_mgs.pkl"
 pickle.dump((group_names, initial_groups, ages_all), 
-            open("/short/kc5/init_mgs.pkl", 'w'))
+            open(save_file, 'w'))

@@ -160,7 +160,7 @@ class Group(MVGaussian):
 """
 
 def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
-             fixed_groups=[],
+             fixed_groups=[], init_free_groups=None, init_free_ages=None,
              infile='results/bp_TGAS2_traceback_save.pkl', pool=None, bg=False,
              loc_debug=False):
     """
@@ -183,8 +183,10 @@ def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
         FIXED_GROUPS[i] = Group(fixed_groups[i], 1.0)
 
     samples, pos, lnprob =\
-             run_fit(burnin, steps, nfixed, nfree, FIXED_GROUPS, star_params,
-                     bg=bg, pool=pool)
+             run_fit(
+                burnin, steps, nfixed, nfree, FIXED_GROUPS,
+                init_free_groups, init_free_ages, star_params,
+                bg=bg, pool=pool)
 
     return samples, pos, lnprob
 
@@ -419,7 +421,8 @@ def lnprobfunc(pars, nfree, nfixed, fixed_groups, star_params):
         return -np.inf
     return lp + lnlike(pars, nfree, nfixed, fixed_groups, star_params)
 
-def generate_parameter_list(nfixed, nfree, bg=False):
+def generate_parameter_list(nfixed, nfree, bg=False, init_free_groups=None,
+                            init_free_ages=None):
     """
         Generates the initial sample around which the walkers will
         be initialised. This function uses the number of free groups
@@ -430,6 +433,8 @@ def generate_parameter_list(nfixed, nfree, bg=False):
                   to the background. If we are, the ages of (all) free
                   groups will be fixed at 0.
     """
+    npars_in_def = 14
+
     #init_amp = 1.0 / (nfixed + nfree)
     if nfixed == 0:
         init_amp_free = 1.0 / (nfree)
@@ -452,7 +457,7 @@ def generate_parameter_list(nfixed, nfree, bg=False):
     default_sdev = [1,1,1,1,1,1,
                     0.005, 0.005, 0.005, 0.005,
                     0.01,0.01,0.01,
-                    0.1]
+                    1.0]
 
     # If free groups are fitting background set and fix age to 0
     # because emcee generates new samples through linear interpolation
@@ -472,14 +477,25 @@ def generate_parameter_list(nfixed, nfree, bg=False):
     npar = len(init_pars)
     nwalkers = 2*npar
 
+
+    # Incorporate initial XYZUVW and ages if present into initialisation
+    if (init_free_groups is not None) and (init_free_ages is not None):
+        for i in range(nfree):
+            init_pars[i*npars_in_def : i*npars_in_def + 6] =\
+                init_free_groups[i]
+            init_pars[i*npars_in_def + 13] =\
+                init_free_ages[i]
+
     return init_pars, init_sdev, nwalkers
 
-def run_fit(burnin, steps, nfixed, nfree,
-            fixed_groups, star_params, bg=False, pool=None):
+def run_fit(burnin, steps, nfixed, nfree, fixed_groups, init_free_groups,
+            init_free_ages, star_params, bg=False, pool=None):
     """
     """
     # setting up initial params from intial conditions
-    init_pars, init_sdev, nwalkers = generate_parameter_list(nfixed, nfree, bg)
+    init_pars, init_sdev, nwalkers = generate_parameter_list(
+        nfixed, nfree, bg, init_free_groups=init_free_groups,
+        init_free_ages=init_free_ages)
     if debug:
         assert(len(init_pars) == len(init_sdev))
     npar = len(init_pars)

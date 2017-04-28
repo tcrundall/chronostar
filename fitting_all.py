@@ -121,7 +121,9 @@ for nfixed in range(ngroups):
 # Write up final results
 anl.write_results(steps, ngroups, nbg_groups, best_fits, tstamp)
 
-pickle.dump(fixed_groups, open(save_dir+"results/groups_"+file_stem+".pkl",'w'))
+group_stem = "{}_{}".format(tstamp, ngroups)
+pickle.dump(
+    fixed_groups, open(save_dir+"results/groups_"+group_stem+".pkl",'w'))
 
 # Go back and plot everything if desired
 if not noplots:
