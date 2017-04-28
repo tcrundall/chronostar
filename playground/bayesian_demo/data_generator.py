@@ -81,8 +81,14 @@ def get_measurements(stars, pos_acc=0.1, vel_acc=0.2):
         measured_stars[i] = get_measurement(stars[i], pos_acc, vel_acc)
     return measured_stars
 
-np.random.seed(0)
+def get_group_size(stars):
+    centre = np.mean(stars[:,0])
+    total_dist = np.sum(np.abs(stars[:,0] - centre))/(stars.shape[0])
+    return total_dist
+    
+
 if __name__ == '__main__':
+    np.random.seed(0)
     # generating "true" stars
     nstars = 50
     pos_mu  = 0

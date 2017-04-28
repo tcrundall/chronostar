@@ -1,9 +1,18 @@
 #Special directories
 results/*
 
+# Data
+*.fits
+
 # Output files
 *.txt.e*
 *.txt.o*
+logs/*.txt
+
+# Plots and saves
+*.pkl
+*.eps
+*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
