@@ -16,6 +16,9 @@ import pickle
 import time
 plt.ion()
 
+# A constant - is this in astropy???
+spc_kmMyr = 1.022712165
+
 def xyzuvw_to_skycoord(xyzuvw_in, solarmotion=None, reverse_x_sign=False):
     """Converts XYZUVW with respect to the LSR or the sun
     to RAdeg, DEdeg, plx, pmra, pmdec, RV
@@ -24,6 +27,14 @@ def xyzuvw_to_skycoord(xyzuvw_in, solarmotion=None, reverse_x_sign=False):
     ----------
     xyzuvw_in:
         XYZUVW with respect to the LSR.
+        
+    solarmotion: string
+        The reference of assumed solar motion. "schoenrich" or None if inputs are already 
+        relative to the sun.
+        
+    reverse_x_sign: bool
+        Do we reverse the sign of the X co-ordinate? This is needed for dealing with 
+        galpy sign conventions.
     """
     if solarmotion==None:
         xyzuvw_sun = np.zeros(6)
@@ -37,8 +48,8 @@ def xyzuvw_to_skycoord(xyzuvw_in, solarmotion=None, reverse_x_sign=False):
     
     #Special for the sun itself...
     #FIXME: This seems like a hack. 
-    if (np.sum(xyzuvw**2) < 1) and solarmotion != None:
-        return [0,0,1e5, 0,0,0]
+    #if (np.sum(xyzuvw**2) < 1) and solarmotion != None:
+    #    return [0,0,1e5, 0,0,0]
     
     #Find l, b and distance.
     #!!! WARNING: the X-coordinate may have to be reversed here, just like everywhere else, 
@@ -53,7 +64,23 @@ def xyzuvw_to_skycoord(xyzuvw_in, solarmotion=None, reverse_x_sign=False):
     pmrapmdec = bovy_coords.pmllpmbb_to_pmrapmdec(vrpmllpmbb[1],vrpmllpmbb[2],lbd[0],lbd[1],degree=True)
     return [radec[0], radec[1], 1.0/lbd[2], pmrapmdec[0], pmrapmdec[1], vrpmllpmbb[0]]
     
-def integrate_xyzuvw(params,ts,lsr_orbit=None,Potential=MWPotential2014):
+def get_lsr_orbit(times, Potential=MWPotential2014):
+    """Integrate the local standard of rest backwards in time, in order to provide
+    a reference point to our XYZUVW coordinates.
+    
+    Parameters
+    ----------
+    times: numpy float array
+        Times at which we want the orbit of the local standard of rest.
+        
+    Potential: galpy potential object.
+    """
+    ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
+    lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion='schoenrich')
+    lsr_orbit.integrate(ts,Potential)#,method='odeint')
+    return lsr_orbit
+    
+def integrate_xyzuvw(params,times,lsr_orbit=None,Potential=MWPotential2014):
     """Convenience function. Integrates the motion of a star backwards in time.
     
     Parameters
@@ -61,10 +88,8 @@ def integrate_xyzuvw(params,ts,lsr_orbit=None,Potential=MWPotential2014):
     params: numpy array 
         Kinematic parameters (RAdeg,DEdeg,Plx,pmRA,pmDE,RV)
         
-    ts: times for back propagation
-        Needs to be converted to galpy units, e.g. for times in Myr:
-        ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
-        ts = -(np.arange(11)/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
+    ts: times for back propagation, in Myr.
+        
     lsr_orbit:
         WARNING: messy...
         lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion='schoenrich')
@@ -76,8 +101,10 @@ def integrate_xyzuvw(params,ts,lsr_orbit=None,Potential=MWPotential2014):
     #We allow MWPotential and lsr_orbit to be passed for speed, but can compute/import 
     #now.
     if not lsr_orbit:
-        lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion='schoenrich')
-        lsr_orbit.integrate(ts,Potential,method='odeint')
+        lsr_orbit = get_lsr_orbit(times)
+        
+    #Convert times to galpy units:
+    ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
         
     params = np.array(params)
     vxvv = params.copy()
@@ -85,9 +112,8 @@ def integrate_xyzuvw(params,ts,lsr_orbit=None,Potential=MWPotential2014):
     #reciporical could be done elsewhere...
     vxvv[2]=1.0/params[2]   
     o = Orbit(vxvv=vxvv, radec=True, solarmotion='schoenrich')
-        
     
-    o.integrate(ts,Potential,method='odeint')
+    o.integrate(ts,Potential)#,method='odeint')
     xyzuvw = np.zeros( (len(ts),6) )
     xyzuvw[:,0] = 1e3*(o.x(ts)-lsr_orbit.x(ts))
     xyzuvw[:,1] = 1e3*(o.y(ts)-lsr_orbit.y(ts))
@@ -134,280 +160,330 @@ def spherical_to_cartesian(RA,DE,D):
     z = D*np.sin(np.deg2rad(DE))    
     return (x,y,z)
     
-class TraceBack():
+def stars_table(params):
     """A class for tracing back orbits.
-    
-    This class is initiated with an astropy Table object that includes
-    the columns 'RAdeg', 'DEdeg', 'Plx', 'pmRA', 'pmDE', 'RV', 'Name',
-    and the uncertainties: 
-    'plx_sig', 'pmRA_sig', 'pmDEC_sig', 'RV_sig'. Optionally, include 
-    the correlations between parameters: 'c_plx_pmRA', 'c_plx_pmDEC' and
-    'c_pmDEC_pmRA'.
-    
+
+    This class is initiated with 
+
     Parameters
     ----------
     stars: astropy Table
         Table of star parameters.
     params: [RAdeg, DEdeg, plx, pmra, pmdec, RV]
-        Parameters for a single star or group. """
-
-    # A constant - is this in astropy???
-    spc_kmMyr = 1.022712165
-
-    def __init__(self, stars=None, params=None):
-        #WARNING: Error checking needed here.
-        if params:
-            stars = {}
-            stars['RAdeg']=params[0]
-            stars['DEdeg']=params[1]
-            stars['Plx'] = params[2]
-            stars['pmRA'] = params[3]
-            stars['pmDE'] = params[4]
-            stars['RV'] = params[5]
-            stars['e_RV'] = 1.0
-            #0.2 AU/year
-            stars['e_pmRA'] = 0.2*stars['Plx']
-            stars['e_pmDE'] = 0.2*stars['Plx']
-            #0.001 kPc distance uncertainty
-            stars['e_Plx'] = 0.001*stars['Plx']**2
-            
-            stars = Table([stars])
-        self.stars = stars
-        self.nstars = len(stars)    
+        Parameters for a single star or group. 
         
-    def traceback(self,times,max_plot_error=50,plotit=False, savefile='', dims=[1,2],\
-        xoffset=[],yoffset=[],text_ix=[],axis_range=[], plot_text=True):
-        """Trace back stellar orbits
+    """
+    #FIXME: Error checking needed.
+    stars = {}
+    stars['RAdeg']=params[0]
+    stars['DEdeg']=params[1]
+    stars['Plx'] = params[2]
+    stars['pmRA'] = params[3]
+    stars['pmDE'] = params[4]
+    stars['RV'] = params[5]
+    stars['e_RV'] = 1.0
+    #0.2 AU/year
+    stars['e_pmRA'] = 0.2*stars['Plx']
+    stars['e_pmDE'] = 0.2*stars['Plx']
+    #0.001 kPc distance uncertainty
+    stars['e_Plx'] = 0.001*stars['Plx']**2
     
-        Parameters
-        ----------
-        times: float array
-            Times to trace back, in Myr. Note that positive numbers are going backwards in time.
-        max_plot_error: float
-            Maximum positional error in pc to allow plotting.
-        dims: list with 2 ints
-            Dimensions to be plotted (out of xyzuvw)
-        xoffset, yoffset: nstars long list
-            Offsets for text position in star labels.
-        """
-        nstars = self.nstars
-        stars = self.stars
-        #Times in Myr
-        ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
-        nts = len(times)
+    stars = Table([stars])
+    return stars
+
         
-        #Positions and velocities in the co-rotating solar reference frame.
-        xyzuvw = np.zeros( (nstars,nts,6) )
-        
-        #Derivative of the past xyzuvw with respect to the present xyzuvw
-        xyzuvw_jac = np.zeros( (nstars,nts,6,6) )
-        
-        #Past covariance matrices
-        xyzuvw_cov = np.zeros( (nstars,nts,6,6) )
-        
-        #Trace back the local standard of rest.
-        lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion='schoenrich')
-        lsr_orbit.integrate(ts,MWPotential2014,method='odeint')
-        
-        #Delta parameters for numerical derivativd
-        dp = 1e-3
+def traceback(stars,times,max_plot_error=50,plotit=False, savefile='', dims=[1,2],\
+    xoffset=[],yoffset=[],text_ix=[],axis_range=[], plot_text=True):
+    """Trace back stellar orbits
+
+    Parameters
+    ----------
+    stars:
+        An astropy Table object that includes
+        the columns 'RAdeg', 'DEdeg', 'Plx', 'pmRA', 'pmDE', 'RV', 'Name',
+        and the uncertainties: 
+        'plx_sig', 'pmRA_sig', 'pmDEC_sig', 'RV_sig'. Optionally, include 
+        the correlations between parameters: 'c_plx_pmRA', 'c_plx_pmDEC' and
+        'c_pmDEC_pmRA'.
+    times: float array
+        Times to trace back, in Myr. Note that positive numbers are going backwards in time.
+    max_plot_error: float
+        Maximum positional error in pc to allow plotting.
+    dims: list with 2 ints
+        Dimensions to be plotted (out of xyzuvw)
+    xoffset, yoffset: nstars long list
+        Offsets for text position in star labels.
+    """
+    nstars = len(stars)
+    nts = len(times)
     
-        if plotit:
-            plt.clf()
+    #Positions and velocities in the co-rotating solar reference frame.
+    xyzuvw = np.zeros( (nstars,nts,6) )
+    
+    #Derivative of the past xyzuvw with respect to the present xyzuvw
+    xyzuvw_jac = np.zeros( (nstars,nts,6,6) )
+    
+    #Past covariance matrices
+    xyzuvw_cov = np.zeros( (nstars,nts,6,6) )
+    
+    #Trace back the local standard of rest. done manually here so that it doesn't
+    #have to be recomputed many times.
+    lsr_orbit = get_lsr_orbit(times)
+    
+    #Delta parameters for numerical derivativd
+    dp = 1e-3
 
-        dim1=dims[0]
-        dim2=dims[1]
-        cov_ix1 = [[dim1,dim2],[dim1,dim2]]
-        cov_ix2 = [[dim1,dim1],[dim2,dim2]]
+    if plotit:
+        plt.clf()
 
-        axis_titles=['X (pc)','Y (pc)','Z (pc)','U (km/s)','V (km/s)','W (km/s)']
-        #Put some defaults in 
-        if len(xoffset)==0:
-            xoffset = np.zeros(nstars)
-            yoffset = np.zeros(nstars)
-        if len(text_ix)==0:
-            text_ix = range(nstars)
-        if len(axis_range)==0:
-            axis_range = [-100,100,-100,100]
-        
-        #WARNING: The following is messy, but different types of input are 
-        #accepted for now...
-        try:
-            colnames = stars.names
-        except:
-            colnames = stars.columns
-                    
-        for i in range(nstars):
-            if (i+1) % 100 ==0:
-                print("Done {0:d} of {1:d} stars.".format(i+1, nstars))
-            star = stars[i]
-            
-            #Some defaults for correlations.
-            parallax_pmra_corr=0.0
-            parallax_pmdec_corr=0.0
-            pmra_pmdec_corr=0.0
-            
-            #Are we using our joint HIPPARCOS/TGAS table?
-            if 'ra_adopt' in colnames:
-                RAdeg = star['ra_adopt']
-                DEdeg = star['dec_adopt']
-                RV = star['rv_adopt']
-                e_RV = star['rv_adopt_error']
+    dim1=dims[0]
+    dim2=dims[1]
+    cov_ix1 = [[dim1,dim2],[dim1,dim2]]
+    cov_ix2 = [[dim1,dim1],[dim2,dim2]]
+
+    axis_titles=['X (pc)','Y (pc)','Z (pc)','U (km/s)','V (km/s)','W (km/s)']
+    #Put some defaults in 
+    if len(xoffset)==0:
+        xoffset = np.zeros(nstars)
+        yoffset = np.zeros(nstars)
+    if len(text_ix)==0:
+        text_ix = range(nstars)
+    if len(axis_range)==0:
+        axis_range = [-100,100,-100,100]
+    
+    #WARNING: The following is messy, but different types of input are 
+    #accepted for now...
+    try:
+        colnames = stars.names
+    except:
+        colnames = stars.columns
                 
-                #Do we have a TGAS entry?
-                tgas_entry = True
+    for i in range(nstars):
+        if (i+1) % 100 ==0:
+            print("Done {0:d} of {1:d} stars.".format(i+1, nstars))
+        star = stars[i]
+        
+        #Some defaults for correlations.
+        parallax_pmra_corr=0.0
+        parallax_pmdec_corr=0.0
+        pmra_pmdec_corr=0.0
+        
+        #Are we using our joint HIPPARCOS/TGAS table?
+        if 'ra_adopt' in colnames:
+            RAdeg = star['ra_adopt']
+            DEdeg = star['dec_adopt']
+            RV = star['rv_adopt']
+            e_RV = star['rv_adopt_error']
+            
+            #Do we have a TGAS entry?
+            tgas_entry = True
+            try:
+                if (stars['parallax_1'].mask)[i]:
+                    tgas_entry=False
+            except:
+                if star['parallax_1']!=star['parallax_1']:
+                    tgas_entry=False
+            if tgas_entry:               
+                Plx = star['parallax_1']
+                e_Plx = star['parallax_error']
+                pmRA = star['pmra_1']
+                e_pmRA = star['pmra_error']
+                pmDE = star['pmdec']
+                e_pmDE = star['pmdec_error']
+                parallax_pmra_corr = star['parallax_pmra_corr']
+                parallax_pmdec_corr = star['parallax_pmdec_corr']
+                pmra_pmdec_corr = star['pmra_pmdec_corr']  
+            else:
+                Plx = star['Plx']
+                e_Plx = star['e_Plx']
+                pmDE = star['pmDE']
                 try:
-                    if (stars['parallax_1'].mask)[i]:
-                        tgas_entry=False
-                except:
-                    if star['parallax_1']!=star['parallax_1']:
-                        tgas_entry=False
-                if tgas_entry:               
-                    Plx = star['parallax_1']
-                    e_Plx = star['parallax_error']
-                    pmRA = star['pmra_1']
-                    e_pmRA = star['pmra_error']
-                    pmDE = star['pmdec']
-                    e_pmDE = star['pmdec_error']
-                    parallax_pmra_corr = star['parallax_pmra_corr']
-                    parallax_pmdec_corr = star['parallax_pmdec_corr']
-                    pmra_pmdec_corr = star['pmra_pmdec_corr']  
-                else:
-                    Plx = star['Plx']
-                    e_Plx = star['e_Plx']
-                    pmDE = star['pmDE']
-                    try:
-                        e_pmDE = star['e_pmDE']
-                    except:
-                        e_pmDE = 0.5
-                    pmRA = star['pmRA_2']
-                    try:
-                        e_pmRA = star['e_pmRA']
-                    except:
-                        e_pmRA = 0.5
-            
-            else:
-                DEdeg = star['DEdeg']
-                
-                #RAVE Dataset
-                if 'HRV' in star.columns:
-                    RAdeg = star['RAdeg']
-                    RV = star['HRV']
-                    e_RV = star['e_HRV']
-                    Plx = star['plx']
-                    e_Plx = star['e_plx']
-                    pmRA = star['pmRAU4']
-                    e_pmRA = star['e_pmRAU4']
-                    pmDE = star['pmDEU4']
-                    e_pmDE = star['e_pmDEU4'] 
-                #HIPPARCOS    
-                else:
-                    if 'RAdeg' in star.columns:
-                        RAdeg = star['RAdeg']
-                    else:
-                        RAdeg = star['RAhour']*15.0
-                    RV = star['RV']
-                    e_RV = star['e_RV']
-                    Plx = star['Plx']
-                    e_Plx = star['e_Plx']
-                    pmRA = star['pmRA']
-                    e_pmRA = star['e_pmRA']
-                    pmDE = star['pmDE']
                     e_pmDE = star['e_pmDE']
-                
-            params = np.array([RAdeg,DEdeg,Plx,pmRA,pmDE,RV])
-            xyzuvw[i] = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
-            
-            #if star['Name1'] == 'HIP 12545':
-            #    pdb.set_trace()
-            
-            #Create numerical derivatives
-            for j in range(6):
-                params_plus = params.copy()
-                params_plus[j] += dp
-                xyzuvw_plus = integrate_xyzuvw(params_plus,ts,lsr_orbit,MWPotential2014)
-                for k in range(nts):
-                    xyzuvw_jac[i,k,j,:] = (xyzuvw_plus[k] - xyzuvw[i,k])/dp 
-                    
-            #Now that we've got the jacobian, find the modified covariance matrix.
-            cov_obs = np.zeros( (6,6) )
-            cov_obs[0,0] = 1e-1**2 #Nominal 0.1 degree. !!! There is almost a floating underflow in fit_group due to this
-            cov_obs[1,1] = 1e-1**2 #Nominal 0.1 degree. !!! Need to think about this more
-            cov_obs[2,2] = e_Plx**2
-            cov_obs[3,3] = e_pmRA**2
-            cov_obs[4,4] = e_pmDE**2
-            cov_obs[5,5] = e_RV**2
-            
-            #Add covariances.
-            cov_obs[2,3] = e_Plx * e_pmRA * parallax_pmra_corr
-            cov_obs[2,4] = e_Plx * e_pmDE * parallax_pmdec_corr
-            cov_obs[3,4] = e_pmRA * e_pmDE * pmra_pmdec_corr                        
-            for (j,k) in [(2,3),(2,4),(3,4)]:
-                cov_obs[k,j] = cov_obs[j,k]
-            
-            #Create the covariance matrix from the Jacobian. See e.g.:
-            #https://en.wikipedia.org/wiki/Covariance#A_more_general_identity_for_covariance_matrices
-            #Think of the Jacobian as just a linear transformation between the present and the past in
-            #"local" coordinates. 
-            for k in range(nts):
-                xyzuvw_cov[i,k] = np.dot(np.dot(xyzuvw_jac[i,k].T,cov_obs),xyzuvw_jac[i,k])
-                
-            
-            #Test for problems...
-            if (np.linalg.eigvalsh(xyzuvw_cov[i,k])[0]<0):
-                pdb.set_trace()
-            
-            #Plot beginning and end points, plus their the uncertainties from the
-            #covariance matrix.
-        #    plt.plot(xyzuvw[i,0,0],xyzuvw[i,0,1],'go')
-        #    plt.plot(xyzuvw[i,-1,0],xyzuvw[i,-1,1],'ro')
-            #Only plot if uncertainties are low...
-            if plotit:
-                cov_end = xyzuvw_cov[i,-1,cov_ix1,cov_ix2]
-                if (np.sqrt(cov_end.trace()) < max_plot_error):
-                    if plot_text:
-                        if i in text_ix:
-                           plt.text(xyzuvw[i,0,dim1]*1.1 + xoffset[i],xyzuvw[i,0,dim2]*1.1 + yoffset[i],star['Name'],fontsize=11)
-                    plt.plot(xyzuvw[i,:,dim1],xyzuvw[i,:,dim2],'b-')
-                    plot_cov_ellipse(xyzuvw_cov[i,0,cov_ix1,cov_ix2], [xyzuvw[i,0,dim1],xyzuvw[i,0,dim2]],color='g',alpha=1)
-                    plot_cov_ellipse(cov_end, [xyzuvw[i,-1,dim1],xyzuvw[i,-1,dim2]],color='r',alpha=0.2)
-                #else:
-                   # print(star['Name'] + " not plottable (errors too high)")
-
-        if plotit:            
-            plt.xlabel(axis_titles[dim1])
-            plt.ylabel(axis_titles[dim2])
-            plt.axis(axis_range)
-
-        if len(savefile)>0:
-            if savefile[-3:] == 'pkl':
-                with open(savefile,'w') as fp:
-                    pickle.dump((stars,times,xyzuvw,xyzuvw_cov),fp)
-         #Stars is an astropy.Table of stars
-            elif (savefile[-3:] == 'fit') or (savefile[-4:] == 'fits'):
-                hl = pyfits.HDUList()
-                hl.append(pyfits.PrimaryHDU())
-                hl.append(pyfits.BinTableHDU(stars))
-                hl.append(pyfits.ImageHDU(times))
-                hl.append(pyfits.ImageHDU(xyzuvw))
-                hl.append(pyfits.ImageHDU(xyzuvw_cov))
-                hl.writeto(savefile, clobber=True)
-            else:
-                print("Unknown File Type!")
-                raise UserWarning
-        else:
-            return xyzuvw
+                except:
+                    e_pmDE = 0.5
+                pmRA = star['pmRA_2']
+                try:
+                    e_pmRA = star['e_pmRA']
+                except:
+                    e_pmRA = 0.5
         
-def trace_forward(sky_coord, time_in_past):
+        else:
+            DEdeg = star['DEdeg']
+            
+            #RAVE Dataset
+            if 'HRV' in star.columns:
+                RAdeg = star['RAdeg']
+                RV = star['HRV']
+                e_RV = star['e_HRV']
+                Plx = star['plx']
+                e_Plx = star['e_plx']
+                pmRA = star['pmRAU4']
+                e_pmRA = star['e_pmRAU4']
+                pmDE = star['pmDEU4']
+                e_pmDE = star['e_pmDEU4'] 
+            #HIPPARCOS    
+            else:
+                if 'RAdeg' in star.columns:
+                    RAdeg = star['RAdeg']
+                else:
+                    RAdeg = star['RAhour']*15.0
+                RV = star['RV']
+                e_RV = star['e_RV']
+                Plx = star['Plx']
+                e_Plx = star['e_Plx']
+                pmRA = star['pmRA']
+                e_pmRA = star['e_pmRA']
+                pmDE = star['pmDE']
+                e_pmDE = star['e_pmDE']
+            
+        params = np.array([RAdeg,DEdeg,Plx,pmRA,pmDE,RV])
+        xyzuvw[i] = integrate_xyzuvw(params,times,lsr_orbit,MWPotential2014)
+        
+        #if star['Name1'] == 'HIP 12545':
+        #    pdb.set_trace()
+        
+        #Create numerical derivatives
+        for j in range(6):
+            params_plus = params.copy()
+            params_plus[j] += dp
+            xyzuvw_plus = integrate_xyzuvw(params_plus,times,lsr_orbit,MWPotential2014)
+            for k in range(nts):
+                xyzuvw_jac[i,k,j,:] = (xyzuvw_plus[k] - xyzuvw[i,k])/dp 
+                
+        #Now that we've got the jacobian, find the modified covariance matrix.
+        cov_obs = np.zeros( (6,6) )
+        cov_obs[0,0] = 1e-1**2 #Nominal 0.1 degree. !!! There is almost a floating underflow in fit_group due to this
+        cov_obs[1,1] = 1e-1**2 #Nominal 0.1 degree. !!! Need to think about this more
+        cov_obs[2,2] = e_Plx**2
+        cov_obs[3,3] = e_pmRA**2
+        cov_obs[4,4] = e_pmDE**2
+        cov_obs[5,5] = e_RV**2
+        
+        #Add covariances.
+        cov_obs[2,3] = e_Plx * e_pmRA * parallax_pmra_corr
+        cov_obs[2,4] = e_Plx * e_pmDE * parallax_pmdec_corr
+        cov_obs[3,4] = e_pmRA * e_pmDE * pmra_pmdec_corr                        
+        for (j,k) in [(2,3),(2,4),(3,4)]:
+            cov_obs[k,j] = cov_obs[j,k]
+        
+        #Create the covariance matrix from the Jacobian. See e.g.:
+        #https://en.wikipedia.org/wiki/Covariance#A_more_general_identity_for_covariance_matrices
+        #Think of the Jacobian as just a linear transformation between the present and the past in
+        #"local" coordinates. 
+        for k in range(nts):
+            xyzuvw_cov[i,k] = np.dot(np.dot(xyzuvw_jac[i,k].T,cov_obs),xyzuvw_jac[i,k])
+            
+        
+        #Test for problems...
+        if (np.linalg.eigvalsh(xyzuvw_cov[i,k])[0]<0):
+            pdb.set_trace()
+        
+        #Plot beginning and end points, plus their the uncertainties from the
+        #covariance matrix.
+    #    plt.plot(xyzuvw[i,0,0],xyzuvw[i,0,1],'go')
+    #    plt.plot(xyzuvw[i,-1,0],xyzuvw[i,-1,1],'ro')
+        #Only plot if uncertainties are low...
+        if plotit:
+            cov_end = xyzuvw_cov[i,-1,cov_ix1,cov_ix2]
+            if (np.sqrt(cov_end.trace()) < max_plot_error):
+                if plot_text:
+                    if i in text_ix:
+                       plt.text(xyzuvw[i,0,dim1]*1.1 + xoffset[i],xyzuvw[i,0,dim2]*1.1 + yoffset[i],star['Name'],fontsize=11)
+                plt.plot(xyzuvw[i,:,dim1],xyzuvw[i,:,dim2],'b-')
+                plot_cov_ellipse(xyzuvw_cov[i,0,cov_ix1,cov_ix2], [xyzuvw[i,0,dim1],xyzuvw[i,0,dim2]],color='g',alpha=1)
+                plot_cov_ellipse(cov_end, [xyzuvw[i,-1,dim1],xyzuvw[i,-1,dim2]],color='r',alpha=0.2)
+            #else:
+               # print(star['Name'] + " not plottable (errors too high)")
+
+    if plotit:            
+        plt.xlabel(axis_titles[dim1])
+        plt.ylabel(axis_titles[dim2])
+        plt.axis(axis_range)
+
+    if len(savefile)>0:
+        if savefile[-3:] == 'pkl':
+            with open(savefile,'w') as fp:
+                pickle.dump((stars,times,xyzuvw,xyzuvw_cov),fp)
+     #Stars is an astropy.Table of stars
+        elif (savefile[-3:] == 'fit') or (savefile[-4:] == 'fits'):
+            hl = pyfits.HDUList()
+            hl.append(pyfits.PrimaryHDU())
+            hl.append(pyfits.BinTableHDU(stars))
+            hl.append(pyfits.ImageHDU(times))
+            hl.append(pyfits.ImageHDU(xyzuvw))
+            hl.append(pyfits.ImageHDU(xyzuvw_cov))
+            hl.writeto(savefile, clobber=True)
+        else:
+            print("Unknown File Type!")
+            raise UserWarning
+    else:
+        return xyzuvw
+  
+def trace_forward(xyzuvw, time_in_past, Potential=MWPotential2014, \
+        solarmotion='schoenrich'):
+    """Trace forward one star in xyzuvw coords
+    
+    Parameters
+    ----------
+    xyzuvw: numpy float array
+        xyzuvw relative to the local standard of rest at some point in the past.
+        
+    time_in_past: float
+        Time in the past that we want to trace forward to the present.
+    """
+    if solarmotion==None:
+        xyzuvw_sun = np.zeros(6)
+    elif solarmotion=='schoenrich':
+        xyzuvw_sun = [0,0,25,11.1,12.24,7.25]
+    else:
+        raise UserWarning
+    times = np.linspace(0,time_in_past, 2)
+
+    #Start off with an LSR orbit...
+    lsr_orbit = get_lsr_orbit(times)
+
+    #Convert times to galpy units:
+    ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
+    
+    #Add on the lsr_orbit to get the times in the past.
+    xyzuvw_gal = np.zeros(6)
+    xyzuvw_gal[0] = xyzuvw[0]/1e3 + lsr_orbit.x(ts[-1]) - lsr_orbit.x(ts[0])
+    xyzuvw_gal[1] = xyzuvw[1]/1e3 + lsr_orbit.y(ts[-1]) - lsr_orbit.y(ts[0])
+    #Relative to a zero-height orbit, excluding the solar motion.
+    xyzuvw_gal[2] = xyzuvw[2]/1e3 
+    xyzuvw_gal[3] = xyzuvw[3] + lsr_orbit.U(ts[-1]) - lsr_orbit.U(ts[0])
+    xyzuvw_gal[4] = xyzuvw[4] + lsr_orbit.V(ts[-1]) - lsr_orbit.V(ts[0])
+    xyzuvw_gal[5] = xyzuvw[5] + lsr_orbit.W(ts[-1]) - lsr_orbit.W(ts[0])
+    
+    #Now convert to units that galpy understands by default.
+    #FIXME: !!! Reverse [0] sign here.
+    l = np.degrees(np.arctan2(xyzuvw_gal[1], -xyzuvw_gal[0]))
+    b = np.degrees(np.arctan2(xyzuvw_gal[2], np.sqrt(np.sum(xyzuvw_gal[:2]**2))))
+    dist = np.sqrt(np.sum(xyzuvw_gal[:3]**2))
+    #As we are already in LSR co-ordinates, put in zero for solar motion and zo.
+    o = Orbit([l,b,dist,xyzuvw_gal[3],xyzuvw_gal[4],xyzuvw_gal[5]], solarmotion=[0,0,0], zo=0, lb=True, uvw=True, vo=220,ro=8)
+    
+    #Integrate this orbit forwards in time.
+    o.integrate(-ts, Potential)#,method='odeint')
+    
+    #Add in the solar z and the solar motion.
+    xyzuvw_now = np.zeros(6)
+    xyzuvw_now[0] = 1e3*(o.x(-ts[-1]) - lsr_orbit.x(0))
+    xyzuvw_now[1] = 1e3*o.y(-ts[-1])
+    xyzuvw_now[2] = 1e3*o.z(-ts[-1]) - xyzuvw_sun[2]
+    xyzuvw_now[3] = o.U(-ts[-1]) - xyzuvw_sun[3]
+    xyzuvw_now[4] = o.V(-ts[-1]) - xyzuvw_sun[4]
+    xyzuvw_now[5] = o.W(-ts[-1]) - xyzuvw_sun[5]
+    
+    #pdb.set_trace()
+    
+    return xyzuvw_now
+      
+def trace_forward_sky(sky_coord, time_in_past):
     """Trace forward one star in xyzuvw coords"""
     #Times in Myr
-    ts = (np.array([0,time_in_past])/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
-    
-    #Trace back the local standard of rest.
-    lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion='schoenrich')
-    lsr_orbit.integrate(ts,MWPotential2014,method='odeint')
-
-    xyzuvw_now = integrate_xyzuvw(sky_coord,ts,lsr_orbit,MWPotential2014)
+    times = np.array([-time_in_past,0])
+    xyzuvw_now = integrate_xyzuvw(sky_coord,times,None,MWPotential2014)
 
     return xyzuvw_now[-1]
         
@@ -443,7 +519,9 @@ def traceback2(params,times):
         PM(DE) = Proper motion (Declination) (mas/yr)
         RV = Radial Velocity (km/s)
     age: Age of cluster, in Myr
+    
     """
+    #FIXME: This is very out of date and should be deleted!!!
     #Times in Myr
     ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)
     nts = len(times)
@@ -453,7 +531,7 @@ def traceback2(params,times):
 
     #Trace forward the local standard of rest.
     lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8)
-    lsr_orbit.integrate(ts,MWPotential2014,method='odeint')
+    lsr_orbit.integrate(ts,MWPotential2014)#,method='odeint')
 
     xyzuvw = integrate_xyzuvw(params,ts,lsr_orbit,MWPotential2014)
     return xyzuvw
