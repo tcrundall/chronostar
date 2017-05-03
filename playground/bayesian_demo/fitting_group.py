@@ -21,7 +21,7 @@ args = parser.parse_args()
 vel_error = float(args.v)
 
 # Setting up true group parameters
-nstars = 50
+nstars = 100
 pos_mu  = 0
 pos_sig = 5
 vel_mu  = 2
@@ -52,7 +52,7 @@ pos_error = 1
 ms_stars = get_measurements(pr_stars, pos_error, vel_error)
 
 # Trace back measured stars by projecting backwards through time
-n_times = 401
+n_times = 81
 max_age = 2*true_age
 times = np.linspace(0, max_age, n_times)
 trace_back = np.zeros((n_times, nstars, npars))
@@ -63,9 +63,9 @@ for t_ix, time in enumerate(times):
 # If you change xs range, will need to adjust range in plot ~ln 112
 xs = np.linspace(-100,100,500)
 for t_ix, time in enumerate(times):
-    if t_ix%100 == 0:
+    if t_ix%20 == 0:
         plt.plot(xs, group_pdf(xs, trace_back[t_ix]), label=time)
-    elif t_ix%50 == 0:
+    elif t_ix%10 == 0:
         plt.plot(xs, group_pdf(xs, trace_back[t_ix]), '--')
 plt.xlabel("X [pc]")
 plt.ylabel("P(X)")
@@ -83,6 +83,8 @@ st_fitted_mus  = np.zeros(n_times)
 ba_fitted_sigs = np.zeros(n_times)
 ba_fitted_mus  = np.zeros(n_times)
 group_size     = np.zeros(n_times)
+overlaps       = np.zeros(n_times)
+raw_overlaps   = np.zeros(n_times)
 init_pars = [0,100]
 bnds = ((None, None), (0.1,None))
 for i, time in enumerate(times):
@@ -97,11 +99,16 @@ for i, time in enumerate(times):
     ba_fitted_sigs[i] = ba_fit.x[1]
     ba_fitted_mus[i]  = ba_fit.x[0]
     group_size[i]     = get_group_size(trace_back[i])
+    raw_overlaps[i]   = overlap(ba_fit.x, nstars, trace_back[i])
+    overlaps[i]       = lnprior(ba_fit.x[1]) - raw_overlaps[i]
 
+#pdb.set_trace()
 norm_fac = 10 / np.min(group_size)
 plt.plot(times, norm_fac * group_size, label="Scaled average Euclid Dist")
 plt.plot(times, st_fitted_sigs, label="Standard fit")
 plt.plot(times, ba_fitted_sigs, label="Bayesian fit")
+plt.plot(times, 10*overlaps/np.min(overlaps),         label="lnPost")
+plt.plot(times,  5*raw_overlaps/np.max(raw_overlaps), label="lnLike")
 plt.xlabel("Age [Myrs]")
 plt.ylabel(r"Fitted $\sigma$")
 plt.title("Positional variance of group fit with vel_error = {}".\
@@ -111,8 +118,16 @@ filename = "positional_variance_vel_{}".format(str(vel_error).replace('.','_'))
 plt.savefig(filename + ".eps")
 plt.clf()
 
+plt.plot(times, overlaps,      label="lnPost")
+plt.plot(times, -raw_overlaps, label="lnLike")
+plt.legend(loc='best')
+filename = "overlap_vel_{}".format(str(vel_error).replace('.','_'))
+plt.savefig(filename + ".eps")
+plt.clf()
+
 best_st_ix = np.argmin(st_fitted_sigs)
-best_ba_ix = np.argmin(ba_fitted_sigs)
+#best_ba_ix = np.argmin(ba_fitted_sigs)
+best_ba_ix = np.argmax(overlaps) # use the fit with largest lnlike
 best_ed_ix = np.argmin(group_size)
 st_time = times[best_st_ix]
 ba_time = times[best_ba_ix]
@@ -163,3 +178,4 @@ with open(log_filename, 'w') as f:
 
 #plt.hist(original_stars[:,0])
 #plt.show()
+pdb.set_trace()

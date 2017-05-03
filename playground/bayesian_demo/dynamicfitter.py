@@ -36,6 +36,15 @@ def gaussian_fitter(pars, nstars, trace_back):
     squared_diff = (summed_stars - gaussian_fit)**2
     return np.sum(squared_diff)
 
+def lnprior(sig):
+    """
+    Generates a prior based on the stdev of fitted gaussian
+    smaller sigmas are preferred since we want the group of stars
+    to be dense. Extremely small sigmas should be penalised though
+    """
+    min_sig = 2.0
+    return 100 * np.log(sig / (min_sig**2 + sig**2))
+
 def overlap(pars, nstars, trace_back):
     mu, sig = pars
     
@@ -46,6 +55,4 @@ def overlap(pars, nstars, trace_back):
         numer = np.exp(-(smu - mu)**2 / (2*(ssig**2 + sig**2)))
         denom = np.sqrt(2*np.pi*(ssig**2 + sig**2))
         total_overlap += np.log(numer/denom)
-    # return the negative because we want to maximise the overlap
-    # and optimize will minimise output
-    return -total_overlap
+    return - total_overlap #+ lnprior(sig) #*add prior afterwards...*
