@@ -5,12 +5,46 @@
 3) Trace this back with covariance matrix at many times in order to be input for a group fitter.
 
 Problems:
-a: Even lsr_orbit doesn't work. 
+
+a: Even lsr_orbit doesn't work in GalPy 1.2. Works fine in GalPy 1.1! The difference is
+or order z / ro, i.e. it looks like a spherical co-ordinate conversion is used for
+cylindrical co-ordinates somewhere.
+
 lsr_orbit = tb.get_lsr_orbit(np.linspace(0,1,10))
 lsr_orbit.V(0) is correct, but lsr_orbit.U(0) and lsr_orbit.W(0) are out by 30m/s.
 
-b: There is up to a 5 pc difference between initial and final positions.
+from __future__ import division, print_function
+import numpy as np
+from galpy.orbit import Orbit
+from galpy.potential import MWPotential2014
+lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion='schoenrich')
+lsr_orbit.integrate(np.linspace(0,.1,100),MWPotential2014)
+print("U,W velocities: {:5.3f} {:5.3f}".format(lsr_orbit.U(0)[0], lsr_orbit.W(0)[0]))
 
+from __future__ import division, print_function
+import numpy as np
+from galpy.util import bovy_coords
+from galpy.orbit import Orbit
+from galpy.potential import MWPotential2014
+lsr_orbit= Orbit(vxvv=[1.,0,1,0,0.,0],vo=220,ro=8, solarmotion=[100.,100.,100.])
+lsr_orbit.integrate(np.linspace(0,.1,100),MWPotential2014)
+print("U,V,W velocities: {:5.3f} {:5.3f} {:5.3f}".format(lsr_orbit.U(0)[0], lsr_orbit.V(0)[0],lsr_orbit.W(0)[0]))
+
+
+b: There is up to a 5 pc difference between initial and final positions.
+Also works fine for GalPy 1.1!
+
+For bugshooting... the key routine was:
+
+coords.galcencyl_to_XYZ
+... line 903 in OrbitTop.py
+galpy/galpy/orbit_src
+
+You can get to the OrbitTop object (a FullOrbit) by:
+lsr_orbit._orb
+
+e.g. to evaluate at time 0:
+lsr_orbit._orb(0)
 """
 from __future__ import division, print_function
 import numpy as np
