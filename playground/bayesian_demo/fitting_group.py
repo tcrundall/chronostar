@@ -12,13 +12,16 @@ USAGE:  run with `./fitting_group.py -v [velocity measurement error]`
             the stars and their overlaps for two instances:
                 - best fit: the fit which yielded largest likelihood
                 - narrowest fit: the fit which was narrowest
+        Note that time isn't a free paramter in this code, rather I just
+            iterate through each time index. The mid index (40 at the moment)
+            is the "true" age
 
         Will generate a log:
             bayes_fit_vel_[velocity error].eps
 
         Also a pkl file:
             overlap_vel_[velocity error].pkl
-                - a bit useless to be honest. Feel free to change whats put
+                - a bit useless to be honest. Feel free to change what's put
                     in here. There aren't any dependencies to worry about
 
         Will generate some plots:
