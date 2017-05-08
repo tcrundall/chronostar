@@ -123,17 +123,21 @@ raw_overlaps   = np.zeros(n_times) # raw overlap integral at each time step
 init_pars = [0,100]
 bnds = ((None, None), (0.1,None))
 for i, time in enumerate(times):
+    # fitting gaussian to generalised hist
     st_fit = opt.minimize(
         gaussian_fitter, init_pars, (nstars, trace_back[i]),
         bounds=bnds)
-    ba_fit = opt.minimize(
-        overlap, init_pars, (nstars, trace_back[i]), bounds=bnds)
-
     st_fitted_sigs[i] = np.abs(st_fit.x[1])
     st_fitted_mus[i]  = st_fit.x[0]
+
+    # calculating euclid distance
+    group_size[i]     = get_group_size(trace_back[i]) #euclid distance
+
+    # bayesian fit @Mike
+    ba_fit = opt.minimize(
+        overlap, init_pars, (nstars, trace_back[i]), bounds=bnds)
     ba_fitted_sigs[i] = ba_fit.x[1]
     ba_fitted_mus[i]  = ba_fit.x[0]
-    group_size[i]     = get_group_size(trace_back[i]) #euclid distance
     raw_overlaps[i]   = overlap(ba_fit.x, nstars, trace_back[i])
     overlaps[i]       = lnprior(ba_fit.x[1]) - raw_overlaps[i]
 
@@ -142,8 +146,8 @@ norm_fac = 10 / np.min(group_size)
 plt.plot(times, norm_fac * group_size, label="Scaled average Euclid Dist")
 plt.plot(times, st_fitted_sigs, label="Standard fit")
 plt.plot(times, ba_fitted_sigs, label="Bayesian fit")
-plt.plot(times, 10*overlaps/np.min(overlaps),         label="lnPost")
-plt.plot(times,  5*raw_overlaps/np.max(raw_overlaps), label="lnLike")
+plt.plot(times, 10*overlaps/np.min(overlaps),         label="lnPost") #@Mike
+plt.plot(times,  5*raw_overlaps/np.max(raw_overlaps), label="lnLike") #@Mike
 plt.xlabel("Age [Myrs]")
 plt.ylabel(r"Fitted $\sigma$")
 plt.title("Positional variance of group fit with vel_error = {}".\
@@ -162,9 +166,9 @@ plt.clf()
 
 best_st_ix = np.argmin(st_fitted_sigs)
 #best_ba_ix = np.argmin(ba_fitted_sigs)
-best_ba_ix = np.argmax(overlaps) # use the fit with largest lnlike
+best_ba_ix = np.argmax(overlaps) # use the fit with largest lnlike @Mike
 best_ed_ix = np.argmin(group_size)
-smallest_ba_ix = np.argmin(ba_fitted_sigs)
+smallest_ba_ix = np.argmin(ba_fitted_sigs) #@Mike
 st_time = times[best_st_ix]
 ba_time = times[best_ba_ix]
 ed_time = times[best_ed_ix]
@@ -174,8 +178,8 @@ pickle.dump((st_time, ba_time, st_fitted_sigs, ba_fitted_sigs),
             open(filename + ".pkl",'w'))
 
 best_st_mu  = st_fitted_mus[best_st_ix]
-best_ba_mu  = ba_fitted_mus[best_ba_ix]
-best_ba_sig = ba_fitted_sigs[best_ba_ix]
+best_ba_mu  = ba_fitted_mus[best_ba_ix] #@Mike
+best_ba_sig = ba_fitted_sigs[best_ba_ix] #@Mike
 
 plt.plot(xs[200:300], gaussian(xs[200:300], best_ba_mu, best_ba_sig),
          label="Bayes Fit, age= {}".format(ba_time))
@@ -221,7 +225,7 @@ with open(log_filename, 'w') as f:
 #  time which yielded the best (highest lnprob) bayesian fit and
 #  the time which yielded the narrowest bayesian fit
 
-# Gathering bayesian fitted parameters into groups
+# Gathering bayesian fitted parameters into groups @Mike
 group_pars = np.stack((ba_fitted_mus, ba_fitted_sigs), axis=1)
 
 best_fit_stars = trace_back[best_ba_ix][:][:]
