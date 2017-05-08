@@ -7,6 +7,38 @@ from dynamicfitter import *
 import argparse
 
 """
+USAGE:  run with `./fitting_group.py -v [velocity measurement error]`
+        Will finish with a pdb.set_trace() giving you access to np arrays with
+            the stars and their overlaps for two instances:
+                - best fit: the fit which yielded largest likelihood
+                - narrowest fit: the fit which was narrowest
+
+        Will generate a log:
+            bayes_fit_vel_[velocity error].eps
+
+        Also a pkl file:
+            overlap_vel_[velocity error].pkl
+                - a bit useless to be honest. Feel free to change whats put
+                    in here. There aren't any dependencies to worry about
+
+        Will generate some plots:
+            hist_of_original_stars_pos.eps
+            hist_of_original_stars_vel.eps
+            generalised_histogram_vel_[velocity error].eps
+                - gen-hist of traceback position at various times
+            positional_variance_vel_[velocity error].eps
+                - plot showing how well each approach matches the correct age
+                - !!! use this to confirm the fitting is smooth, i.e. no 
+                    random jumps/spikes (which happens when optimiser gets
+                    confused)
+            overlap_vel_[velocity error].eps
+                - shows the raw likelihood result (lnlike) along with the 
+                   adjusted result with a heavy prior on width of group (lnpost)
+            bayes_fit_vel_[velocity error].eps
+                - compares the original position distribution of stars along
+                    with the narrowest bayesian fitted gaussian
+            
+
 URGENT: Confirm that likelihood function is maximal for the
         bayesian fit which yielded the smallest sigma
             (or at least close to the true age!!!)
@@ -24,7 +56,7 @@ vel_error = float(args.v)
 nstars = 100
 pos_mu  = 0
 pos_sig = 5
-vel_mu  = 2
+vel_mu  = 0
 vel_sig = 5
 npars   = 4 #number of parameters required to describe a star
 
@@ -78,13 +110,13 @@ plt.clf()
 # Fitting a gaussian to summed PDF
 #   vs
 # Fitting a gaussian through bayesian analysis
-st_fitted_sigs = np.zeros(n_times)
-st_fitted_mus  = np.zeros(n_times)
-ba_fitted_sigs = np.zeros(n_times)
-ba_fitted_mus  = np.zeros(n_times)
-group_size     = np.zeros(n_times)
-overlaps       = np.zeros(n_times)
-raw_overlaps   = np.zeros(n_times)
+st_fitted_sigs = np.zeros(n_times) # fitting gaussian to generaised histogram
+st_fitted_mus  = np.zeros(n_times) # ^^ ditto
+ba_fitted_sigs = np.zeros(n_times) # gausssian pars that maximise likelihood
+ba_fitted_mus  = np.zeros(n_times) # ^^ ditto
+group_size     = np.zeros(n_times) # euclid distance
+overlaps       = np.zeros(n_times) # includes strong prior on stdev of pos
+raw_overlaps   = np.zeros(n_times) # raw overlap integral at each time step
 init_pars = [0,100]
 bnds = ((None, None), (0.1,None))
 for i, time in enumerate(times):
@@ -98,7 +130,7 @@ for i, time in enumerate(times):
     st_fitted_mus[i]  = st_fit.x[0]
     ba_fitted_sigs[i] = ba_fit.x[1]
     ba_fitted_mus[i]  = ba_fit.x[0]
-    group_size[i]     = get_group_size(trace_back[i])
+    group_size[i]     = get_group_size(trace_back[i]) #euclid distance
     raw_overlaps[i]   = overlap(ba_fit.x, nstars, trace_back[i])
     overlaps[i]       = lnprior(ba_fit.x[1]) - raw_overlaps[i]
 
@@ -129,9 +161,12 @@ best_st_ix = np.argmin(st_fitted_sigs)
 #best_ba_ix = np.argmin(ba_fitted_sigs)
 best_ba_ix = np.argmax(overlaps) # use the fit with largest lnlike
 best_ed_ix = np.argmin(group_size)
+smallest_ba_ix = np.argmin(ba_fitted_sigs)
 st_time = times[best_st_ix]
 ba_time = times[best_ba_ix]
 ed_time = times[best_ed_ix]
+smallest_ba_time = times[smallest_ba_ix]
+
 pickle.dump((st_time, ba_time, st_fitted_sigs, ba_fitted_sigs),
             open(filename + ".pkl",'w'))
 
@@ -178,4 +213,31 @@ with open(log_filename, 'w') as f:
 
 #plt.hist(original_stars[:,0])
 #plt.show()
+
+# For debugging reasons, extract the traceback positions for the 
+#  time which yielded the best (highest lnprob) bayesian fit and
+#  the time which yielded the narrowest bayesian fit
+
+# Gathering bayesian fitted parameters into groups
+group_pars = np.stack((ba_fitted_mus, ba_fitted_sigs), axis=1)
+
+best_fit_stars = trace_back[best_ba_ix][:][:]
+best_fit_group = group_pars[best_ba_ix]
+
+narrowest_fit_stars = trace_back[smallest_ba_ix][:][:]
+narrowest_fit_group = group_pars[smallest_ba_ix]
+
+best_fit_overlaps = np.zeros(nstars)
+narrowest_fit_overlaps = np.zeros(nstars)
+
+for i in range(nstars):
+    best_fit_overlaps = single_overlap(
+        best_fit_group, best_fit_stars[i][0:2]
+        )
+    narrowest_fit_overlaps = single_overlap(
+        narrowest_fit_group, narrowest_fit_stars[i][0:2]
+        )
+# Now you can.. i dunno, plot a histogram of overlaps... mimic the for loops
+#  from above to plot positions of stars...
+
 pdb.set_trace()

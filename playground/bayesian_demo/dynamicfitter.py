@@ -45,14 +45,22 @@ def lnprior(sig):
     min_sig = 2.0
     return 100 * np.log(sig / (min_sig**2 + sig**2))
 
+def single_overlap(group_pars, star_pars):
+    mu_g, sig_g = group_pars
+    mu_s, sig_s = star_pars
+    numer = np.exp(-(mu_s - mu_g)**2 / (2*(sig_s**2 + sig_g**2)))
+    denom = np.sqrt(2*np.pi*(sig_s**2 + sig_g**2))
+    return numer/denom
+
 def overlap(pars, nstars, trace_back):
     mu, sig = pars
     
     total_overlap = 0
     for i in range(nstars):
-        smu  = trace_back[i][0]
-        ssig = trace_back[i][1]
-        numer = np.exp(-(smu - mu)**2 / (2*(ssig**2 + sig**2)))
-        denom = np.sqrt(2*np.pi*(ssig**2 + sig**2))
-        total_overlap += np.log(numer/denom)
+        star_pars  = trace_back[i][0:2]
+        total_overlap += np.log(single_overlap(pars, star_pars))
+        #smu, ssig = star_pars
+        #numer = np.exp(-(smu - mu)**2 / (2*(ssig**2 + sig**2)))
+        #denom = np.sqrt(2*np.pi*(ssig**2 + sig**2))
+        #total_overlap += np.log(numer/denom)
     return - total_overlap #+ lnprior(sig) #*add prior afterwards...*
