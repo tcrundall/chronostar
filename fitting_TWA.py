@@ -57,8 +57,8 @@ group_names, initial_groups, ages_all = pickle.load(
     open(save_dir + "init_mgs.pkl", 'r'))
 #pdb.set_trace()
 
-twa_init_xyzuvw = [initial_groups[1]]
-twa_init_age    = [ages_all[1]]
+#twa_init_xyzuvw = [initial_groups[1]]
+#twa_init_age    = [ages_all[1]]
 
 npars_per_group = 14
 
@@ -82,8 +82,7 @@ bg = False
 
 samples, pos, lnprob = groupfitter.fit_groups(
     burnin, steps, nfree, nfixed, infile,
-    bg=bg, loc_debug=debug,
-    init_free_groups=twa_init_xyzuvw, init_free_ages=twa_init_age)
+    bg=bg, loc_debug=debug)
 
 nwalkers = np.shape(samples)[0]
 nsteps   = np.shape(samples)[1]
@@ -93,7 +92,7 @@ flat_samples = np.reshape(samples, (nwalkers*nsteps, npars))
 cv_samples = anl.convert_samples(flat_samples, nfree, nfixed, npars)
 best_fit_true = anl.calc_best_fit(cv_samples)
 
-# ??? lnprob is fkuked
+# ??? lnprob is fkuked, can't use TWA traceback
 pdb.set_trace()
 
 # if this is the first run, the best_fit accumulator is simply
