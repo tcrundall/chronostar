@@ -216,7 +216,7 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='', dims=[1,2
     """
     nstars = len(stars)
     nts = len(times)
-    
+
     #Positions and velocities in the co-rotating solar reference frame.
     xyzuvw = np.zeros( (nstars,nts,6) )
     
@@ -399,6 +399,7 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='', dims=[1,2
         plt.xlabel(axis_titles[dim1])
         plt.ylabel(axis_titles[dim2])
         plt.axis(axis_range)
+        plt.savefig("myplot.eps")
 
     if len(savefile)>0:
         if savefile[-3:] == 'pkl':
