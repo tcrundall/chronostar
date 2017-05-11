@@ -8,20 +8,12 @@ the group formation based on Bayesian analysis, which in this case involves
 computing overlap integrals. 
     
 TODO:
-0) Save a log, save the samples
-1) Make corner plot generic
 2) make input parameters scale invariant
     - use arccos/arcsin for correlations e.g., 1/x for pos/vel dispersion
     - then tidy up samples at end by reconverting into "physical" parameters
-3) Work out actual physical constraints for correlations
 
 To use MPI, try:
-
-mpirun -np 2 python fit_group.py
-
-Note that this *doesn't* work yet due to a "pickling" problem.
-
-Must be procedural for MPI to work
+  mpirun -np 2 python fit_group.py
 """
 
 from __future__ import print_function, division
@@ -162,7 +154,7 @@ class Group(MVGaussian):
 def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
              fixed_groups=[], init_free_groups=None, init_free_ages=None,
              infile='results/bp_TGAS2_traceback_save.pkl', pool=None, bg=False,
-             loc_debug=False):
+             loc_debug=False, fixed_ages=False):
     """
     returns:
         samples - [nwalkers x nsteps x npars] array of all samples
@@ -186,7 +178,7 @@ def fit_groups(burnin=100, steps=200, nfree=1, nfixed=0, plotit=True,
              run_fit(
                 burnin, steps, nfixed, nfree, FIXED_GROUPS,
                 init_free_groups, init_free_ages, star_params,
-                bg=bg, pool=pool)
+                fixed_ages=fixed_ages, bg=bg, pool=pool)
 
     return samples, pos, lnprob
 
@@ -422,7 +414,7 @@ def lnprobfunc(pars, nfree, nfixed, fixed_groups, star_params):
     return lp + lnlike(pars, nfree, nfixed, fixed_groups, star_params)
 
 def generate_parameter_list(nfixed, nfree, bg=False, init_free_groups=None,
-                            init_free_ages=None):
+                            init_free_ages=None, fixed_ages=False):
     """
         Generates the initial sample around which the walkers will
         be initialised. This function uses the number of free groups
@@ -467,6 +459,9 @@ def generate_parameter_list(nfixed, nfree, bg=False, init_free_groups=None,
         default_pars[-1] = 0
         default_sdev[-1] = 0
 
+    if fixed_ages:
+        default_sdev[-1] = 0
+
     if nfixed == 0:
         init_pars = [] + default_pars * nfree + [init_amp_free]*(nfree-1)
     else:
@@ -479,23 +474,24 @@ def generate_parameter_list(nfixed, nfree, bg=False, init_free_groups=None,
 
 
     # Incorporate initial XYZUVW and ages if present into initialisation
-    if (init_free_groups is not None) and (init_free_ages is not None):
+    if init_free_groups is not None:
         for i in range(nfree):
             init_pars[i*npars_in_def : i*npars_in_def + 6] =\
                 init_free_groups[i]
+    if init_free_ages is not None:
+        for i in range(nfree):
             init_pars[i*npars_in_def + 13] =\
                 init_free_ages[i]
-
     return init_pars, init_sdev, nwalkers
 
 def run_fit(burnin, steps, nfixed, nfree, fixed_groups, init_free_groups,
-            init_free_ages, star_params, bg=False, pool=None):
+            init_free_ages, star_params, fixed_ages=False, bg=False, pool=None):
     """
     """
     # setting up initial params from intial conditions
     init_pars, init_sdev, nwalkers = generate_parameter_list(
         nfixed, nfree, bg, init_free_groups=init_free_groups,
-        init_free_ages=init_free_ages)
+        init_free_ages=init_free_ages, fixed_ages=fixed_ages)
     if debug:
         assert(len(init_pars) == len(init_sdev))
     npar = len(init_pars)
