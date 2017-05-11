@@ -309,14 +309,14 @@ def plot_corner(nfree, nfixed, converted_samples, lnprob,
                         truths = best_sample[np.where(param_mask)],
                         labels =      labels[np.where(param_mask)] )
 
-    file_name = "plots/{}_corner_{}_{}_{}.png".format(tstamp, nfree, nfixed,
+    file_name = "plots/{}_corner_{}_{}_{}.eps".format(tstamp, nfree, nfixed,
                                                       lnprob.shape[1])
 
     fig.savefig(file_name)
     fig.clf()
     return 0
 
-def save_results(nfree, nfixed, nsteps, nwalkers, samples, tstamp):
+def save_results(nsteps, nfree, nfixed, nwalkers, samples, tstamp):
     file_stem = "{}_{}_{}_{}".format(tstamp, nfree, nfixed, nsteps)
     pickle.dump((samples), open("results/"+file_stem+".pkl", 'w'))
 
@@ -331,10 +331,10 @@ def write_results(nsteps, ngroups, bg_groups, bf, tstamp, nsaved=0):
     with open( "logs/{}_{}_{}_{}.txt".\
               format(tstamp, ngroups, bg_groups, nsteps), 'w') as f:
         f.write("Log of output from bp with {} groups, {} bg_groups and {} "
-                "sampling steps,\n".format(ngroups, nsteps, bg_groups) )
+                "sampling steps,\n".format(ngroups, bg_groups, nsteps) )
         f.write("\n")
 
-        f.write("______ BETA PIC MOVING GROUP ______\n")
+        f.write("______ MOVING GROUP ______\n")
         for i in range(len(labels)):
             f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\n"\
                     .format(labels[i], bf[i][0], bf[i][1], bf[i][2]))

@@ -1,6 +1,5 @@
 #! /usr/bin/env python
-
-from chronostar import groupfitter
+# use for debugging age problem:
 import chronostar.analyser as anl
 import numpy as np
 import time
@@ -27,6 +26,8 @@ parser.add_argument('-i', '--infile',  dest = 'i',
                     help='The file of stellar tracebacks')
 parser.add_argument('-d', '--debug',  dest = 'd', action='store_true',
                     help='Set this flag if debugging')
+parser.add_argument('-a', '--age',  dest = 'a', action='store_true',
+                    help='Set this flag if debugging age issue')
 args = parser.parse_args()
 burnin = int(args.b)
 steps = int(args.p)
@@ -36,6 +37,14 @@ noplots = args.n
 infile = args.i
 debug  = args.d
 local  = args.l          # used to set file save location
+debug_age = args.a
+
+if debug_age:
+    from chronostar import debuggroupfitter as groupfitter
+    if burnin < 200:
+        burnin = 200
+else:
+    from chronostar import groupfitter
 
 if not local:
     save_dir = '/short/kc5/'
@@ -71,6 +80,7 @@ npars_per_group = 14
 
 # a rough timestamp to help keep logs in order
 tstamp = str(int(time.time())%10000)
+print("Time stamp is: {}".format(tstamp))
 
 # hardcoding only fitting one free group at a time
 nfree = 1
@@ -90,28 +100,10 @@ npars    = np.shape(samples)[2]
 flat_samples = np.reshape(samples, (nwalkers*nsteps, npars))
 
 cv_samples = anl.convert_samples(flat_samples, nfree, nfixed, npars)
-best_fit_true = anl.calc_best_fit(cv_samples)
-
-# ??? lnprob is fkuked, can't use TWA traceback
-pdb.set_trace()
-
-# if this is the first run, the best_fit accumulator is simply
-# set to be equal to the only best_fit so far
-best_fit = anl.calc_best_fit(flat_samples)
-if best_fits is None:
-    best_fits = best_fit_true[:14]
-else:
-    best_fits = np.append(best_fit_true[:14], best_fits, axis=0)
-
-# prepend the median of the free group to the list of fixed groups
-if fixed_groups is None:
-    fixed_groups = [best_fit[:npars_per_group,0]]
-else:
-    fixed_groups = [best_fit[:npars_per_group,0]] + fixed_groups
+best_fits = anl.calc_best_fit(cv_samples)
 
 flat_samples = np.reshape(samples, (nwalkers*nsteps, npars))
 flat_lnprob  = lnprob.flatten()
-pdb.set_trace()
 
 # Preserving required information to plot plots at the end of script
 # or at a later date with a different script
@@ -129,24 +121,23 @@ pickle.dump(
     corner_plot_pars,
     open(save_dir+"results/corner_"+file_stem+".pkl",'w') )
 
-# if dealing with last group, append weights to best_fits
-if nfixed == ngroups -1:
-    best_fits = np.append(best_fits, best_fit_true[-(ngroups):], axis=0)
-    
 # Write up final results
 anl.write_results(steps, nfree, nbg_groups, best_fits, tstamp, nfixed)
 
-pickle.dump(fixed_groups, open(save_dir+"results/groups_"+file_stem+".pkl",'w'))
+#pickle.dump(fixed_groups, open(save_dir+"results/groups_"+file_stem+".pkl",'w'))
 
 # Go back and plot everything if desired
 if not noplots:
-    nfixed = 10
+    nfixed = 0
     file_stem = "{}_{}_{}".format(tstamp,nfree,nfixed)
     lnprob_pars = pickle.load(
         open(save_dir+"results/lnprob_"+file_stem+".pkl",'r'))
     anl.plot_lnprob(*lnprob_pars)
+    # pdb.set_trace()
 
-    anl.plot_corner(*corner_plot_pars[0:4], ages=True, means=True)
+    anl.plot_corner(
+        *corner_plot_pars[0:4], ages=True, means=True, tstamp=tstamp
+        )
 
 #    corner_pars = pickle.load(
 #        open(save_dir+"results/corner_"+file_stem+".pkl",'r')) 
