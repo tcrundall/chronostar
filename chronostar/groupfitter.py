@@ -220,9 +220,9 @@ def read_stars(infile):
     else:
         print("Unknown File Type!")
         raise UserWarning
-    #Create the inverse covariances to save time.
-    xyzuvw_icov = np.linalg.inv(xyzuvw_cov)
-    xyzuvw_icov_det = np.linalg.det(xyzuvw_icov)
+    #Create the inverse covariances to save time. # doesn't work...
+    # xyzuvw_icov = np.linalg.inv(xyzuvw_cov)
+    # xyzuvw_icov_det = np.linalg.det(xyzuvw_icov)
 
 #   #Store key data in globals
 #   STAR_MNS       = xyzuvw
@@ -231,8 +231,8 @@ def read_stars(infile):
 
     xyzuvw0 = xyzuvw[:][0]
 
-    return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov,
-                   xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
+    return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov)
+                   #xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
 
 def lnprior(pars, nfree, nfixed, max_age):
     """
@@ -368,12 +368,14 @@ def lnlike(pars, nfree, nfixed, FIXED_GROUPS, star_params):
 
         # extract the traceback positions of the stars we're after
         if (model_groups[i].age == 0):
-            star_icovs = star_params['xyzuvw_icov'][:,0,:,:]
             star_mns = star_params['xyzuvw'][:,0,:]
-            star_icov_dets = star_params['xyzuvw_icov_det'][:,0]
+            star_icovs     = np.linalg.inv(star_params['xyzuvw_cov'][:,0,:,:])
+            star_icov_dets = np.linalg.det(star_icovs)
         else:
-            star_mns, star_icovs, star_icov_dets =\
-                                  interp_icov(model_groups[i].age, star_params)
+            star_mns, star_covs =\
+                                  interp_cov(model_groups[i].age, star_params)
+            star_icovs = np.linalg.inv(star_covs)
+            star_icov_dets = np.linalg.det(star_icovs)
         
         # use swig to calculate overlaps
         overlaps[i] = overlap.get_overlaps(group_icov, group_mn,
@@ -530,7 +532,7 @@ def run_fit(burnin, steps, nfixed, nfree, fixed_groups, init_free_groups,
     # pos is the final position of walkers
     return samples, pos, lnprob
 
-def interp_icov(target_time, star_params):
+def interp_cov(target_time, star_params):
     """
     Interpolate in time to get the xyzuvw vector and incovariance matrix.
     """
@@ -541,9 +543,7 @@ def interp_icov(target_time, star_params):
     interp_mns       = star_params['xyzuvw'][:,ix0]*(1-frac) +\
                        star_params['xyzuvw'][:,ix0+1]*frac
 
-    interp_icovs     = star_params['xyzuvw_icov'][:,ix0]*(1-frac) +\
-                       star_params['xyzuvw_icov'][:,ix0+1]*frac
+    interp_covs     = star_params['xyzuvw_cov'][:,ix0]*(1-frac) +\
+                      star_params['xyzuvw_cov'][:,ix0+1]*frac
 
-    interp_icov_dets = star_params['xyzuvw_icov_det'][:,ix0]*(1-frac) +\
-                       star_params['xyzuvw_icov_det'][:,ix0+1]*frac
-    return interp_mns, interp_icovs, interp_icov_dets
+    return interp_mns, interp_covs

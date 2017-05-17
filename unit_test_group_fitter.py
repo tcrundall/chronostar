@@ -1,6 +1,8 @@
 #!/usr/bin/env python 
 from chronostar.groupfitter import Group
 import chronostar.groupfitter as groupfitter
+#import chronostar.debuggroupfitter as groupfitter
+import chronostar.fit_group as fg
 import argparse
 import pdb
 import numpy as np
@@ -133,5 +135,23 @@ if not test_run:
             expected = free_group_npars * gpl_nfree + gpl_nfixed - 1
             assert(res_len ==  expected),\
                 "*** Expected: {}, got: {}".format(expected, res_len)
+
+    print("Testing interp_icov()")
+    # comparing my implementation of interpolating with
+    # output from Mike's original
+    star_params = groupfitter.read_stars(infile)
+    target_time = 0.5*(star_params['times'][0] + star_params['times'][1])
+    mns, covs = groupfitter.interp_cov(target_time, star_params)
+    icovs = np.linalg.inv(covs)
+    icov_dets = np.linalg.det(icovs)
+
+    orig_mns, orig_covs = fg.interp_cov(target_time, star_params)
+    orig_icovs = np.linalg.inv(orig_covs)
+    orig_icov_dets = np.linalg.det(orig_icovs)
+    assert np.allclose(mns, 0.5 * (star_params['xyzuvw'][:,0] +
+                                   star_params['xyzuvw'][:,1]))
+    assert np.allclose(orig_mns, mns)
+    assert np.allclose(orig_icovs, icovs)
+    assert np.allclose(orig_icov_dets, icov_dets)
 
     print("___ chronostar/groupfitter.py passing all tests ___")

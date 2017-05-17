@@ -40,11 +40,16 @@ infile = args.i
 debug  = args.d
 local  = args.l          # used to choose file save location
 debug_age = args.x
-fixed_age = float(args.a)
+try:
+    fixed_age = float(args.a)
+except:
+    fixed_age = args.a
 
 fixed_ages = (fixed_age is not None)
 if fixed_ages:
     init_free_ages = ngroups * [fixed_age]
+else:
+    init_free_ages = None
 
 if debug_age:
     from chronostar import debuggroupfitter as groupfitter
@@ -101,9 +106,14 @@ ngroups = nfree + nfixed
 
 bg = False
 
-samples, pos, lnprob = groupfitter.fit_groups(
-    burnin, steps, nfree, nfixed, infile, init_free_ages=init_free_ages,
-    fixed_ages=fixed_ages, bg=bg, loc_debug=debug)
+if not debug_age:
+    samples, pos, lnprob = groupfitter.fit_groups(
+        burnin, steps, nfree, nfixed, infile, init_free_ages=init_free_ages,
+        fixed_ages=fixed_ages, bg=bg, loc_debug=debug)
+else:
+    samples, pos, lnprob = groupfitter.fit_groups(
+        burnin, steps, nfree, nfixed, infile, 
+        bg=bg, loc_debug=debug)
 
 nwalkers = np.shape(samples)[0]
 nsteps   = np.shape(samples)[1]
