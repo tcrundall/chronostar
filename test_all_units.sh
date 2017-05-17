@@ -7,3 +7,4 @@ python -W ignore unit_test_swig_module.py
 python -W ignore unit_test_group_fitter.py --debug
 python -W ignore unit_test_group_fitter.py -b 10 -p 20 --run --debug
 python -W ignore unit_test_analyser.py
+echo '___ Entire test suite passing ___'

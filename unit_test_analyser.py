@@ -6,7 +6,7 @@ plotit = False
 print("___ Testing chronostar/analyser.py ___")
 
 # Test read_sampler
-samples_file = 'logs/gf_bp_2_3_10_10.pkl'
+samples_file = 'logs/archive/gf_bp_2_3_10_10.pkl'
 
 # Check read_sampler returnss some variables
 print("Testing read_sampler()")
