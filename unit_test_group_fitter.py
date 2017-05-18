@@ -154,4 +154,11 @@ if not test_run:
     assert np.allclose(orig_icovs, icovs)
     assert np.allclose(orig_icov_dets, icov_dets)
 
+    print("Testing calc_average_eig()")
+    assert(groupfitter.calc_average_eig(good_pars[0]) == 1.0)
+    manual_approx_vol = np.mean(1/np.array((fixed_bg_group)[6:9]))
+    res = groupfitter.calc_average_eig(fixed_bg_group)
+    check = np.abs(manual_approx_vol - res)/res
+    assert(check < 0.01)
+
     print("___ chronostar/groupfitter.py passing all tests ___")

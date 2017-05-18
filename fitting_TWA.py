@@ -7,6 +7,8 @@ import pickle
 
 import pdb
 import argparse
+import sys
+from emcee.utils import MPIPool
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-b', '--burnin', dest = 'b', default=10,
@@ -30,6 +32,24 @@ parser.add_argument('-d', '--debug',  dest = 'd', action='store_true',
                     help='Set this flag if debugging')
 parser.add_argument('-x', '--dage',  dest = 'x', action='store_true',
                     help='Set this flag if debugging age issue')
+
+using_mpi = True
+try:
+    # Initialize the MPI-based pool used for parallelization.
+    pool = MPIPool()
+except:
+    print("MPI doesn't seem to be installed... maybe install it?")
+    using_mpi = False
+    pool=None
+
+if using_mpi:
+    if not pool.is_master():
+        # Wait for instructions from the master process.
+        pool.wait()
+        sys.exit(0)
+    else:
+        print("MPI available! - call this with e.g. mpirun -np 4 python fitting_TWA.py")
+
 args = parser.parse_args()
 burnin = int(args.b)
 steps = int(args.p)
@@ -105,20 +125,25 @@ nfixed = 0
 ngroups = nfree + nfixed
 
 bg = False
-
 if not debug_age:
     samples, pos, lnprob = groupfitter.fit_groups(
-        burnin, steps, nfree, nfixed, infile, init_free_ages=init_free_ages,
+        burnin, steps, nfree, nfixed, infile=save_dir+infile,
+        init_free_ages=init_free_ages,
         fixed_ages=fixed_ages, bg=bg, loc_debug=debug)
 else:
     samples, pos, lnprob = groupfitter.fit_groups(
-        burnin, steps, nfree, nfixed, infile, 
+        burnin, steps, nfree, nfixed, infile=save_dir+infile, 
         bg=bg, loc_debug=debug)
 
 nwalkers = np.shape(samples)[0]
 nsteps   = np.shape(samples)[1]
 npars    = np.shape(samples)[2] 
 flat_samples = np.reshape(samples, (nwalkers*nsteps, npars))
+
+widths = np.zeros(flat_samples.shape[0])
+for i in range(widths.shape[0]):
+    widths[i] = groupfitter.calc_average_eig(flat_samples[i])
+best_width = anl.calc_best_fit(widths.reshape(-1,1))
 
 cv_samples = anl.convert_samples(flat_samples, nfree, nfixed, npars)
 best_fits = anl.calc_best_fit(cv_samples)
@@ -143,7 +168,8 @@ pickle.dump(
     open(save_dir+"results/corner_"+file_stem+".pkl",'w') )
 
 # Write up final results
-anl.write_results(steps, nfree, nbg_groups, best_fits, tstamp, nfixed)
+anl.write_results(steps, nfree, nbg_groups, best_fits, tstamp, nfixed,
+                  bw=best_width)
 
 #pickle.dump(fixed_groups, open(save_dir+"results/groups_"+file_stem+".pkl",'w'))
 
@@ -157,10 +183,13 @@ if not noplots:
     # pdb.set_trace()
 
     anl.plot_corner(
-        *corner_plot_pars[0:4], ages=False, means=True, std=True, tstamp=tstamp
+        *corner_plot_pars[0:4], ages=False, means=True,
+        stds=True, tstamp=tstamp
         )
 
 #    corner_pars = pickle.load(
 #        open(save_dir+"results/corner_"+file_stem+".pkl",'r')) 
 #    anl.plot_corner(*corner_pars)
 
+if using_mpi:
+    pool.close()

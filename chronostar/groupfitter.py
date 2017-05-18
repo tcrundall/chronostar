@@ -547,3 +547,20 @@ def interp_cov(target_time, star_params):
                       star_params['xyzuvw_cov'][:,ix0+1]*frac
 
     return interp_mns, interp_covs
+
+def calc_average_eig(sample):
+    """
+    Calculates the average eigenvector (proxy for size)
+    of the first group listed in the sample
+    stdevs must be stored as inverse in sample
+    """
+    npars_w_age = 14
+    group_pars = sample[:npars_w_age]
+    assert(group_pars[6] <= 1)
+    amplitude=1
+    model_group = Group(group_pars, amplitude)
+    # careful, nor sure what order the eigen values are returned in
+    # seems ok now only because velocity disp is so much smaller than
+    # spatial disp
+    mean_width = np.mean( np.sqrt((1/np.linalg.eigvalsh(model_group.icov)))[0:3])
+    return mean_width

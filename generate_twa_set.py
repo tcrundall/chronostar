@@ -123,7 +123,8 @@ t = Table(
            'pmRA','e_pmRA','pmDE','e_pmDE')
     )
 times = np.linspace(0,15,40)
-xyzuvw = tb.traceback(t,times,savefile=location + 'TWA_traceback.pkl')
+pdb.set_trace()
+xyzuvw = tb.traceback(t,times,savefile=location + 'TWA_traceback2.pkl')
 
 #table_infile = location + "Astrometry_with_RVs_250pc_100kms_lesscols.fits"
 

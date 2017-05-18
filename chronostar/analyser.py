@@ -320,10 +320,9 @@ def save_results(nsteps, nfree, nfixed, nwalkers, samples, tstamp):
     file_stem = "{}_{}_{}_{}".format(tstamp, nfree, nfixed, nsteps)
     pickle.dump((samples), open("results/"+file_stem+".pkl", 'w'))
 
-def write_results(nsteps, ngroups, bg_groups, bf, tstamp, nsaved=0):
+def write_results(nsteps, ngroups, bg_groups, bf, tstamp, nsaved=0, bw=None):
     """
     Saves the results of a fit to file.
-    
     """
     # Generate a label for all of our groups 
     labels = generate_labels(ngroups, 0)
@@ -342,4 +341,7 @@ def write_results(nsteps, ngroups, bg_groups, bf, tstamp, nsaved=0):
             f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\n"\
                     .format("weight", bf[len(labels)+i][0],
                             bf[len(labels)+i][1], bf[len(labels)+i][2]))
-
+        if bw is not None:
+            f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\n"\
+                    .format("width", bw[0][0], bw[0][1], bw[0][2]))
+            
