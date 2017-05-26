@@ -14,6 +14,7 @@ parser.add_argument('-t', '--tstamp',  dest = 't', default='nostamp',
 parser.add_argument('-l', '--local', dest = 'l', action='store_true',
                      help='Set this flag if not running on Raijin')
 parser.add_argument('-r', '--range', dest = 'r', action='store_true')
+parser.add_argument('-c', '--corner', dest = 'c', action='store_true')
 #parser.add_argument('-n', '--noplots',  dest = 'n', action='store_true',
 #                    help='Set this flag if running on a server')
 #parser.add_argument('-i', '--infile',  dest = 'i',
@@ -26,6 +27,7 @@ ngroups = int(args.g)
 tstamp = args.t
 nfree  = int(args.f)
 local  = args.l
+corner = args.c
 span_range = args.r
 
 if not local:
@@ -43,9 +45,10 @@ except:
 if span_range:
     for nfixed in range(ngroups):
         file_stem = "{}_{}_{}".format(tstamp,nfree,nfixed)
-        lnprob_pars = pickle.load(
-            open(save_dir+"results/lnprob_"+file_stem+".pkl",'r'))
-        anl.plot_lnprob(*lnprob_pars)
+        if not corner:
+            lnprob_pars = pickle.load(
+                open(save_dir+"results/lnprob_"+file_stem+".pkl",'r'))
+            anl.plot_lnprob(*lnprob_pars)
         
         corner_pars = pickle.load(
             open(save_dir+"results/corner_"+file_stem+".pkl",'r')) 
@@ -54,12 +57,11 @@ if span_range:
 else:
     nfixed = ngroups - nfree
     file_stem = "{}_{}_{}".format(tstamp,nfree,nfixed)
-    lnprob_pars = pickle.load(
-        open(save_dir+"results/lnprob_"+file_stem+".pkl",'r'))
-    anl.plot_lnprob(*lnprob_pars)
+    if not corner:
+        lnprob_pars = pickle.load(
+            open(save_dir+"results/lnprob_"+file_stem+".pkl",'r'))
+        anl.plot_lnprob(*lnprob_pars)
     
     corner_pars = pickle.load(
         open(save_dir+"results/corner_"+file_stem+".pkl",'r')) 
     anl.plot_corner(*corner_pars)
-
-

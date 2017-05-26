@@ -232,7 +232,7 @@ def plot_lnprob(lnprob, nfree, nfixed, tstamp, file_stem=None):
     plt.title("{} walkers for {} steps".format(nwalkers, nsteps) )
     plt.xlabel("nsteps")
     plt.ylabel("lnprob")
-    plt.savefig(file_stem + ".png")
+    plt.savefig(file_stem + ".eps")
 
     plt.clf()
 
@@ -240,7 +240,7 @@ def plot_lnprob(lnprob, nfree, nfixed, tstamp, file_stem=None):
     plt.title("{} walkers for {} steps".format(nwalkers, nsteps) )
     plt.xlabel("walkers")
     plt.ylabel("lnprob")
-    plt.savefig(file_stem + "T.png")
+    plt.savefig(file_stem + "T.eps")
 
     plt.clf()
 
