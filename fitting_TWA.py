@@ -81,7 +81,8 @@ else:
 if not local:
     save_dir = '/short/kc5/'
 else:
-    save_dir = 'data/'
+    #save_dir = 'data/'
+    save_dir = ''
 
 try:        
     dummy = None

@@ -60,7 +60,7 @@ fixed_groups = None
 best_fits    = None
 
 # a rough timestamp to help keep logs in order
-tstamp = str(int(time.time())%10000)
+tstamp = "all"+str(int(time.time())%10000)
 
 for nfixed in range(ngroups):
     # hardcoding only fitting one free group at a time
