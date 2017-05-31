@@ -55,13 +55,28 @@ if span_range:
         anl.plot_corner(*corner_pars)
 
 else:
-    nfixed = ngroups - nfree
-    file_stem = "{}_{}_{}".format(tstamp,nfree,nfixed)
-    if not corner:
-        lnprob_pars = pickle.load(
-            open(save_dir+"results/lnprob_"+file_stem+".pkl",'r'))
-        anl.plot_lnprob(*lnprob_pars)
-    
-    corner_pars = pickle.load(
-        open(save_dir+"results/corner_"+file_stem+".pkl",'r')) 
-    anl.plot_corner(*corner_pars)
+    try:
+        nfixed = ngroups - nfree
+        file_stem = "{}_{}_{}".format(tstamp,nfree,nfixed)
+        if not corner:
+            lnprob_pars = pickle.load(
+                open(save_dir+"results/lnprob_"+file_stem+".pkl",'r'))
+            anl.plot_lnprob(*lnprob_pars)
+        
+        corner_pars = pickle.load(
+            open(save_dir+"results/corner_"+file_stem+".pkl",'r')) 
+        anl.plot_corner(*corner_pars)
+        nfixed = ngroups - nfree
+    except:
+        file_stem = "{}_{}".format(nfree,nfixed)
+        if not corner:
+            lnprob_pars = pickle.load(
+                open(save_dir+"results/{}_lnprob_".format(tstamp)
+                               +file_stem+".pkl",'r'))
+            anl.plot_lnprob(*lnprob_pars)
+        
+        corner_pars = pickle.load(
+            open(save_dir+"results/{}_corner_".format(tstamp)
+            +file_stem+".pkl",'r')) 
+        anl.plot_corner(*corner_pars)
+        nfixed = ngroups - nfree

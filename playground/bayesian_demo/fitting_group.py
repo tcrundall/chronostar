@@ -139,15 +139,15 @@ for i, time in enumerate(times):
     ba_fitted_sigs[i] = ba_fit.x[1]
     ba_fitted_mus[i]  = ba_fit.x[0]
     raw_overlaps[i]   = overlap(ba_fit.x, nstars, trace_back[i])
-    overlaps[i]       = lnprior(ba_fit.x[1]) - raw_overlaps[i]
+    # overlaps[i]       = lnprior(ba_fit.x[1]) - raw_overlaps[i]
 
 #pdb.set_trace()
 norm_fac = 10 / np.min(group_size)
 plt.plot(times, norm_fac * group_size, label="Scaled average Euclid Dist")
 plt.plot(times, st_fitted_sigs, label="Standard fit")
 plt.plot(times, ba_fitted_sigs, label="Bayesian fit")
-plt.plot(times, 10*overlaps/np.min(overlaps),         label="lnPost") #@Mike
-plt.plot(times,  5*raw_overlaps/np.max(raw_overlaps), label="lnLike") #@Mike
+# plt.plot(times, 10*overlaps/np.min(overlaps),         label="lnPost") #@Mike
+# plt.plot(times,  5*raw_overlaps/np.max(raw_overlaps), label="lnLike") #@Mike
 plt.xlabel("Age [Myrs]")
 plt.ylabel(r"Fitted $\sigma$")
 plt.title("Positional variance of group fit with vel_error = {}".\
@@ -157,7 +157,7 @@ filename = "positional_variance_vel_{}".format(str(vel_error).replace('.','_'))
 plt.savefig(filename + ".eps")
 plt.clf()
 
-plt.plot(times, overlaps,      label="lnPost")
+# plt.plot(times, overlaps,      label="lnPost")
 plt.plot(times, -raw_overlaps, label="lnLike")
 plt.legend(loc='best')
 filename = "overlap_vel_{}".format(str(vel_error).replace('.','_'))
@@ -165,8 +165,8 @@ plt.savefig(filename + ".eps")
 plt.clf()
 
 best_st_ix = np.argmin(st_fitted_sigs)
-#best_ba_ix = np.argmin(ba_fitted_sigs)
-best_ba_ix = np.argmax(overlaps) # use the fit with largest lnlike @Mike
+best_ba_ix = np.argmin(ba_fitted_sigs)
+#best_ba_ix = np.argmax(overlaps) # use the fit with largest lnlike @Mike
 best_ed_ix = np.argmin(group_size)
 smallest_ba_ix = np.argmin(ba_fitted_sigs) #@Mike
 st_time = times[best_st_ix]
@@ -238,13 +238,19 @@ best_fit_overlaps = np.zeros(nstars)
 narrowest_fit_overlaps = np.zeros(nstars)
 
 for i in range(nstars):
-    best_fit_overlaps = single_overlap(
+    best_fit_overlaps[i] = single_overlap(
         best_fit_group, best_fit_stars[i][0:2]
         )
-    narrowest_fit_overlaps = single_overlap(
+    narrowest_fit_overlaps[i] = single_overlap(
         narrowest_fit_group, narrowest_fit_stars[i][0:2]
         )
 # Now you can.. i dunno, plot a histogram of overlaps... mimic the for loops
 #  from above to plot positions of stars...
 
-pdb.set_trace()
+# plotting the PDF of age
+plt.plot(times, np.exp(-raw_overlaps + np.min(raw_overlaps)))
+plt.xlabel("age [Myr]")
+plt.ylabel("P(age)")
+filename = "agePDF_{}.eps".format(str(vel_error).replace('.','_'))
+plt.savefig(filename)
+

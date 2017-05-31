@@ -81,7 +81,14 @@ else:
 if not local:
     save_dir = '/short/kc5/'
 else:
+<<<<<<< Updated upstream
     #save_dir = 'data/'
+=======
+    save_dir = 'data/'
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     save_dir = ''
 
 try:        
