@@ -24,6 +24,7 @@ tstamps =\
 
 mn_lnprob = np.zeros(len(tstamps))
 loc = "/short/kc5/results/"
+loc = "results/"
 for i, tstamp in enumerate(tstamps):
     filename = loc+"lnprob_"+tstamp+"_1_0.pkl"
     lnprobs, x, y, t = pickle.load(open(filename, 'r'))
@@ -40,7 +41,7 @@ tnew = np.linspace(times.min(), times.max(), 300)
 lnprob_smooth = spline(times,norm_lnprob,tnew)
 
 plt.plot(tnew, lnprob_smooth)
-plt.ylim((0, 1))
+plt.ylim((0, 1.1))
 plt.xlabel("age [Myr]")
 plt.ylabel("P(age)")
-plt.show()
+plt.savefig("plots/twa_age_pdf.eps")

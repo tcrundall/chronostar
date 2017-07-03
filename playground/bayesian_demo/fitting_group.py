@@ -58,7 +58,7 @@ vel_error = float(args.v)
 # Setting up true group parameters
 nstars = 100
 pos_mu  = 0
-pos_sig = 5
+pos_sig = 5 #changed from 5
 vel_mu  = 0
 vel_sig = 5
 npars   = 4 #number of parameters required to describe a star
@@ -96,12 +96,12 @@ for t_ix, time in enumerate(times):
 
 # Plotting summed PDF of traced back stars
 # If you change xs range, will need to adjust range in plot ~ln 112
-xs = np.linspace(-100,100,500)
+xs = np.linspace(-50,50,500)
 for t_ix, time in enumerate(times):
-    if t_ix%20 == 0:
+    if t_ix%40 == 0:
         plt.plot(xs, group_pdf(xs, trace_back[t_ix]), label=time)
-    elif t_ix%10 == 0:
-        plt.plot(xs, group_pdf(xs, trace_back[t_ix]), '--')
+    elif t_ix%20 == 0:
+        plt.plot(xs, group_pdf(xs, trace_back[t_ix]), '--', label=time)
 plt.xlabel("X [pc]")
 plt.ylabel("P(X)")
 plt.title("Generalised histogram of stellar tracebacks at various ages")

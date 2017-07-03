@@ -80,19 +80,11 @@ else:
 
 if not local:
     save_dir = '/short/kc5/'
+    results_dir = '/short/kc5/'
 else:
-<<<<<<< Updated upstream
-    #save_dir = 'data/'
-=======
     save_dir = 'data/'
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-    save_dir = ''
+    results_dir = ''
+    #save_dir = ''
 
 try:        
     dummy = None
@@ -105,8 +97,8 @@ except:
           "'-l' or '--local' flag")
     raise UserWarning
 
-group_names, initial_groups, ages_all = pickle.load(
-    open(save_dir + "init_mgs.pkl", 'r'))
+#group_names, initial_groups, ages_all = pickle.load(
+    #open(save_dir + "init_mgs.pkl", 'r'))
 #pdb.set_trace()
 
 #twa_init_xyzuvw = [initial_groups[1]]
@@ -167,7 +159,7 @@ flat_lnprob  = lnprob.flatten()
 file_stem = "{}_{}_{}".format(tstamp, nfree, nfixed)
 lnprob_pars = (lnprob, nfree, nfixed, tstamp)
 pickle.dump(
-    lnprob_pars, open(save_dir+"results/lnprob_"+file_stem+".pkl",'w'))
+    lnprob_pars, open(results_dir+"results/lnprob_"+file_stem+".pkl",'w'))
 
 weights=(nfixed+nfree > 1)
 cv_samples = anl.convert_samples(flat_samples, nfree, nfixed, npars)
@@ -176,30 +168,30 @@ corner_plot_pars = (
     True, True, False, (not bg and not fixed_ages), weights, tstamp)
 pickle.dump(
     corner_plot_pars,
-    open(save_dir+"results/corner_"+file_stem+".pkl",'w') )
+    open(results_dir+"results/corner_"+file_stem+".pkl",'w') )
 
 # Write up final results
 anl.write_results(steps, nfree, nbg_groups, best_fits, tstamp, nfixed,
                   bw=best_width)
 
-#pickle.dump(fixed_groups, open(save_dir+"results/groups_"+file_stem+".pkl",'w'))
+#pickle.dump(fixed_groups, open(results_dir+"results/groups_"+file_stem+".pkl",'w'))
 
 # Go back and plot everything if desired
 if not noplots:
     nfixed = 0
     file_stem = "{}_{}_{}".format(tstamp,nfree,nfixed)
     lnprob_pars = pickle.load(
-        open(save_dir+"results/lnprob_"+file_stem+".pkl",'r'))
+        open(results_dir+"results/lnprob_"+file_stem+".pkl",'r'))
     anl.plot_lnprob(*lnprob_pars)
     # pdb.set_trace()
 
     anl.plot_corner(
-        *corner_plot_pars[0:4], ages=False, means=True,
+        *corner_plot_pars[0:4], ages=(not fixed_ages), means=True,
         stds=True, tstamp=tstamp
         )
 
 #    corner_pars = pickle.load(
-#        open(save_dir+"results/corner_"+file_stem+".pkl",'r')) 
+#        open(results_dir+"results/corner_"+file_stem+".pkl",'r')) 
 #    anl.plot_corner(*corner_pars)
 
 if using_mpi:
