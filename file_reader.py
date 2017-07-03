@@ -8,6 +8,7 @@ import pickle
 import argparse
 import astropy.io.fits as pyfits
 import sys
+import pdb
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--infile',  dest = 'i',
@@ -18,7 +19,7 @@ args = parser.parse_args()
 infile = args.i
 
 if infile[-3:] == 'pkl':
-    table, times, xyzuvw, xyzuvw_cov = pickle.load(open(infile, 'r'))
+    stars, times, xyzuvw, xyzuvw_cov = pickle.load(open(infile, 'r'))
 
 elif infile[-3:] == 'fit' or infile[-4:] == 'fits':
     stars = pyfits.getdata(infile,1)
