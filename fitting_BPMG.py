@@ -108,6 +108,8 @@ samples, pos, lnprob = groupfitter.fit_groups(
     init_free_ages=init_free_ages,
     fixed_ages=fixed_ages, bg=bg, loc_debug=debug)
 
+print("Run finished")
+
 nwalkers = np.shape(samples)[0]
 nsteps   = np.shape(samples)[1]
 npars    = np.shape(samples)[2] 
@@ -143,6 +145,7 @@ pickle.dump(
 # Write up final results
 anl.write_results(steps, nfree, nbg_groups, best_fits, tstamp, nfixed,
                   bw=best_width, infile=infile)
+print("Logs written")
 
 #pickle.dump(fixed_groups, open(results_dir+"results/groups_"+file_stem+".pkl",'w'))
 
@@ -159,6 +162,7 @@ if not noplots:
         *corner_plot_pars[0:4], ages=(not fixed_ages), means=True,
         stds=True, tstamp=tstamp
         )
+    print("Plots plotted")
 
 if using_mpi:
     pool.close()
