@@ -320,7 +320,8 @@ def save_results(nsteps, nfree, nfixed, nwalkers, samples, tstamp):
     file_stem = "{}_{}_{}_{}".format(tstamp, nfree, nfixed, nsteps)
     pickle.dump((samples), open("results/"+file_stem+".pkl", 'w'))
 
-def write_results(nsteps, ngroups, bg_groups, bf, tstamp, nsaved=0, bw=None):
+def write_results(nsteps, ngroups, bg_groups, bf, tstamp, nsaved=0, bw=None,
+                  infile=None):
     """
     Saves the results of a fit to file.
     """
@@ -331,8 +332,9 @@ def write_results(nsteps, ngroups, bg_groups, bf, tstamp, nsaved=0, bw=None):
               format(tstamp, ngroups, bg_groups, nsteps), 'w') as f:
         f.write("Log of output from bp with {} groups, {} bg_groups and {} "
                 "sampling steps,\n".format(ngroups, bg_groups, nsteps) )
+        if infile:
+            f.write("Input data: {}\n".format(infile))
         f.write("\n")
-
         f.write("______ MOVING GROUP ______\n")
         for i in range(len(labels)):
             f.write("{:8}: {:> 7.2f}  +{:>5.2f}  -{:>5.2f}\n"\

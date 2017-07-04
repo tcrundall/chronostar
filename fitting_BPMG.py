@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 # use for debugging age problem:
 import chronostar.analyser as anl
+from chronostar import groupfitter
 import numpy as np
 import time
 import pickle
-
 import pdb
 import argparse
 import sys
@@ -26,12 +26,10 @@ parser.add_argument('-n', '--noplots',  dest = 'n', action='store_true',
 parser.add_argument('-l', '--local',  dest = 'l', action='store_true',
                     help='Set this flag if not running on raijin')
 parser.add_argument('-i', '--infile',  dest = 'i',
-		    default="TWA_traceback_20Myr.pkl",
+		    default="BPMG_traceback_165Myr.pkl",
                     help='The file of stellar tracebacks')
 parser.add_argument('-d', '--debug',  dest = 'd', action='store_true',
                     help='Set this flag if debugging')
-parser.add_argument('-x', '--dage',  dest = 'x', action='store_true',
-                    help='Set this flag if debugging age issue')
 
 using_mpi = True
 try:
@@ -59,7 +57,6 @@ noplots = args.n
 infile = args.i
 debug  = args.d
 local  = args.l          # used to choose file save location
-debug_age = args.x
 try:
     fixed_age = float(args.a)
 except:
@@ -70,13 +67,6 @@ if fixed_ages:
     init_free_ages = ngroups * [fixed_age]
 else:
     init_free_ages = None
-
-if debug_age:
-    from chronostar import debuggroupfitter as groupfitter
-    if burnin < 200:
-        burnin = 200
-else:
-    from chronostar import groupfitter
 
 if not local:
     save_dir = '/short/kc5/'
@@ -97,21 +87,7 @@ except:
           "'-l' or '--local' flag")
     raise UserWarning
 
-#group_names, initial_groups, ages_all = pickle.load(
-    #open(save_dir + "init_mgs.pkl", 'r'))
-#pdb.set_trace()
-
-#twa_init_xyzuvw = [initial_groups[1]]
-#twa_init_age    = [ages_all[1]]
-
 npars_per_group = 14
-
-#fixed_groups = ngroups*[None]
-# fixed groups is a pickle dump of a previous run of fitting just bg
-#fixed_groups = pickle.load(open("/short/kc5/results/groups_5479_1_2.pkl", 'r'))
-
-#fixed_groups = pickle.load(open("/short/kc5/results/groups_3409_10.pkl", 'r'))
-#best_fits    = None
 
 # a rough timestamp to help keep logs in order
 if fixed_ages:
@@ -123,20 +99,14 @@ print("Time stamp is: {}".format(tstamp))
 
 # hardcoding only fitting one free group at a time
 nfree = 1
-#nfixed = 3
 nfixed = 0
 ngroups = nfree + nfixed
 
 bg = False
-if not debug_age:
-    samples, pos, lnprob = groupfitter.fit_groups(
-        burnin, steps, nfree, nfixed, infile=save_dir+infile,
-        init_free_ages=init_free_ages,
-        fixed_ages=fixed_ages, bg=bg, loc_debug=debug)
-else:
-    samples, pos, lnprob = groupfitter.fit_groups(
-        burnin, steps, nfree, nfixed, infile=save_dir+infile, 
-        bg=bg, loc_debug=debug)
+samples, pos, lnprob = groupfitter.fit_groups(
+    burnin, steps, nfree, nfixed, infile=save_dir+infile,
+    init_free_ages=init_free_ages,
+    fixed_ages=fixed_ages, bg=bg, loc_debug=debug)
 
 nwalkers = np.shape(samples)[0]
 nsteps   = np.shape(samples)[1]
@@ -189,10 +159,6 @@ if not noplots:
         *corner_plot_pars[0:4], ages=(not fixed_ages), means=True,
         stds=True, tstamp=tstamp
         )
-
-#    corner_pars = pickle.load(
-#        open(results_dir+"results/corner_"+file_stem+".pkl",'r')) 
-#    anl.plot_corner(*corner_pars)
 
 if using_mpi:
     pool.close()

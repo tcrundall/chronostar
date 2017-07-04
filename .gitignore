@@ -1,5 +1,7 @@
 #Special directories
 results/*
+*.zip
+logs/*
 
 # Data
 *.fits
