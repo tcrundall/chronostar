@@ -68,11 +68,13 @@ for i, infile in enumerate(infiles):
 
 for i, par in enumerate(parameters):
     plt.errorbar(
-        ages, data[:,i,0], yerr=[data[:,i,2], data[:,i,1]], label=par,
-        capsize=3, elinewidth=1)
+        ages, data[:,i,0], yerr=[data[:,i,2], data[:,i,1]],
+        label=par.replace('0',''), capsize=3, elinewidth=1)
 
 plt.ylim(ymin=0)
 plt.title("Standard Deviation in each axis")
 plt.legend(loc='best')
-plt.savefig('plots/BPMG_discrete_age_fit.eps')
+plt.xlabel("Age [Myr]")
+plt.ylabel("Standard Deviation [pc]")
+plt.savefig('plots/BPMG_discrete_age_fit.jpg')
 
