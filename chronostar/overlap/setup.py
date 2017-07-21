@@ -18,6 +18,9 @@ _overlap = Extension("_overlap",
                     ["overlap.i", "overlap.c"],
                     include_dirs = [numpy_include],
                     libraries = ['gsl', 'gslcblas'],
+                    extra_compile_args = [
+                        "-mmacosx-version-min=10.5"
+                        ]
                     )
 
 # NumpyTypemapTests setup
