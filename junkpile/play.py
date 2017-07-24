@@ -1,3 +1,5 @@
+"""Demo script showing various ways to play with the CRVAD2 data set
+"""
 import numpy as np
 from astropy.table import Table
 import matplotlib.pyplot as plt

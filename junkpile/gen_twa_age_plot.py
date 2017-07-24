@@ -1,3 +1,5 @@
+"""Dedicated script which generated an age PDF plot of TWA for honours thesis.
+"""
 #!/usr/bin/env python
 import pickle
 import numpy as np

@@ -1,3 +1,5 @@
+"""Not sure how this file differs from fitting_BPMG and fitting_TWA....
+"""
 #! /usr/bin/env python
 
 from chronostar import groupfitter

@@ -1,4 +1,6 @@
 """This is a test script for trying to use the full TGAS set of stars.
+Generates a traceback file for either *all* the stars or just the
+"plausible" BPMG members
 
 import chronostar
 star_params = chronostar.fit_group.read_stars('results/LOST_FILE.pkl')

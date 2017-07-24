@@ -1,4 +1,4 @@
-"""This is a test script for tracing back beta Pictoris stars"""
+""" Generates a tb file for BPMG stars."""
 
 from __future__ import print_function, division
 

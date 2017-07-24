@@ -1,3 +1,4 @@
+# Hardcoded script to generate plots from given timestamps
 ./plot_it.py -t 1_0_478613
 ./plot_it.py -t 1_0_478614
 ./plot_it.py -t 2_0_478829

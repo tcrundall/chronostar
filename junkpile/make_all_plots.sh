@@ -1,3 +1,4 @@
+# Redundnate dedicated script to generate all plots for the TWA fit
 ./plot_it.py -t 0_0_114471 -l
 ./plot_it.py -t 1_0_114262 -l
 ./plot_it.py -t 2_0_114304 -l

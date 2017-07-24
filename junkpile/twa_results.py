@@ -1,3 +1,6 @@
+"""Unimaginative script for generating plots of TWA fixed age fits and their
+sizes w.r.t time.
+"""
 #!/usr/bin/env python
 import numpy as np
 import matplotlib.pyplot as plt

@@ -1,4 +1,5 @@
-"""Test the fit_group program with a saved pickle from traceback
+"""REDUNDANT
+Test the fit_group program with a saved pickle from traceback
 
 To use MPI, try:
 

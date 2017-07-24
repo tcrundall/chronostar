@@ -18,6 +18,7 @@ and neatening, and consolidating
 
 
 TODO:
+    - GO THROUGH EVERYTHING, ADD DOCSTRINGS, REMOVE/CONSOLIDATE REDUNDANT CODE
     - test again using a different run
     - neat and tidy
     - write a demo for whole algorithm and see if it has all required
@@ -44,10 +45,28 @@ base_msk_ages   = 6 * [False] + 4 * [False] + 3 * [False] + [True]
 
 def read_sampler(infile='logs/gf_bp_2_3_10_10.pkl'):
     """
-    Read in sampler from .pkl file
+    Read in a bunch of varialbes from .pkl file, extracting more variables
+    and returning them all.
+
+    Parameters
+    ----------
+    infile:
+        a pickled file with the results of a sampling run saved in the form of
+        5 stored variables: chain, lnprob, pos, nfree, nfixed.
+
+    Returns
+    -----------
+    chain:
+        a numpy array of samples with shape [nwalkers, nsteps, npars]
+    lnprob:
+        a numpy array of lnprob values for each sample with shape
+        [nwalkers, nsteps]
+    pos:
+        the final position of all walkers
     """
     chain, lnprob, pos, nfree, nfixed = pickle.load(open(infile))
     nwalkers, nsteps, npars = np.shape(chain)
+    pdb.set_trace()
 
     return chain, lnprob, pos, nfree, nfixed, nsteps, npars
 
@@ -214,6 +233,7 @@ def calc_best_fit(flat_samples):
     Given a set of aligned (converted?) samples, calculate the median and
     errors of each parameter
     """
+    pdb.set_trace()
     return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                      zip(*np.percentile(flat_samples, [16,50,84], axis=0))) )
 
@@ -243,7 +263,6 @@ def plot_lnprob(lnprob, nfree, nfixed, tstamp, file_stem=None):
     plt.savefig(file_stem + "T.eps")
 
     plt.clf()
-
     return 0
 
 def generate_labels(nfree, nfixed):

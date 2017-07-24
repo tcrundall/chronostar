@@ -1,3 +1,6 @@
+"""Generates a tb file for TWA members by first building an astropy table 
+from Donaldson+ 2016 measured astrometry.
+"""
 #! /usr/bin/env python
 
 import chronostar.traceback as tb

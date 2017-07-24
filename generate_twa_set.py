@@ -1,3 +1,9 @@
+"""Script used to generate a tb file of TWA candidate members.
+
+Using astrometry info from Donaldson 2016, converts into preferred units,
+then applies chronostar.traceback.traceback() (?) function.
+"""
+
 #! /usr/bin/env python
 
 import chronostar.traceback as tb

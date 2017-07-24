@@ -1,3 +1,7 @@
+"""Generates a pkl file of the emcee model parameters denoting 7 known
+nearby young moving groups by tracing them back some amount.
+Not sure how useful this is.
+"""
 #! /usr/bin/env python
 
 import chronostar.traceback as tb

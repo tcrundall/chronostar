@@ -1,3 +1,6 @@
+# Basic script which runs all the unit tests
+# currently broken because input files for some if the unit tests are
+# transient in nature
 echo '___ Testing swig setup ___'
 rm chronostar/_overlap.so
 python setup.py build_ext -b .

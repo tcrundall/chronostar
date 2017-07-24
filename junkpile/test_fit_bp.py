@@ -1,3 +1,6 @@
+"""
+REDUNDANT
+"""
 #!/usr/bin/env python
 #stars, times, xyzuvw, xyzuvw_cov = pickle.load(open('results/bp_TGAS2_traceback_save.pkl'))
 
@@ -119,8 +122,8 @@ if using_mpi:
         pool.wait()
         sys.exit(0)
     else:
-        print("MPI available! - call this with e.g. mpirun -np 4 python fit_group.py")
-
+        pass
+        # print("MPI available! - call this with e.g. mpirun -np 4 python fit_group.py")
 
 
 stars, times, xyzuvw, xyzuvw_cov = \

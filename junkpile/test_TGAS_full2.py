@@ -1,4 +1,5 @@
 """This is a test script for trying to use the full TGAS set of stars.
+This script is redundant. Parts can be incorporated into other code.
 
 import chronostar
 star_params = chronostar.fit_group.read_stars('results/bp_TGAS2_traceback_save.pkl')

@@ -1,4 +1,6 @@
-"""This is a test script for tracing back beta Pictoris stars"""
+"""This is a test script for tracing back beta Pictoris stars.
+This code is redundant. Some bits can be incorporated into other sections.
+"""
 
 from __future__ import print_function, division
 

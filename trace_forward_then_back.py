@@ -1,4 +1,6 @@
-"""Let's:
+"""Script for projecting things forward in time.
+
+Let's:
 
 1) [just for fun] Trace a star back in time to get us an initial XYZUVW at known delta t.
 2) Trace the same star forward in time the same known delta t, and add noise.

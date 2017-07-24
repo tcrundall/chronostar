@@ -20,13 +20,11 @@ infile = args.i
 
 if infile[-3:] == 'pkl':
     stars, times, xyzuvw, xyzuvw_cov = pickle.load(open(infile, 'r'))
-
 elif infile[-3:] == 'fit' or infile[-4:] == 'fits':
     stars = pyfits.getdata(infile,1)
     times = pyfits.getdata(infile,2)
     xyzuvw = pyfits.getdata(infile,3)
     xyzuvw_cov = pyfits.getdata(infile,4)
-
 else:
     print("File format {} not suitable".format(infile[-3:]))
     sys.exit()

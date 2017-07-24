@@ -12,6 +12,7 @@ import error_ellipse
 import traceback 
 import fit_group
 import groupfitter
+import analyser
 #import group_fitter
 import _overlap
 #Tim's code to play around with miscelaneous data sets neatly

@@ -1,3 +1,6 @@
+""" Script dedicated to fitting some number of groups to BPMG traceback data.
+The stuff here *should* be absorbed into fit_groups.py
+"""
 #! /usr/bin/env python
 # use for debugging age problem:
 import chronostar.analyser as anl
@@ -113,6 +116,7 @@ print("Run finished")
 nwalkers = np.shape(samples)[0]
 nsteps   = np.shape(samples)[1]
 npars    = np.shape(samples)[2] 
+pdb.set_trace()
 flat_samples = np.reshape(samples, (nwalkers*nsteps, npars))
 
 widths = np.zeros(flat_samples.shape[0])

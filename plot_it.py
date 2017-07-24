@@ -1,3 +1,7 @@
+"""Script that auto generates all the plots from snapshot data stored in 
+pkl files. Need to provide a timestamp and other parameters required
+to identify the file names.
+"""
 #! /usr/bin/env python
 
 import chronostar.analyser as anl

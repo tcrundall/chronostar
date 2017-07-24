@@ -1,3 +1,6 @@
+"""Script dedicated to finding best fitting group(s) to TWA traced back data.
+The stuff in here *should* be absorbed into fit_groups.py
+"""
 #! /usr/bin/env python
 # use for debugging age problem:
 import chronostar.analyser as anl

@@ -1,5 +1,7 @@
 #! /usr/bin/env python
-"""This is a test script for tracing back beta Pictoris stars"""
+"""This is a test script for tracing back beta Pictoris stars.
+This script is redundant. Code can be incorporated into other files.
+"""
 
 from __future__ import print_function, division
 
