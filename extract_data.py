@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 """
 Single use script. Used to extract the fitted parameter values from auto-
 generated log files for the BPMG fit.
@@ -7,7 +8,6 @@ file and extract the median, pos error and neg error of each required
 parameter.
 """
 
-#! /usr/bin/env python
 import re
 import numpy as np
 import matplotlib.pyplot as plt

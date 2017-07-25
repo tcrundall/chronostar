@@ -1,8 +1,9 @@
 #! /usr/bin/env python
-"""Script used to generate a dedicated tb file for BPMG candidate members.
-Simply uses the master astrometry file which still includes the 'Notional
-Group' column, identifies the indices of all stars listed as '(Possible) bPMG',
-and extracts the tb data corresponding to those indices.
+"""Not written yet...
+
+TO DO:
+    - edit this file to generate a tb file with BPMG and TWA candidate members
+    for testing EM fitting with
 """
 
 import pickle
@@ -17,7 +18,7 @@ from collections import defaultdict
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--infile',  dest = 'i',
                     default='data/Astrometry_with_RVs_250pc_100kms.fits',
-                    help='Input traceback file')
+                    help='The file being inspected')
 args = parser.parse_args()
 infile = args.i
 master_stars = pyfits.getdata(infile,1)

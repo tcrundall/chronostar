@@ -233,7 +233,6 @@ def calc_best_fit(flat_samples):
     Given a set of aligned (converted?) samples, calculate the median and
     errors of each parameter
     """
-    pdb.set_trace()
     return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                      zip(*np.percentile(flat_samples, [16,50,84], axis=0))) )
 

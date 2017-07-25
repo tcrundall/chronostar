@@ -1,9 +1,9 @@
+#! /usr/bin/env python
 """This will test coordinates along the lines of subsample_density.py
 
 This is important because of co-ordinate system reversals between systems for
 X in particular.
 """
-#! /usr/bin/env python
 
 from __future__ import division, print_function
 import numpy as np

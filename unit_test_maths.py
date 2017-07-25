@@ -5,12 +5,11 @@
     
     Appears to be equivalent within 7-8 sig figs
 """
-
-import chronostar
-from chronostar.fit_group import compute_overlap as co
 import numpy as np
 #from math import isclose
 import pdb
+import chronostar
+from chronostar.fit_group import compute_overlap as co
 
 def new_co(A_cov,a_mn,B_cov,b_mn):
     """

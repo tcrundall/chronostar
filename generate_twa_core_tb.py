@@ -1,6 +1,9 @@
 #! /usr/bin/env python
-"""Generates a tb file for TWA members by first building an astropy table 
-from Donaldson+ 2016 measured astrometry.
+"""Script used to generate a tb file for TWA 'core' members as proposed by
+Ducourant+ 2014.
+
+Using astrometry info from Donaldson 2016, converts into preferred units,
+then applies chronostar.traceback.traceback() (?) function.
 """
 
 import chronostar.traceback as tb
@@ -11,23 +14,22 @@ import pdb
 import pickle
 from csv import reader
 from astropy.table import Table, Column
+import argparse
 try:
     import astropy.io.fits as pyfits
 except:
     import pyfits
 
-# Nasty hacky way of checking if on Raijin
-onRaijin = True
-try:
-    dummy = None
-    pickle.dump(dummy, open("/short/kc5/dummy.pkl",'w'))
-except:
-    onRaijin = False
+parser = argparse.ArgumentParser()
+parser.add_argument('-l', '--local',  dest = 'l', action='store_true',
+                    help='Set this flag if not running on raijin')
+args = parser.parse_args()
+local = args.l
 
-if onRaijin:
-    location = "/short/kc5/"
+if not local:
+    data_dir    = '/short/kc5/data/'
 else:
-    location = "data/"
+    data_dir    = 'data/'
 
 # Taken from www.bdnyc.org/2012/10/decimal-deg-to-hms/
 def HMS2deg(ra='', dec=''):
@@ -51,10 +53,34 @@ def HMS2deg(ra='', dec=''):
     else:
         return RA or DEC
 
-infile = open(location + 'Donaldson16_TWA_astrometry.csv', 'r')
+core_stars = [
+    'TWA 1',
+    'TWA 2',
+    'TWA 4',
+    'TWA 7',
+    'TWA 8A',
+    'TWA 8B',
+    'TWA 11A',
+    'TWA 12',
+    'TWA 13A',
+    'TWA 13B',
+    'TWA 14',
+    'TWA 15A',
+    'TWA 15B',
+    'TWA 23',
+    'TWA 32',
+    ]
+
+infile = open(data_dir + 'Donaldson16_TWA_astrometry.csv', 'r')
 data = []
+counter = 0
+
+# Go through each line, if first element in line is next core star, record
+# the astrometry
 for line in reader(infile):
-    data += [line]
+    if counter < len(core_stars) and line[0] == core_stars[counter]:
+        data += [line]
+        counter += 1
 data = np.array(data)
 
 nTWAstars = data.shape[0]
@@ -65,11 +91,10 @@ DEC = np.zeros(nTWAstars)
 for i in range(nTWAstars):
     RA[i], DEC[i] = HMS2deg(data[i][1], data[i][2])
 
+# Make an (astropy?) table, and store as .pkl file
 Plx, e_Plx, pmDE, e_pmDE, pmRA, e_pmRA =\
     data[:,3], data[:,4], data[:,11], data[:,12], data[:,9], data[:,10]
 RV, e_RV = data[:,6], data[:,7]
-
-# making an astropy table
 t = Table(
     [data[:,0],
      RA.astype(np.float),    
@@ -85,5 +110,5 @@ t = Table(
     names=('Name', 'RAdeg','DEdeg','Plx','e_Plx','RV','e_RV',
            'pmRA','e_pmRA','pmDE','e_pmDE')
     )
-times = np.linspace(0,20,40)
-tb.traceback(t,times,plotit=True,savefile=location + 'TWA_traceback_20Myr.pkl')
+times = np.linspace(0,15,40)
+xyzuvw = tb.traceback(t,times,savefile=data_dir+'TWA_core_traceback_15Myr.pkl')
