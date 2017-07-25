@@ -91,4 +91,7 @@ t = Table(
            'pmRA','e_pmRA','pmDE','e_pmDE')
     )
 times = np.linspace(0,15,40)
+
+# generates a traceback file which is a pickled tuple
+# (star_table, times, XYZUVWs, XYZUVW_covariance_matrices)
 xyzuvw = tb.traceback(t,times,savefile=data_dir+'TWA_traceback_15Myr.pkl')

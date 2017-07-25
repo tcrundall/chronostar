@@ -3,6 +3,8 @@
 Simply uses the master astrometry file which still includes the 'Notional
 Group' column, identifies the indices of all stars listed as '(Possible) bPMG',
 and extracts the tb data corresponding to those indices.
+
+Currently only set up to run on misfit
 """
 
 import pickle
@@ -39,7 +41,10 @@ times      = pyfits.getdata(tb_file,2)
 xyzuvw     = pyfits.getdata(tb_file,3)[all_ixs]
 xyzuvw_cov = pyfits.getdata(tb_file,4)[all_ixs]
 
+# init_pars = (stars, times, xyzuvw, xyzuvw_cov)
+# with open("data/BPMG_initial_XYZUVW.pkl", 'w') as fp:
+#     pickle.dump(init_pars, fp)
+
 save_file = 'data/BPMG_traceback_165Myr.pkl'
 with open(save_file, 'w') as fp:
     pickle.dump((stars,times,xyzuvw,xyzuvw_cov),fp)
-
