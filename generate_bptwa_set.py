@@ -14,6 +14,7 @@ import pdb
 import numpy as np
 import chronostar.traceback as tb
 from collections import defaultdict
+from astropy.table import Table, Column
 
 infile = "data/Astrometry_with_RVs_250pc_100kms.fits"
 master_stars = pyfits.getdata(infile,1)
@@ -37,28 +38,62 @@ bpmg_stars      = pyfits.getdata(tb_file,1)[all_ixs]
 twa_stars = pickle.load(open("data/TWA_traceback_15Myr.pkl", 'r'))[0]
 
 # work out how to join these two tables...
-pdb.set_trace()
 
 # need to compile parallaxes from BPMG together... the ones in the 
 # 'parallax_1' column appear to have smaller errors in general...
 
-
 # still a work in progress:
-RA     = np.append(np.array(twa_stars.columns['RAdeg']), bpmg_stars['ra_adopt'])
-DEC    = np.append(np.array(twa_stars.columns['DEdeg']), bpmg_stars['dec_adopt'])
-Plx    = np.append(np.array(twa_stars.columns['Plx'  ]), bpmg_stars['ra_adopt'])
-e_Plx  = np.append(np.array(twa_stars.columns['e_Plx']), bpmg_stars['ra_adopt'])
-RV     = np.append(np.array(twa_stars.columns['RV'   ]), bpmg_stars['ra_adopt'])
-e_RV   = np.append(np.array(twa_stars.columns['e_RV' ]), bpmg_stars['ra_adopt'])
-pmDE   = np.append(np.array(twa_stars.columns['pmRA' ]), bpmg_stars['ra_adopt'])
-e_pmDE = np.append(np.array(twa_stars.columns['e_pmRA']), bpmg_stars['ra_adopt'])
-pmRA   = np.append(np.array(twa_stars.columns['pmDE' ]), bpmg_stars['ra_adopt'])
-e_pmRA = np.append(np.array(twa_stars.columns['e_pmDE']), bpmg_stars['ra_adopt'])
+RA     = np.append(np.array(twa_stars.columns['RAdeg']),
+                            bpmg_stars['ra_adopt'])
+DEC    = np.append(np.array(twa_stars.columns['DEdeg']),
+                            bpmg_stars['dec_adopt'])
+Plx    = np.append(np.array(twa_stars.columns['Plx']),
+                            bpmg_stars['parallax_1'])
+e_Plx  = np.append(np.array(twa_stars.columns['e_Plx']),
+                            bpmg_stars['parallax_error'])
+RV     = np.append(np.array(twa_stars.columns['RV']),
+                            bpmg_stars['rv_adopt'])
+e_RV   = np.append(np.array(twa_stars.columns['e_RV']),
+                            bpmg_stars['rv_adopt_error'])
+pmDE   = np.append(np.array(twa_stars.columns['pmRA']),
+                            bpmg_stars['pmra_1'])
+e_pmDE = np.append(np.array(twa_stars.columns['e_pmRA']),
+                            bpmg_stars['pmra_error'])
+pmRA   = np.append(np.array(twa_stars.columns['pmDE' ]),
+                            bpmg_stars['pmdec'])
+e_pmRA = np.append(np.array(twa_stars.columns['e_pmDE']),
+                            bpmg_stars['pmdec_error'])
 
-names=('RAdeg','DEdeg','Plx','e_Plx','RV','e_RV',
+nstars = len(RA)
+ntwastars = len(twa_stars)
+# go through and check for BPMG stars with NaN values. Replace with alternate
+for i in range(nstars):
+    if Plx[i]!=Plx[i]:
+        bpmg_ix = i-ntwastars
+        Plx[i]    = bpmg_stars['Plx']   [bpmg_ix]
+        e_Plx[i]  = bpmg_stars['e_Plx'] [bpmg_ix]
+        pmDE[i]   = bpmg_stars['pmDE']  [bpmg_ix]
+        e_pmDE[i] = bpmg_stars['e_pmDE'][bpmg_ix]
+        pmRA[i]   = bpmg_stars['pmRA_2']  [bpmg_ix]
+        e_pmRA[i] = bpmg_stars['e_pmRA'][bpmg_ix]
+
+t = Table(
+    [
+     RA.astype(np.float),
+     DEC.astype(np.float),
+     Plx.astype(np.float),
+     e_Plx.astype(np.float),
+     RV.astype(np.float),
+     e_RV.astype(np.float),
+     pmRA.astype(np.float),
+     e_pmRA.astype(np.float),
+     pmDE.astype(np.float),
+     e_pmDE.astype(np.float)],
+    names=('RAdeg','DEdeg','Plx','e_Plx','RV','e_RV',
            'pmRA','e_pmRA','pmDE','e_pmDE')
+    )
 
+pickle.dump(t, open("data/TWA_BPMG_joined_astrometry.pkl", 'w'))
 times = np.linspace(0,25,40)
-
 save_file = 'data/TWA_BPMG_traceback_25Myr.pkl'
-tb.traceback(joined_table, times, savefile=save_file)
+tb.traceback(t, times, savefile=save_file)

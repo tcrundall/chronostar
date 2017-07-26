@@ -192,8 +192,9 @@ def stars_table(params):
     return stars
 
         
-def traceback(stars,times,max_plot_error=50,plotit=False, savefile='', dims=[1,2],\
-    xoffset=[],yoffset=[],text_ix=[],axis_range=[], plot_text=True):
+def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
+              dims=[1,2],xoffset=[],yoffset=[],text_ix=[],axis_range=[],
+              plot_text=True):
     """Trace back stellar orbits
 
     Parameters
@@ -257,7 +258,7 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='', dims=[1,2
         colnames = stars.names
     except:
         colnames = stars.columns
-                
+    
     for i in range(nstars):
         if (i+1) % 100 ==0:
             print("Done {0:d} of {1:d} stars.".format(i+1, nstars))
