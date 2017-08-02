@@ -15,9 +15,15 @@ def check_columns():
 def check_rows(Z):
     """ Check that the rows of the membership table sum to 1.000
     """
-    return np.max(np.sum(Z,axis=0)) <= 1.0
+    return np.max(np.sum(Z,axis=0)) - 1.0 <= 1e-10
 
 def check_lnlike():
+    both_tb = "data/TWA_BPMG_traceback_25Myr.pkl"
+    twa_tb  = "data/TWA_core_traceback_15Myr.pkl"
+
+    both_params = em.read_stars(both_tb)
+    twa_params = em.read_stars(twa_tb)
+    
     return False
 
 def main():
@@ -25,11 +31,15 @@ def main():
         Use EM to find the best fitting groups along with a membership list.
         (**maybe** return some results for data analysis...)
     """
-    traceback_file = "data/TWA_BPMG_traceback_25Myr.pkl"
-    nfree = 2
-    nbg   = 0
-    burnin = 100
-    steps  = 100
+    both_tb = "data/TWA_BPMG_traceback_25Myr.pkl"
+    twa_tb  = "data/TWA_core_traceback_15Myr.pkl"    
+    bpmg_tb = "data/BPMG_traceback_165Myr.pkl"    
+
+    nTWAstars = 38
+    nBPMGstars = 31
+
+    burnin = 500
+    steps  = 1000
 
     dummy_model = [0.0,0.0,0.0,0.0,0.0,0.0,
                    0.1,0.1,0.1,
@@ -37,20 +47,63 @@ def main():
                    0.0,0.0,0.0,
                    0.5]
 
-    star_params = em.read_stars(traceback_file)
+    # fit to TWA only:
+    star_params = em.read_stars(twa_tb)
+    dms = np.random.rand(2,len(star_params['xyzuvw']))
+    dms = dms / np.sum(dms, axis=0)
+    try:
+        assert check_rows(dms)
+    except:
+        pdb.set_trace()
 
-    # initialise dummy_memberships and check validity
-    dummy_memberships = np.random.rand(2,len(star_params['xyzuvw']))
-    dummy_memberships = dummy_memberships / np.sum(dummy_memberships, axis=0)
-    assert check_rows(dummy_memberships)
-
-    lnlike = em.lnlike(dummy_model, star_params, dummy_memberships[0])
-
+    best_fit, samples, lnprob =\
+        em.run_group_fit(burnin,steps,star_params,dms[0],dummy_model)
+    print("TWA only:")
+    print(best_fit)
     pdb.set_trace()
 
-#    best_fits, memberships, diagnostics =\
-#        em.fit_groups(traceback_file, nfree, nbg, burnin, steps)
-#    
-#    assert check_rows(memberships)
-#
+    # fit to BPMG only:
+    star_params = em.read_stars(bpmg_tb)
+    dms = np.random.rand(2,len(star_params['xyzuvw']))
+    dms = dms / np.sum(dms, axis=0)
+    try:
+        assert check_rows(dms)
+    except:
+        pdb.set_trace()
+    pdb.set_trace()
+
+    best_fit, samples, lnprob =\
+        em.run_group_fit(burnin,steps,star_params,dms[0],dummy_model)
+    print("BPMG only:")
+    print(best_fit)
+
+    # fit to TWA using joined table
+    star_params = em.read_stars(both_tb)
+    twabpmg_mem = np.zeros((2,nTWAstars+nBPMGstars))
+    twabpmg_mem[0,:nTWAstars] = 1.0
+    twabpmg_mem[1,nTWAstars:] = 1.0
+    try:
+        assert check_rows(twabpmg_mem)
+    except:
+        pdb.set_trace()
+    best_fit, samples, lnprob =\
+        em.run_group_fit(burnin,steps,star_params,twabpmg_mem[0],dummy_model)
+    print("TWA from joined:")
+    print(best_fit)
+
+    # fit to BPMG using joined table
+    twabpmg_mem = np.zeros((2,nTWAstars+nBPMGstars))
+    twabpmg_mem[0,:nTWAstars] = 1.0
+    twabpmg_mem[1,nTWAstars:] = 1.0
+    try:
+        assert check_rows(twabpmg_mem)
+    except:
+        pdb.set_trace()
+
+    best_fit, samples, lnprob =\
+        em.run_group_fit(burnin,steps,star_params,twabpmg_mem[1],dummy_model)
+    print("BPMG from joined:")
+    print(best_fit)
+    pdb.set_trace()
+
 main()

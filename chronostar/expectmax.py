@@ -233,55 +233,28 @@ def read_stars(infile):
     xyzuvw0 = xyzuvw[:][0]
 
     return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov)
-                   #xyzuvw_icov=xyzuvw_icov,xyzuvw_icov_det=xyzuvw_icov_det)
 
-def lnprior(pars, nfree, nfixed, max_age):
+def lnprior(pars, max_age):
     """
+    Apply a bunch of hard checks to the model parameters. Predominantly
+    used to keep numbers positive. Also ensures age stays within the traceback
+    range.
     """
-    ngroups = nfree + nfixed
     pars = np.array(pars)
 
-    # Generating boolean masks to extract approriate parameters
-    # First checking numbers which must be positive (e.g. stddev)
-    # the "default_mask" is the mask that would be applied to a single
-    # free group. It will be replicated based on the number of free
-    # groups currently being fit
-    base_msk_means  = 6  * [True]  + 4 * [False] + 3 * [False] + [False]
-    base_msk_stdevs = 6  * [False] + 4 * [True]  + 3 * [False] + [False]
-    base_msk_corrs  = 6  * [False] + 4 * [False] + 3 * [True]  + [False]
-    base_msk_ages   = 6  * [False] + 4 * [False] + 3 * [False] + [True]
-    base_msk_amps   = 14 * [False]
+    stdevs = pars[6:10]
+    corrs = pars[10:13]
+    age = pars[13]
 
-    mask_means  = nfree * base_msk_means  + (ngroups-1) * [False]
-    mask_stdevs = nfree * base_msk_stdevs + (ngroups-1) * [False]
-    mask_corrs  = nfree * base_msk_corrs  + (ngroups-1) * [False]
-    mask_ages   = nfree * base_msk_ages   + (ngroups-1) * [False]
-    mask_amps   = nfree * base_msk_amps   + (ngroups-1) * [True]
-    
-    if ngroups > 1:
-        amps = pars[np.where(mask_amps)]
-        if np.sum(amps) > 0.98:
+    if np.min(stdevs) <= 0:
             return -np.inf
-        for amp in amps:
-            if amp < 0.02:
-                return -np.inf
-
-    for stdev in pars[np.where(mask_stdevs)]:
-        if stdev <= 0:
-            return -np.inf
-
-    for corr in pars[np.where(mask_corrs)]:
-        if corr <= -1 or corr >= 1:
-            return -np.inf
-
-    for age in pars[np.where(mask_ages)]:
-        if age < 0 or age > max_age:
-            return -np.inf
+    if np.min(corrs) <= -1 or np.max(corrs) >= 1:
+        return -np.inf
+    if age < 0 or age > max_age:
+        return -np.inf
 
     return 0.0
 
-# a function used to set prior on the eigen values
-# of the inverse covariance matrix
 def eig_prior(char_min, inv_eig_val):
     """
     Used to set the prior on the eigen-values of the covariance
@@ -364,7 +337,7 @@ def lnlike(pars, star_params, memberships):
 
     return lnlike + np.sum(np.log(overlaps**memberships))
 
-def lnprobfunc(pars, nfree, nfixed, fixed_groups, star_params):
+def lnprobfunc(pars, star_params, memberships):
     """
         Compute the log-likelihood for a fit to a group.
         pars are the parameters being fitted for by MCMC 
@@ -372,99 +345,49 @@ def lnprobfunc(pars, nfree, nfixed, fixed_groups, star_params):
     # inefficient doing this here, but leaving it for simplicity atm
     max_age = np.max(star_params['times'])
 
-    lp = lnprior(pars, nfree, nfixed, max_age)
+    lp = lnprior(pars, max_age)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + lnlike(pars, nfree, nfixed, fixed_groups, star_params)
+    return lp + lnlike(pars, star_params, memberships)
 
-def generate_parameter_list(nfixed, nfree, bg=False, init_free_groups=None,
-                            init_free_ages=None, fixed_ages=False):
+def run_group_fit(burnin,steps,star_params,memberships,init_pars,pool=None):
     """
-        Generates the initial sample around which the walkers will
-        be initialised. This function uses the number of free groups
-        and number of fixed groups to dynamically generate a parameter
-        list of appropriate length
+    Fit a single group to a set of weighted stars. The stars are weighted
+    by their proposed membership to this group.
 
-        bg: Bool, informs the fitter if we are fitting free groups
-                  to the background. If we are, the ages of (all) free
-                  groups will be fixed at 0.
+    Parameters
+    ----------
+    burnin: number of emcee steps performed during burn in
+    steps:  number of emcee steps performed in sampling fit
+    memberships: np array of floats in range (0.0,1.0) denoted the fractional
+        probability of star belonging to this group
+    init_pars: the initial model pars, either taken from the previous run
+        or initialised in some clever way
+    pool:   an mpirun parameter used for parallel computation
+
+    Returns 
+    -------
+    best_fit: model parameters which yielded the largest lnprob
+    samples: [nwalker,steps,npars] array of each sample reached
+    lnprob: [nwalker,steps] array of the lnprob of each sampled model's fit
+        to the data
+
+    TODO:
+        could remember the position of the walkers from last run and
+        simply update membership lists. Could save time with burnin etc.
+        Or could simply perpetuate bad walker sets
     """
-    npars_in_def = 14
-
-    #init_amp = 1.0 / (nfixed + nfree)
-    if nfixed == 0:
-        init_amp_free = 1.0 / (nfree)
-
-    else:
-        init_amp_free  = 0.2 / (nfree)
-        init_amp_fixed = 0.8 / (nfixed)
-
-    default_pars = [0,0,0,0,0,0,
-                    1./30,1./30,1./30,1./5,
-                    0,0,0,
-                    5]
-
-    # default_pars for fitting whole background of large dataset
-    # default_pars = [-49.16, -2.57, 38.40, 38.86, 39.71, 40.98,
-    #                 1./30,1./30,1./30,1./5,
-    #                 0,0,0,
-    #                 5]
-
-    default_sdev = [1,1,1,1,1,1,
-                    0.005, 0.005, 0.005, 0.005,
-                    0.01,0.01,0.01,
-                    1.0]
-
-    # If free groups are fitting background set and fix age to 0
-    # because emcee generates new samples through linear interpolation
-    # between two existing samples, a parameter with 0 init_sdev will not
-    # change.
-    if bg:
-        default_pars[-1] = 0
-        default_sdev[-1] = 0
-
-    if fixed_ages:
-        default_sdev[-1] = 0
-
-    if nfixed == 0:
-        init_pars = [] + default_pars * nfree + [init_amp_free]*(nfree-1)
-    else:
-        init_pars = [] + default_pars * nfree + [init_amp_free]*nfree +\
-                    [init_amp_fixed]*(nfixed-1)
-    init_sdev = [] + default_sdev * nfree + [0.05]*(nfree+nfixed-1)
-
+   
+    init_sdev = [1,1,1,1,1,1,
+                 0.005, 0.005, 0.005, 0.005,
+                 0.01,0.01,0.01,
+                 1.0]
+    nwalkers = 30
     npar = len(init_pars)
-    nwalkers = 2*npar
-
-
-    # Incorporate initial XYZUVW and ages if present into initialisation
-    if init_free_groups is not None:
-        for i in range(nfree):
-            init_pars[i*npars_in_def : i*npars_in_def + 6] =\
-                init_free_groups[i]
-    if init_free_ages is not None:
-        for i in range(nfree):
-            init_pars[i*npars_in_def + 13] =\
-                init_free_ages[i]
-    return init_pars, init_sdev, nwalkers
-
-def run_fit(burnin, steps, nfixed, nfree, fixed_groups, init_free_groups,
-            init_free_ages, star_params, fixed_ages=False, bg=False, pool=None):
-    """
-    """
-    # setting up initial params from intial conditions
-    init_pars, init_sdev, nwalkers = generate_parameter_list(
-        nfixed, nfree, bg, init_free_groups=init_free_groups,
-        init_free_ages=init_free_ages, fixed_ages=fixed_ages)
-    if debug:
-        assert(len(init_pars) == len(init_sdev))
-    npar = len(init_pars)
-
-    # final parameter is amplitude
     
     sampler = emcee.EnsembleSampler(
                         nwalkers, npar, lnprobfunc,
-                        args=[nfree, nfixed, fixed_groups, star_params],
+                        args=[star_params, memberships],
                         pool=pool)
 
     pos = [init_pars+(np.random.random(size=len(init_sdev))- 0.5)*init_sdev
@@ -488,11 +411,10 @@ def run_fit(burnin, steps, nfixed, nfree, fixed_groups, init_free_groups,
                                               rstate0=state)
     samples = sampler.chain
     lnprob  = sampler.lnprobability
+    max_ix = np.argmax(lnprob)
+    best_fit = sampler.chain[np.unravel_index(max_ix, lnprob.shape)]
 
-    # samples is shape [nwalkers x nsteps x npars]
-    # lnprob is shape [nwalkers x nsteps]
-    # pos is the final position of walkers
-    return samples, pos, lnprob
+    return best_fit, samples, lnprob
 
 def interp_cov(target_time, star_params):
     """
@@ -510,18 +432,6 @@ def interp_cov(target_time, star_params):
 
     return interp_mns, interp_covs
 
-def calc_average_eig(sample):
-    """
-    Calculates the average eigenvector (proxy for size)
-    of the first group listed in the sample
-    stdevs must be stored as inverse in sample
-    """
-    npars_w_age = 14
-    group_pars = sample[:npars_w_age]
-    assert(group_pars[6] <= 1)
-    amplitude=1
-    model_group = Group(group_pars, amplitude)
-    # careful, nor sure what order the eigen values are returned in
     # seems ok now only because velocity disp is so much smaller than
     # spatial disp
     mean_width = np.mean( np.sqrt((1/np.linalg.eigvalsh(model_group.icov)))[0:3])

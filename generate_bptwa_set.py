@@ -1,9 +1,8 @@
 #! /usr/bin/env python
-"""Not written yet...
-
-TO DO:
-    - edit this file to generate a tb file with BPMG and TWA candidate members
-    for testing EM fitting with
+"""
+Generates a combined traceback file of TWA and BPMG stars.
+The first 38 stars are TWA stars with astormetry from Donaldson 2016.
+The next 31 stars are BPMG stars with astrometry from ~Gaia.
 """
 
 import pickle
@@ -37,12 +36,6 @@ bpmg_stars      = pyfits.getdata(tb_file,1)[all_ixs]
 # read in table for twa
 twa_stars = pickle.load(open("data/TWA_traceback_15Myr.pkl", 'r'))[0]
 
-# work out how to join these two tables...
-
-# need to compile parallaxes from BPMG together... the ones in the 
-# 'parallax_1' column appear to have smaller errors in general...
-
-# still a work in progress:
 RA     = np.append(np.array(twa_stars.columns['RAdeg']),
                             bpmg_stars['ra_adopt'])
 DEC    = np.append(np.array(twa_stars.columns['DEdeg']),
