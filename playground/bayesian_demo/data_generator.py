@@ -44,8 +44,12 @@ def project_star(pars, time, back=False):
     x, sig_x, v, sig_v = pars
     sig_v_t = sig_v*time
     #sig_new = sig_x * sig_v_t / (np.sqrt(sig_x**2 + sig_v_t**2))
+    
+    #The observed position and velocity have independent errors, so the uncertainty
+    #at a time in the past is the sum of the variances of the component due to each
+    #term.
     sig_new = np.sqrt(sig_x**2 + sig_v_t**2)
-    sig_new = sig_x + sig_v_t
+    #sig_new = sig_x + sig_v_t
     x_new = x + v * time * direction
     return [x_new, sig_new, v, sig_v]
 

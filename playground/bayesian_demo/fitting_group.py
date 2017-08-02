@@ -5,7 +5,7 @@ from data_generator import *
 import pickle
 from dynamicfitter import *
 import argparse
-
+plt.ion()
 """
 USAGE:  run with `./fitting_group.py -v [velocity measurement error]`
         Will finish with a pdb.set_trace() giving you access to np arrays with
@@ -87,9 +87,9 @@ pos_error = 1
 ms_stars = get_measurements(pr_stars, pos_error, vel_error)
 
 # Trace back measured stars by projecting backwards through time
-n_times = 81
+n_times = 41 #81
 max_age = 2*true_age
-times = np.linspace(0, max_age, n_times)
+times = np.linspace(0.1, max_age, n_times)
 trace_back = np.zeros((n_times, nstars, npars))
 for t_ix, time in enumerate(times):
     trace_back[t_ix] = project_stars(ms_stars, time, back=True)
@@ -140,6 +140,10 @@ for i, time in enumerate(times):
     ba_fitted_mus[i]  = ba_fit.x[0]
     raw_overlaps[i]   = overlap(ba_fit.x, nstars, trace_back[i])
     # overlaps[i]       = lnprior(ba_fit.x[1]) - raw_overlaps[i]
+    
+    #A 1/sqrt(time) prior on star birth times seems empirically to nearly work... but
+    #not quite.   + nstars * np.log(time)/2
+    # overlaps[i] = - raw_overlaps[i] - np.log(ba_fit.x[1])
 
 #pdb.set_trace()
 norm_fac = 10 / np.min(group_size)
