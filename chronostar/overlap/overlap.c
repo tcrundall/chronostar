@@ -68,7 +68,7 @@ double get_overlap(double* gr_icov, int gr_dim1, int gr_dim2,
                    double* st_mn, int st_mn_dim, double st_icov_det)
 {
   int MAT_DIM = gr_dim1;
-  int i, j, signum, l;
+  int i, j, signum;
   double ApB_det, d_temp, result;
   gsl_permutation *p;
 

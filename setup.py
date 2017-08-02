@@ -50,7 +50,8 @@ _overlap = Extension("chronostar/_overlap",
                     ["chronostar/overlap/overlap.i", "chronostar/overlap/overlap.c"],
                     include_dirs = [numpy_include],
                     libraries = ['gsl', 'gslcblas'], 
-                    extra_compile_args = ["-floop-parallelize-all","-ftree-parallelize-loops=4"],
+# MJI Remove these flags that now make the default OSX compiler break.
+#                   extra_compile_args = ["-floop-parallelize-all","-ftree-parallelize-loops=4"],
                     )
 
 setup(name="chronostar",
