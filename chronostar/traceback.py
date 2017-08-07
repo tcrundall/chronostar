@@ -439,6 +439,8 @@ def trace_forward(xyzuvw, time_in_past, Potential=MWPotential2014, \
         xyzuvw_sun = [0,0,25,11.1,12.24,7.25]
     else:
         raise UserWarning
+    if time_in_past == 0:
+        raise UserWarning
     times = np.linspace(0,time_in_past, 2)
 
     #Start off with an LSR orbit...
@@ -480,7 +482,7 @@ def trace_forward(xyzuvw, time_in_past, Potential=MWPotential2014, \
     #pdb.set_trace()
     
     return xyzuvw_now
-      
+    
 def trace_forward_sky(sky_coord, time_in_past):
     """Trace forward one star in xyzuvw coords"""
     #Times in Myr
