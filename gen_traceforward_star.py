@@ -1,4 +1,17 @@
 #! /usr/bin/env python
+"""
+At the moment, a simple script to test usage of trace_forward.
+For some number of times [nts] between the range 0 and max_age, traceforward
+a star from initial position [s] to each of these times.
+
+Two approaches are used, one is an iterative approach by calculating position
+at ts[i+1] by tracing forward from ts[i] (xyzyvw)
+
+The other approach (xyzuvw2) traces forward from teh intial positon each
+time
+"""
+
+
 from chronostar import traceback as tb
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,7 +20,7 @@ import pdb
 #s = [9.27,-5.96,-13.59,-10.94,-16.25,-9.27]
 s = [0,0,0,0,0,0]
 
-nts = 10
+nts = 10        # number of times
 max_age = 10
 age_step = max_age*1.0 / nts
 ts = np.linspace(1,max_age,nts)

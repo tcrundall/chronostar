@@ -474,15 +474,11 @@ def trace_forward(xyzuvw, time_in_past, Potential=MWPotential2014, \
     xyzuvw_now = np.zeros(6)
     xyzuvw_now[0] = 1e3*(o.x(-ts[-1]) - lsr_orbit.x(0))
     xyzuvw_now[1] = 1e3*o.y(-ts[-1])
-    # xyzuvw_now[2] = 1e3*o.z(-ts[-1]) - xyzuvw_sun[2]
-    # xyzuvw_now[3] = o.U(-ts[-1]) - xyzuvw_sun[3]
-    # xyzuvw_now[4] = o.V(-ts[-1]) - xyzuvw_sun[4]
-    # xyzuvw_now[5] = o.W(-ts[-1]) - xyzuvw_sun[5]
+    xyzuvw_now[2] = 1e3*o.z(-ts[-1]) - xyzuvw_sun[2]
+    xyzuvw_now[3] = o.U(-ts[-1]) - xyzuvw_sun[3]
+    xyzuvw_now[4] = o.V(-ts[-1]) - xyzuvw_sun[4]
+    xyzuvw_now[5] = o.W(-ts[-1]) - xyzuvw_sun[5]
     
-    xyzuvw_now[2] = 1e3*o.z(-ts[-1]) 
-    xyzuvw_now[3] = o.U(-ts[-1]) 
-    xyzuvw_now[4] = o.V(-ts[-1])
-    xyzuvw_now[5] = o.W(-ts[-1])
     #pdb.set_trace()
     
     return xyzuvw_now
