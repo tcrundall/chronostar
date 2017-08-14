@@ -2,14 +2,21 @@ from __future__ import division, print_function
 import numpy as np
 import chronostar.traceback as tb
 from astropy.table import Table
+import pickle
+import matplotlib.pyplot as plt
+import chronostar.error_ellipse as ee
 
 init_age = 20
+traceback_age = 30
 init_centre   = np.array([5, 60, 25, -0.12, -3.48, 1.06])
 init_pos_disp = 10
 init_vel_disp = 2
-nstars = 5 
+nstars = 30 
 np.random.seed(0)
 random = np.random.normal(size=(nstars,6))
+
+savefile = "synt_traceback_{}Myr_{}stars.pkl".format(
+                traceback_age, nstars)
 
 # Generate the initial xyzuvw data of a group
 # the group is isotropic in position and velocity
@@ -31,8 +38,8 @@ for i in range(nstars):
         xyzuvw_now[i], solarmotion='schoenrich', reverse_x_sign=True
         )
 
+# compile sky coordinates into a table with some form of error
 perc_error = 0.001
-
 errors = np.zeros(nstars) + perc_error
 
 ids = np.arange(nstars)
@@ -56,7 +63,23 @@ t = Table(
     )
 times = np.linspace(0,30,31)
 
-# trace back
-traceback = tb.traceback(t, times, savefile="data/synthetic_tb.pkl")
+# perform traceback
+traceback = tb.traceback(t, times, savefile="data/"+savefile)
+stars, ages, xyzuvw, xyzuvw_cov = pickle.load(open("data/"+savefile, 'r'))
 
+# plot result
+# for each star, plot the traceback curve to its initial age
+# as well as a covariance matrix at it's "true" age
+plt.clf()
+for i in range(nstars):
+    x, y = xyzuvw[i,:21,:2].T
+    plt.plot(x,y, 'r')
 
+    cov = xyzuvw_cov[i,20,:2,:2]
+
+    ee.plot_cov_ellipse(
+        cov=cov,
+        pos=xyzuvw[i,20,:2],
+        nstd=10,
+        )
+plt.show()
