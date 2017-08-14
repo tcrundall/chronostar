@@ -9,6 +9,9 @@ at ts[i+1] by tracing forward from ts[i] (xyzyvw)
 
 The other approach (xyzuvw2) traces forward from teh intial positon each
 time
+
+Unsure why, but the iterative approach varies quite wildly from the continuous
+approach, despite being consistnet for the first few steps.
 """
 
 
@@ -18,34 +21,41 @@ import matplotlib.pyplot as plt
 import pdb
 
 #s = [9.27,-5.96,-13.59,-10.94,-16.25,-9.27]
-s = [0,0,0,0,0,0]
+s = [0,0,0,0,5,0]
 
-nts = 10        # number of times
-max_age = 10
+nts = 1000        # number of times
+max_age = 10000
 age_step = max_age*1.0 / nts
-ts = np.linspace(1,max_age,nts)
+ts = np.linspace(0,max_age-age_step,nts)
 xyzuvw = np.zeros((nts,6))
 xyzuvw[0]  = s
 xyzuvw2 = np.zeros((nts,6))
 xyzuvw2[0] = s
 
-pdb.set_trace()
-
-# BUG!!! For whatever reason, the solar motion is being added to the end
-# result twice...
+stepped_ages = np.zeros(nts) # array for debugging which
+                             # ages are stepped through
 
 # This loop iteratively builds a list of positions by tracing forward from 
 # the previously calculated position
 for i in range(nts-1):
-    #pdb.set_trace()
-    xyzuvw[i+1] = tb.trace_forward(xyzuvw[i], age_step)
+    stepped_ages[i+1] = stepped_ages[i] + age_step
+    xyzuvw[i+1] = tb.trace_forward(xyzuvw[i], age_step, solarmotion=None)
 
 # This loop calculates the positions by tracing forward from the initial
 # posiiton each time
 for i, age in enumerate(ts[1:]):
-    xyzuvw2[i+1] = tb.trace_forward(s, age)
+    if i%50 == 0:
+        print ("{} of {} done".format(i, nts))
+    xyzuvw2[i+1] = tb.trace_forward(s, age, solarmotion=None)
 
 #pdb.set_trace()
-plt.plot(xyzuvw[:,0], xyzuvw[:,1])
-plt.plot(xyzuvw2[:,0], xyzuvw2[:,1])
+plt.clf()
+plt.plot(xyzuvw2[:,0], xyzuvw2[:,1], label="cont")
+plt.plot(xyzuvw[:,0], xyzuvw[:,1], label="iter")
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.legend(loc='best')
 plt.show()
+
+# the threshold is quite low since errors grow quite quickly
+assert(np.max(xyzuvw - xyzuvw2) < 0.1)
