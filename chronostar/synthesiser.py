@@ -12,8 +12,8 @@ save "ground truths" in some log somewhere
 from __future__ import print_function, division
 import numpy as np
 import pickle
-import chronostar.traceback as tb
-#import traceback as tb #??? why won't this line work?
+#import chronostar.traceback as tb
+import traceback as tb #??? why won't this line work?
 from astropy.table import Table
 import pdb
 
@@ -137,6 +137,13 @@ def synthesise_data(ngroups, group_pars, error):
     savefile = "synth_data_{}groups_{}stars.pkl".format(ngroups, nstars)
     pickle.dump(t, open("data/" + savefile, 'w'))
     print("Synthetic data file successfully created")
+
+    with open("data/synth_log.txt", 'a') as logfile:
+        logfile.write("\n------------------------\n")
+        logfile.write(
+            "filename: {}\ngroup parameters [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,"
+            "Cyz,age,nstars]:\n{}\nerror: {}\n".\
+            format(savefile, group_pars,error))
 
 if __name__ == '__main__':
     """ simple, sample usage """
