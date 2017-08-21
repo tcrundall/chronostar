@@ -12,6 +12,8 @@ TODO:
     - use arccos/arcsin for correlations e.g., 1/x for pos/vel dispersion
     - then tidy up samples at end by reconverting into "physical" parameters
 
+- make eig_prior logged...?
+
 To use MPI, try:
   mpirun -np 2 python fit_group.py
 """
@@ -285,6 +287,8 @@ def eig_prior(char_min, inv_eig_val):
     """
     Used to set the prior on the eigen-values of the covariance
     matrix for groups
+
+    !!! This needs to be logged right?!
     """
     eig_val = 1 / inv_eig_val
     prior = eig_val / (char_min**2 + eig_val**2)
@@ -334,7 +338,7 @@ def lnlike(pars, nfree, nfixed, FIXED_GROUPS, star_params):
     for i in range(nfixed):
         pos = i + nfree
         #model_groups[pos] = (FIXED_GROUPS[i].params,
-        #                           amplitudes[pos], 0)
+        #                           amplitudes[pos], 1)
         FIXED_GROUPS[i].update_amplitude(amplitudes[pos])
         model_groups[pos] = FIXED_GROUPS[i]
 
