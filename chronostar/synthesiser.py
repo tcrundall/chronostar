@@ -96,6 +96,15 @@ def synthesise_data(ngroups, group_pars, error):
     Output
     ------
     * a saved astropy table: data/synth_[N]groups_[N]stars.pkl
+
+    todo:
+        have uncertainites on the order of Gaia
+        PM 20 micro arcsec / yr
+        RV 1 km/s
+        par 20 micro arcsec
+
+        WHAT UNITS ARE BOVY COORDS GIVEN IN?
+        I think milli arcsec...
     """
     # For each group, generate current XYZUVW positions
     if ngroups == 1:

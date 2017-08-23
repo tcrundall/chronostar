@@ -18,15 +18,20 @@ group_pars = np.array([
     ])
 error = 0.01
 
-# synthesise a bunch of solo groups
-for i in range(5):
-    syn.synthesise_data(1, group_pars[i], error)
+# synthesise a bunch of solo groups with varying error
+errors = [0.01, 0.02, 0.05, 0.1]
 
-# synthesise a bunch of paired groups
-for i in range(4):
-    syn.synthesise_data(2, group_pars[i:i+2], error)
+# for error in errors:
 
-# synthesise a couple of three groups
-syn.synthesise_data(3, group_pars[0:3], error)
-syn.synthesise_data(3, group_pars[2:5], error)
+# # synthesise a bunch of solo groups
+# for i in range(5):
+#     syn.synthesise_data(1, group_pars[i], error)
+# 
+# # synthesise a bunch of paired groups
+# for i in range(4):
+#     syn.synthesise_data(2, group_pars[i:i+2], error)
+# 
+# # synthesise a couple of three groups
+# syn.synthesise_data(3, group_pars[0:3], error)
+# syn.synthesise_data(3, group_pars[2:5], error)
 
