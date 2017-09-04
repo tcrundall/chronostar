@@ -126,16 +126,16 @@ def synthesise_data(ngroups, group_pars, error):
     # 'error'
     t = Table(
         [
-        ids,
-        sky_coord_now[:,0],
-        sky_coord_now[:,1],
-        sky_coord_now[:,2]*np.random.normal(1,error),
+        ids,                #names
+        sky_coord_now[:,0], #RAdeg
+        sky_coord_now[:,1], #DEdeg
+        sky_coord_now[:,2]*np.random.normal(1,error),   #Plx
         sky_coord_now[:,2] * error,
-        sky_coord_now[:,5]*np.random.normal(1,error),
+        sky_coord_now[:,5]*np.random.normal(1,error),   #RV
         sky_coord_now[:,5] * error,
-        sky_coord_now[:,3]*np.random.normal(1,error),
+        sky_coord_now[:,3]*np.random.normal(1,error),   #pmRA
         sky_coord_now[:,3] * error,
-        sky_coord_now[:,4]*np.random.normal(1,error),
+        sky_coord_now[:,4]*np.random.normal(1,error),   #pmDE
         sky_coord_now[:,4] * error
         ],
         names=('Name', 'RAdeg','DEdeg','Plx','e_Plx','RV','e_RV',
