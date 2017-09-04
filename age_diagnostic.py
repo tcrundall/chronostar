@@ -44,7 +44,11 @@ for age in [5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30]:
         true_ages.append(age)
         fitted_ages.append(best_fit[-2])
     
-plt.plot(true_ages, fitted_ages, 'o')
+plt.plot(true_ages[0::3], fitted_ages[0::3], "bo", label="15 stars")
+plt.plot(true_ages[1::3], fitted_ages[1::3], "g+", label="30 stars")
+plt.plot(true_ages[2::3], fitted_ages[2::3], "yx", label="60 stars")
+plt.legend(loc='best'); plt.xlabel("True age"); plt.ylabel("Fitted age")
+
 pdb.set_trace()
 
 # synthesise a bunch of solo groups with varying error
