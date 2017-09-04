@@ -24,5 +24,5 @@ for infile in args:
     savefile = "data/tb_" + infile[5:]
     
     t = pickle.load(open(infile,'r'))
-    times = np.linspace(0,30,60)
+    times = np.linspace(0,50,60)
     tb.traceback(t,times,savefile=savefile)

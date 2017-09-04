@@ -119,6 +119,11 @@ def synthesise_data(ngroups, group_pars, error):
 
     # compile sky coordinates into a table with some form of error
     sky_coord_now = measure_stars(xyzuvw_init, nstars)
+    e_plx = 0.7 #mas
+    e_pm  = 3.9 #mas/yr
+    e_RV  = 1.3 #km/s
+
+    ones = np.ones(nstars)
 
     ids = np.arange(nstars)
     # note, x + error*x*N(0,1) == x * N(1,error)
@@ -129,14 +134,18 @@ def synthesise_data(ngroups, group_pars, error):
         ids,                #names
         sky_coord_now[:,0], #RAdeg
         sky_coord_now[:,1], #DEdeg
-        sky_coord_now[:,2]*np.random.normal(1,error),   #Plx
-        sky_coord_now[:,2] * error,
-        sky_coord_now[:,5]*np.random.normal(1,error),   #RV
-        sky_coord_now[:,5] * error,
-        sky_coord_now[:,3]*np.random.normal(1,error),   #pmRA
-        sky_coord_now[:,3] * error,
-        sky_coord_now[:,4]*np.random.normal(1,error),   #pmDE
-        sky_coord_now[:,4] * error
+        sky_coord_now[:,2] +
+            np.random.normal(sky_coord_now[:,2],e_plx),   #Plx
+        e_plx * ones,
+        sky_coord_now[:,5] +
+            np.random.normal(sky_coord_now[:,5],e_RV),   #RV
+        e_RV * ones,
+        sky_coord_now[:,3] + 
+            np.random.normal(sky_coord_now[:,3],e_pm),   #pmRA
+        e_pm * ones,
+        sky_coord_now[:,4] +
+            np.random.normal(sky_coord_now[:,4],e_pm),   #pmDE
+        e_pm * ones,
         ],
         names=('Name', 'RAdeg','DEdeg','Plx','e_Plx','RV','e_RV',
                'pmRA','e_pmRA','pmDE','e_pmDE')

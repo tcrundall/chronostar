@@ -16,7 +16,9 @@ group_pars = np.array([
     [10,10, 0,0,0,0, 5, 5, 5, 3,  0,0.2,0.0,10,60],
     [10,10,10,0,0,0,10,10,10, 3,  0,0.2,0.0,10,20],
     ])
-error = 0.01
+# error = 0.01
+for i in range(5):
+    syn.synthesise_data(1, group_pars[i], 0.01)
 
 # synthesise a bunch of solo groups with varying error
 errors = [0.01, 0.02, 0.05, 0.1]
