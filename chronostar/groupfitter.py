@@ -560,11 +560,15 @@ def calc_average_eig(sample):
     """
     npars_w_age = 14
     group_pars = sample[:npars_w_age]
-    assert(group_pars[6] <= 1)
+    ## No idea why this assertion was ever here...
+    # try:
+    #     assert(group_pars[6] <= 1)
+    # except:
+    #     pdb.set_trace()
     amplitude=1
     model_group = Group(group_pars, amplitude)
     # careful, nor sure what order the eigen values are returned in
     # seems ok now only because velocity disp is so much smaller than
     # spatial disp
-    mean_width = np.mean( np.sqrt((1/np.linalg.eigvalsh(model_group.icov)))[0:3])
+    mean_width = np.mean(np.sqrt((1/np.linalg.eigvalsh(model_group.icov)))[0:3])
     return mean_width

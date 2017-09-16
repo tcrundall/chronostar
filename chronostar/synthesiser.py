@@ -91,7 +91,8 @@ def synthesise_data(ngroups, group_pars, error):
     group_pars: either [15] or [ngroups,15] array of parameters describing
         the initial conditions of a group. NOTE, group_pars[-1] is nstars
         {X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars}
-    error: degree of precision in our "instruments"
+    error: float [0,1+], degree of precision in our "instruments" linearly 
+        ranging from perfect (0) to Gaia-like (1)
 
     Output
     ------
@@ -120,10 +121,10 @@ def synthesise_data(ngroups, group_pars, error):
     # compile sky coordinates into a table with some form of error
     sky_coord_now = measure_stars(xyzuvw_init, nstars)
     e_plx = 0.7 #mas
-    e_pm  = 3.9 #mas/yr
+    e_pm  = 3.2 #mas/yr
     e_RV  = 1.3 #km/s
 
-    ones = np.ones(nstars)
+    errs = np.ones(nstars) * error
 
     ids = np.arange(nstars)
     # note, x + error*x*N(0,1) == x * N(1,error)
@@ -134,18 +135,14 @@ def synthesise_data(ngroups, group_pars, error):
         ids,                #names
         sky_coord_now[:,0], #RAdeg
         sky_coord_now[:,1], #DEdeg
-        sky_coord_now[:,2] +
-            np.random.normal(sky_coord_now[:,2],e_plx),   #Plx
-        e_plx * ones,
-        sky_coord_now[:,5] +
-            np.random.normal(sky_coord_now[:,5],e_RV),   #RV
-        e_RV * ones,
-        sky_coord_now[:,3] + 
-            np.random.normal(sky_coord_now[:,3],e_pm),   #pmRA
-        e_pm * ones,
-        sky_coord_now[:,4] +
-            np.random.normal(sky_coord_now[:,4],e_pm),   #pmDE
-        e_pm * ones,
+        np.random.normal(sky_coord_now[:,2], e_plx*error),  #Plx
+        e_plx * errs,
+        np.random.normal(sky_coord_now[:,5], e_RV*error),   #RV
+        e_RV * errs,
+        np.random.normal(sky_coord_now[:,3], e_pm*error),   #pmRA
+        e_pm * errs,
+        np.random.normal(sky_coord_now[:,4], e_pm*error),   #pmDE
+        e_pm * errs,
         ],
         names=('Name', 'RAdeg','DEdeg','Plx','e_Plx','RV','e_RV',
                'pmRA','e_pmRA','pmDE','e_pmDE')
