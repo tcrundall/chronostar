@@ -16,6 +16,11 @@ import groupfitter
 import analyser
 import synthesiser
 #import group_fitter
-import _overlap
+try:
+    import _overlap
+except:
+    print("overlap not imported, SWIG not possible. Need to make in"
+            " directory...")
+
 #Tim's code to play around with miscelaneous data sets neatly
 # import play

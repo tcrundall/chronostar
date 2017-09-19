@@ -12,6 +12,8 @@ import sys
 from emcee.utils import MPIPool
 import matplotlib.pyplot as plt
 
+print("Imports successful")
+
 # ---------------------------------
 # --   SETTING EVERYTHING UP     --
 # ---------------------------------

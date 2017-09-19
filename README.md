@@ -36,3 +36,21 @@ Building on Raijin:
 --                  FILES                 --
 --------------------------------------------
 
+--------------------------------------------
+--              EXAMPLE RUN               --
+--------------------------------------------
+For synthetic data:
+./gen_synth_data.py
+./generate_default_tb.py data/synth_data_1groups_*
+./fit_synth_1groups.sh data/synth_data_1groups_*
+
+Investigate results by checking most recent log fils:
+ls logs/ -rtal
+
+You can also plot the corner plots and the lnlike plots. After each run the
+suitable command will be displayed. e.g.
+Logs written
+Plot data saved. Go back and plot with:
+./plot_it.py -t 817882 -f 1 -r 0 -p 1000 -l
+   if not on raijin, or:
+./plot_it.py -t 817882 -f 1 -r 0 -p 1000
