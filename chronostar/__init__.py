@@ -15,7 +15,7 @@ import fit_group
 import groupfitter
 import analyser
 import synthesiser
-#import group_fitter
+import group_fitter
 try:
     import _overlap
 except:

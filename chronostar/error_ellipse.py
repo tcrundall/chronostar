@@ -78,6 +78,9 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
     # Width and height are "full" widths, not radius
     width, height = 2 * nstd * np.sqrt(vals)
     ellip = Ellipse(xy=pos, width=width, height=height, angle=theta, **kwargs)
+    
+    ellip.set_alpha(0.3)
+    ellip.set_facecolor("red")
 
     ax.add_artist(ellip)
     return ellip
@@ -86,14 +89,14 @@ if __name__ == '__main__':
     #-- Example usage -----------------------
     # Generate some random, correlated data
     points = np.random.multivariate_normal(
-            mean=(1,1), cov=[[0.4, 9],[9, 10]], size=1000
+            mean=(1,1), cov=[[0.4, 0.3],[0.2, 0.4]], size=1000
             )
     # Plot the raw points...
     x, y = points.T
     plt.plot(x, y, 'ro')
 
     # Plot a transparent 3 standard deviation covariance ellipse
-    plot_point_cov(points, nstd=3, alpha=0.5, color='green')
+    plot_point_cov(points, nstd=3, alpha=0.3, color='red')
 
     plt.show()
     plt.savefig("error_ellipse.png")

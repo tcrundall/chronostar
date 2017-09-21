@@ -8,19 +8,12 @@ sets.
 
 import chronostar.traceback as tb
 import pickle
-import argparse
 import sys
 import numpy as np
 
 args = sys.argv[1:]
 for infile in args:
     print("Working with: {} ...........".format(infile))
-# 
-# parser = argparse.ArgumentParser()
-# parser.add_argument('-i', '--infile', dest='i', 
-#                     help='astropy table of astrometry')
-# args = parser.parse_args()
-# 
     savefile = "data/tb_" + infile[5:]
     
     t = pickle.load(open(infile,'r'))

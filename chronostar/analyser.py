@@ -251,7 +251,7 @@ def plot_lnprob(lnprob, nfree, nfixed, tstamp, file_stem=None):
     plt.title("{} walkers for {} steps".format(nwalkers, nsteps) )
     plt.xlabel("nsteps")
     plt.ylabel("lnprob")
-    plt.savefig(file_stem + ".eps")
+    plt.savefig(file_stem + ".png")
 
     plt.clf()
 
@@ -259,7 +259,7 @@ def plot_lnprob(lnprob, nfree, nfixed, tstamp, file_stem=None):
     plt.title("{} walkers for {} steps".format(nwalkers, nsteps) )
     plt.xlabel("walkers")
     plt.ylabel("lnprob")
-    plt.savefig(file_stem + "T.eps")
+    plt.savefig(file_stem + "T.png")
 
     plt.clf()
     return 0
@@ -327,8 +327,10 @@ def plot_corner(nfree, nfixed, converted_samples, lnprob,
                         truths = best_sample[np.where(param_mask)],
                         labels =      labels[np.where(param_mask)] )
 
-    file_name = "plots/{}_corner_{}_{}_{}.eps".format(tstamp, nfree, nfixed,
+    file_name = "plots/{}_corner_{}_{}_{}.png".format(tstamp, nfree, nfixed,
                                                       lnprob.shape[1])
+
+    pdb.set_trace()
 
     fig.savefig(file_name)
     fig.clf()
