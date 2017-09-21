@@ -6,6 +6,10 @@ logs/*
 # Data
 *.fits
 
+# Temp files
+data/synth_log.txt
+data/temp.txt
+
 # Output files
 *.txt.e*
 *.txt.o*
@@ -16,6 +20,7 @@ logs/*.txt
 *.eps
 *.png
 *.jpg
+*.avi
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
