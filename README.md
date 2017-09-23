@@ -32,17 +32,27 @@ Building on Raijin:
 	-- to test
 	python test_swig_module.py
 
---------------------------------------------
---                  FILES                 --
---------------------------------------------
 
---------------------------------------------
---              EXAMPLE RUN               --
+## FILES
+
+Copy the following files from google drive:
+  TGAS_traceback_165Myr_small.fits
+    - all ~65000 TGAS stars with RVS from complementary catalogues
+      traced back to 165Myr at 3Myr intervals
+
+  Donaldson16_TWA_astrometry.csv
+    - 6D astrometry pulled from Donaldson et al. 2016 on TWA stars
+  
+  bp_TGAS2_traceback_save.pkl
+    - set of stars with any overlap at all with preliminary BPMG fit
+
+
+## EXAMPLE RUN
 --------------------------------------------
 For synthetic data:
 ./gen_synth_data.py
 ./generate_default_tb.py data/synth_data_1groups_*
-./fit_synth_1groups.sh data/synth_data_1groups_*
+./fit_synth_1groups.sh 
 
 Investigate results by checking most recent log fils:
 ls logs/ -rtal

@@ -55,11 +55,8 @@ def synth_group(params):
 
 def measure_stars(xyzuvw_now, nstars):
     """
-    !!!TO DO:
-        Deviate the "measurements" by the prescribed error
-
     Take a bunch of stars' XYZUVW in the current epoch, and convert into
-    observational measurements with some uncertainty.
+    observational measurements with perfect precision.
 
     Input
     -----
@@ -87,26 +84,21 @@ def synthesise_data(ngroups, group_pars, error):
 
     Input
     -----
-    ngroups: Number of groups
-    group_pars: either [15] or [ngroups,15] array of parameters describing
+    ngroups:
+        Number of groups
+    group_pars:
+        either [15] or [ngroups,15] array of parameters describing
         the initial conditions of a group. NOTE, group_pars[-1] is nstars
         {X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars}
-    error: float [0,1+], degree of precision in our "instruments" linearly 
+    error:
+        float [0,1+], degree of precision in our "instruments" linearly 
         ranging from perfect (0) to Gaia-like (1)
 
     Output
     ------
     * a saved astropy table: data/synth_[N]groups_[N]stars.pkl
-
-    todo:
-        have uncertainites on the order of Gaia
-        PM 20 micro arcsec / yr
-        RV 1 km/s
-        par 20 micro arcsec
-
-        WHAT UNITS ARE BOVY COORDS GIVEN IN?
-        I think milli arcsec...
     """
+
     # For each group, generate current XYZUVW positions
     if ngroups == 1:
         xyzuvw_init = synth_group(group_pars)
@@ -149,7 +141,8 @@ def synthesise_data(ngroups, group_pars, error):
         )
     #times = np.linspace(0,30,31)
 
-    savefile = "synth_data_{}groups_{}stars.pkl".format(ngroups, nstars)
+    savefile = "synth_data_{}groups_{}stars{}err.pkl".\
+            format(ngroups, nstars, int(100*error))
     pickle.dump(t, open("data/" + savefile, 'w'))
     print("Synthetic data file successfully created")
 

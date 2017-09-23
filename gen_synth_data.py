@@ -15,13 +15,17 @@ group_pars = np.array([
     [10, 0, 0,0,0,0,10,10,10, 3,0.4,0.2,0.0,20,50],
     [10,10, 0,0,0,0, 5, 5, 5, 3,  0,0.2,0.0,10,60],
     [10,10,10,0,0,0,10,10,10, 3,  0,0.2,0.0,10,20],
+    [ 0,10, 0,0,0,2, 5, 5, 5, 3,0.6,0.5,0.0,20,41],
+    [ 0,10, 0,0,0,0, 5, 5, 5, 3,0.6,0.5,0.0,40,42],
+    [ 0,10,50,0,0,0, 5, 5, 5, 3,0.6,0.5,0.0,40,43],
     ])
-# error = 0.01
-for i in range(5):
-    syn.synthesise_data(1, group_pars[i], 0.01)
+error = 1.0
+for i in range(len(group_pars)):
+    syn.synthesise_data(1, group_pars[i], error)
+    print("---- {} group(s) synthesised".format(i))
 
 # synthesise a bunch of solo groups with varying error
-errors = [0.01, 0.02, 0.05, 0.1]
+# errors = [0.01, 0.02, 0.05, 0.1]
 
 # for error in errors:
 

@@ -20,16 +20,17 @@ try:
 except:
     import pyfits
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-l', '--local',  dest = 'l', action='store_true',
-                    help='Set this flag if not running on raijin')
-args = parser.parse_args()
-local = args.l
+# parser = argparse.ArgumentParser()
+# parser.add_argument('-l', '--local',  dest = 'l', action='store_true',
+#                     help='Set this flag if not running on raijin')
+# args = parser.parse_args()
+# local = args.l
 
-if not local:
-    data_dir    = '/short/kc5/data/'
-else:
-    data_dir    = 'data/'
+# if not local:
+#     data_dir    = '/short/kc5/data/'
+# else:
+#     data_dir    = 'data/'
+data_dir = 'data/'
 
 # Taken from www.bdnyc.org/2012/10/decimal-deg-to-hms/
 def HMS2deg(ra='', dec=''):

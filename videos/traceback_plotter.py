@@ -21,9 +21,11 @@
 #SOFTWARE.
 
 import numpy as np
-
+import pickle
 import matplotlib.pyplot as plt
+import pdb
 from matplotlib.patches import Ellipse
+import sys
 
 def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
     """
@@ -64,3 +66,61 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
 
     ax.add_artist(ellip)
     return ellip
+
+def plot_something(dims, infile):
+    """
+    Plot something.
+
+    Input
+    ______
+    dims : (int, int)
+        index of the two space-velocity dimensions in which one wishes to plot
+
+    infile : .pkl traceback file
+        file with traceback info
+    """
+    max_plot_error = 10000
+
+    dim1=dims[0]
+    dim2=dims[1]
+    cov_ix1 = [[dim1,dim2],[dim1,dim2]]
+    cov_ix2 = [[dim1,dim1],[dim2,dim2]]
+    axis_titles=['X (pc)','Y (pc)','Z (pc)','U (km/s)','V (km/s)','W (km/s)']
+    
+    stars, times, xyzuvw, xyzuvw_cov = pickle.load(open(infile, 'r'))
+    nstars = len(xyzuvw)
+
+    for j in range(len(times)-1):
+    #for j in range(5):
+        plt.clf()
+        for i in range(nstars):
+            cov_end = xyzuvw_cov[i,j,cov_ix1,cov_ix2]
+        #if (np.sqrt(cov_end.trace()) < max_plot_error):
+            # if plot_text:
+            #     if i in text_ix:
+            #         plt.text(xyzuvw[i,0,dim1]*1.1
+            #                 + xoffset[i],xyzuvw[i,0,dim2]*1.1 
+            #                 + yoffset[i],star['Name'],fontsize=11)
+            plt.plot(xyzuvw[i,:j+1,dim1],xyzuvw[i,:j+1,dim2],'b-')
+            plot_cov_ellipse(
+                    xyzuvw_cov[i,0,cov_ix1,cov_ix2],
+                    [xyzuvw[i,0,dim1],xyzuvw[i,0,dim2]],color='g',alpha=1)
+            plot_cov_ellipse(
+                    cov_end, [xyzuvw[i,j,dim1],xyzuvw[i,j,dim2]],
+                    color='r',alpha=0.2)
+    
+        plt.xlabel(axis_titles[dim1])
+        plt.ylabel(axis_titles[dim2])
+        plt.title(times[j])
+        #plt.axis(axis_range)
+        plt.ylim(-200,200)
+        plt.xlim(-200,200)
+        #plt.axes().set_aspect('equal', 'datalim')
+        plt.savefig("temp_plots/{}plot{}{}.png".format(
+            j, axis_titles[dim1][0], axis_titles[dim2][0]))
+
+if __name__ == "__main__":
+    filename = sys.argv[1]
+    plot_something([0,1], filename)
+    plot_something([0,2], filename)
+    plot_something([1,2], filename)
