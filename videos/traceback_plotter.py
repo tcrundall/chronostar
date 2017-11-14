@@ -111,7 +111,7 @@ def plot_something(dims, infile):
     
         plt.xlabel(axis_titles[dim1])
         plt.ylabel(axis_titles[dim2])
-        plt.title(times[j])
+        plt.title("{:.2f} Myr".format(times[j]))
         #plt.axis(axis_range)
         plt.ylim(-200,200)
         plt.xlim(-200,200)
