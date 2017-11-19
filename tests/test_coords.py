@@ -4,8 +4,10 @@
 This is important because of co-ordinate system reversals between systems for
 X in particular.
 """
-
 from __future__ import division, print_function
+
+import sys
+
 import numpy as np
 from astropy import units as u 
 from astropy.coordinates import SkyCoord
