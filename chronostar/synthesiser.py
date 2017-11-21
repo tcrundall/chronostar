@@ -76,7 +76,7 @@ def measure_stars(xyzuvw_now, nstars):
             )
     return sky_coord_now
 
-def synthesise_data(ngroups, group_pars, error):
+def synthesise_data(ngroups, group_pars, error, savefile=None):
     """
     Entry point of module; synthesise the observational measurements of an
     arbitrary number of groups with arbitrary initial conditions, with 
@@ -93,6 +93,8 @@ def synthesise_data(ngroups, group_pars, error):
     error:
         float [0,1+], degree of precision in our "instruments" linearly 
         ranging from perfect (0) to Gaia-like (1)
+    output:
+        optional name for output file
 
     Output
     ------
@@ -141,17 +143,21 @@ def synthesise_data(ngroups, group_pars, error):
         )
     #times = np.linspace(0,30,31)
 
-    savefile = "synth_data_{}groups_{}stars{}err.pkl".\
-            format(ngroups, nstars, int(100*error))
-    pickle.dump(t, open("data/" + savefile, 'w'))
-    print("Synthetic data file successfully created")
+    if savefile is None:
+        savefile = "data/synth_data_{}groups_{}stars{}err.pkl".\
+                format(ngroups, nstars, int(100*error))
+    pickle.dump(t, open(savefile, 'w'))
+    #print("Synthetic data file successfully created")
 
-    with open("data/synth_log.txt", 'a') as logfile:
-        logfile.write("\n------------------------\n")
-        logfile.write(
-            "filename: {}\ngroup parameters [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,"
-            "Cyz,age,nstars]:\n{}\nerror: {}\n".\
-            format(savefile, group_pars,error))
+    try:
+        with open("data/synth_log.txt", 'a') as logfile:
+            logfile.write("\n------------------------\n")
+            logfile.write(
+                "filename: {}\ngroup parameters [X,Y,Z,U,V,W,dX,dY,dZ,dV,"
+                "Cxy,Cxz,Cyz,age,nstars]:\n{}\nerror: {}\n".\
+                format(savefile, group_pars,error))
+    except IOError:
+        pass
 
 if __name__ == '__main__':
     """ simple, sample usage """

@@ -260,8 +260,9 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
         colnames = stars.columns
     
     for i in range(nstars):
-        if (i+1) % 100 ==0:
-            print("Done {0:d} of {1:d} stars.".format(i+1, nstars))
+        if False:
+            if (i+1) % 100 ==0:
+                print("Done {0:d} of {1:d} stars.".format(i+1, nstars))
         star = stars[i]
         
         #Some defaults for correlations.
@@ -440,6 +441,7 @@ def trace_forward(xyzuvw, time_in_past, Potential=MWPotential2014, \
     else:
         raise UserWarning
     if time_in_past == 0:
+        print("Time in past must be nonzero: {}".format(time_in_past))
         raise UserWarning
     times = np.linspace(0,time_in_past, 2)
 
