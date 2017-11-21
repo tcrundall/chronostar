@@ -143,6 +143,9 @@ class TestSynthesiser(unittest.TestCase):
                 msg="\nFailed {} received:\n{}\nshould be within {} to:\n{}".\
                 format(ctr, Cuv, v_tol, 0))
 
+    def test_errors(self):
+        """Have some test to check implemented errors are appropriate"""
+
 
 if __name__ == '__main__':
     unittest.main()
