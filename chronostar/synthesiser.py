@@ -17,6 +17,13 @@ import traceback as tb #??? why won't this line work?
 from astropy.table import Table
 import pdb
 
+            
+GAIA_ERRS = {
+    'e_Plx':0.6, #e_Plx [mas]
+    'e_RV':0.5,  #e_RV [km/s]
+    'e_pm':0.42, #e_pm [mas/yr]
+    }
+
 def synth_group(params):
     """
     Input
@@ -114,9 +121,16 @@ def synthesise_data(ngroups, group_pars, error, savefile=None):
 
     # compile sky coordinates into a table with some form of error
     sky_coord_now = measure_stars(xyzuvw_init, nstars)
-    e_plx = 0.7 #mas
-    e_pm  = 3.2 #mas/yr
-    e_RV  = 1.3 #km/s
+    
+    # orig, based off DR1 and RAVE
+#    e_plx = 0.7 #mas
+#    e_pm  = 3.2 #mas/yr
+#    e_RV  = 1.3 #km/s
+
+    # based off projected Gaia goal and GALAH(??)
+    e_plx = GAIA_ERRS['e_Plx'] #0.6 #mas
+    e_RV  = GAIA_ERRS['e_RV'] #0.5 #km/s
+    e_pm  = GAIA_ERRS['e_pm'] #0.42 #mas/yr
 
     errs = np.ones(nstars) * error
 
@@ -129,13 +143,13 @@ def synthesise_data(ngroups, group_pars, error, savefile=None):
         ids,                #names
         sky_coord_now[:,0], #RAdeg
         sky_coord_now[:,1], #DEdeg
-        np.random.normal(sky_coord_now[:,2], e_plx*error),  #Plx
+        np.random.normal(sky_coord_now[:,2], e_plx*error),  #Plx [mas]
         e_plx * errs,
-        np.random.normal(sky_coord_now[:,5], e_RV*error),   #RV
+        np.random.normal(sky_coord_now[:,5], e_RV*error),   #RV [km/s]
         e_RV * errs,
-        np.random.normal(sky_coord_now[:,3], e_pm*error),   #pmRA
+        np.random.normal(sky_coord_now[:,3], e_pm*error),   #pmRA [mas/yr]
         e_pm * errs,
-        np.random.normal(sky_coord_now[:,4], e_pm*error),   #pmDE
+        np.random.normal(sky_coord_now[:,4], e_pm*error),   #pmDE [mas/yr]
         e_pm * errs,
         ],
         names=('Name', 'RAdeg','DEdeg','Plx','e_Plx','RV','e_RV',
