@@ -242,4 +242,5 @@ class TestSynthesiser(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
 
-sys.path.insert(0,'.') #hacky way to get access to module
+sys.path.insert(0,'.') # reinserting home directory into path
+

@@ -23,3 +23,6 @@ class TestStringMethods(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+sys.path.insert(0,'.') #replace home directory into path
+

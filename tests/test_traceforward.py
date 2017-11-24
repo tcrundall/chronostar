@@ -7,13 +7,16 @@ a star from initial position [s] to each of these times.
 Two approaches are used, one is an iterative approach by calculating position
 at ts[i+1] by tracing forward from ts[i] (xyzyvw)
 
-The other approach (xyzuvw2) traces forward from teh intial positon each
+The other approach (xyzuvw2) traces forward from the intial positon each
 time
 
 Unsure why, but the iterative approach varies quite wildly from the continuous
 approach, despite being consistnet for the first few steps.
 """
 
+import sys
+
+sys.path.insert(0,'..') #hacky way to get access to module
 
 from chronostar import traceback as tb
 import numpy as np
@@ -59,3 +62,6 @@ plt.show()
 
 # the threshold is quite low since errors grow quite quickly
 assert(np.max(xyzuvw - xyzuvw2) < 0.1)
+
+sys.path.insert(0,'.') # reinserting home directory into path
+

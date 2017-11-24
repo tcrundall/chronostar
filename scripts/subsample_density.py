@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Create a subsample based on a given time in the past for all stars.
 
 Then for this subsample, find the sum of the density functions for all stars.
@@ -22,13 +23,14 @@ wcore = (star_params['stars']['ra_adopt'][poss_memb]>175) * (star_params['stars'
 core_memb = poss_memb[np.where(wcore)[0]]
 noncore_memb = poss_memb[np.where(1- wcore)[0]]
 """
-
 from __future__ import division, print_function
+
 from scipy.spatial import cKDTree
 import numpy as np
 import matplotlib.pyplot as plt
 import chronostar
 import pdb
+
 plt.ion()
 
 #t_ixs = np.arange(0,11)  #Start with a fixed time index (5 is 15.0 Myr)
