@@ -59,14 +59,14 @@ def generate_icov(pars):
     icov = np.linalg.inv(cov)
     return icov
 
-def interp_cov(target_time, star_params):
+def interp_cov(target_time, star_pars):
     """Calculates the xyzuvw vector and covariance matrix by interpolation
     
     Parameters
     ---------
     target_time
         The desired time to be fitted to
-    star_params
+    star_pars
         Dictionary with
         xyzuvw
             [nstars, nts, 6] array with the phase values for each star
@@ -87,27 +87,27 @@ def interp_cov(target_time, star_params):
         [nstars, 6, 6] array with covariance matrix of the phase values
         for each star at interpolated time
     """
-    times = star_params['times']
+    times = star_pars['times']
     ix = np.interp(target_time, times, np.arange(len(times)))
     ix0 = np.int(ix)
     frac = ix-ix0
-    interp_mns       = star_params['xyzuvw'][:,ix0]*(1-frac) +\
-                       star_params['xyzuvw'][:,ix0+1]*frac
+    interp_mns       = star_pars['xyzuvw'][:,ix0]*(1-frac) +\
+                       star_pars['xyzuvw'][:,ix0+1]*frac
 
-    interp_covs     = star_params['xyzuvw_cov'][:,ix0]*(1-frac) +\
-                      star_params['xyzuvw_cov'][:,ix0+1]*frac
+    interp_covs     = star_pars['xyzuvw_cov'][:,ix0]*(1-frac) +\
+                      star_pars['xyzuvw_cov'][:,ix0+1]*frac
 
     return interp_mns, interp_covs
 
-def eig_prior(char_min, inv_eig_val):
+def eig_prior(char_min, eig_val):
     """Computes the prior on the eigen values of the model Gaussain distr.
 
     Parameters
     ----------
     char_min
         The characteristic minimum of the position or velocity dispersions
-    inv_eig_val
-        Eigen values of the inverse covariance matrix representing of the 
+    eig_val
+        Eigen values of the covariance matrix representing of the 
         Gaussian distribution describing the group
     
     Returns
@@ -115,7 +115,9 @@ def eig_prior(char_min, inv_eig_val):
     eig_prior
         A prior on the provided model eigen value
     """
-    return 0
+    #eig_val = 1 / inv_eig_val
+    prior = eig_val / (char_min**(2) + eig_val**2)
+    return prior
 
 def lnprior(pars, z, star_pars):
     """Computes the prior of the group models constraining parameter space
@@ -135,7 +137,23 @@ def lnprior(pars, z, star_pars):
     lnprior
         The logarithm of the prior on the model parameters
     """
-    return 0
+    # fetch maximum allowed age
+    max_age = star_pars['times'][-1]
+
+    means  = pars[0:6]
+    inv_stds  = pars[6:10]
+    corrs = pars[10:13]
+    age   = pars[13]
+
+    if np.min(means) < -1000 or np.max(means) > 1000:
+        return -np.inf
+    if np.min(inv_stds) <= 0.0 or np.max(inv_stds) > 100.0:
+        return -np.inf
+    if np.min(corrs) < -1.0 or np.max(corrs) > 1.0:
+        return -np.inf
+    if age < 0.0 or age > max_age:
+        return -np.inf
+    return 0.0
 
 def lnlike(pars, z, star_pars):
     """Computes the log-likelihood for a fit to a group.
@@ -155,6 +173,17 @@ def lnlike(pars, z, star_pars):
     lnlike
         the logarithm of the likelihood of the fit
     """
+    
+    # convert pars into (in?)covariance matrix
+    group_icov = generate_icov(pars)
+    group_mn   = pars[0:6]
+
+    # interpolate star data to modelled age
+    age = pars[13]
+    interp_mns, interp_covs = interp_cov(age, star_pars)
+    
+    # PROGRESS HALTED! REWRITE C CODE IN LOGARITHMS BEFORE CONTINUING
+
     return 0
 
 def lnprob(pars, z, star_pars):
@@ -164,6 +193,8 @@ def lnprob(pars, z, star_pars):
     ----------
     pars
         Parameters describing the group model being fitted
+        0,1,2,3,4,5,   6,   7,   8,   9, 10, 11, 12, 13
+        X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
     z
         array of weights [0.0 - 1.0] for each star, describing how likely
         they are members of group to be fitted.
@@ -175,6 +206,7 @@ def lnprob(pars, z, star_pars):
     logprob
         the logarithm of the posterior probability of the fit
     """
+
     return 0
 
 def fit_group(tb_file, z=None):

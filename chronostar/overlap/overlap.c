@@ -4,6 +4,7 @@
 //#include <malloc.h>
 //#endif
 
+#include <stddef.h>
 #include <Python.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
@@ -22,7 +23,57 @@ void inplace(double* npyArray3D, int npyLength1D, int npylength2D,
 }
 */
 
+int print_matrix(FILE *f, const gsl_matrix *m)
+{
+  int status, n = 0;
 
+  for (size_t i = 0; i < m->size1; i++) {
+    for (size_t j = 0; j < m->size2; j++) {
+      if ((status = fprintf(f,"%g ", gsl_matrix_get(m, i, j))) < 0)
+        return -1;
+      n += status;
+    }
+
+    if ((status = fprintf(f, "\n")) < 0)
+      return -1;
+    n += status;
+  }
+  return n;
+}
+
+int print_vector(FILE *f, const gsl_vector *m)
+{
+  int status, n = 0;
+
+  for (size_t i = 0; i < m->size; i++) {
+    if ((status = fprintf(f, "%g ", gsl_vector_get(m, i))) < 0)
+      return -1;
+    n += status;
+  }
+  return n;
+}
+
+
+void print_mat(double* mat, int dim1, int dim2)
+{
+  int i, j;
+  printf("\n");
+  for (i=0; i<dim1; i++) {
+    for (j=0; j<dim2; j++) {
+      printf("%6.2f,", mat[i*dim1 + j]);
+    }
+    printf("\n");
+  }
+}
+void print_vec(double* vec, int dim1)
+{
+  int i;
+  printf("\n");
+  for (i=0; i<dim1; i++) {
+    printf("%6.2f,", vec[i]);
+  }
+  printf("\n");
+}
 
 int sum(int* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D)
 {
@@ -431,4 +482,120 @@ void get_overlaps(double* gr_icov, int gr_dim1, int gr_dim2,
   gsl_vector_free(bmc);
 
   gsl_permutation_free(p);
+}
+
+/* New main function, speed not yet tested
+ * --parameters--
+ *  group_icov     (6*6 npyArray) the group's inverse covariance matrix
+ *  group_mn       (1*6 npyArray) which is the group's mean kinematic info
+ *  group_icov_det (flt)          the determinent of the group_icov
+ *  Bs             (nstars*6*6)   an array of each star's icov matrix
+ *  bs:            (nstars*6)     an array of each star's mean kinematic info
+ *  B_dets:        (nstars)       an array of the determinent of each icov
+ *  nstars:        (int)          number of stars, used to determine the size
+ *                          of npyArray which will return calculated overlaps)
+ *
+ * returns: (nstars) array of calculated overlaps of every star with 1 group
+ *
+ * todo: instead of calling internal function actually use cblas functions
+ *          this will save time on the reallocation and deallocation
+ * 
+ *      look up how to find inverse
+ *      look up how to access math.pi
+ */
+void new_get_lnoverlaps(
+  double* gr_cov, int gr_dim1, int gr_dim2,
+  double* gr_mn, int gr_mn_dim,
+  double* st_covs, int st_dim1, int st_dim2, int st_dim3,
+  double* st_mns, int st_mn_dim1, int st_mn_dim2,
+  double* rangevec, int n
+  )
+{
+  printf("Inside new_get_lnoverlaps function\n");
+  // ALLOCATE MEMORY
+  int star_count = 0;
+  int MAT_DIM = gr_dim1; //Typically set to 6
+  int i, j, signum;
+  double d_temp, result, ln_det_BpAi;
+  FILE* fout = stdout;
+  gsl_permutation *p1, *p2;
+
+  gsl_matrix *BpA      = gsl_matrix_alloc(MAT_DIM, MAT_DIM); //(B+A)
+  gsl_matrix *BpAi     = gsl_matrix_alloc(MAT_DIM, MAT_DIM); //(B+A)^-1
+  gsl_vector *bma      = gsl_vector_alloc(MAT_DIM); //will hold b - a
+  gsl_vector *v_temp   = gsl_vector_alloc(MAT_DIM);
+
+  p1 = gsl_permutation_alloc(BpA->size1);
+  p2 = gsl_permutation_alloc(BpAi->size1);
+
+  printf("Memory allocated\n");
+  for (star_count=0; star_count<n; star_count++) {
+    // INITIALISE STAR MATRICES
+    for (i=0; i<MAT_DIM; i++)
+      for (j=0; j<MAT_DIM; j++)
+        //perform B+A as part of the initialisation
+        gsl_matrix_set(
+          BpA,i,j,
+          st_covs[star_count*MAT_DIM*MAT_DIM+i*MAT_DIM+j] + 
+          gr_cov[i*MAT_DIM+j]
+        );
+    printf("Printing BpA\n");
+    print_matrix(fout, BpA);
+
+    for (i=0; i<MAT_DIM; i++) {
+      gsl_vector_set(
+        bma, i,
+        st_mns[star_count*MAT_DIM + i] - 
+        gr_mn[i]
+      );
+    }
+    printf("Printing bma\n");
+    print_vec(bma->data, 6);
+    printf("Matrices initialised\n");
+
+    result = 6*log(2*M_PI);
+    // To Do! put 6ln(2 pi) in here ^^
+
+    // Get inverse of BpA, this line is wrong, fix when have internet
+    gsl_linalg_LU_decomp(BpA, p1, &signum);
+    gsl_linalg_LU_invert(BpA, p1, BpAi);
+
+    printf("Printing BpAi\n");
+    print_matrix(fout, BpAi);
+
+    // Add ln(det(BpAi)) to result, also wrong, don't know how to log
+    gsl_linalg_LU_decomp(BpAi, p2, &signum);
+    ln_det_BpAi = log(fabs(gsl_linalg_LU_det(BpAi, signum)));
+    result += ln_det_BpAi;
+    printf("ln(det(BpAi)) added\n");
+    printf("%6.2f\n\n",ln_det_BpAi);
+
+    // do the matrix multiplication
+    gsl_vector_set_zero(v_temp);
+    gsl_blas_dsymv(CblasUpper, 1.0, BpAi, bma, 0.0, v_temp);
+    //v_temp2 holds A (b-c)
+    gsl_blas_ddot(v_temp, bma, &d_temp); //d_temp holds (b-c)^T B (b-c)
+    result += d_temp;
+
+    printf("Printing bma_BpAi_bma\n");
+    printf("%6.2f\n\n", d_temp);
+
+
+    result *= -0.5;
+    printf("Everything calculated\n");
+    //
+    // STORE IN 'rangevec'
+    rangevec[star_count] = result;
+  }
+
+  // DEALLOCATE THE MEMORY
+  gsl_matrix_free(BpA);
+  gsl_matrix_free(BpAi);
+  gsl_vector_free(bma);
+  gsl_vector_free(v_temp);
+
+  gsl_permutation_free(p1);
+  gsl_permutation_free(p2);
+
+  printf("At end of new_get_lnoverlaps function\n");
 }

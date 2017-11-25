@@ -14,10 +14,11 @@ import chronostar
 from chronostar.fit_group import compute_overlap as co
 from chronostar._overlap import get_overlap as swig_co
 from chronostar._overlap import get_overlaps as swig_cos
+from chronostar._overlap import new_get_lnoverlaps as new_swig_clnos
 
 
-class TestStringMethods(unittest.TestCase):
-    def new_co(self,A_cov,a_mn,B_cov,b_mn):
+class TestMaths(unittest.TestCase):
+    def new_co(self,A_cov,a_mn,B_cov,b_mn,debug=False):
         """
         This is an alternative derivation of the overlap integral between
         two multivariate gaussians. This is *not* the version implemented
@@ -27,15 +28,66 @@ class TestStringMethods(unittest.TestCase):
         matrix in six dimensions, including some temporary variables for speed
         and to match the notes.
         """
-        AcpBc = (A_cov + B_cov)
-        AcpBc_det = np.linalg.det(AcpBc)
+        BpA = (B_cov + A_cov)
+        BpA_det = np.linalg.det(BpA)
 
-        AcpBc_i = np.linalg.inv(AcpBc)
+        BpA_i = np.linalg.inv(BpA)
         #amn_m_bmn = a_mn - b_mn
 
-        overlap = np.exp(-0.5*(np.dot(a_mn-b_mn,np.dot(AcpBc_i,a_mn-b_mn) )) )
-        overlap *= 1.0/((2*np.pi)**3.0 * np.sqrt(AcpBc_det))
+        bma = b_mn - a_mn
+
+        bma_BpAi_bma = np.dot(a_mn-b_mn,np.dot(BpA_i,a_mn-b_mn) )
+        if debug:
+            print("BpA:\n{}".format(BpA))
+            print("BpA_det: {}".format(BpA_det))
+            print("BpA_i:\n{}".format(BpA_i))
+            print("bma: {}".format(bma))
+            print("ln_BpAi_det:\n{}".format(np.log(1.0/BpA_det)))
+            print("bma_BpAi_bma:\n{}".format(bma_BpAi_bma))
+
+        overlap = np.exp(-0.5*(np.dot(a_mn-b_mn,np.dot(BpA_i,a_mn-b_mn) )) )
+        overlap *= 1.0/((2*np.pi)**3.0 * np.sqrt(BpA_det))
         return overlap
+
+    def test_swig_verbose(self):
+        star_params = chronostar.fit_group.read_stars(
+            "../data/bp_TGAS2_traceback_save.pkl")
+
+        nstars = 2
+        #nstars = mean.shape[0]
+
+        icov = star_params["xyzuvw_icov"][0:nstars,0]
+        cov = star_params["xyzuvw_cov"][0:nstars,0]
+        mean = star_params["xyzuvw"][0:nstars,0]
+        det = star_params["xyzuvw_icov_det"][0:nstars,0]
+
+        gr_cov  = cov[0]
+        gr_icov = icov[0]
+        gr_mn   = mean[0]
+        gr_icov_det = np.linalg.det(gr_icov)
+
+        print("-----------------------------\n"\
+              "--         python          --\n"\
+              "-----------------------------\n")
+
+        tims_ol1 = self.new_co(gr_cov,gr_mn,cov[0],mean[0],debug=True)
+        tims_ol2 = self.new_co(gr_cov,gr_mn,cov[1],mean[1],debug=True)
+
+        print("Results:\n{}\n{}".format(tims_ol1, tims_ol2))
+
+        print("-----------------------------\n"\
+              "--            C            --\n"\
+              "-----------------------------\n")
+
+        new_swig_a_ols = np.exp(
+            new_swig_clnos(
+                gr_cov, gr_mn,
+                cov[:], mean[:],
+                nstars,
+            )
+        )
+        print(np.exp(new_swig_a_ols))
+
 
     def test_overlap(self):
         star_params = chronostar.fit_group.read_stars(
@@ -62,7 +114,15 @@ class TestStringMethods(unittest.TestCase):
             gr_icov, gr_mn, gr_icov_det,
             icov[:,0], mean[:,0], det[:,0],
             nstars,
+        )
+
+        new_swig_a_ols = np.exp(
+            new_swig_clnos(
+                gr_cov, gr_mn,
+                cov[:,0], mean[:,0],
+                nstars,
             )
+        )
 
         for i in range(0,nstars):
             B_cov = cov[i,0]
@@ -75,20 +135,38 @@ class TestStringMethods(unittest.TestCase):
             swig_s_ol = swig_co(
                 gr_icov, gr_mn, np.linalg.det(gr_icov), B_icov, b_mn,
                 np.linalg.det(B_icov)
-                )
+            )
 
             # formatted this way allows ol values to both be 0.0
             self.assertTrue(( mikes_ol - tims_ol) <=\
                 mikes_ol*threshold1,
-                "{}: We have {} and {}".format(i, mikes_ol, tims_ol))
+                "{}: We have {} and {}".format(i, mikes_ol, tims_ol)
+            )
 
             self.assertTrue(( mikes_ol - swig_s_ol) <=\
                 mikes_ol*threshold2,
-                "{}: We have {} and {}".format(i, mikes_ol, swig_s_ol))
+                "{}: We have {} and {}".format(i, mikes_ol, swig_s_ol)
+            )
 
             self.assertTrue(( mikes_ol - swig_a_ols[i]) <=\
                 mikes_ol*threshold3,
-                "{}: We have {} and {}".format(i, mikes_ol, swig_a_ols[i]))
+                "{}: We have {} and {}".format(i, mikes_ol, swig_a_ols[i])
+            )
+
+            try:
+                self.assertTrue(( mikes_ol - new_swig_a_ols[i]) <=\
+                    mikes_ol*threshold3,
+                    "{}: We have {} and {}".\
+                    format(i, mikes_ol, new_swig_a_ols[i])
+                )
+            except:
+                pdb.set_trace()
+
+            self.assertTrue((swig_a_ols[i] - new_swig_a_ols[i]) <=\
+                mikes_ol*threshold3,
+                "{}: We have {} and {}".format(\
+                    i, swig_a_ols[i], new_swig_a_ols[i])
+            )
 
 if __name__ == '__main__':
     unittest.main()

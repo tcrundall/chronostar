@@ -5,7 +5,7 @@ test_groupfitter
 
 Tests for `groupfitter` module
 """
-from __future__ import division
+from __future__ import division, print_function
 
 from emcee.utils import MPIPool
 import os.path
@@ -30,6 +30,81 @@ class TestGroupfitter(unittest.TestCase):
             # X, Y, Z, U,  V,  W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars
             [ 0,50,20, 5,  5,  5,10,10,10, 5,-.3,-.6, .2, 20, 100],
         )
+        self.times = np.array([0.0, 1.0, 2.0])
+
+        self.xyzuvw = np.array([
+            [
+                [ 0.0,0.5,1.0,1.1,0.2,-1.0],
+                [-1.0,0.3,2.0,0.9,0.2,-1.0],
+                [-1.2,0.1,3.0,0.7,0.2,-1.0],
+            ],
+            [
+                [0.0,0.5,1.0,1.0,0.2,-1.0],
+                [0.0,0.5,1.0,1.0,0.2,-1.0],
+                [0.0,0.5,1.0,1.0,0.2,-1.0],
+            ],
+        ])
+
+        self.xyzuvw_cov = np.array([
+            [
+                [
+                    [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+                ],
+                [
+                    [2.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 2.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 2.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 2.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 2.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 2.0],
+                ],
+                [
+                    [3.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 3.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 3.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 3.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 3.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 3.0],
+                ],
+            ],
+            [
+                [
+                    [3.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 3.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 3.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 3.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 3.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 3.0],
+                ],
+                [
+                    [4.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 4.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 4.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 4.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 4.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 4.0],
+                ],
+                [
+                    [5.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 5.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 5.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 5.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 5.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 5.0],
+                ],
+            ],
+        ])
+
+        self.star_pars = {
+            'times':self.times,'xyzuvw':self.xyzuvw,
+            'xyzuvw_cov':self.xyzuvw_cov,
+        }
+
         self.tempdir = tempfile.mkdtemp()
         self.synth_file = os.path.join(self.tempdir, 'synth_data.pkl')
         self.tb_file    = os.path.join(self.tempdir, 'tb_data.pkl')
@@ -90,94 +165,18 @@ class TestGroupfitter(unittest.TestCase):
     
     def test_interp_cov(self):
         """Test the interpolation between time steps"""
-        times = np.array([0.0, 1.0])
-
-        xyzuvw = np.array([
-            [
-                [ 0.0,0.5,1.0,1.1,0.2,-1.0],
-                [-1.0,0.3,2.0,0.9,0.2,-1.0],
-                [-1.2,0.1,3.0,0.7,0.2,-1.0],
-            ],
-            [
-                [10.0,10.0,10.0,0.0,0.0,0.0],
-                [10.0,10.0,10.0,0.0,0.0,0.0],
-                [10.0,10.0,10.0,0.0,0.0,0.0],
-            ],
-        ])
-
-        xyzuvw_cov = np.array([
-            [
-                [
-                    [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
-                ],
-                [
-                    [2.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 2.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 2.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 2.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 2.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 2.0],
-                ],
-                [
-                    [3.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 3.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 3.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 3.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 3.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 3.0],
-                ],
-            ],
-            [
-                [
-                    [3.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 3.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 3.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 3.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 3.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 3.0],
-                ],
-                [
-                    [4.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 4.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 4.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 4.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 4.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 4.0],
-                ],
-                [
-                    [5.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 5.0, 0.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 5.0, 0.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 5.0, 0.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 5.0, 0.0],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 5.0],
-                ],
-            ],
-        ])
-
-        star_params = {
-            'times':times, 'xyzuvw':xyzuvw, 'xyzuvw_cov':xyzuvw_cov
-        }
-
-        #pdb.set_trace()
-        
         target_time = 0.0
-        interp_mns, interp_covs = gf.interp_cov(target_time, star_params)
-        self.assertTrue(np.allclose(interp_mns, xyzuvw[:,0,:]))
-        self.assertTrue(np.allclose(interp_covs, xyzuvw_cov[:,0]))
+        interp_mns, interp_covs = gf.interp_cov(target_time, self.star_pars)
+        self.assertTrue(np.allclose(interp_mns, self.xyzuvw[:,0,:]))
+        self.assertTrue(np.allclose(interp_covs, self.xyzuvw_cov[:,0]))
     
         target_time = 1.0
-        interp_mns, interp_covs = gf.interp_cov(target_time, star_params)
-        self.assertTrue(np.allclose(interp_mns, xyzuvw[:,1,:]))
-        self.assertTrue(np.allclose(interp_covs, xyzuvw_cov[:,1]))
+        interp_mns, interp_covs = gf.interp_cov(target_time, self.star_pars)
+        self.assertTrue(np.allclose(interp_mns, self.xyzuvw[:,1,:]))
+        self.assertTrue(np.allclose(interp_covs, self.xyzuvw_cov[:,1]))
 
         target_time = 0.5
-        interp_mns, interp_covs = gf.interp_cov(target_time, star_params)
+        interp_mns, interp_covs = gf.interp_cov(target_time, self.star_pars)
         # check covariance matrices have 1.5 and 3.5 along diagonals
         self.assertTrue(np.allclose(interp_covs[0], np.eye(6)*1.5))
         self.assertTrue(np.allclose(interp_covs[1], np.eye(6)*3.5))
@@ -185,13 +184,97 @@ class TestGroupfitter(unittest.TestCase):
         # first star mean should be average between timesteps
         self.assertTrue(
             np.allclose(
-                (xyzuvw_cov[0,0] + xyzuvw_cov[0,1])/2.0,
+                (self.xyzuvw_cov[0,0] + self.xyzuvw_cov[0,1])/2.0,
                 interp_covs[0]
             )
         )
 
         # second star should show no interpolation in mean
-        self.assertTrue(np.allclose(xyzuvw[1,0], interp_mns[1]))
+        self.assertTrue(np.allclose(self.xyzuvw[1,0], interp_mns[1]))
+
+    def find_nearest(self,array,value):
+        """Basic tool to find the array element that is closest to a value"""
+        idx = (np.abs(array-value)).argmin()
+        return array[idx]
+
+    def test_eig_prior(self):
+        """Test that the eig_prior is maximal at the characteristic minima"""
+        eig_vals = np.linspace(0.1,20,200)
+        char_mins = np.array([0.5, 1.0, 2.0, 4.0, 8.0])
+
+        for ctr, char_min in enumerate(char_mins):
+            self.assertEqual(
+                eig_vals[np.argmax(gf.eig_prior(char_min, eig_vals))],
+                self.find_nearest(eig_vals,char_min),
+                msg="{}...".format(ctr),
+            )
+
+    def test_lnprior(self):
+        """Test correctness of lnprior - only the final set of pars is valid"""
+        many_group_pars = np.array([
+            # X, Y, Z, U,  V,  W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age,nstars
+            [ 0, 0, 0, 0,  0,  0,1/10,1/10,1/10, 1/5, .5, .2, .3,-20, 100],
+            [20,20,20, 5,1e9,  5,1/10,1/10,1/10, 1/5,-.3,-.6, .2,  1, 100],
+            [50,50,50, 0,  0,-10,1/10,1/10,1/10, 1/5,1.8, .3, .2,  1, 100],
+            [50,50,50, 0,  0,-10,1/10,1/-5,1/10, 1/5,-.8, .3, .2,  1, 100],
+            [50,50,50, 0,  0,-10,1/10,1/10,1/10, 1/5,-.8, .3, .2, 10, 100],
+            [ 0, 0, 0, 0,  0,  0,1/10,1/10,1/10, 1/5, .5, .2, .3,  1, 100],
+        ])
+        
+        priors = np.zeros(many_group_pars.shape[0])
+
+        for i in range(many_group_pars.shape[0]):
+            priors[i] = gf.lnprior(many_group_pars[i], None, self.star_pars)
+
+        self.assertEqual(np.max(priors[:-2]), -np.inf)
+        self.assertEqual(priors[-1], 0.0)
+
+    def test_lnlike(self):
+        """
+        Compare likelihood results for the groups and given stars
+        """
+        # at t = 0.0 both stars are at around
+        # [0.0,0.5,1.0,1.0,0.2,-1.0],
+
+        z = np.ones(self.xyzuvw.shape[0])
+
+        group_pars1 = np.array(
+            [0.0,0.5,0.1,1.0,0.2,-1.0,1/5,1/5,1/5,1/2,0,0,0,0.0]
+        )
+        # same as 1 but double the width
+        group_pars2 = np.array(
+            [0.0,0.5,0.1,1.0,0.2,-1.0,1/10,1/10,1/10,1/4,0,0,0,0.0]
+        )
+        group_pars3 = np.array(
+            [0.0,0.5,0.1,1.0,0.2,-1.0,1/5,1/5,1/5,1/2,0,0,0,0.5]
+        )
+        group_pars4 = np.array(
+            [100,100,100,50,50,50,1/10,1/10,1/10,1/4,0,0,0,0.0]
+        )
+
+        # assert 1 > [2,3,4], [2,3] > 4
+        self.assertTrue(
+            self.lnlike(group_pars1,z,self.star_pars) > 
+            self.lnlike(group_pars2,z,self.star_pars)
+        )
+        self.assertTrue(
+            self.lnlike(group_pars1,z,self.star_pars) > 
+            self.lnlike(group_pars3,z,self.star_pars)
+        )
+        self.assertTrue(
+            self.lnlike(group_pars1,z,self.star_pars) > 
+            self.lnlike(group_pars4,z,self.star_pars)
+        )
+        self.assertTrue(
+            self.lnlike(group_pars2,z,self.star_pars) > 
+            self.lnlike(group_pars4,z,self.star_pars)
+        )
+        self.assertTrue(
+            self.lnlike(group_pars3,z,self.star_pars) > 
+            self.lnlike(group_pars4,z,self.star_pars)
+        )
+        
+        return 0
 
     def test_fit_group(self):
         """
