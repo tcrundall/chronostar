@@ -12,9 +12,7 @@ import unittest
 
 import chronostar
 from chronostar.fit_group import compute_overlap as co
-from chronostar._overlap import get_overlap as swig_co
-from chronostar._overlap import get_overlaps as swig_cos
-from chronostar._overlap import new_get_lnoverlaps as new_swig_clnos
+from chronostar._overlap import get_lnoverlaps as swig_clnos
 
 
 class TestMaths(unittest.TestCase):
@@ -138,14 +136,14 @@ class TestMaths(unittest.TestCase):
               "--            C            --\n"\
               "-----------------------------\n")
 
-        new_swig_a_ols = np.exp(
-            new_swig_clnos(
+        swig_ols = np.exp(
+            swig_clnos(
                 gr_cov, gr_mn,
                 cov[:], mean[:],
                 nstars,
             )
         )
-        print(np.exp(new_swig_a_ols))
+        print(np.exp(swig_ols))
 
     def test_overlap(self):
         star_params = chronostar.fit_group.read_stars(
@@ -167,63 +165,49 @@ class TestMaths(unittest.TestCase):
         gr_icov = icov[0,0]
         gr_mn   = mean[0,0]
         gr_icov_det = np.linalg.det(gr_icov)
-        
-        swig_a_ols = swig_cos(
-            gr_icov, gr_mn, gr_icov_det,
-            icov[:,0], mean[:,0], det[:,0],
+
+        swig_lnols = swig_clnos(
+            gr_cov, gr_mn,
+            cov[:,0], mean[:,0],
             nstars,
         )
+        
+        swig_ols = np.exp(swig_lnols)
 
-        new_swig_a_ols = np.exp(
-            new_swig_clnos(
-                gr_cov, gr_mn,
-                cov[:,0], mean[:,0],
-                nstars,
-            )
-        )
+        mikes_ols = np.zeros(nstars)
+        tims_ols = np.zeros(nstars)
+        tims_lnols = np.zeros(nstars)
 
+        # set values
         for i in range(0,nstars):
             B_cov = cov[i,0]
             B_icov = icov[i,0]
             b_mn = mean[i,0]
             B_idet = det[i,0]
 
-            mikes_ol = co(gr_icov,gr_mn,gr_icov_det,B_icov,b_mn,B_idet)
-            tims_ol = self.new_co(gr_cov,gr_mn,B_cov,b_mn)
-            swig_s_ol = swig_co(
-                gr_icov, gr_mn, np.linalg.det(gr_icov), B_icov, b_mn,
-                np.linalg.det(B_icov)
-            )
+            mikes_ols[i] = co(gr_icov,gr_mn,gr_icov_det,B_icov,b_mn,B_idet)
+            tims_ols[i] = self.new_co(gr_cov,gr_mn,B_cov,b_mn)
+            tims_lnols[i] = self.new_clno(gr_cov,gr_mn,B_cov,b_mn)
 
+        #pdb.set_trace()
+
+        # check values
+        for i in range(nstars):
             # formatted this way allows ol values to both be 0.0
-            self.assertTrue(( mikes_ol - tims_ol) <=\
-                mikes_ol*threshold1,
-                "{}: We have {} and {}".format(i, mikes_ol, tims_ol)
+            self.assertTrue(( mikes_ols[i] - tims_ols[i]) <=\
+                mikes_ols[i]*threshold1,
+                "{}: We have {} and {}".format(i, mikes_ols[i], tims_ols[i])
             )
 
-            self.assertTrue(( mikes_ol - swig_s_ol) <=\
-                mikes_ol*threshold2,
-                "{}: We have {} and {}".format(i, mikes_ol, swig_s_ol)
+            self.assertTrue(( abs(tims_lnols[i] - swig_lnols[i])) <=\
+                abs(tims_lnols[i])*threshold1,
+                "{}: We have {} and {}".format(i, tims_lnols[i], swig_lnols[i])
             )
 
-            self.assertTrue(( mikes_ol - swig_a_ols[i]) <=\
-                mikes_ol*threshold3,
-                "{}: We have {} and {}".format(i, mikes_ol, swig_a_ols[i])
-            )
-
-            try:
-                self.assertTrue(( mikes_ol - new_swig_a_ols[i]) <=\
-                    mikes_ol*threshold1,
-                    "{}: We have {} and {}".\
-                    format(i, mikes_ol, new_swig_a_ols[i])
-                )
-            except:
-                pdb.set_trace()
-
-            self.assertTrue((swig_a_ols[i] - new_swig_a_ols[i]) <=\
-                mikes_ol*threshold3,
-                "{}: We have {} and {}".format(\
-                    i, swig_a_ols[i], new_swig_a_ols[i])
+            self.assertTrue(( mikes_ols[i] - swig_ols[i]) <=\
+                mikes_ols[i]*threshold1,
+                "{}: We have {} and {}".\
+                format(i, mikes_ols[i], swig_ols[i])
             )
 
 if __name__ == '__main__':
