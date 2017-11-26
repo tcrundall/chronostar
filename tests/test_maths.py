@@ -18,6 +18,48 @@ from chronostar._overlap import new_get_lnoverlaps as new_swig_clnos
 
 
 class TestMaths(unittest.TestCase):
+    def new_clno(self,A_cov,a_mn,B_cov,b_mn,debug=False):
+        """
+        This is an alternative derivation of the overlap integral between
+        two multivariate gaussians. This is *not* the version implemented
+        in the swigged C module.
+
+        Compute the overlap integral between a star and group mean + covariance
+        matrix in six dimensions, including some temporary variables for speed
+        and to match the notes.
+        """
+        BpA = (B_cov + A_cov)
+        BpA_det = np.linalg.det(BpA)
+
+        BpA_i = np.linalg.inv(BpA)
+        bma = b_mn - a_mn
+
+        bma_BpAi_bma = np.dot(b_mn-a_mn,np.dot(BpA_i,b_mn-a_mn) )
+
+        ln_overlap = 6*np.log(2*np.pi)
+        ln_overlap += np.log(BpA_det)
+        if debug:
+            print("Printing BpA:\n{}".format(BpA))
+            print("Printing bma:\n{}".format(bma))
+            print("Printing BpA_i:\n{}".format(BpA_i))
+            print("ln(det(BpA)) added:\n{}\n".format(np.log(BpA_det)))
+            print("result so far:\n{}".format(ln_overlap))
+            print("bma_BpAi_bma:\n{}".format(bma_BpAi_bma))
+
+        # IMPLEMENTATION PAUSED
+        #ln_overlap += np.log(Bp
+
+        ln_overlap += bma_BpAi_bma
+        if debug:
+            print("result after bma_BpAi_bma:\n{}".format(ln_overlap))
+
+        ln_overlap *= -0.5
+
+        #ln_overlap = -0.5*(np.log( (2*np.pi)**6 * BpA_det) + bma_BpAi_bma)
+        if debug:
+            print("Final result:\n{}".format(ln_overlap))
+        return ln_overlap
+
     def new_co(self,A_cov,a_mn,B_cov,b_mn,debug=False):
         """
         This is an alternative derivation of the overlap integral between
@@ -42,13 +84,14 @@ class TestMaths(unittest.TestCase):
             print("BpA_det: {}".format(BpA_det))
             print("BpA_i:\n{}".format(BpA_i))
             print("bma: {}".format(bma))
-            print("ln_BpAi_det:\n{}".format(np.log(1.0/BpA_det)))
+            print("ln_BpA_det:\n{}".format(np.log(BpA_det)))
             print("bma_BpAi_bma:\n{}".format(bma_BpAi_bma))
 
         overlap = np.exp(-0.5*(np.dot(a_mn-b_mn,np.dot(BpA_i,a_mn-b_mn) )) )
         overlap *= 1.0/((2*np.pi)**3.0 * np.sqrt(BpA_det))
         return overlap
 
+    @unittest.skip("used for low level debugging")
     def test_swig_verbose(self):
         star_params = chronostar.fit_group.read_stars(
             "../data/bp_TGAS2_traceback_save.pkl")
@@ -66,12 +109,28 @@ class TestMaths(unittest.TestCase):
         gr_mn   = mean[0]
         gr_icov_det = np.linalg.det(gr_icov)
 
+        # Confirm that calculating overlap is the same as 
+        # e^ln_overlap
+        self.assertTrue(
+            np.allclose(
+                [self.new_co(gr_cov,gr_mn,cov[0],mean[0])],
+                [np.exp(self.new_clno(gr_cov,gr_mn,cov[0],mean[0]))]
+            )
+        )
+
+        self.assertTrue(
+            np.allclose(
+                [self.new_co(gr_cov,gr_mn,cov[1],mean[1])],
+                [np.exp(self.new_clno(gr_cov,gr_mn,cov[1],mean[1]))]
+            )
+        )
+
         print("-----------------------------\n"\
               "--         python          --\n"\
               "-----------------------------\n")
 
-        tims_ol1 = self.new_co(gr_cov,gr_mn,cov[0],mean[0],debug=True)
-        tims_ol2 = self.new_co(gr_cov,gr_mn,cov[1],mean[1],debug=True)
+        tims_ol1 = self.new_clno(gr_cov,gr_mn,cov[0],mean[0],debug=True)
+        tims_ol2 = self.new_clno(gr_cov,gr_mn,cov[1],mean[1],debug=True)
 
         print("Results:\n{}\n{}".format(tims_ol1, tims_ol2))
 
@@ -87,7 +146,6 @@ class TestMaths(unittest.TestCase):
             )
         )
         print(np.exp(new_swig_a_ols))
-
 
     def test_overlap(self):
         star_params = chronostar.fit_group.read_stars(
@@ -155,7 +213,7 @@ class TestMaths(unittest.TestCase):
 
             try:
                 self.assertTrue(( mikes_ol - new_swig_a_ols[i]) <=\
-                    mikes_ol*threshold3,
+                    mikes_ol*threshold1,
                     "{}: We have {} and {}".\
                     format(i, mikes_ol, new_swig_a_ols[i])
                 )

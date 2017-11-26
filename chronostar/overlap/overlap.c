@@ -511,24 +511,23 @@ void new_get_lnoverlaps(
   double* rangevec, int n
   )
 {
-  printf("Inside new_get_lnoverlaps function\n");
+  //printf("Inside new_get_lnoverlaps function\n");
   // ALLOCATE MEMORY
   int star_count = 0;
   int MAT_DIM = gr_dim1; //Typically set to 6
   int i, j, signum;
-  double d_temp, result, ln_det_BpAi;
+  double d_temp, result, ln_det_BpA;
   FILE* fout = stdout;
-  gsl_permutation *p1, *p2;
+  gsl_permutation *p1;
 
   gsl_matrix *BpA      = gsl_matrix_alloc(MAT_DIM, MAT_DIM); //(B+A)
-  gsl_matrix *BpAi     = gsl_matrix_alloc(MAT_DIM, MAT_DIM); //(B+A)^-1
+  //gsl_matrix *BpAi     = gsl_matrix_alloc(MAT_DIM, MAT_DIM); //(B+A)^-1
   gsl_vector *bma      = gsl_vector_alloc(MAT_DIM); //will hold b - a
   gsl_vector *v_temp   = gsl_vector_alloc(MAT_DIM);
 
   p1 = gsl_permutation_alloc(BpA->size1);
-  p2 = gsl_permutation_alloc(BpAi->size1);
 
-  printf("Memory allocated\n");
+  //printf("Memory allocated\n");
   for (star_count=0; star_count<n; star_count++) {
     // INITIALISE STAR MATRICES
     for (i=0; i<MAT_DIM; i++)
@@ -539,8 +538,8 @@ void new_get_lnoverlaps(
           st_covs[star_count*MAT_DIM*MAT_DIM+i*MAT_DIM+j] + 
           gr_cov[i*MAT_DIM+j]
         );
-    printf("Printing BpA\n");
-    print_matrix(fout, BpA);
+//    printf("Printing BpA\n");
+//    print_matrix(fout, BpA);
 
     for (i=0; i<MAT_DIM; i++) {
       gsl_vector_set(
@@ -549,40 +548,39 @@ void new_get_lnoverlaps(
         gr_mn[i]
       );
     }
-    printf("Printing bma\n");
-    print_vec(bma->data, 6);
-    printf("Matrices initialised\n");
+    //printf("Printing bma\n");
+    //print_vec(bma->data, 6);
+    //printf("Matrices initialised\n\n");
 
     result = 6*log(2*M_PI);
     // To Do! put 6ln(2 pi) in here ^^
 
     // Get inverse of BpA, this line is wrong, fix when have internet
     gsl_linalg_LU_decomp(BpA, p1, &signum);
-    gsl_linalg_LU_invert(BpA, p1, BpAi);
+    ln_det_BpA = log(fabs(gsl_linalg_LU_det(BpA, signum)));
+    result += ln_det_BpA;
 
-    printf("Printing BpAi\n");
-    print_matrix(fout, BpAi);
-
-    // Add ln(det(BpAi)) to result, also wrong, don't know how to log
-    gsl_linalg_LU_decomp(BpAi, p2, &signum);
-    ln_det_BpAi = log(fabs(gsl_linalg_LU_det(BpAi, signum)));
-    result += ln_det_BpAi;
-    printf("ln(det(BpAi)) added\n");
-    printf("%6.2f\n\n",ln_det_BpAi);
-
-    // do the matrix multiplication
+    //printf("ln(det(BpA)) added\n");
+    //printf("%6.2f\n\n",ln_det_BpA);
+    //printf("result so far:\n%6.2f\n",result);
+    //// Solve for c
+    //gsl_linalg_LU_solve(ApB, p, AapBb, c);
+    
+    // Don't use invert, use solve like example above ^^
+    //gsl_linalg_LU_invert(BpA, p1, BpAi);
+    //
     gsl_vector_set_zero(v_temp);
-    gsl_blas_dsymv(CblasUpper, 1.0, BpAi, bma, 0.0, v_temp);
-    //v_temp2 holds A (b-c)
-    gsl_blas_ddot(v_temp, bma, &d_temp); //d_temp holds (b-c)^T B (b-c)
+    gsl_linalg_LU_solve(BpA, p1, bma, v_temp); //v_temp holds (B+A)^-1 (b-a)
+    gsl_blas_ddot(v_temp, bma, &d_temp); //d_temp holds (b-a)^T (B+A)-1 (b-a)
+    //printf("Printing bma_BpAi_bma\n");
+    //printf("%6.2f\n\n", d_temp);
+
     result += d_temp;
-
-    printf("Printing bma_BpAi_bma\n");
-    printf("%6.2f\n\n", d_temp);
-
+    //printf("result after bma_BpAi_bma:\n%6.2f\n",result);
 
     result *= -0.5;
-    printf("Everything calculated\n");
+    //printf("Everything calculated\n");
+    //printf("Final result:\n%6.2f\n", result);
     //
     // STORE IN 'rangevec'
     rangevec[star_count] = result;
@@ -590,12 +588,11 @@ void new_get_lnoverlaps(
 
   // DEALLOCATE THE MEMORY
   gsl_matrix_free(BpA);
-  gsl_matrix_free(BpAi);
+  //gsl_matrix_free(BpAi);
   gsl_vector_free(bma);
   gsl_vector_free(v_temp);
 
   gsl_permutation_free(p1);
-  gsl_permutation_free(p2);
 
-  printf("At end of new_get_lnoverlaps function\n");
+  //printf("At end of new_get_lnoverlaps function\n");
 }
