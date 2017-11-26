@@ -6,10 +6,13 @@
     the code to find overlap in a simple test.
 """
 
-import numpy as np
-import chronostar._overlap as overlap
+import sys
+sys.path.insert(0,'..')
 import time
 import argparse
+
+import numpy as np
+import chronostar._overlap as overlap
 
 def compute_overlap(A,a,A_det,B,b,B_det):
     """Compute the overlap integral between a star and group mean + covariance matrix
@@ -106,18 +109,35 @@ def timings(group_icov, group_mean, group_icov_det,
     for i in range(noverlaps):
         result = overlap.get_overlap(group_icov, group_mean, group_icov_det,
                               star_icovs[0], star_means[0], star_icov_dets[0])
-    print "Swigging numpy: {} s".format(time.clock() - swignpstart)
+    end = time.clock()
+    print "Swigging numpy: {} s".format(end - swignpstart)
 
     swignpmultistart = time.clock()
     for i in range(noverlaps/batch_size):
-        result = overlap.get_overlaps(group_icov, group_mean, group_icov_det,
-                              star_icovs, star_means, star_icov_dets, batch_size)
+        result = overlap.get_overlaps(
+            group_icov, group_mean, group_icov_det,
+            star_icovs, star_means, star_icov_dets, batch_size)
     end = time.clock()
 
-    print "Swigging numpy multi: {} s".format(end - swignpmultistart)
+    print("Swigging numpy multi: {} s".format(end - swignpmultistart))
     print("  -> total module calls: {}".format(noverlaps/batch_size))
     print("  -> {} microsec per overlap".\
             format((end - swignpmultistart)/noverlaps*1e6))
+    print("  -> {} stars per module call".format(batch_size))
+
+    group_cov = np.linalg.inv(group_icov)
+    star_covs = np.linalg.inv(star_icovs)
+
+    newswignpmultistart = time.clock()
+    for i in range(noverlaps/batch_size):
+        result = overlap.new_get_lnoverlaps(group_cov, group_mean,
+                              star_covs, star_means, batch_size)
+    end = time.clock()
+
+    print("New swigging numpy multi: {} s".format(end - newswignpmultistart))
+    print("  -> total module calls: {}".format(noverlaps/batch_size))
+    print("  -> {} microsec per overlap".\
+            format((end - newswignpmultistart)/noverlaps*1e6))
     print("  -> {} stars per module call".format(batch_size))
 
 # ------------- MAIN PROGRAM -----------------------
@@ -211,3 +231,5 @@ timings(
     star_means, star_icov_dets, batch_size, noverlaps)
 
 print("___ swig module passsing all tests ___")
+
+sys.path.insert(0,'.')
