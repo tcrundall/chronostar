@@ -322,8 +322,8 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False):
         plt.plot(sampler.lnprobability.T)
         plt.savefig("burnin_lnprobT.png")
 
-    print("Number of failed priors after burnin:\n{}".format(N_FAILS))
-    print("Number of succeeded priors after burnin:\n{}".format(N_SUCCS))
+#    print("Number of failed priors after burnin:\n{}".format(N_FAILS))
+#    print("Number of succeeded priors after burnin:\n{}".format(N_SUCCS))
     
     # Help out the struggling walkers
     best_ix = np.argmax(lnprob)
@@ -337,8 +337,8 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False):
     pos, final_lnprob, rstate = sampler.run_mcmc(
         pos, SAMPLING_STEPS, rstate0=state,
     )
-    print("Number of failed priors after sampling:\n{}".format(N_FAILS))
-    print("Number of succeeded priors after sampling:\n{}".format(N_SUCCS))
+#    print("Number of failed priors after sampling:\n{}".format(N_FAILS))
+#    print("Number of succeeded priors after sampling:\n{}".format(N_SUCCS))
     if plot_it:
         plt.clf()
         plt.plot(sampler.lnprobability)

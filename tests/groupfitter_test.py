@@ -24,7 +24,7 @@ import chronostar.traceback as tb
 import numpy as np
 import pickle
 
-class TestGroupfitter(unittest.TestCase):
+class GroupfitterTestCase(unittest.TestCase):
     def setUp(self):
         self.times = np.array([0.0, 1.0, 2.0])
 
@@ -332,7 +332,7 @@ class TestGroupfitter(unittest.TestCase):
         error = 1e-5
         ntimes = 20
 
-        tb_file = "test_fit_group_tb_file.pkl"
+        tb_file = "tmp_groupfitter_tb_file.pkl"
 
         # to save time, check if tb_file is already created
         try:
@@ -354,7 +354,6 @@ class TestGroupfitter(unittest.TestCase):
 
         # find best fit
         best_fit  = gf.fit_group(tb_file, init_pars=group_pars_in, plot_it=True)
-        print(best_fit)
 
         # this code belongs in expect_max
 #        # check membership list totals to nstars in group
@@ -391,3 +390,9 @@ class TestGroupfitter(unittest.TestCase):
             msg="\nFailed {} received:\n{}\nshould be close to:\n{}".\
             format(ctr, age, tol_age, group_pars_ex[13]))
 
+def suite():
+    suite = unittest.TestLoader().loadTestsFromTestCase(GroupfitterTestCase)
+    return suite
+
+if __name__ == '__main__':
+    unittest.TextTestRunner(verbosity=2).run(suite())

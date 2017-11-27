@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python -W ignore
 """
 Checks the various implemntations of the overlap integral
 for correctness by comparing values against eachother
@@ -15,7 +15,7 @@ from chronostar.fit_group import compute_overlap as co
 from chronostar._overlap import get_lnoverlaps as swig_clnos
 
 
-class TestMaths(unittest.TestCase):
+class MathsTestCase(unittest.TestCase):
     def new_clno(self,A_cov,a_mn,B_cov,b_mn,debug=False):
         """
         This is an alternative derivation of the overlap integral between
@@ -89,7 +89,7 @@ class TestMaths(unittest.TestCase):
         overlap *= 1.0/((2*np.pi)**3.0 * np.sqrt(BpA_det))
         return overlap
 
-    @unittest.skip("used for low level debugging")
+    @unittest.skip("for low level debugging")
     def test_swig_verbose(self):
         star_params = chronostar.fit_group.read_stars(
             "../data/bp_TGAS2_traceback_save.pkl")
@@ -209,8 +209,12 @@ class TestMaths(unittest.TestCase):
                 "{}: We have {} and {}".\
                 format(i, mikes_ols[i], swig_ols[i])
             )
+    
+def suite():
+    tests = ['test_overlap', 'test_swig_verbose']
+    return unittest.TestSuite(map(MathsTestCase, tests))
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner(verbosity=2).run(suite())
 
 sys.path.insert(0,'.') #hacky way to get access to module

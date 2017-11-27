@@ -10,10 +10,10 @@ save "ground truths" in some log somewhere
 """
 
 from __future__ import print_function, division
+
 import numpy as np
+import traceback as tb
 import pickle
-#import chronostar.traceback as tb
-import traceback as tb #??? why won't this line work?
 from astropy.table import Table
 import pdb
 

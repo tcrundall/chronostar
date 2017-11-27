@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python -W ignore
 """
 test_synthesiser
 ----------------------------
@@ -8,9 +8,6 @@ Tests for `synthesiser` module.
 Takes about 10 mins to run on an old mac laptop
 
 To Do:
-- Better file management, particularly around closing and opening
-- use more stars in exact, and see if we can't lower the required
-    tolerance.
 """
 
 import os.path
@@ -26,8 +23,7 @@ import numpy as np
 import pdb
 import pickle 
 
-#class TestStringMethods(unittest.TestCase):
-class TestSynthesiser(unittest.TestCase):
+class SynthesiserTestCase(unittest.TestCase):
     def setUp(self):
         self.many_group_pars = np.array([
             # X, Y, Z, U,  V,  W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars
@@ -239,8 +235,12 @@ class TestSynthesiser(unittest.TestCase):
                 msg="mn e_pmDE, factor {}, received {}, expected {}".\
                 format(err, np.mean(e_pmDE), err*syn.GAIA_ERRS['e_pm']))
 
+def suite():
+    suite = unittest.TestLoader().loadTestsFromTestCase(SynthesiserTestCase)
+    return suite
+
 if __name__ == '__main__':
-    unittest.main()
+    unittest.TextTestRunner(verbosity=2).run(suite())
 
 sys.path.insert(0,'.') # reinserting home directory into path
 
