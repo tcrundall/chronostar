@@ -3,6 +3,17 @@ from __future__ import division, print_function
 import numpy as np
 import sys
 
+from chronostar._overlap import get_lnoverlaps
+import corner
+import emcee
+import matplotlib.pyplot as plt
+import pdb
+import pickle
+try:
+    import astropy.io.fits as pyfits
+except ImportError:
+    import pyfits
+
 def read_stars(tb_file):
     """Read stars from traceback file into a dictionary.
 
@@ -26,10 +37,27 @@ def read_stars(tb_file):
         xyzuvw (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
         xyzuvw_cov (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
     """
-    return 0
+    if len(tb_file)==0:
+        print("Input a filename...")
+        raise UserWarning
 
-def generate_icov(pars):
-    """Generate inverse covariance matrix from standard devs and correlations
+    #Stars is an astropy.Table of stars
+    if tb_file[-3:] == 'pkl':
+        with open(tb_file,'r') as fp:
+            (stars,times,xyzuvw,xyzuvw_cov)=pickle.load(fp)
+    elif (tb_file[-3:] == 'fit') or (tb_file[-4:] == 'fits'):
+        stars = pyfits.getdata(tb_file,1)
+        times = pyfits.getdata(tb_file,2)
+        xyzuvw = pyfits.getdata(tb_file,3)
+        xyzuvw_cov = pyfits.getdata(tb_file,4)
+    else:
+        print("Unknown File Type!")
+        raise UserWarning
+
+    return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov)
+
+def generate_cov(pars):
+    """Generate covariance matrix from standard devs and correlations
 
     Parameters
     ----------
@@ -43,8 +71,8 @@ def generate_icov(pars):
 
     Returns
     -------
-    icov
-        [6, 6] array : incovariance matrix for group model or stellar pdf
+    cov
+        [6, 6] array : covariance matrix for group model or stellar pdf
     """
     dX, dY, dZ, dV = 1.0/np.array(pars[6:10])
     Cxy, Cxz, Cyz  = pars[10:13]
@@ -56,8 +84,7 @@ def generate_icov(pars):
             [0.0,       0.0,       0.0,       0.0,   dV**2, 0.0],
             [0.0,       0.0,       0.0,       0.0,   0.0,   dV**2],
         ])
-    icov = np.linalg.inv(cov)
-    return icov
+    return cov
 
 def interp_cov(target_time, star_pars):
     """Calculates the xyzuvw vector and covariance matrix by interpolation
@@ -80,24 +107,24 @@ def interp_cov(target_time, star_pars):
 
     Returns
     -------
-    interp_mns
-        [nstars, 6] array with phase values for each star at interpolated
-        time
     interp_covs
         [nstars, 6, 6] array with covariance matrix of the phase values
         for each star at interpolated time
+    interp_mns
+        [nstars, 6] array with phase values for each star at interpolated
+        time
     """
     times = star_pars['times']
     ix = np.interp(target_time, times, np.arange(len(times)))
     ix0 = np.int(ix)
     frac = ix-ix0
-    interp_mns       = star_pars['xyzuvw'][:,ix0]*(1-frac) +\
-                       star_pars['xyzuvw'][:,ix0+1]*frac
-
     interp_covs     = star_pars['xyzuvw_cov'][:,ix0]*(1-frac) +\
                       star_pars['xyzuvw_cov'][:,ix0+1]*frac
 
-    return interp_mns, interp_covs
+    interp_mns       = star_pars['xyzuvw'][:,ix0]*(1-frac) +\
+                       star_pars['xyzuvw'][:,ix0+1]*frac
+
+    return interp_covs, interp_mns
 
 def eig_prior(char_min, eig_val):
     """Computes the prior on the eigen values of the model Gaussain distr.
@@ -144,10 +171,9 @@ def lnprior(pars, z, star_pars):
     inv_stds  = pars[6:10]
     corrs = pars[10:13]
     age   = pars[13]
-
     if np.min(means) < -1000 or np.max(means) > 1000:
         return -np.inf
-    if np.min(inv_stds) <= 0.0 or np.max(inv_stds) > 100.0:
+    if np.min(inv_stds) <= 0.0 or np.max(inv_stds) > 10.0:
         return -np.inf
     if np.min(corrs) < -1.0 or np.max(corrs) > 1.0:
         return -np.inf
@@ -175,18 +201,27 @@ def lnlike(pars, z, star_pars):
     """
     
     # convert pars into (in?)covariance matrix
-    group_icov = generate_icov(pars)
+    group_cov = generate_cov(pars)
+
+    # check if covariance matrix is singular
+    if np.min( np.linalg.eigvalsh(group_cov) ) < 0:
+        return -np.inf
+
     group_mn   = pars[0:6]
 
     # interpolate star data to modelled age
     age = pars[13]
-    interp_mns, interp_covs = interp_cov(age, star_pars)
+    interp_covs, interp_mns = interp_cov(age, star_pars)
+    nstars = interp_mns.shape[0]
     
     # PROGRESS HALTED! REWRITE C CODE IN LOGARITHMS BEFORE CONTINUING
+    lnols = get_lnoverlaps(
+        group_cov, group_mn, interp_covs, interp_mns, nstars
+    )
+    
+    return np.sum(z*lnols)
 
-    return 0
-
-def lnprob(pars, z, star_pars):
+def lnprobfunc(pars, z, star_pars):
     """Computes the log-probability for a fit to a group.
 
     Parameters
@@ -206,24 +241,123 @@ def lnprob(pars, z, star_pars):
     logprob
         the logarithm of the posterior probability of the fit
     """
+    global N_FAILS
+    global N_SUCCS
+    lp = lnprior(pars, z, star_pars)
+    if not np.isfinite(lp):
+        N_FAILS += 1
+        return -np.inf
+    N_SUCCS += 1
+    return lp + lnlike(pars, z, star_pars)
 
-    return 0
-
-def fit_group(tb_file, z=None):
+def fit_group(tb_file, z=None, init_pars=None, plot_it=False):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
     ----------
-    tb_file
-        a '.pkl' or '.fits' file containing traceback orbits
+    tb_file : string
+        a '.pkl' or '.fits' file containing traceback orbits as a dictionary:
+            stars: (nstars) high astropy table including columns as
+                        documented in the Traceback class.
+            times: (ntimes) numpy array, containing times that have
+                        been traced back, in Myr
+            xyzuvw (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
+            xyzuvw_cov (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
     z
         array of weights [0.0 - 1.0] for each star, describing how likely
         they are members of group to be fitted.
     
     Returns
     -------
-    best_fit
+    best_sample
         The parameters of the group model which yielded the highest posterior
         probability
     """
-    return 0
+    global N_FAILS
+    global N_SUCCS
+    # initialise some emcee constants
+    BURNIN_STEPS = 500
+    SAMPLING_STEPS = 1000
+    if init_pars is None:
+        #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
+        init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
+    NPAR = len(init_pars)
+    NWALKERS = 2*NPAR
+
+    #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
+    INIT_SDEV = [1,1,1,1,1,1,0.01,0.01,0.01,0.02,0.1,0.1,0.1,0.5]
+
+    # read in data
+    star_pars = read_stars(tb_file)
+
+    # initialise z if needed as array of 1s of length nstars
+    if z is None:
+        z = np.ones(star_pars['xyzuvw'].shape[0])
+
+    # Whole emcee shebang
+    
+    sampler = emcee.EnsembleSampler(
+        NWALKERS, NPAR, lnprobfunc, args=[z, star_pars]
+    )
+
+    # initialise walkers, note that INIT_SDEV is carefully chosen such that
+    # all generated positions are permitted by lnprior
+    pos = [
+        init_pars + (np.random.random(size=len(INIT_SDEV)) - 0.5)*INIT_SDEV
+        for i in range(NWALKERS)
+    ]
+
+    N_SUCCS = 0 
+    N_FAILS = 0
+        
+    # Perform burnin
+    state = None
+    pos, lnprob, state = sampler.run_mcmc(pos, BURNIN_STEPS, state)
+
+    if plot_it:
+        plt.clf()
+        plt.plot(sampler.lnprobability)
+        plt.savefig("burnin_lnprob.png")
+        plt.clf()
+        plt.plot(sampler.lnprobability.T)
+        plt.savefig("burnin_lnprobT.png")
+
+    print("Number of failed priors after burnin:\n{}".format(N_FAILS))
+    print("Number of succeeded priors after burnin:\n{}".format(N_SUCCS))
+    
+    # Help out the struggling walkers
+    best_ix = np.argmax(lnprob)
+    poor_ixs = np.where(lnprob < np.percentile(lnprob, 33))
+    for ix in poor_ixs:
+        pos[ix] = pos[best_ix]
+    sampler.reset()
+    N_FAILS = 0
+    N_SUCCS = 0 
+
+    pos, final_lnprob, rstate = sampler.run_mcmc(
+        pos, SAMPLING_STEPS, rstate0=state,
+    )
+    print("Number of failed priors after sampling:\n{}".format(N_FAILS))
+    print("Number of succeeded priors after sampling:\n{}".format(N_SUCCS))
+    if plot_it:
+        plt.clf()
+        plt.plot(sampler.lnprobability)
+        plt.savefig("lnprob.png")
+        plt.clf()
+        plt.plot(sampler.lnprobability.T)
+        plt.savefig("lnprobT.png")
+        
+    # sampler.lnprobability has shape (NWALKERS, SAMPLE_STEPS)
+    # yet np.argmax takes index of flattened array
+    final_best_ix = np.argmax(sampler.lnprobability)
+
+    best_sample = sampler.flatchain[final_best_ix]
+
+    # corner plotting is heaps funky on my laptop....
+    if False:
+        plt.clf()
+        fig = corner.corner(sampler.flatchain, truths=best_sample)
+        fig.savefig("corner.png")
+
+    return best_sample
+

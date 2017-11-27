@@ -26,10 +26,6 @@ import pickle
 
 class TestGroupfitter(unittest.TestCase):
     def setUp(self):
-        self.group_pars = np.array(
-            # X, Y, Z, U,  V,  W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars
-            [ 0,50,20, 5,  5,  5,10,10,10, 5,-.3,-.6, .2, 20, 100],
-        )
         self.times = np.array([0.0, 1.0, 2.0])
 
         self.xyzuvw = np.array([
@@ -120,7 +116,7 @@ class TestGroupfitter(unittest.TestCase):
             pass
         os.rmdir(self.tempdir)
 
-    def test_generate_icov(self):
+    def test_generate_cov(self):
         dX = 5
         dY = 5
         dZ = 5
@@ -141,7 +137,7 @@ class TestGroupfitter(unittest.TestCase):
             [0.0,       0.0,       0.0,       0.0,   0.0,   dV**2],
         ])
 
-        gf_cov = np.linalg.inv(gf.generate_icov(pars))
+        gf_cov = gf.generate_cov(pars)
         
         self.assertTrue(np.allclose(test_cov, test_cov))
         self.assertTrue(np.allclose(test_cov, gf_cov))
@@ -166,17 +162,17 @@ class TestGroupfitter(unittest.TestCase):
     def test_interp_cov(self):
         """Test the interpolation between time steps"""
         target_time = 0.0
-        interp_mns, interp_covs = gf.interp_cov(target_time, self.star_pars)
+        interp_covs, interp_mns = gf.interp_cov(target_time, self.star_pars)
         self.assertTrue(np.allclose(interp_mns, self.xyzuvw[:,0,:]))
         self.assertTrue(np.allclose(interp_covs, self.xyzuvw_cov[:,0]))
     
         target_time = 1.0
-        interp_mns, interp_covs = gf.interp_cov(target_time, self.star_pars)
+        interp_covs, interp_mns = gf.interp_cov(target_time, self.star_pars)
         self.assertTrue(np.allclose(interp_mns, self.xyzuvw[:,1,:]))
         self.assertTrue(np.allclose(interp_covs, self.xyzuvw_cov[:,1]))
 
         target_time = 0.5
-        interp_mns, interp_covs = gf.interp_cov(target_time, self.star_pars)
+        interp_covs, interp_mns = gf.interp_cov(target_time, self.star_pars)
         # check covariance matrices have 1.5 and 3.5 along diagonals
         self.assertTrue(np.allclose(interp_covs[0], np.eye(6)*1.5))
         self.assertTrue(np.allclose(interp_covs[1], np.eye(6)*3.5))
@@ -229,51 +225,88 @@ class TestGroupfitter(unittest.TestCase):
         self.assertEqual(np.max(priors[:-2]), -np.inf)
         self.assertEqual(priors[-1], 0.0)
 
-    def test_lnlike(self):
+    def test_lnlike_lnprob(self):
         """
         Compare likelihood results for the groups and given stars
         """
         # at t = 0.0 both stars are at around
         # [0.0,0.5,1.0,1.0,0.2,-1.0],
+        # star 1 evolves but star 2 remains fixed
+
+        #self.xyzuvw = np.array([
+        #    [
+        #        [ 0.0,0.5,1.0,1.1,0.2,-1.0],
+        #        [-1.0,0.3,2.0,0.9,0.2,-1.0],
+        #        [-1.8,0.1,3.0,0.7,0.2,-1.0],
+        #    ],
+        #    [
+        #        [0.0,0.5,1.0,1.0,0.2,-1.0],
+        #        [0.0,0.5,1.0,1.0,0.2,-1.0],
+        #        [0.0,0.5,1.0,1.0,0.2,-1.0],
 
         z = np.ones(self.xyzuvw.shape[0])
 
+        # identical as s1 at t=0 and 2 at all t's
         group_pars1 = np.array(
-            [0.0,0.5,0.1,1.0,0.2,-1.0,1/5,1/5,1/5,1/2,0,0,0,0.0]
+            [0.0,0.5,1.0,1.0,0.2,-1.0,1/5,1/5,1/5,1/2,0,0,0,0.0]
         )
-        # same as 1 but double the width
+        # same as s1 at t=0 but double the width
         group_pars2 = np.array(
-            [0.0,0.5,0.1,1.0,0.2,-1.0,1/10,1/10,1/10,1/4,0,0,0,0.0]
+            [0.0,0.5,1.0,1.0,0.2,-1.0,1/10,1/10,1/10,1/4,0,0,0,0.0]
         )
+        # age is at 0.5, so s1 should have evolved away, but s2 is still
+        # a good fit
         group_pars3 = np.array(
-            [0.0,0.5,0.1,1.0,0.2,-1.0,1/5,1/5,1/5,1/2,0,0,0,0.5]
+            [0.0,0.5,1.0,1.0,0.2,-1.0,1/5,1/5,1/5,1/2,0,0,0,0.5]
         )
+        # way off from everything
         group_pars4 = np.array(
             [100,100,100,50,50,50,1/10,1/10,1/10,1/4,0,0,0,0.0]
         )
 
-        # assert 1 > [2,3,4], [2,3] > 4
+        # assert lnlike: 1 > [2,3,4], [2,3] > 4
         self.assertTrue(
-            self.lnlike(group_pars1,z,self.star_pars) > 
-            self.lnlike(group_pars2,z,self.star_pars)
+            gf.lnlike(group_pars1,z,self.star_pars) > 
+            gf.lnlike(group_pars2,z,self.star_pars)
         )
         self.assertTrue(
-            self.lnlike(group_pars1,z,self.star_pars) > 
-            self.lnlike(group_pars3,z,self.star_pars)
+            gf.lnlike(group_pars1,z,self.star_pars) > 
+            gf.lnlike(group_pars3,z,self.star_pars)
         )
         self.assertTrue(
-            self.lnlike(group_pars1,z,self.star_pars) > 
-            self.lnlike(group_pars4,z,self.star_pars)
+            gf.lnlike(group_pars1,z,self.star_pars) > 
+            gf.lnlike(group_pars4,z,self.star_pars)
         )
         self.assertTrue(
-            self.lnlike(group_pars2,z,self.star_pars) > 
-            self.lnlike(group_pars4,z,self.star_pars)
+            gf.lnlike(group_pars2,z,self.star_pars) > 
+            gf.lnlike(group_pars4,z,self.star_pars)
         )
         self.assertTrue(
-            self.lnlike(group_pars3,z,self.star_pars) > 
-            self.lnlike(group_pars4,z,self.star_pars)
+            gf.lnlike(group_pars3,z,self.star_pars) > 
+            gf.lnlike(group_pars4,z,self.star_pars)
         )
         
+        # assert lnprob: 1 > [2,3,4], [2,3] > 4
+        self.assertTrue(
+            gf.lnprobfunc(group_pars1,z,self.star_pars) > 
+            gf.lnprobfunc(group_pars2,z,self.star_pars)
+        )
+        self.assertTrue(
+            gf.lnprobfunc(group_pars1,z,self.star_pars) > 
+            gf.lnprobfunc(group_pars3,z,self.star_pars)
+        )
+        self.assertTrue(
+            gf.lnprobfunc(group_pars1,z,self.star_pars) > 
+            gf.lnprobfunc(group_pars4,z,self.star_pars)
+        )
+        self.assertTrue(
+            gf.lnprobfunc(group_pars2,z,self.star_pars) > 
+            gf.lnprobfunc(group_pars4,z,self.star_pars)
+        )
+        self.assertTrue(
+            gf.lnprobfunc(group_pars3,z,self.star_pars) > 
+            gf.lnprobfunc(group_pars4,z,self.star_pars)
+        )
         return 0
 
     def test_fit_group(self):
@@ -281,33 +314,58 @@ class TestGroupfitter(unittest.TestCase):
         Synthesise a tb file with negligible error, retrieve initial
         parameters
         """
-        # Not ready to test this yet
-        self.assertTrue(False)
-        
+
+        # an 'external' parametrisation, with everything in physical
+        # format
+        group_pars_ex = np.array(
+            # X, Y, Z, U,  V,  W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars
+            [ 0, 0, 0, 0,  0,  0,10,10,10, 5,-.3,-.6, .2, 10, 100],
+        )
+
+        # an 'internal' parametrisation, stds are listed as the inverse,
+        # no need to know how many stars etc.
+        group_pars_in = np.copy(group_pars_ex[:-1])
+        group_pars_in[6:10] = 1/group_pars_in[6:10]
+
         # neligible error, anything smaller runs into problems with matrix
         # inversions
         error = 1e-5
         ntimes = 20
-        
-        syn.synthesise_data(1,self.group_pars,error,savefile=self.synth_file)
 
-        with open(self.synth_file, 'r') as fp:
-            t = pickle.load(fp)
+        tb_file = "test_fit_group_tb_file.pkl"
 
-        times = np.linspace(0,self.group_pars[-2],ntimes)
-        tb.traceback(t,times,savefile=self.tb_file)
+        # to save time, check if tb_file is already created
+        try:
+            with open(tb_file):
+                pass
+        # if not created, then create it. Careful though! May not be the same
+        # as group_pars. So if test fails try deleting tb_file from
+        # directory
+        except IOError:
+            # generate synthetic data
+            syn.synthesise_data(
+                1,group_pars_ex,error,savefile=self.synth_file
+            )
+            with open(self.synth_file, 'r') as fp:
+                t = pickle.load(fp)
 
-        best_fit, memb  = gf.fit_group(self.tb_file)
+            times = np.linspace(0,2*group_pars_ex[-2],ntimes)
+            tb.traceback(t,times,savefile=tb_file)
 
-        # check membership list totals to nstars in group
-        self.assertEqual(int(round(np.sum(memb))), self.group_pars[-1])
-        self.assertEqual(round(np.max(memb)), 1.0)
-        self.assertEqual(round(np.min(memb)), 1.0)
+        # find best fit
+        best_fit  = gf.fit_group(tb_file, init_pars=group_pars_in, plot_it=True)
+        print(best_fit)
+
+        # this code belongs in expect_max
+#        # check membership list totals to nstars in group
+#        self.assertEqual(int(round(np.sum(memb))), group_pars[-1])
+#        self.assertEqual(round(np.max(memb)), 1.0)
+#        self.assertEqual(round(np.min(memb)), 1.0)
 
         ctr = 0 # left here for convenience... tidy up later
 
         means = best_fit[0:6]
-        stds  = best_fit[6:10]
+        stds  = 1/best_fit[6:10]
         corrs = best_fit[10:13]
         age   = best_fit[13]
 
@@ -317,19 +375,19 @@ class TestGroupfitter(unittest.TestCase):
         tol_age  = 0.5
 
         self.assertTrue(
-            np.max(abs(means - self.group_pars[0:6])) < tol_mean,
+            np.max(abs(means - group_pars_ex[0:6])) < tol_mean,
             msg="\nFailed {} received:\n{}\nshould be within {} to:\n{}".\
-            format(ctr, means, tol_mean, self.group_pars[0:6]))
+            format(ctr, means, tol_mean, group_pars_ex[0:6]))
         self.assertTrue(
-            np.max(abs(stds - self.group_pars[6:10])) < tol_std,
+            np.max(abs(stds - group_pars_ex[6:10])) < tol_std,
             msg="\nFailed {} received:\n{}\nshould be close to:\n{}".\
-            format(ctr, stds, tol_std, self.group_pars[6:10]))
+            format(ctr, stds, tol_std, group_pars_ex[6:10]))
         self.assertTrue(
-            np.max(abs(corrs - self.group_pars[10:13])) < tol_corr,
+            np.max(abs(corrs - group_pars_ex[10:13])) < tol_corr,
             msg="\nFailed {} received:\n{}\nshould be close to:\n{}".\
-            format(ctr, corrs, tol_corr, self.group_pars[10:13]))
+            format(ctr, corrs, tol_corr, group_pars_ex[10:13]))
         self.assertTrue(
-            np.max(abs(age - self.group_pars[13])) < tol_age,
+            np.max(abs(age - group_pars_ex[13])) < tol_age,
             msg="\nFailed {} received:\n{}\nshould be close to:\n{}".\
-            format(ctr, age, tol_age, self.group_pars[13]))
+            format(ctr, age, tol_age, group_pars_ex[13]))
 
