@@ -16,40 +16,39 @@ import traceback as tb
 import pickle
 from astropy.table import Table
 import pdb
+from utils import generate_cov
 
-            
+# Stored as global constant for ease of comparison in testing suite           
 GAIA_ERRS = {
     'e_Plx':0.6, #e_Plx [mas]
-    'e_RV':0.5,  #e_RV [km/s]
-    'e_pm':0.42, #e_pm [mas/yr]
+    'e_RV' :0.5,  #e_RV [km/s]
+    'e_pm' :0.42, #e_pm [mas/yr]
     }
 
-def synth_group(params):
-    """
-    Input
-    -----
-    params: [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars]
-    perc_error: the percentage error of mock observational measurements
-    """
-    nstars = int(params[-1])
-    age = params[-2]
-    
-    # build covariance matrix
-    cov = np.eye(6)
-    cov[np.tril_indices(3,-1)] = params[10:13]
-    cov[np.triu_indices(3, 1)] = params[10:13]
-    
-    for i in range(3):
-        cov[:3,i] *= params[6:9]
-        cov[i,:3] *= params[6:9]
+def synth_group(group_pars):
+    """Synthesise an association of stars in galactic coords at t=0
 
-    for i in range(3,6):
-        cov[3:6,i] *= params[9]
-        cov[i,3:6] *= params[9]
+    Parameters
+    ----------
+    group_pars
+        [14] array with the following values:
+        [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars]
+
+    Returns
+    -------
+    xyzuvw_now
+        The XYZUVW phase space values of stars at current time
+    """
+    nstars = int(group_pars[-1])
+    age = group_pars[-2]
+
+    # build covariance matrix, using "internal" parametrisation
+    group_pars_in = np.copy(group_pars[:-1])
+    group_pars_in[6:10] = 1./group_pars_in[6:10]
 
     # Sample stars' initial parameters
     xyzuvw_init = np.random.multivariate_normal(
-        mean=params[0:6], cov=cov, size=nstars
+        mean=group_pars[0:6], cov=cov, size=nstars
         )
 
     # Project forward in time
@@ -60,22 +59,24 @@ def synth_group(params):
 
     return xyzuvw_now
 
-def measure_stars(xyzuvw_now, nstars):
+def measure_stars(xyzuvw_now):
     """
     Take a bunch of stars' XYZUVW in the current epoch, and convert into
     observational measurements with perfect precision.
 
-    Input
-    -----
-    xyzuvw_now: a [nstars,6] array with synthesised XYZUVW data
-    nstars: number of stars
+    Parameters
+    ----------
+    xyzuvw_now
+        [nstars,6] array with synthesised XYZUVW data
 
-    Output
-    ------
-    sky_coord_now: [nstars,6] array with synthesised measurements:
+    Returns
+    -------
+    sky_coord_now
+        [nstars,6] array with synthesised measurements:
         {RA, DEC, pi, pmRA, pmDEC, RV}
     """
     # convert to radecpipmrv coordinates:
+    nstars = xyzuvw_now.shape[0]
     sky_coord_now = np.zeros((nstars,6))
     for i in range(nstars):
         sky_coord_now[i] = tb.xyzuvw_to_skycoord(
@@ -91,16 +92,16 @@ def synthesise_data(ngroups, group_pars, error, savefile=None):
 
     Input
     -----
-    ngroups:
+    ngroups
         Number of groups
-    group_pars:
+    group_pars
         either [15] or [ngroups,15] array of parameters describing
         the initial conditions of a group. NOTE, group_pars[-1] is nstars
         {X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars}
-    error:
+    error
         float [0,1+], degree of precision in our "instruments" linearly 
         ranging from perfect (0) to Gaia-like (1)
-    output:
+    savefile
         optional name for output file
 
     Output
@@ -121,11 +122,6 @@ def synthesise_data(ngroups, group_pars, error, savefile=None):
 
     # compile sky coordinates into a table with some form of error
     sky_coord_now = measure_stars(xyzuvw_init, nstars)
-    
-    # orig, based off DR1 and RAVE
-#    e_plx = 0.7 #mas
-#    e_pm  = 3.2 #mas/yr
-#    e_RV  = 1.3 #km/s
 
     # based off projected Gaia goal and GALAH(??)
     e_plx = GAIA_ERRS['e_Plx'] #0.6 #mas
@@ -164,6 +160,7 @@ def synthesise_data(ngroups, group_pars, error, savefile=None):
     #print("Synthetic data file successfully created")
 
     try:
+        # keep track of initial group_pars for each synthetic traceback set
         with open("data/synth_log.txt", 'a') as logfile:
             logfile.write("\n------------------------\n")
             logfile.write(
