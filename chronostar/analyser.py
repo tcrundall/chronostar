@@ -251,7 +251,7 @@ def plot_lnprob(lnprob, nfree, nfixed, tstamp, file_stem=None):
     plt.title("{} walkers for {} steps".format(nwalkers, nsteps) )
     plt.xlabel("nsteps")
     plt.ylabel("lnprob")
-    plt.savefig(file_stem + ".eps")
+    plt.savefig(file_stem + ".png")
 
     plt.clf()
 
@@ -259,7 +259,7 @@ def plot_lnprob(lnprob, nfree, nfixed, tstamp, file_stem=None):
     plt.title("{} walkers for {} steps".format(nwalkers, nsteps) )
     plt.xlabel("walkers")
     plt.ylabel("lnprob")
-    plt.savefig(file_stem + "T.eps")
+    plt.savefig(file_stem + "T.png")
 
     plt.clf()
     return 0
@@ -327,8 +327,10 @@ def plot_corner(nfree, nfixed, converted_samples, lnprob,
                         truths = best_sample[np.where(param_mask)],
                         labels =      labels[np.where(param_mask)] )
 
-    file_name = "plots/{}_corner_{}_{}_{}.eps".format(tstamp, nfree, nfixed,
+    file_name = "plots/{}_corner_{}_{}_{}.png".format(tstamp, nfree, nfixed,
                                                       lnprob.shape[1])
+
+    pdb.set_trace()
 
     fig.savefig(file_name)
     fig.clf()
@@ -339,7 +341,7 @@ def save_results(nsteps, nfree, nfixed, nwalkers, samples, tstamp):
     pickle.dump((samples), open("results/"+file_stem+".pkl", 'w'))
 
 def write_results(nsteps, ngroups, bg_groups, bf, tstamp, nsaved=0, bw=None,
-                  infile=None):
+                  infile=None, info=""):
     """
     Saves the results of a fit to file.
     """
@@ -352,6 +354,8 @@ def write_results(nsteps, ngroups, bg_groups, bf, tstamp, nsaved=0, bw=None,
                 "sampling steps,\n".format(ngroups, bg_groups, nsteps) )
         if infile:
             f.write("Input data: {}\n".format(infile))
+        f.write("\n")
+        f.write(info)
         f.write("\n")
         f.write("______ MOVING GROUP ______\n")
         for i in range(len(labels)):

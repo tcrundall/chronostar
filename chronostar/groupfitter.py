@@ -12,6 +12,8 @@ TODO:
     - use arccos/arcsin for correlations e.g., 1/x for pos/vel dispersion
     - then tidy up samples at end by reconverting into "physical" parameters
 
+- make eig_prior logged...?
+
 To use MPI, try:
   mpirun -np 2 python fit_group.py
 """
@@ -285,6 +287,8 @@ def eig_prior(char_min, inv_eig_val):
     """
     Used to set the prior on the eigen-values of the covariance
     matrix for groups
+
+    !!! This needs to be logged right?!
     """
     eig_val = 1 / inv_eig_val
     prior = eig_val / (char_min**2 + eig_val**2)
@@ -334,7 +338,7 @@ def lnlike(pars, nfree, nfixed, FIXED_GROUPS, star_params):
     for i in range(nfixed):
         pos = i + nfree
         #model_groups[pos] = (FIXED_GROUPS[i].params,
-        #                           amplitudes[pos], 0)
+        #                           amplitudes[pos], 1)
         FIXED_GROUPS[i].update_amplitude(amplitudes[pos])
         model_groups[pos] = FIXED_GROUPS[i]
 
@@ -556,11 +560,15 @@ def calc_average_eig(sample):
     """
     npars_w_age = 14
     group_pars = sample[:npars_w_age]
-    assert(group_pars[6] <= 1)
+    ## No idea why this assertion was ever here...
+    # try:
+    #     assert(group_pars[6] <= 1)
+    # except:
+    #     pdb.set_trace()
     amplitude=1
     model_group = Group(group_pars, amplitude)
     # careful, nor sure what order the eigen values are returned in
     # seems ok now only because velocity disp is so much smaller than
     # spatial disp
-    mean_width = np.mean( np.sqrt((1/np.linalg.eigvalsh(model_group.icov)))[0:3])
+    mean_width = np.mean(np.sqrt((1/np.linalg.eigvalsh(model_group.icov)))[0:3])
     return mean_width

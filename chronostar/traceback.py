@@ -479,8 +479,6 @@ def trace_forward(xyzuvw, time_in_past, Potential=MWPotential2014, \
     xyzuvw_now[4] = o.V(-ts[-1]) - xyzuvw_sun[4]
     xyzuvw_now[5] = o.W(-ts[-1]) - xyzuvw_sun[5]
     
-    #pdb.set_trace()
-    
     return xyzuvw_now
     
 def trace_forward_sky(sky_coord, time_in_past):

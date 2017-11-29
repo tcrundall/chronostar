@@ -21,29 +21,11 @@
 #SOFTWARE.
 
 import numpy as np
-
+import pickle
 import matplotlib.pyplot as plt
+import pdb
 from matplotlib.patches import Ellipse
-
-def plot_point_cov(points, nstd=2, ax=None, **kwargs):
-    """
-    Plots an `nstd` sigma ellipse based on the mean and covariance of a point
-    "cloud" (points, an Nx2 array).
-    Parameters
-    ----------
-        points : An Nx2 array of the data points.
-        nstd : The radius of the ellipse in numbers of standard deviations.
-            Defaults to 2 standard deviations.
-        ax : The axis that the ellipse will be plotted on. Defaults to the 
-            current axis.
-        Additional keyword arguments are pass on to the ellipse patch.
-    Returns
-    -------
-        A matplotlib ellipse artist
-    """
-    pos = points.mean(axis=0)
-    cov = np.cov(points, rowvar=False)
-    return plot_cov_ellipse(cov, pos, nstd, ax, **kwargs)
+import sys
 
 def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
     """
@@ -85,18 +67,60 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
     ax.add_artist(ellip)
     return ellip
 
-if __name__ == '__main__':
-    #-- Example usage -----------------------
-    # Generate some random, correlated data
-    points = np.random.multivariate_normal(
-            mean=(1,1), cov=[[0.4, 0.3],[0.2, 0.4]], size=1000
-            )
-    # Plot the raw points...
-    x, y = points.T
-    plt.plot(x, y, 'ro')
+def plot_something(dims, infile):
+    """
+    Plot something.
 
-    # Plot a transparent 3 standard deviation covariance ellipse
-    plot_point_cov(points, nstd=3, alpha=0.3, color='red')
+    Input
+    ______
+    dims : (int, int)
+        index of the two space-velocity dimensions in which one wishes to plot
 
-    plt.show()
-    plt.savefig("error_ellipse.png")
+    infile : .pkl traceback file
+        file with traceback info
+    """
+    max_plot_error = 10000
+
+    dim1=dims[0]
+    dim2=dims[1]
+    cov_ix1 = [[dim1,dim2],[dim1,dim2]]
+    cov_ix2 = [[dim1,dim1],[dim2,dim2]]
+    axis_titles=['X (pc)','Y (pc)','Z (pc)','U (km/s)','V (km/s)','W (km/s)']
+    
+    stars, times, xyzuvw, xyzuvw_cov = pickle.load(open(infile, 'r'))
+    nstars = len(xyzuvw)
+
+    for j in range(len(times)-1):
+    #for j in range(5):
+        plt.clf()
+        for i in range(nstars):
+            cov_end = xyzuvw_cov[i,j,cov_ix1,cov_ix2]
+        #if (np.sqrt(cov_end.trace()) < max_plot_error):
+            # if plot_text:
+            #     if i in text_ix:
+            #         plt.text(xyzuvw[i,0,dim1]*1.1
+            #                 + xoffset[i],xyzuvw[i,0,dim2]*1.1 
+            #                 + yoffset[i],star['Name'],fontsize=11)
+            plt.plot(xyzuvw[i,:j+1,dim1],xyzuvw[i,:j+1,dim2],'b-')
+            plot_cov_ellipse(
+                    xyzuvw_cov[i,0,cov_ix1,cov_ix2],
+                    [xyzuvw[i,0,dim1],xyzuvw[i,0,dim2]],color='g',alpha=1)
+            plot_cov_ellipse(
+                    cov_end, [xyzuvw[i,j,dim1],xyzuvw[i,j,dim2]],
+                    color='r',alpha=0.2)
+    
+        plt.xlabel(axis_titles[dim1])
+        plt.ylabel(axis_titles[dim2])
+        plt.title("{:.2f} Myr".format(times[j]))
+        #plt.axis(axis_range)
+        plt.ylim(-200,200)
+        plt.xlim(-200,200)
+        #plt.axes().set_aspect('equal', 'datalim')
+        plt.savefig("temp_plots/{}plot{}{}.png".format(
+            j, axis_titles[dim1][0], axis_titles[dim2][0]))
+
+if __name__ == "__main__":
+    filename = sys.argv[1]
+    plot_something([0,1], filename)
+    plot_something([0,2], filename)
+    plot_something([1,2], filename)

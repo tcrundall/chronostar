@@ -48,7 +48,7 @@ plt.savefig("plots/twa_plots/TWA_fit.eps")
 #plt.show()
 plt.clf()
 
-plt.errorbar(ages, widths[:,0], yerr=[widths[:,1], widths[:,2]], label="all")
+plt.errorbar(ages, widths[:,0], yerr=[widths[:,2], widths[:,1]], label="all")
 plt.errorbar(ages, c_widths[:,0], yerr=[c_widths[:,2], c_widths[:,1]],
              label='core')
 plt.ylim(ymin=0)
