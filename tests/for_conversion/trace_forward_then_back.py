@@ -71,7 +71,7 @@ age = 20.
 xyzuvw_back = tb.integrate_xyzuvw(star_radecpipmrv,np.array([0,age]))
 
 #Trace the star back, giving an xyzuvw relative to the local standard of rest.
-if (False):
+if (True):
     stars = tb.stars_table(star_radecpipmrv)
     xyzuvw_back = tb.traceback(stars, np.array([0,age]))[0]
 
