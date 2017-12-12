@@ -15,7 +15,7 @@ import numpy as np
 import sys
 import unittest
 
-sys.path.insert(0,'..') #hacky way to get access to module
+sys.path.insert(0,'../..') #hacky way to get access to module
 
 from astropy import units as u 
 from astropy.coordinates import SkyCoord

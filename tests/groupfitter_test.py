@@ -353,7 +353,8 @@ class GroupfitterTestCase(unittest.TestCase):
             tb.traceback(t,times,savefile=tb_file)
 
         # find best fit
-        best_fit  = gf.fit_group(tb_file, init_pars=group_pars_in, plot_it=True)
+#       best_fit  = gf.fit_group(tb_file, init_pars=group_pars_in, plot_it=True)
+        best_fit  = gf.fit_group(tb_file, plot_it=True)
 
         # this code belongs in expect_max
 #        # check membership list totals to nstars in group
