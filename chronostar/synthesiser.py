@@ -45,6 +45,7 @@ def synth_group(group_pars):
     # build covariance matrix, using "internal" parametrisation
     group_pars_in = np.copy(group_pars[:-1])
     group_pars_in[6:10] = 1./group_pars_in[6:10]
+    cov = generate_cov(group_pars_in)
 
     # Sample stars' initial parameters
     xyzuvw_init = np.random.multivariate_normal(

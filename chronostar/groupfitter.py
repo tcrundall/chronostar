@@ -254,11 +254,8 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False):
         init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
     NPAR = len(init_pars)
     NWALKERS = 2*NPAR
-
     #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
     INIT_SDEV = [1,1,1,1,1,1,0.01,0.01,0.01,0.02,0.1,0.1,0.1,0.5]
-
-    # read in data
     star_pars = read_stars(tb_file)
 
     # initialise z if needed as array of 1s of length nstars
@@ -266,11 +263,9 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False):
         z = np.ones(star_pars['xyzuvw'].shape[0])
 
     # Whole emcee shebang
-    
     sampler = emcee.EnsembleSampler(
         NWALKERS, NPAR, lnprobfunc, args=[z, star_pars]
     )
-
     # initialise walkers, note that INIT_SDEV is carefully chosen such that
     # all generated positions are permitted by lnprior
     pos = [

@@ -57,7 +57,7 @@ class SynthesiserTestCase(unittest.TestCase):
             group_pars[-1] = 1000
             xyzuvw_now = syn.synth_group(group_pars)
             
-            threshold = 2.0
+            threshold = 1.0
             # check the mean values are approx what was initialised
             mean = np.mean(xyzuvw_now, axis=0)
             self.assertTrue(
