@@ -190,7 +190,6 @@ def stars_table(params):
     
     stars = Table([stars])
     return stars
-
         
 def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
               dims=[1,2],xoffset=[],yoffset=[],text_ix=[],axis_range=[],

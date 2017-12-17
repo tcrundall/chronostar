@@ -221,7 +221,7 @@ def lnprobfunc(pars, z, star_pars):
     N_SUCCS += 1
     return lp + lnlike(pars, z, star_pars)
 
-def fit_group(tb_file, z=None, init_pars=None, plot_it=False):
+def fit_group( tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -237,18 +237,27 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False):
     z
         array of weights [0.0 - 1.0] for each star, describing how likely
         they are members of group to be fitted.
+
+    fixed_age : float
+        can optionally fix the age of group to some value. Walkers will
+        remain static on that age
+
+    init_pars : [14]
+        optionally can initialise the walkers around this point
     
     Returns
     -------
     best_sample
         The parameters of the group model which yielded the highest posterior
         probability
+
+    all_samples
     """
     global N_FAILS
     global N_SUCCS
     # initialise some emcee constants
     BURNIN_STEPS = 500
-    SAMPLING_STEPS = 1000
+    SAMPLING_STEPS = 2000
     if init_pars is None:
         #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
         init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
@@ -257,6 +266,10 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False):
     #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
     INIT_SDEV = [1,1,1,1,1,1,0.01,0.01,0.01,0.02,0.1,0.1,0.1,0.5]
     star_pars = read_stars(tb_file)
+
+    if fixed_age is not None:
+        init_pars[-1] = fixed_age
+        INIT_SDEV[-1] = 0.0
 
     # initialise z if needed as array of 1s of length nstars
     if z is None:
@@ -325,5 +338,5 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False):
         fig = corner.corner(sampler.flatchain, truths=best_sample)
         fig.savefig("corner.png")
 
-    return best_sample
+    return best_sample, sampler.chain
 
