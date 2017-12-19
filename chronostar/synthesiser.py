@@ -31,7 +31,7 @@ def synth_group(group_pars):
     Parameters
     ----------
     group_pars
-        [14] array with the following values:
+        [15] array with the following values:
         [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars]
 
     Returns
@@ -85,7 +85,77 @@ def measure_stars(xyzuvw_now):
             )
     return sky_coord_now
 
-def synthesise_data(ngroups, group_pars, error, savefile=None):
+def generate_current_pos(ngroups, group_pars):
+    """Generate a set of stars at group position and project to modern era
+
+    Parameters
+    ----------
+    ngroups
+        Number of groups being synthesised
+
+    group_pars
+        The parametrisation of the group's initial condition
+    """
+    # For each group, generate current XYZUVW positions
+    if ngroups == 1:
+        xyzuvw_now = synth_group(group_pars)
+        nstars = int(group_pars[-1])
+
+    else:
+        xyzuvw_now = np.zeros((0,6))
+        for i in range(ngroups):
+            xyzuvw_now = np.vstack( (xyzuvw_now, synth_group(group_pars[i])) )
+        nstars = int(np.sum(group_pars[:,-1]))
+    return xyzuvw_now, nstars
+
+def generate_table_with_error(sky_coord_now, error_perc):
+    """Generate an "astrometry" table based on current coords and error
+
+    Parameters
+    ----------
+    sky_coord_now - [nstars, 6] array
+        Sky coordinates (RA, Dec, pi, pmRA, pmDE, RV) of all synthetic stars
+
+    error_perc - float
+        Percentage of gaia DR2-esque error. 1e-5 --> barely any measuremnt
+        error. 1.0 --> gaia DR2 typical error
+
+    Output
+    ------
+    t - table of synthetic astrometry table
+    """
+    # based off projected Gaia goal and GALAH(??)
+    e_plx = GAIA_ERRS['e_Plx'] #0.6 #mas
+    e_RV  = GAIA_ERRS['e_RV'] #0.5 #km/s
+    e_pm  = GAIA_ERRS['e_pm'] #0.42 #mas/yr
+
+    nstars = sky_coord_now.shape[0]
+
+    errs = np.ones(nstars) * error_perc
+    ids = np.arange(nstars)
+    # note, x + error_perc*x*N(0,1) == x * N(1,error_perc)
+    # i.e., we resample the measurements based on the measurement
+    # 'error_perc'
+    t = Table(
+        [
+        ids,                #names
+        sky_coord_now[:,0], #RAdeg
+        sky_coord_now[:,1], #DEdeg
+        np.random.normal(sky_coord_now[:,2], e_plx*error_perc),  #Plx [mas]
+        e_plx * errs,
+        np.random.normal(sky_coord_now[:,5], e_RV*error_perc),   #RV [km/s]
+        e_RV * errs,
+        np.random.normal(sky_coord_now[:,3], e_pm*error_perc),   #pmRA [mas/yr]
+        e_pm * errs,
+        np.random.normal(sky_coord_now[:,4], e_pm*error_perc),   #pmDE [mas/yr]
+        e_pm * errs,
+        ],
+        names=('Name', 'RAdeg','DEdeg','Plx','e_Plx','RV','e_RV',
+               'pmRA','e_pmRA','pmDE','e_pmDE')
+        )
+    return t
+
+def synthesise_data(ngroups, group_pars, error_perc, savefile=None):
     """
     Entry point of module; synthesise the observational measurements of an
     arbitrary number of groups with arbitrary initial conditions, with 
@@ -99,7 +169,7 @@ def synthesise_data(ngroups, group_pars, error, savefile=None):
         either [15] or [ngroups,15] array of parameters describing
         the initial conditions of a group. NOTE, group_pars[-1] is nstars
         {X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars}
-    error
+    error_perc
         float [0,1+], degree of precision in our "instruments" linearly 
         ranging from perfect (0) to Gaia-like (1)
     savefile
@@ -109,55 +179,14 @@ def synthesise_data(ngroups, group_pars, error, savefile=None):
     ------
     * a saved astropy table: data/synth_[N]groups_[N]stars.pkl
     """
-
-    # For each group, generate current XYZUVW positions
-    if ngroups == 1:
-        xyzuvw_init = synth_group(group_pars)
-        nstars = int(group_pars[-1])
-
-    else:
-        xyzuvw_init = np.zeros((0,6))
-        for i in range(ngroups):
-            xyzuvw_init = np.vstack( (xyzuvw_init, synth_group(group_pars[i])) )
-        nstars = int(np.sum(group_pars[:,-1]))
-
-    # compile sky coordinates into a table with some form of error
-    sky_coord_now = measure_stars(xyzuvw_init, nstars)
-
-    # based off projected Gaia goal and GALAH(??)
-    e_plx = GAIA_ERRS['e_Plx'] #0.6 #mas
-    e_RV  = GAIA_ERRS['e_RV'] #0.5 #km/s
-    e_pm  = GAIA_ERRS['e_pm'] #0.42 #mas/yr
-
-    errs = np.ones(nstars) * error
-
-    ids = np.arange(nstars)
-    # note, x + error*x*N(0,1) == x * N(1,error)
-    # i.e., we resample the measurements based on the measurement
-    # 'error'
-    t = Table(
-        [
-        ids,                #names
-        sky_coord_now[:,0], #RAdeg
-        sky_coord_now[:,1], #DEdeg
-        np.random.normal(sky_coord_now[:,2], e_plx*error),  #Plx [mas]
-        e_plx * errs,
-        np.random.normal(sky_coord_now[:,5], e_RV*error),   #RV [km/s]
-        e_RV * errs,
-        np.random.normal(sky_coord_now[:,3], e_pm*error),   #pmRA [mas/yr]
-        e_pm * errs,
-        np.random.normal(sky_coord_now[:,4], e_pm*error),   #pmDE [mas/yr]
-        e_pm * errs,
-        ],
-        names=('Name', 'RAdeg','DEdeg','Plx','e_Plx','RV','e_RV',
-               'pmRA','e_pmRA','pmDE','e_pmDE')
-        )
-    #times = np.linspace(0,30,31)
+    xyzuvw_now, nstars = generate_current_pos(ngroups, group_pars)
+    sky_coord_now = measure_stars(xyzuvw_now)
+    synth_table = generate_table_with_error(sky_coord_now, error_perc)
 
     if savefile is None:
         savefile = "data/synth_data_{}groups_{}stars{}err.pkl".\
-                format(ngroups, nstars, int(100*error))
-    pickle.dump(t, open(savefile, 'w'))
+                format(ngroups, nstars, int(100*error_perc))
+    pickle.dump(synth_table, open(savefile, 'w'))
     #print("Synthetic data file successfully created")
 
     try:
@@ -166,8 +195,8 @@ def synthesise_data(ngroups, group_pars, error, savefile=None):
             logfile.write("\n------------------------\n")
             logfile.write(
                 "filename: {}\ngroup parameters [X,Y,Z,U,V,W,dX,dY,dZ,dV,"
-                "Cxy,Cxz,Cyz,age,nstars]:\n{}\nerror: {}\n".\
-                format(savefile, group_pars,error))
+                "Cxy,Cxz,Cyz,age,nstars]:\n{}\nerror_perc: {}\n".\
+                format(savefile, group_pars,error_perc))
     except IOError:
         pass
 

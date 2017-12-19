@@ -10,10 +10,15 @@ logs/*
 data/synth_log.txt
 data/temp.txt
 
+# Special files
+*DS_Store
+
 # Output files
 *.txt.e*
 *.txt.o*
 logs/*.txt
+*.csv
+*.dat
 
 # Plots and saves
 *.pkl
