@@ -71,44 +71,35 @@ statistic, bin_edges, binnumber = binned_statistic(
 
 nbins = bin_edges.shape[0] - 1
 for i in range(nbins):
-    plt.clf()
+    plt.close('all')
+
+    f, (ax1, ax2) = plt.subplots(1,2)
+
     us = xyzuvw[np.where(binnumber == (i+1)),0,3]
     vs = xyzuvw[np.where(binnumber == (i+1)),0,4]
-    plt.plot(us, vs, '.')
-    plt.title(r"Galactic Longtitude: ${}^\circ - {}^\circ$".\
-        format(
-            int(np.around(bin_edges[i],   -1)),
-            int(np.around(bin_edges[i+1], -1))
-        )
-    )
-    #pdb.set_trace()
-    plt.xlabel("U [km/s]")
-    plt.ylabel("V [km/s]")
-    plt.ylim(-100, 50)
-    plt.xlim(-100, 100)
-    plt.savefig("uv_gif/{}.png".format(i))
+    ax1.set(aspect='equal')
+    ax1.plot(us, vs, '.')
+    ax1.set_xlabel("U [km/s]")
+    ax1.set_ylabel("V [km/s]")
+    vrange = 150
+    ax1.set_ylim(-vrange, vrange)
+    ax1.set_xlim(vrange, -vrange)  # note inversion
 
-    plt.clf()
     xs = xyzuvw[np.where(binnumber == (i+1)),0,0]
     ys = xyzuvw[np.where(binnumber == (i+1)),0,1]
-    plt.plot(xs, ys, '.')
-    plt.title(r"Galactic Longtitude: ${}^\circ - {}^\circ$".\
+    ax2.set(aspect='equal')
+    ax2.plot(xs, ys, '.')
+    pos_range = 300
+    ax2.set_xlabel("X [pc]")
+    ax2.set_ylabel("Y [pc]")
+    ax2.set_ylim(-pos_range, pos_range)
+    ax2.set_xlim(pos_range, -pos_range) # note inversion
+
+    f.suptitle(r"Galactic Longtitude: ${}^\circ - {}^\circ$".\
         format(
             int(np.around(bin_edges[i],   -1)),
             int(np.around(bin_edges[i+1], -1))
         )
     )
-    #pdb.set_trace()
-    plt.xlabel("X [pc]")
-    plt.ylabel("Y [pc]")
-    plt.ylim(-200, 200)
-    plt.xlim(-200, 200)
-    plt.savefig("xy_gif/{}.png".format(i))
-
-
-ixs = get_slice(0, 90, xyzuvw)
-
-nstars = xyzuvw.shape[0]
-
-# Bin stars into galactic longtitude
-
+    f.tight_layout(pad=2.0)
+    f.savefig("combined_gif/{}.png".format(i))

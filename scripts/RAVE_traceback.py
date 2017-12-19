@@ -15,6 +15,7 @@ times = np.array([0,1.0])
 # time 0 to time 1 anyways
 with open(infile, 'r') as fp:
     t = pickle.load(fp)
+assert type(t['Name'][0]) == np.string_
 tb.traceback(
     t, times,
     savefile="../data/tb_rave_active_star_candidates_with_TGAS_kinematics.pkl"
