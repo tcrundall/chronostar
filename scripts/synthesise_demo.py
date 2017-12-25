@@ -18,13 +18,16 @@ import numpy as np
 import pdb
 import pickle 
 
+generate_files = False
+fit_bayes = True
+
 #data_file_1 = "../results/synth_data_1.pkl"
 #data_file_100 = "../results/synth_data_100.pkl"
 #data_file_200 = "../results/synth_data_200.pkl"
 
 #data_files = [data_file_1, data_file_100, data_file_200]
 
-error_percs =['1', '100', '200']
+error_percs =['10', '100', '250']
 data_files = {}
 tb_files  = {}
 for error_perc in error_percs:
@@ -36,7 +39,7 @@ for error_perc in error_percs:
 #                   X,      Y,      Z,  U,      V,      W
 #mock_twa_pars = [-12.49, -42.28, 21.55, 9.87, -18.06, -4.52]
 # * 7 Myr
-mock_twa_pars = [-80,80,50,10,-20,-5,10,10,10,2,0.0,0.0,0.0,7,40]
+mock_twa_pars = [-80,80,50,10,-20,-5,5,5,5,2,0.0,0.0,0.0,7,40]
 
 NGROUPS = 1
 xyzuvw_now, nstars = syn.generate_current_pos(NGROUPS, mock_twa_pars)
@@ -45,19 +48,20 @@ sky_coord_now = syn.measure_stars(xyzuvw_now)
 synth_tables = {}
 times = np.linspace(0,10,31)
 # with varying degrees of precision, measure the same stars and save result
-for error_perc in error_percs:
-    synth_tables[error_perc] =\
-        syn.generate_table_with_error( sky_coord_now, 0.01*int(error_perc))
-    with open(data_files[error_perc], 'w') as fp:
-        pickle.dump(synth_tables[error_perc], fp)
-    tb.traceback(synth_tables[error_perc],times,savefile=tb_files[error_perc])
+if generate_files:
+    for error_perc in error_percs:
+        synth_tables[error_perc] =\
+            syn.generate_table_with_error( sky_coord_now, 0.01*int(error_perc))
+        with open(data_files[error_perc], 'w') as fp:
+            pickle.dump(synth_tables[error_perc], fp)
+        tb.traceback(synth_tables[error_perc],times,savefile=tb_files[error_perc])
 
 # Plot the traceback alongside naiive volume measure
 
 for error_perc in error_percs:
     subprocess.call(['rm', 'temp_plots/*.png'])
     subprocess.call(['rm', 'temp_plots/*.avi'])
-    ee.plot_something((0,1), tb_files[error_perc])
+    ee.plot_something((0,1), tb_files[error_perc], fit_bayes=fit_bayes)
     subprocess.call('./generate_synth_gif.sh')
     subprocess.call([
         'mv', 'temp_plots/video.avi',

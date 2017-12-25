@@ -221,7 +221,7 @@ def lnprobfunc(pars, z, star_pars):
     N_SUCCS += 1
     return lp + lnlike(pars, z, star_pars)
 
-def fit_group( tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
+def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -256,16 +256,25 @@ def fit_group( tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
     global N_FAILS
     global N_SUCCS
     # initialise some emcee constants
-    BURNIN_STEPS = 500
-    SAMPLING_STEPS = 2000
-    if init_pars is None:
-        #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
-        init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
-    NPAR = len(init_pars)
-    NWALKERS = 2*NPAR
+    BURNIN_STEPS = 300
+    SAMPLING_STEPS = 600
     #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
     INIT_SDEV = [1,1,1,1,1,1,0.01,0.01,0.01,0.02,0.1,0.1,0.1,0.5]
     star_pars = read_stars(tb_file)
+    if fixed_age is None:
+        initial_age = 0.0
+    else:
+        initial_age = fixed_age
+    if init_pars is None:
+        #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
+        #init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
+        init_pars = np.zeros(14)
+        _, interp_mns = interp_cov(initial_age, star_pars)
+        init_pars[0:6] = np.mean(interp_mns[:,:], axis=0)
+        init_pars[6:10] = 1/np.std(interp_mns[:,:4], axis=0)
+
+    NPAR = len(init_pars)
+    NWALKERS = 2*NPAR
 
     if fixed_age is not None:
         init_pars[-1] = fixed_age
