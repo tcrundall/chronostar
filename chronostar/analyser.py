@@ -152,18 +152,4 @@ def get_naive_spreads(xyzuvw):
 
     return naive_spreads
 
-def get_bayes_spreads(infile):
-    """
-    For each time step, get the average spread of the stars in XYZ using Bayes
 
-    Parameters
-    ----------
-    infile : str
-        Path to a traceback file
-
-    Output
-    ------
-    bayes_spreads : [ntimes] np array
-        the measure of the occupied volume of a group at each time
-    """
-    return np.zeros(10)

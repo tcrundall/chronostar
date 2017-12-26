@@ -85,6 +85,13 @@ def interp_cov(target_time, star_pars):
     """
     times = star_pars['times']
     ix = np.interp(target_time, times, np.arange(len(times)))
+    # check if interpolation is necessary
+    if np.isclose(target_time, times, atol=1e-5).any():
+        ix0 = int(round(ix))
+        interp_mns = star_pars['xyzuvw'][:, ix0]
+        interp_covs = star_pars['xyzuvw_cov'][:, ix0]
+        return interp_covs, interp_mns
+
     ix0 = np.int(ix)
     frac = ix-ix0
     interp_covs     = star_pars['xyzuvw_cov'][:,ix0]*(1-frac) +\
@@ -347,3 +354,26 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
 
     return best_sample, sampler.chain
 
+def get_bayes_spreads(tb_file, z=None):
+    """
+    For each time step, get the average spread of the stars in XYZ using Bayes
+
+    Parameters
+    ----------
+    tb_file : str
+        Path to a traceback file
+
+    z [None] : [nstars] np array
+        membership probability to association currently being fitted
+
+    Output
+    ------
+    bayes_spreads : [ntimes] np array
+        the measure of the occupied volume of a group at each time
+    """
+    star_pars = read_stars(tb_file)
+    ntimes = star_pars['times'].shape[0]
+
+    bayes_spreads = np.zeros(ntimes)
+
+    return np.zeros(10)
