@@ -1,13 +1,11 @@
 from __future__ import division, print_function
 
 import numpy as np
-import sys
 
 from chronostar._overlap import get_lnoverlaps
 import corner
 import emcee
 import matplotlib.pyplot as plt
-import pdb
 import pickle
 from utils import generate_cov
 try:

@@ -5,6 +5,7 @@ logs/*
 
 # Data
 *.fits
+*.pkl
 
 # Temp files
 data/synth_log.txt
@@ -21,7 +22,6 @@ logs/*.txt
 *.dat
 
 # Plots and saves
-*.pkl
 *.eps
 *.png
 *.jpg
@@ -30,6 +30,9 @@ logs/*.txt
 # Videos
 *.mp4
 *.avi
+
+# Idea files
+*.xml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
