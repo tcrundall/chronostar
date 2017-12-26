@@ -7,11 +7,13 @@ import corner
 import emcee
 import matplotlib.pyplot as plt
 import pickle
-from utils import generate_cov
+import utils
+
 try:
     import astropy.io.fits as pyfits
 except ImportError:
     import pyfits
+
 
 def read_stars(tb_file):
     """Read stars from traceback file into a dictionary.
@@ -36,24 +38,25 @@ def read_stars(tb_file):
         xyzuvw (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
         xyzuvw_cov (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
     """
-    if len(tb_file)==0:
+    if len(tb_file) == 0:
         print("Input a filename...")
         raise UserWarning
 
-    #Stars is an astropy.Table of stars
+    # Stars is an astropy.Table of stars
     if tb_file[-3:] == 'pkl':
-        with open(tb_file,'r') as fp:
-            (stars,times,xyzuvw,xyzuvw_cov)=pickle.load(fp)
+        with open(tb_file, 'r') as fp:
+            (stars, times, xyzuvw, xyzuvw_cov) = pickle.load(fp)
     elif (tb_file[-3:] == 'fit') or (tb_file[-4:] == 'fits'):
-        stars = pyfits.getdata(tb_file,1)
-        times = pyfits.getdata(tb_file,2)
-        xyzuvw = pyfits.getdata(tb_file,3)
-        xyzuvw_cov = pyfits.getdata(tb_file,4)
+        stars = pyfits.getdata(tb_file, 1)
+        times = pyfits.getdata(tb_file, 2)
+        xyzuvw = pyfits.getdata(tb_file, 3)
+        xyzuvw_cov = pyfits.getdata(tb_file, 4)
     else:
         print("Unknown File Type!")
         raise UserWarning
 
-    return dict(stars=stars,times=times,xyzuvw=xyzuvw,xyzuvw_cov=xyzuvw_cov)
+    return dict(stars=stars, times=times, xyzuvw=xyzuvw, xyzuvw_cov=xyzuvw_cov)
+
 
 def interp_cov(target_time, star_pars):
     """Calculates the xyzuvw vector and covariance matrix by interpolation
@@ -93,14 +96,15 @@ def interp_cov(target_time, star_pars):
         return interp_covs, interp_mns
 
     ix0 = np.int(ix)
-    frac = ix-ix0
-    interp_covs     = star_pars['xyzuvw_cov'][:,ix0]*(1-frac) +\
-                      star_pars['xyzuvw_cov'][:,ix0+1]*frac
+    frac = ix - ix0
+    interp_covs = star_pars['xyzuvw_cov'][:, ix0] * (1 - frac) + \
+                  star_pars['xyzuvw_cov'][:, ix0 + 1] * frac
 
-    interp_mns       = star_pars['xyzuvw'][:,ix0]*(1-frac) +\
-                       star_pars['xyzuvw'][:,ix0+1]*frac
+    interp_mns = star_pars['xyzuvw'][:, ix0] * (1 - frac) + \
+                 star_pars['xyzuvw'][:, ix0 + 1] * frac
 
     return interp_covs, interp_mns
+
 
 def eig_prior(char_min, eig_val):
     """Computes the prior on the eigen values of the model Gaussain distr.
@@ -118,9 +122,10 @@ def eig_prior(char_min, eig_val):
     eig_prior
         A prior on the provided model eigen value
     """
-    #eig_val = 1 / inv_eig_val
-    prior = eig_val / (char_min**(2) + eig_val**2)
+    # eig_val = 1 / inv_eig_val
+    prior = eig_val / (char_min ** (2) + eig_val ** 2)
     return prior
+
 
 def lnprior(pars, z, star_pars):
     """Computes the prior of the group models constraining parameter space
@@ -143,10 +148,10 @@ def lnprior(pars, z, star_pars):
     # fetch maximum allowed age
     max_age = star_pars['times'][-1]
 
-    means  = pars[0:6]
-    inv_stds  = pars[6:10]
+    means = pars[0:6]
+    inv_stds = pars[6:10]
     corrs = pars[10:13]
-    age   = pars[13]
+    age = pars[13]
     if np.min(means) < -1000 or np.max(means) > 1000:
         return -np.inf
     if np.min(inv_stds) <= 0.0 or np.max(inv_stds) > 10.0:
@@ -156,6 +161,7 @@ def lnprior(pars, z, star_pars):
     if age < 0.0 or age > max_age:
         return -np.inf
     return 0.0
+
 
 def lnlike(pars, z, star_pars):
     """Computes the log-likelihood for a fit to a group.
@@ -175,27 +181,28 @@ def lnlike(pars, z, star_pars):
     lnlike
         the logarithm of the likelihood of the fit
     """
-    
+
     # convert pars into (in?)covariance matrix
-    group_cov = generate_cov(pars)
+    group_cov = utils.generate_cov(pars)
 
     # check if covariance matrix is singular
-    if np.min( np.linalg.eigvalsh(group_cov) ) < 0:
+    if np.min(np.linalg.eigvalsh(group_cov)) < 0:
         return -np.inf
 
-    group_mn   = pars[0:6]
+    group_mn = pars[0:6]
 
     # interpolate star data to modelled age
     age = pars[13]
     interp_covs, interp_mns = interp_cov(age, star_pars)
     nstars = interp_mns.shape[0]
-    
+
     # PROGRESS HALTED! REWRITE C CODE IN LOGARITHMS BEFORE CONTINUING
     lnols = get_lnoverlaps(
         group_cov, group_mn, interp_covs, interp_mns, nstars
     )
-    
-    return np.sum(z*lnols)
+
+    return np.sum(z * lnols)
+
 
 def lnprobfunc(pars, z, star_pars):
     """Computes the log-probability for a fit to a group.
@@ -225,6 +232,7 @@ def lnprobfunc(pars, z, star_pars):
         return -np.inf
     N_SUCCS += 1
     return lp + lnlike(pars, z, star_pars)
+
 
 def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
@@ -264,7 +272,7 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
     BURNIN_STEPS = 300
     SAMPLING_STEPS = 600
     #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
-    INIT_SDEV = [1,1,1,1,1,1,0.01,0.01,0.01,0.02,0.1,0.1,0.1,0.5]
+    INIT_SDEV = [1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.02, 0.1, 0.1, 0.1, 0.5]
     star_pars = read_stars(tb_file)
     if fixed_age is None:
         initial_age = 0.0
@@ -272,14 +280,14 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
         initial_age = fixed_age
     if init_pars is None:
         #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
-        #init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
+        # init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
         init_pars = np.zeros(14)
         _, interp_mns = interp_cov(initial_age, star_pars)
-        init_pars[0:6] = np.mean(interp_mns[:,:], axis=0)
-        init_pars[6:10] = 1/np.std(interp_mns[:,:4], axis=0)
+        init_pars[0:6] = np.mean(interp_mns[:, :], axis=0)
+        init_pars[6:10] = 1 / np.std(interp_mns[:, :4], axis=0)
 
     NPAR = len(init_pars)
-    NWALKERS = 2*NPAR
+    NWALKERS = 2 * NPAR
 
     if fixed_age is not None:
         init_pars[-1] = fixed_age
@@ -296,13 +304,13 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
     # initialise walkers, note that INIT_SDEV is carefully chosen such that
     # all generated positions are permitted by lnprior
     pos = [
-        init_pars + (np.random.random(size=len(INIT_SDEV)) - 0.5)*INIT_SDEV
+        init_pars + (np.random.random(size=len(INIT_SDEV)) - 0.5) * INIT_SDEV
         for i in range(NWALKERS)
     ]
 
-    N_SUCCS = 0 
+    N_SUCCS = 0
     N_FAILS = 0
-        
+
     # Perform burnin
     state = None
     pos, lnprob, state = sampler.run_mcmc(pos, BURNIN_STEPS, state)
@@ -315,9 +323,9 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
         plt.plot(sampler.lnprobability.T)
         plt.savefig("burnin_lnprobT.png")
 
-#    print("Number of failed priors after burnin:\n{}".format(N_FAILS))
-#    print("Number of succeeded priors after burnin:\n{}".format(N_SUCCS))
-    
+    #    print("Number of failed priors after burnin:\n{}".format(N_FAILS))
+    #    print("Number of succeeded priors after burnin:\n{}".format(N_SUCCS))
+
     # Help out the struggling walkers
     best_ix = np.argmax(lnprob)
     poor_ixs = np.where(lnprob < np.percentile(lnprob, 33))
@@ -325,13 +333,13 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
         pos[ix] = pos[best_ix]
     sampler.reset()
     N_FAILS = 0
-    N_SUCCS = 0 
+    N_SUCCS = 0
 
     pos, final_lnprob, rstate = sampler.run_mcmc(
         pos, SAMPLING_STEPS, rstate0=state,
     )
-#    print("Number of failed priors after sampling:\n{}".format(N_FAILS))
-#    print("Number of succeeded priors after sampling:\n{}".format(N_SUCCS))
+    #    print("Number of failed priors after sampling:\n{}".format(N_FAILS))
+    #    print("Number of succeeded priors after sampling:\n{}".format(N_SUCCS))
     if plot_it:
         plt.clf()
         plt.plot(sampler.lnprobability)
@@ -339,7 +347,7 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
         plt.clf()
         plt.plot(sampler.lnprobability.T)
         plt.savefig("lnprobT.png")
-        
+
     # sampler.lnprobability has shape (NWALKERS, SAMPLE_STEPS)
     # yet np.argmax takes index of flattened array
     final_best_ix = np.argmax(sampler.lnprobability)
@@ -353,6 +361,7 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
         fig.savefig("corner.png")
 
     return best_sample, sampler.chain
+
 
 def get_bayes_spreads(tb_file, z=None):
     """
@@ -376,4 +385,10 @@ def get_bayes_spreads(tb_file, z=None):
 
     bayes_spreads = np.zeros(ntimes)
 
-    return np.zeros(10)
+    for i, time in enumerate(times):
+        _, chain = fit_group(
+            infile, fixed_age=time, plot_it=True
+        )
+        bayes_spreads[i] = utils.approx_spread_from_chain(chain)
+
+    return bayes_spreads
