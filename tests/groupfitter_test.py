@@ -9,7 +9,6 @@ from __future__ import division, print_function
 
 from emcee.utils import MPIPool
 import os.path
-import pdb
 import sys
 import tempfile
 import unittest
@@ -311,8 +310,9 @@ class GroupfitterTestCase(unittest.TestCase):
             tb.traceback(t, times, savefile=tb_file)
 
         # find best fit
-        #       best_fit  = gf.fit_group(tb_file, init_pars=group_pars_in, plot_it=True)
-        best_fit, _ = gf.fit_group(tb_file, plot_it=True)
+        best_fit, _ = gf.fit_group(
+            tb_file, burnin_steps=1000, sampling_steps=1000, plot_it=True
+        )
 
         # this code belongs in expect_max
         #        # check membership list totals to nstars in group
@@ -334,12 +334,12 @@ class GroupfitterTestCase(unittest.TestCase):
 
         self.assertTrue(
             np.max(abs(means - group_pars_ex[0:6])) < tol_mean,
-            msg="\nFailed {} received:\n{}\nshould be within {} to:\n{}". \
-            format(ctr, means, tol_mean, group_pars_ex[0:6]))
+            msg="\nFailed {} received:\n{}\nshould be within {} to:\n{}".
+                format(ctr, means, tol_mean, group_pars_ex[0:6]))
         self.assertTrue(
             np.max(abs(stds - group_pars_ex[6:10])) < tol_std,
-            msg="\nFailed {} received:\n{}\nshould be close to:\n{}". \
-            format(ctr, stds, tol_std, group_pars_ex[6:10]))
+            msg="\nFailed {} received:\n{}\nshould be close to:\n{}".
+                format(ctr, stds, tol_std, group_pars_ex[6:10]))
         self.assertTrue(
             np.max(abs(corrs - group_pars_ex[10:13])) < tol_corr,
             msg="\nFailed {} received:\n{}\nshould be close to:\n{}". \
@@ -349,14 +349,14 @@ class GroupfitterTestCase(unittest.TestCase):
             msg="\nFailed {} received:\n{}\nshould be close to:\n{}". \
             format(ctr, age, tol_age, group_pars_ex[13]))
 
-    @unittest.skip("not yet implemented")
+
     def test_get_bayes_spreads(self):
         """Using a precise synthetic traceback, compare bayes and naive spread
         """
         mock_twa_pars = [
             -80, 80, 50, 10, -20, -5, 5, 5, 5, 2, 0.0, 0.0, 0.0, 7, 40
         ]
-        error_perc = 1
+        error_perc = 1e-5
         ngroups = 1
         syn.synthesise_data(
             ngroups, mock_twa_pars, error_perc, savefile=self.synth_file
@@ -364,7 +364,7 @@ class GroupfitterTestCase(unittest.TestCase):
         with open(self.synth_file, 'r') as fp:
             t = pickle.load(fp)
 
-        ntimes = 30
+        ntimes = 6
         times = np.linspace(0, 10, ntimes)
         tb.traceback(t, times, savefile=self.tb_file)
         star_pars = gf.read_stars(self.tb_file)
@@ -372,7 +372,7 @@ class GroupfitterTestCase(unittest.TestCase):
         bayes_spreads = gf.get_bayes_spreads(self.tb_file)
         naive_spreads = an.get_naive_spreads(xyzuvw)
 
-        self.assertTrue(np.isclose(bayes_spreads, naive_spreads, 1e-5))
+        self.assertTrue(np.isclose(bayes_spreads, naive_spreads, rtol=0.1).all())
 
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(GroupfitterTestCase)
@@ -380,4 +380,4 @@ def suite():
 
 
 if __name__ == '__main__':
-    unittest.TextTestRunner(verbosity=1).run(suite())
+    unittest.TextTestRunner(verbosity=2).run(suite())

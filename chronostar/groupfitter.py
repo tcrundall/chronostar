@@ -234,7 +234,30 @@ def lnprobfunc(pars, z, star_pars):
     return lp + lnlike(pars, z, star_pars)
 
 
-def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
+def get_initial_pars(star_pars, initial_age):
+    """Initialise the walkers around the mean XYZUVW of the stars
+
+    Having this step cuts number of steps required for convergence by
+    a few hundred for small data sets (~40 stars) and a few thousand
+    for larger data sets (~8,000 stars)
+
+    TODO:
+        maybe have some means to incorporate membership probabilities
+
+    :param star_pars:
+    :param initial_age:
+    :return:
+    """
+    #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
+    # init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
+    init_pars = np.zeros(14)
+    _, interp_mns = interp_cov(initial_age, star_pars)
+    init_pars[0:6] = np.mean(interp_mns[:, :], axis=0)
+    init_pars[6:10] = 1 / np.std(interp_mns[:, :4], axis=0)
+    return init_pars
+
+def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
+              init_pars=None, plot_it=False, fixed_age=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -268,9 +291,6 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
     """
     global N_FAILS
     global N_SUCCS
-    # initialise some emcee constants
-    BURNIN_STEPS = 300
-    SAMPLING_STEPS = 600
     #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
     INIT_SDEV = [1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.02, 0.1, 0.1, 0.1, 0.5]
     star_pars = read_stars(tb_file)
@@ -278,17 +298,16 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
         initial_age = 0.0
     else:
         initial_age = fixed_age
+
+    # Initialise the fit
     if init_pars is None:
-        #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
-        # init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
-        init_pars = np.zeros(14)
-        _, interp_mns = interp_cov(initial_age, star_pars)
-        init_pars[0:6] = np.mean(interp_mns[:, :], axis=0)
-        init_pars[6:10] = 1 / np.std(interp_mns[:, :4], axis=0)
+        init_pars = get_initial_pars(star_pars, initial_age)
 
     NPAR = len(init_pars)
     NWALKERS = 2 * NPAR
 
+    # Since emcee linearly interpolates between walkers to determine next step
+    # by initialising each walker to the same age, the age never varies
     if fixed_age is not None:
         init_pars[-1] = fixed_age
         INIT_SDEV[-1] = 0.0
@@ -313,7 +332,7 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
 
     # Perform burnin
     state = None
-    pos, lnprob, state = sampler.run_mcmc(pos, BURNIN_STEPS, state)
+    pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
 
     if plot_it:
         plt.clf()
@@ -336,7 +355,7 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
     N_SUCCS = 0
 
     pos, final_lnprob, rstate = sampler.run_mcmc(
-        pos, SAMPLING_STEPS, rstate0=state,
+        pos, sampling_steps, rstate0=state,
     )
     #    print("Number of failed priors after sampling:\n{}".format(N_FAILS))
     #    print("Number of succeeded priors after sampling:\n{}".format(N_SUCCS))
@@ -363,7 +382,7 @@ def fit_group(tb_file, z=None, init_pars=None, plot_it=False, fixed_age=None):
     return best_sample, sampler.chain
 
 
-def get_bayes_spreads(tb_file, z=None):
+def get_bayes_spreads(tb_file, z=None, plot_it=False):
     """
     For each time step, get the average spread of the stars in XYZ using Bayes
 
@@ -381,13 +400,15 @@ def get_bayes_spreads(tb_file, z=None):
         the measure of the occupied volume of a group at each time
     """
     star_pars = read_stars(tb_file)
-    ntimes = star_pars['times'].shape[0]
+    times = star_pars['times']
+    ntimes = times.shape[0]
 
     bayes_spreads = np.zeros(ntimes)
 
     for i, time in enumerate(times):
         _, chain = fit_group(
-            infile, fixed_age=time, plot_it=True
+            tb_file, burnin_steps=500, sampling_steps=500, z=z,
+            fixed_age=time, plot_it=plot_it
         )
         bayes_spreads[i] = utils.approx_spread_from_chain(chain)
 
