@@ -57,10 +57,6 @@ class AnalyserTestCase(unittest.TestCase):
         self.assertEqual(naive_spreads.shape[0], ntimes)
         self.assertTrue(np.isclose(naive_spreads, dX, 1e-1).all())
 
-    @unittest.skip("Not yet implemented")
-    def test_get_bayes_spreads(self):
-        self.assertTrue(True)
-
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(AnalyserTestCase)
     return suite
