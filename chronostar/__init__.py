@@ -16,6 +16,7 @@ import groupfitter
 import analyser
 import synthesiser
 import utils
+import quadplotter
 try:
     import _overlap
 except:

@@ -15,6 +15,9 @@ import unittest
 
 sys.path.insert(0, '..')  # hacky way to get access to module
 
+import chronostar.synthesiser as syn
+import chronostar.traceback as tb
+import chronostar.quadplotter as qp
 import numpy as np
 import pickle
 
@@ -52,6 +55,24 @@ class QuadplotterTestCase(unittest.TestCase):
             pass
         os.rmdir(self.tempdir)
 
+    def test_basic_plot(self):
+        mock_twa_pars = [
+            -80, 80, 50, 10, -20, -5, 5, 5, 5, 2, 0.0, 0.0, 0.0, 7, 40
+        ]
+        error = 0.01
+        syn.synthesise_data(1, mock_twa_pars, error, savefile=self.synth_file)
+
+        with open(self.synth_file, 'r') as fp:
+            t = pickle.load(fp)
+
+        times = np.linspace(0,10,11)
+        tb.traceback(t, times, savefile=self.tb_file)
+        #with open(self.tb_file, 'r') as fp:
+        #    stars, times, xyzuvw, xyzuvw_cov = pickle.load(fp)
+
+        qp.plot_quadplots(self.tb_file, None, init_conditions=mock_twa_pars)
+
+        self.assertTrue(True)
 
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(QuadplotterTestCase)

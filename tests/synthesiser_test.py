@@ -108,19 +108,17 @@ class SynthesiserTestCase(unittest.TestCase):
             error = 1e-5 #0.00001               # 0.001% of gaia-esque error
             syn.synthesise_data(1, group_pars, error, savefile=self.synth_file)
 
-            fp = open(self.synth_file, 'r')
-            t = pickle.load(fp)
-            fp.close()
+            with open(self.synth_file, 'r') as fp:
+                t = pickle.load(fp)
 
             times = np.array([0, group_pars[-2]])
 
             #find stars in their 'original' conditions as traced back, see
             # if corresponds appropriately to intial group conditions
             tb.traceback(t,times,savefile=self.tb_file)
-            
-            fp = open(self.tb_file, 'r')
-            stars,times,xyzuvw,xyzuvw_cov = pickle.load(fp)
-            fp.close()
+
+            with open(self.tb_file, 'r') as fp:
+                stars,times,xyzuvw,xyzuvw_cov = pickle.load(fp)
 
             threshold = 3.5
             mean = np.mean(xyzuvw[:,-1], axis=0)
