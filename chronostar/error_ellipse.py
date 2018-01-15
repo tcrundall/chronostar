@@ -86,8 +86,8 @@ def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
     width, height = 2 * nstd * np.sqrt(vals)
     ellip = Ellipse(xy=pos, width=width, height=height, angle=theta, **kwargs)
 
-    ellip.set_alpha(0.3)
-    ellip.set_facecolor("red")
+    #ellip.set_alpha(0.1) #&TC
+    #ellip.set_facecolor("red")
 
     ax.add_artist(ellip)
     return ellip
@@ -137,7 +137,7 @@ def plot_something(dims, infile, fit_bayes=True):
     if fit_bayes:
         # calculate Bayes fit
         for i in range(len(times) - 1):
-            best_fit, chain = gf.fit_group(
+            best_fit, chain, _ = gf.fit_group(
                 infile, fixed_age=times[i], plot_it=True
             )
             # bayes_cov = utils.generate_cov(best_fit)

@@ -287,7 +287,11 @@ def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
         The parameters of the group model which yielded the highest posterior
         probability
 
-    all_samples
+    chain
+        [nwalkers, nsteps, npars] array of all samples
+
+    probability
+        [nwalkers, nsteps] array of probabilities for each sample
     """
     global N_FAILS
     global N_SUCCS
@@ -379,7 +383,7 @@ def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
         fig = corner.corner(sampler.flatchain, truths=best_sample)
         fig.savefig("corner.png")
 
-    return best_sample, sampler.chain
+    return best_sample, sampler.chain, sampler.lnprobability
 
 
 def get_bayes_spreads(tb_file, z=None, plot_it=False):
@@ -404,12 +408,17 @@ def get_bayes_spreads(tb_file, z=None, plot_it=False):
     ntimes = times.shape[0]
 
     bayes_spreads = np.zeros(ntimes)
+    lntime_probs = np.zeros(ntimes)
 
     for i, time in enumerate(times):
-        _, chain = fit_group(
+        _, chain, lnprobability = fit_group(
             tb_file, burnin_steps=500, sampling_steps=500, z=z,
             fixed_age=time, plot_it=plot_it
         )
         bayes_spreads[i] = utils.approx_spread_from_chain(chain)
+        lntime_probs[i] = np.max(lnprobability)
 
-    return bayes_spreads
+    lntime_probs -= np.max(lntime_probs) # shift the max to 0
+
+    time_probs = np.exp(lntime_probs)
+    return bayes_spreads, time_probs

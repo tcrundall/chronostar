@@ -310,7 +310,7 @@ class GroupfitterTestCase(unittest.TestCase):
             tb.traceback(t, times, savefile=tb_file)
 
         # find best fit
-        best_fit, _ = gf.fit_group(
+        best_fit, _, _ = gf.fit_group(
             tb_file, burnin_steps=1000, sampling_steps=1000, plot_it=True
         )
 
@@ -369,7 +369,7 @@ class GroupfitterTestCase(unittest.TestCase):
         tb.traceback(t, times, savefile=self.tb_file)
         star_pars = gf.read_stars(self.tb_file)
         xyzuvw = star_pars['xyzuvw']
-        bayes_spreads = gf.get_bayes_spreads(self.tb_file)
+        bayes_spreads, time_probs = gf.get_bayes_spreads(self.tb_file)
         naive_spreads = an.get_naive_spreads(xyzuvw)
 
         self.assertTrue(np.isclose(bayes_spreads, naive_spreads, rtol=0.1).all())

@@ -37,7 +37,7 @@ init_pars = np.array([
 
 print(init_pars)
 
-best_fit, chain = gf.fit_group(
+best_fit, chain, _ = gf.fit_group(
     infile, plot_it=True, fixed_age=0.0, init_pars=init_pars
 )
 
