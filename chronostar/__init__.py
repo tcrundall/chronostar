@@ -17,6 +17,7 @@ import analyser
 import synthesiser
 import utils
 import quadplotter
+import fittingresult
 try:
     import _overlap
 except:
