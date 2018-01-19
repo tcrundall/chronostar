@@ -1,4 +1,4 @@
-class FittingResult():
+class SynthResult():
     def __init__(self, init_pars=None, init_times=None, lnprobs=None,
                  chains=None, naive_spreads=None, bayes_spreads=None,
                  time_probs=None, free_chain=None, free_lnprob=None,
