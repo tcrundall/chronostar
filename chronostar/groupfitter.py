@@ -35,8 +35,8 @@ def read_stars(tb_file):
                     documented in the Traceback class.
         times: (ntimes) numpy array, containing times that have
                     been traced back, in Myr
-        xyzuvw (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
-        xyzuvw_cov (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
+        xyzuvw: (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
+        xyzuvw_cov: (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
     """
     if len(tb_file) == 0:
         print("Input a filename...")

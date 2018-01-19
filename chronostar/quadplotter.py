@@ -10,6 +10,131 @@ import chronostar.analyser as an
 import chronostar.error_ellipse as ee
 import matplotlib.pyplot as plt
 
+def calc_area(ys):
+    """Calculate the area under the curve provided
+
+    Parameters
+    ----------
+    ys : [n] array
+
+    Output
+    ------
+    Approximate area under curve
+    """
+    assert(np.min(ys) >= 0)
+    nrecs = len(ys) - 1
+
+    total_area = 0
+    for i in range(nrecs):
+        total_area += 0.5 * (ys[i] + ys[i+1]) / nrecs
+
+    return total_area
+
+def plot_sub_traceback(xyzuvw, xyzuvw_cov, times, dim1, dim2, ax):
+    """Plot the 2D traceback of stars with their error ellipses
+
+    Parameters
+    ----------
+    xyzuvw : [nstars, ntimes, 6] array
+        exact orbital position in XYZ (pc) and UVW (km/s)
+    xyzuvw_cov : [nstars, ntimes, 6, 6] array
+        covariance matrix for each star at each time step
+    times : [ntimes] array
+        times corresponding to each traceback step
+    dim1, dim2 : ints
+        Denotes which phase dimensions will be plotted [0,1,2,3,4,5] -> [XYZUVW]
+    ax : pyplot axes object
+        the axes to be plotted in
+    """
+    labels = ['X [pc]', 'Y [pc]', 'Z [pc]', 'U [km/s]', 'V [km/s]', 'W [km/s]']
+    # X and U are negative as per convention
+    axis_ranges = [-300, 300, 300, -50, 50, 50]
+
+    nstars = len(xyzuvw)
+
+    cov_ix1 = [[dim1, dim2], [dim1, dim2]]
+    cov_ix2 = [[dim1, dim1], [dim2, dim2]]
+    for i in range(nstars):
+        ax.plot(xyzuvw[i, :, dim1], xyzuvw[i, :, dim2], 'b-')
+
+        cov_start = xyzuvw_cov[i,  0, cov_ix1, cov_ix2]
+        cov_end = xyzuvw_cov[i, -1, cov_ix1, cov_ix2]
+        ee.plot_cov_ellipse(
+            cov_start,
+            [xyzuvw[i, 0, dim1], xyzuvw[i, 0, dim2]],
+            color='g', alpha=0.1, ax=ax
+        )
+        ee.plot_cov_ellipse(
+            cov_end,
+            [xyzuvw[i, -1, dim1], xyzuvw[i, -1, dim2]],
+            color='r', alpha=0.1, ax=ax
+        )
+
+    ax.set(aspect='equal')
+    ax.set_xlabel(labels[dim1])
+    ax.set_ylabel(labels[dim2])
+    ax.set_xlim(-axis_ranges[dim1], axis_ranges[dim1]) # note inverse X axis
+    ax.set_ylim(-axis_ranges[dim2], axis_ranges[dim2])
+
+def plot_sub_spreads(times, bayes_spreads, naive_spreads, init_conditions, ax):
+    """Plot the bayesian and naive fits to the spread of stars
+
+    Parameters
+    ----------
+    times : [ntimes] array
+        Discrete time steps corresponding to the exact traceback steps
+    bayes_spreads : [ntimes] array
+        The idealised spherical radius of the position component of the
+        bayesian fit
+    naive_spreads : [ntimes] array
+        The idealised spherical radius of the gaussian fit to the "exact" orbits
+    init_conditions : [14] array
+        Set of parameters used to construct synthetic data initially
+    ax : pyplot axes object
+        The axes on which to be plotted
+    """
+    ax.plot(times, naive_spreads, label="Naive fit")
+    ax.plot(times, bayes_spreads, label="Bayes fit")
+    ax.set_xlim(times[0], times[-1])
+    ax.set_ylim(
+        bottom=0.0, top=max(np.max(naive_spreads), np.max(bayes_spreads))
+    )
+    if init_conditions is not None:
+        init_age = init_conditions[13]
+        ax.axvline(
+            init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
+        )
+    ax.legend(loc=1)
+    ax.set_xlabel("Traceback Time [Myr]")
+    ax.set_ylabel("Radius of average spread in XYZ [pc]")
+
+def plot_sub_age_pdf(times, time_probs, init_conditions, ax):
+    """
+    Normalise and the plot the age pdf
+
+    Parameters
+    ----------
+    times : [ntimes] array
+        Discrete time steps corresponding to the exact traceback steps
+    time_probs : [ntimes] array
+        scaled average likelihoods of the samples for each fixed time fit
+    init_conditions : [14] array
+        Set of parameters used to construct synthetic data initially
+    ax : pyplot axes object
+        axes on which to be plotted
+    """
+    normalised_time_probs = time_probs / calc_area(time_probs)
+    ax.plot(times, normalised_time_probs)
+    ax.set_xlim(times[0],times[-1])
+    ax.set_ylim(bottom=0.0, top=1.1*max(normalised_time_probs))
+    if init_conditions is not None:
+        init_age = init_conditions[13]
+        ax.axvline(
+            init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
+        )
+    ax.set_xlabel("Traceback Time [Myr]")
+    ax.set_ylabel("Age probability")
+
 def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=None,
                    init_conditions=None, dir=''):
     """
@@ -33,98 +158,14 @@ def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=No
         bayes_spreads, time_probs = gf.get_bayes_spreads(infile)
     assert(len(times) == len(naive_spreads))
     assert(len(times) == len(bayes_spreads))
-    pdb.set_trace() # HARD COPY TIME_PROBS INTO quadplotter_demo.py
 
     # Plot spread fits
     plt.clf()
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
-    f.set_size_inches(50, 50)
+    f.set_size_inches(20, 20)
 
-    # Plotting XY traceback of each star
-    dim1 = 0 # for X
-    dim2 = 1 # for Y
-
-    cov_ix1 = [[dim1, dim2], [dim1, dim2]]
-    cov_ix2 = [[dim1, dim1], [dim2, dim2]]
-    for i in range(nstars):
-        ax1.plot(xyzuvw[i, :, dim1], xyzuvw[i, :, dim2], 'b-')
-
-        cov_start = xyzuvw_cov[i,  0, cov_ix1, cov_ix2]
-        cov_end = xyzuvw_cov[i, -1, cov_ix1, cov_ix2]
-        ee.plot_cov_ellipse(
-            cov_start,
-            [xyzuvw[i, 0, dim1], xyzuvw[i, 0, dim2]],
-            color='g', alpha=0.1, ax=ax1
-        )
-        ee.plot_cov_ellipse(
-            cov_end,
-            [xyzuvw[i, -1, dim1], xyzuvw[i, -1, dim2]],
-            color='r', alpha=0.1, ax=ax1
-        )
-
-    POS_RANGE = 300
-    ax1.set(aspect='equal')
-    ax1.set_xlabel('X [pc]')
-    ax1.set_ylabel('Y [pc]')
-    ax1.set_xlim(POS_RANGE, -POS_RANGE) # note inverse X axis
-    ax1.set_ylim(-POS_RANGE, POS_RANGE)
-
-    ax2.plot(times, naive_spreads, label="Naive fit")
-    ax2.plot(times, bayes_spreads, label="Bayes fit")
-    ax2.set_xlim(times[0],times[-1])
-    ax2.set_ylim(
-        bottom=0.0, top=max(np.max(naive_spreads), np.max(bayes_spreads))
-    )
-    if init_conditions is not None:
-        init_age = init_conditions[13]
-        ax2.axvline(
-            init_age, ax2.get_ylim()[0], ax2.get_ylim()[1], color='r', ls='--'
-        )
-    ax2.legend(loc=1)
-    ax2.set_xlabel("Traceback Time [Myr]")
-    ax2.set_ylabel("Radius of average spread in XYZ [pc]")
-
-    # plot UV traceback
-    dim1 = 3  # for U
-    dim2 = 4  # for V
-
-    cov_ix1 = [[dim1, dim2], [dim1, dim2]]
-    cov_ix2 = [[dim1, dim1], [dim2, dim2]]
-    for i in range(nstars):
-        ax3.plot(xyzuvw[i, :, dim1], xyzuvw[i, :, dim2], 'b-')
-
-        cov_start = xyzuvw_cov[i, 0, cov_ix1, cov_ix2]
-        cov_end = xyzuvw_cov[i, -1, cov_ix1, cov_ix2]
-        ee.plot_cov_ellipse(
-            cov_start,
-            [xyzuvw[i, 0, dim1], xyzuvw[i, 0, dim2]],
-            color='g', alpha=0.1, ax=ax3
-        )
-        ee.plot_cov_ellipse(
-            cov_end,
-            [xyzuvw[i, -1, dim1], xyzuvw[i, -1, dim2]],
-            color='r', alpha=0.1, ax=ax3
-        )
-
-    VEL_RANGE = 50
-    ax3.set(aspect='equal')
-    ax3.set_xlabel('U [km/s]')
-    ax3.set_ylabel('V [km/s]')
-    ax3.set_xlim(VEL_RANGE, -VEL_RANGE)  # note inverse X axis
-    ax3.set_ylim(-VEL_RANGE, VEL_RANGE)
-
-    # PLot age PDF
-    ax4.plot(times, time_probs)
-    ax4.set_xlim(times[0],times[-1])
-    ax4.set_ylim(bottom=0.0, top=max(time_probs))
-#    if init_conditions is not None:
-#        init_age = init_conditions[13]
-#        ax4.axvline(
-#            init_age, ax4.get_ylim()[0], ax4.get_ylim()[1], color='r', ls='--'
-#        )
-    ax4.set_xlabel("Traceback Time [Myr]")
-    ax4.set_ylabel("Age likelihoods (non-normalised)")
-
+    plot_sub_traceback(xyzuvw, xyzuvw_cov, times, 0, 1, ax1)
+    plot_sub_traceback(xyzuvw, xyzuvw_cov, times, 3, 4, ax3)
+    plot_sub_spreads(times, bayes_spreads, naive_spreads, init_conditions, ax2)
+    plot_sub_age_pdf(times, time_probs, init_conditions, ax4)
     f.savefig("temp_plot.png")
-
-    return 0
