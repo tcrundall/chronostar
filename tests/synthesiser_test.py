@@ -163,7 +163,7 @@ class SynthesiserTestCase(unittest.TestCase):
         # data table will be from introduced uncertainty
 
         #             X,Y,Z,U,V,W,  dX,  dY,  dZ,  dV,Cxy,Cxz,Cyz, age,nstars
-        group_pars=[100,0,0,0,5,0,.001,.001,.001,.001, .0, .0, .0,.001, 500]
+        group_pars=[100,0,0,0,5,0,.001,.001,.001,.001, .0, .0, .0,.001, 1000]
         
         errs = [0.5, 1.0, 2.0]  
         for err in errs:
@@ -185,57 +185,133 @@ class SynthesiserTestCase(unittest.TestCase):
             # scaled gaia-esque error
 
             tol = 0.10 #set tolerance within 10%; 100 stars achieves 20% tol
+
             self.assertTrue(
-                abs(np.std(Plx) - err*syn.GAIA_ERRS['e_Plx']) <= \
-                tol*err*syn.GAIA_ERRS['e_Plx'],
+                np.isclose(np.std(Plx), err*syn.GAIA_ERRS['e_Plx'], rtol=tol),
                 msg="std Plx, factor {}, received {}, expected {}".\
                 format(err, np.std(Plx), err*syn.GAIA_ERRS['e_Plx']))
 
             self.assertTrue(
-                abs(np.mean(e_Plx) - err*syn.GAIA_ERRS['e_Plx']) <= \
-                tol*err*syn.GAIA_ERRS['e_Plx'],
+                np.isclose(np.mean(e_Plx), err*syn.GAIA_ERRS['e_Plx'], rtol=tol),
                 msg="mn e_Plx, factor {}, received {}, expected {}".\
                 format(err, np.mean(e_Plx), err*syn.GAIA_ERRS['e_Plx']))
 
             self.assertTrue(
-                abs(np.std(RV) - err*syn.GAIA_ERRS['e_RV']) <= \
-                tol*err*syn.GAIA_ERRS['e_RV'],
+                np.isclose(np.std(RV), err*syn.GAIA_ERRS['e_RV'], rtol=tol),
                 msg="std RV, factor {}, received {}, expected {}".\
                 format(err, np.std(RV), err*syn.GAIA_ERRS['e_RV']))
 
             self.assertTrue(
-                abs(np.mean(e_RV) - err*syn.GAIA_ERRS['e_RV']) <= \
-                tol*err*syn.GAIA_ERRS['e_RV'],
+                np.isclose(np.mean(e_RV), err*syn.GAIA_ERRS['e_RV'], rtol=tol),
                 msg="mn e_RV, factor {}, received {}, expected {}".\
                 format(err, np.mean(e_RV), err*syn.GAIA_ERRS['e_RV']))
 
             self.assertTrue(
-                abs(np.std(pmRA) - err*syn.GAIA_ERRS['e_pm']) <= \
-                tol*err*syn.GAIA_ERRS['e_pm'],
+                np.isclose(np.std(pmRA), err*syn.GAIA_ERRS['e_pm'], rtol=tol),
                 msg="std pmRA, factor {}, received {}, expected {}".\
                 format(err, np.std(pmRA), err*syn.GAIA_ERRS['e_pm']))
 
             self.assertTrue(
-                abs(np.mean(e_pmRA) - err*syn.GAIA_ERRS['e_pm']) <= \
-                tol*err*syn.GAIA_ERRS['e_pm'],
+                np.isclose(np.mean(e_pmRA), err*syn.GAIA_ERRS['e_pm'], rtol=tol),
                 msg="mn e_pmRA, factor {}, received {}, expected {}".\
                 format(err, np.mean(e_pmRA), err*syn.GAIA_ERRS['e_pm']))
 
             self.assertTrue(
-                abs(np.std(pmDE) - err*syn.GAIA_ERRS['e_pm']) <= \
-                tol*err*syn.GAIA_ERRS['e_pm'],
+                np.isclose(np.std(pmDE), err*syn.GAIA_ERRS['e_pm'], rtol=tol),
                 msg="std pmDE, factor {}, received {}, expected {}".\
                 format(err, np.std(pmDE), err*syn.GAIA_ERRS['e_pm']))
 
             self.assertTrue(
-                abs(np.mean(e_pmDE) - err*syn.GAIA_ERRS['e_pm']) <= \
-                tol*err*syn.GAIA_ERRS['e_pm'],
+                np.isclose(np.mean(e_pmDE), err*syn.GAIA_ERRS['e_pm'], rtol=tol),
                 msg="mn e_pmDE, factor {}, received {}, expected {}".\
                 format(err, np.mean(e_pmDE), err*syn.GAIA_ERRS['e_pm']))
+
+    def test_exact_multiple(self):
+        """
+        perform a measurement with practically no error on multiple groups,
+        ensure mean and std of XYZUVW are similar-ish
+        """
+        ngroups = 2
+        groups_pars = self.many_group_pars[:2]
+
+        nstars = groups_pars[:,-1]
+        for ctr in range(1):                    # kept in for ease of writing
+            # check both groups have same age for simplicity
+            self.assertEqual(groups_pars[0, -2], groups_pars[1, -2])
+
+            # synthesise group data with negligible error
+            # errors smaller than 1e-5 create problems with matrix inversions
+            error = 1e-5 #0.00001               # 0.001% of gaia-esque error
+            syn.synthesise_data(
+                ngroups, groups_pars, error, savefile=self.synth_file
+            )
+
+            with open(self.synth_file, 'r') as fp:
+                t = pickle.load(fp)
+
+            times = np.array([0, groups_pars[0, -2]])
+
+            #find stars in their 'original' conditions as traced back, see
+            # if corresponds appropriately to intial group conditions
+            tb.traceback(t, times, savefile=self.tb_file)
+
+            with open(self.tb_file, 'r') as fp:
+                stars, times, xyzuvw, xyzuvw_cov = pickle.load(fp)
+
+            group1_mask = np.ma.make_mask(
+                np.append(np.ones(int(nstars[0])), np.zeros(int(nstars[1])))
+            )
+
+            group2_mask = np.ma.make_mask(
+                np.append(np.zeros(int(nstars[0])), np.ones(int(nstars[1])))
+            )
+
+            groups_masks = [group1_mask, group2_mask]
+
+            for group_pars, group_mask in zip(groups_pars, groups_masks):
+                threshold = 3.5
+                mean = np.mean(xyzuvw[group_mask, -1], axis=0)
+                std  = np.std( xyzuvw[group_mask, -1], axis=0)
+
+                self.assertTrue(
+                    np.max(abs(mean - group_pars[0:6])) < threshold,
+                    msg="\nFailed {} received:\n{}\nshould be within {} to:\n{}".\
+                    format(ctr, mean, threshold, group_pars[0:6]))
+                self.assertTrue(
+                    np.max(abs(std[:4] - group_pars[6:10])) < threshold,
+                    msg="\nFailed {} received:\n{}\nshould be close to:\n{}".\
+                    format(ctr, std[:4], group_pars[6:10]))
+
+                # check correlation coefficients are within some tolerance
+                # note, that don't need relative tolerance since -1<C<1
+                Cxy = np.corrcoef(xyzuvw[group_mask,-1,0],
+                                  xyzuvw[group_mask,-1,1])[0,1]
+                Cxz = np.corrcoef(xyzuvw[group_mask,-1,0],
+                                  xyzuvw[group_mask,-1,2])[0,1]
+                Cyz = np.corrcoef(xyzuvw[group_mask,-1,1],
+                                  xyzuvw[group_mask,-1,2])[0,1]
+                Cuv = np.corrcoef(xyzuvw[group_mask,-1,3],
+                                  xyzuvw[group_mask,-1,4])[0,1]
+
+                tol = 0.25
+                v_tol = 0.35
+                self.assertTrue(abs(Cxy-group_pars[10]) <= tol,
+                    msg="\nFailed {} received:\n{}\nshould be within {} to:\n{}".\
+                    format(ctr, Cxy, tol, group_pars[10]))
+                self.assertTrue(abs(Cxz-group_pars[11]) <= tol,
+                    msg="\nFailed {} received:\n{}\nshould be within {} to:\n{}".\
+                    format(ctr, Cxz, tol, group_pars[11]))
+                self.assertTrue(abs(Cyz-group_pars[12]) <= tol,
+                    msg="\nFailed {} received:\n{}\nshould be within {} to:\n{}".\
+                    format(ctr, Cyz, tol, group_pars[12]))
+                self.assertTrue(abs(Cuv) <= v_tol,
+                    msg="\nFailed {} received:\n{}\nshould be within {} to:\n{}".\
+                    format(ctr, Cuv, v_tol, 0))
 
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(SynthesiserTestCase)
     return suite
+
 
 if __name__ == '__main__':
     unittest.TextTestRunner(verbosity=2).run(suite())
