@@ -163,11 +163,11 @@ def synthesise_data(ngroups, group_pars, error_perc, savefile=None):
 
     Input
     -----
-    ngroups
+    ngroups : int
         Number of groups
-    group_pars
-        either [15] or [ngroups,15] array of parameters describing
-        the initial conditions of a group. NOTE, group_pars[-1] is nstars
+    group_pars : [15] array OR [ngroups, 15] array
+        array of parameters describing the initial conditions of a group.
+        NOTE, group_pars[-1] is nstars
         {X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars}
     error_perc
         float [0,1+], degree of precision in our "instruments" linearly 

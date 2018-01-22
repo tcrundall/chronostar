@@ -241,8 +241,7 @@ def get_initial_pars(star_pars, initial_age):
     a few hundred for small data sets (~40 stars) and a few thousand
     for larger data sets (~8,000 stars)
 
-    TODO:
-        maybe have some means to incorporate membership probabilities
+    TODO: maybe have some means to incorporate membership probabilities
 
     :param star_pars:
     :param initial_age:

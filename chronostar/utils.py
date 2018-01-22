@@ -1,10 +1,45 @@
 """
 A selection of tools used by chronostar
+
+TODO: Add unittest for internalise_pars
+TODO: Add unittest for internalise_multi_pars
 """
 from __future__ import division, print_function
 
 import numpy as np
 import pdb
+
+def internalise_pars(pars_ex):
+    """Simple tool to convert pars in external form into internal form
+
+    Parameters
+    ----------
+    pars_ex : [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars]
+
+    Returns
+    -------
+    pars_in : [X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age]
+    """
+    pars_in = np.copy(pars_ex[:-1])
+    pars_in[6:10] = 1/pars_in[6:10]
+    return pars_in
+
+def internalise_multi_pars(multi_pars_ex):
+    """Convert pars for multiple groups in external form into internal form
+
+    Parameters
+    ----------
+    pars_ex : [ngroups, 15] array
+
+    Returns
+    -------
+    pars_in : [ngroups, 14] array
+    """
+    ngroups, npars = multi_pars_ex.shape
+    multi_pars_in = np.zeros((ngroups, npars-1))
+    for i, pars_ex in enumerate(multi_pars_ex):
+        multi_pars_in[i] = internalise_pars(pars_ex)
+    return multi_pars_in
 
 
 def approx_spread(cov_matrix):
