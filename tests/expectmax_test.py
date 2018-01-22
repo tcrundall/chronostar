@@ -18,6 +18,7 @@ sys.path.insert(0, '..')  # hacky way to get access to module
 import chronostar.expectmax as em
 import chronostar.synthesiser as syn
 import chronostar.traceback as tb
+import chronostar.groupfitter as gf
 from chronostar import utils
 import numpy as np
 import pickle
@@ -96,11 +97,6 @@ class ExpectmaxTestCase(unittest.TestCase):
             init_conditions=groups_pars_in
         )
 
-        # this code belongs in expect_max
-        #        # check membership list totals to nstars in group
-        #        self.assertEqual(int(round(np.sum(memb))), group_pars[-1])
-        #        self.assertEqual(round(np.max(memb)), 1.0)
-        #        self.assertEqual(round(np.min(memb)), 1.0)
 
         for ctr, (best_fit, group_pars_ex) in\
                 enumerate(zip(best_fits, self.groups_pars_ex)):
@@ -131,7 +127,52 @@ class ExpectmaxTestCase(unittest.TestCase):
                 msg="\nFailed {} received:\n{}\nshould be close to:\n{}". \
                 format(ctr, age, tol_age, group_pars_ex[13]))
 
-    #def test_expectation(self):
+    def test_expectation(self):
+        ngroups = self.groups_pars_ex.shape[0]
+        nstars = np.sum(self.groups_pars_ex[:, -1])
+
+        groups_pars_in = utils.internalise_multi_pars(self.groups_pars_ex)
+
+        # neligible error - smaller vals lead to problems with matrix inversions
+        error = 1e-5
+        ntimes = 20
+
+        tb_file = "tmp_expectmax_tb_file.pkl"
+
+        # to save time, check if tb_file is already created
+        try:
+            with open(tb_file):
+                pass
+        # if not created, then create it. Careful though! May not be the same
+        # as group_pars. So if test fails try deleting tb_file from
+        # directory
+        except IOError:
+            # generate synthetic data
+            syn.synthesise_data(
+                ngroups, self.groups_pars_ex, error, savefile=self.synth_file
+            )
+            with open(self.synth_file, 'r') as fp:
+                t = pickle.load(fp)
+
+            max_age = np.max(groups_pars_in[:, -1])
+            times = np.linspace(0, 2 * max_age, ntimes)
+            tb.traceback(t, times, savefile=tb_file)
+
+        star_pars = gf.read_stars(tb_file)
+
+        z = em.expectation(star_pars, groups_pars_in)
+
+        # check membership list totals to nstars in group
+        self.assertTrue(np.isclose(np.sum(z), nstars))
+        self.assertTrue(np.allclose(np.sum(z, axis=1), 1.0))
+        self.assertTrue(
+            np.allclose(np.sum(z, axis=0), self.groups_pars_ex[:,-1], atol=0.1)
+        )
+
+        nstars1 = int(self.groups_pars_ex[0,-1])
+        nstars2 = int(self.groups_pars_ex[1,-1])
+        self.assertTrue( (z[:nstars1,0] > z[:nstars1,1]).all() )
+        self.assertTrue( (z[nstars1:,0] < z[nstars1:,1]).all() )
 
 
 def suite():
