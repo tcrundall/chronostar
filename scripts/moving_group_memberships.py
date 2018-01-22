@@ -17,8 +17,7 @@ def group_pars_from_malo(malo_pars):
 
     Need to negafiy X and U, and then invert deviations
 
-    TODO:
-        confirm if X needs to be negafied...
+    TODO: confirm if X needs to be negafied...
 
     Parameters
     ----------

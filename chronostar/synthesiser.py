@@ -179,6 +179,7 @@ def synthesise_data(ngroups, group_pars, error_perc, savefile=None):
     ------
     * a saved astropy table: data/synth_[N]groups_[N]stars.pkl
     """
+    assert(group_pars.shape[-1] == 15)
     xyzuvw_now, nstars = generate_current_pos(ngroups, group_pars)
     sky_coord_now = measure_stars(xyzuvw_now)
     synth_table = generate_table_with_error(sky_coord_now, error_perc)

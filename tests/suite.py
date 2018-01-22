@@ -18,6 +18,6 @@ expectmax_suite   = unittest.TestLoader().loadTestsFromModule(expectmax_test)
 alltests = unittest.TestSuite([
     maths_suite, synthesiser_suite, groupfitter_suite,
     analyser_suite, utils_suite, expectmax_suite,
-    ])
+])
 
 unittest.TextTestRunner(verbosity=2).run(alltests)

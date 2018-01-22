@@ -10,6 +10,8 @@ from __future__ import print_function, division
 
 import numpy as np
 import groupfitter as gf
+import chronostar._overlap as ol
+import utils
 import matplotlib.pyplot as plt
 import pdb          # for debugging
 import corner       # for pretty corner plots
@@ -43,6 +45,102 @@ def ix_snd(array, ix):
         return None
     else:
         return array[:,ix]
+
+def calc_lnoverlaps(group_pars, star_pars, nstars):
+    """Find the lnoverlaps given the parameters of a group
+
+    Parameters
+    ----------
+    group_pars : [npars] array
+        Group parameters (internal encoding, 1/dX... no nstars)
+    star_pars : dict
+        stars: (nstars) high astropy table including columns as
+            documented in the Traceback class.
+        times : [ntimes] numpy array
+            times that have been traced back, in Myr
+        xyzuvw : [nstars, ntimes, 6] array
+            XYZ in pc and UVW in km/s
+        xyzuvw_cov : [nstars, ntimes, 6, 6] array
+            covariance of xyzuvw
+    nstars : int
+        number of stars in traceback
+
+    Returns
+    -------
+    lnols : [nstars] array
+        The log of the overlap of each star with the provided group
+    """
+    group_mn = group_pars[0:6]
+    group_cov = utils.generate_cov(group_pars)
+    assert np.min( np.linalg.eigvalsh(group_cov) ) >= 0
+
+    # interpolate star data to modelled age
+    age = group_pars[13]
+    interp_covs, interp_mns = gf.interp_cov(age, star_pars)
+    lnols = ol.get_lnoverlaps(
+        group_cov, group_mn, interp_covs, interp_mns, nstars
+    )
+    return lnols
+
+def calc_membership_probs(star_lnols):
+    """Calculate probabilities of membership for a single star from overlaps
+
+    Parameters
+    ----------
+    star_lnols : [ngroups] array
+        The log of the overlap of a star with each group
+
+    Returns
+    -------
+    star_memb_probs : [ngroups] array
+        The probability of membership to each group, normalised to sum to 1
+    """
+    ngroups = star_lnols.shape[0]
+    star_memb_probs = np.zeros(ngroups)
+
+    for i in range(ngroups):
+        star_memb_probs[i] = 1. / np.sum(np.exp(star_lnols - star_lnols[i]))
+
+    return star_memb_probs
+
+def expectation(star_pars, groups):
+    """Calculate membership probabilities given fits to each group
+
+    Parameters
+    ----------
+    star_pars : dict
+        stars: (nstars) high astropy table including columns as
+                    documented in the Traceback class.
+        times : [ntimes] numpy array
+            times that have been traced back, in Myr
+        xyzuvw : [nstars, ntimes, 6] array
+            XYZ in pc and UVW in km/s
+        xyzuvw_cov : [nstars, ntimes, 6, 6] array
+            covariance of xyzuvw
+
+    groups : [ngroups, npars] array
+        a fit for each group (in internal form)
+
+    Returns
+    -------
+    z : [nstars, ngroups] array
+        An array designating each star's probability of being a member to each
+        group. It is populated by floats in the range (0.0, 1.0) such that
+        each row sums to 1.0, each column sums to the expected size of each
+        group, and the entire array sums to the number of stars.
+    """
+    ngroups = groups.shape[0]
+    nstars = len(star_pars['xyzuvw'])
+    lnols = np.zeros((nstars, ngroups))
+
+    for i, group_pars in enumerate(groups):
+        lnols[:,i] = calc_lnoverlaps(group_pars, star_pars, nstars)
+
+    z = np.zeros((nstars, ngroups))
+    for i in range(nstars):
+        z[i] = calc_membership_probs(lnols[i])
+
+    return z
 
 def maximise(infile, ngroups, z=None, init_conditions=None, burnin_steps=500,
              sampling_steps=1000):
@@ -92,6 +190,7 @@ def maximise(infile, ngroups, z=None, init_conditions=None, burnin_steps=500,
         best_fit, chain, lnprob = gf.fit_group(
             infile, z=ix_snd(z, i), init_pars=ix_fst(init_conditions, i),
             burnin_steps=burnin_steps, sampling_steps=sampling_steps,
+            plot_it=True
         )
         best_fits[i] = best_fit
         if chains is None:
@@ -111,6 +210,6 @@ def run_fit(infile, nburnin, nsteps, ngroups=1):
     of groups to the data. Left unfulfilled atm since only fitting a single
     group.
     """
-    star_params = read_stars(infile)
-    samples, lnprob = fit_one_group(star_params, nburnin, nsteps)
+    star_params = gf.read_stars(infile)
+    samples, lnprob = gf.fit_one_group(star_params, nburnin, nsteps)
     return samples, lnprob
