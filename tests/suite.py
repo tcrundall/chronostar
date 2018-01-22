@@ -6,6 +6,7 @@ import synthesiser_test
 import groupfitter_test
 import analyser_test
 import utils_test
+import expectmax_test
 
 maths_suite       = unittest.TestLoader().loadTestsFromModule(maths_test)
 synthesiser_suite = unittest.TestLoader().loadTestsFromModule(synthesiser_test)
@@ -16,7 +17,7 @@ expectmax_suite   = unittest.TestLoader().loadTestsFromModule(expectmax_test)
 
 alltests = unittest.TestSuite([
     maths_suite, synthesiser_suite, groupfitter_suite,
-    analyser_suite, utils_suite, expectmax_test,
+    analyser_suite, utils_suite, expectmax_suite,
     ])
 
 unittest.TextTestRunner(verbosity=2).run(alltests)

@@ -26,7 +26,7 @@ import numpy as np
 import pickle
 
 
-class GroupfitterTestCase(unittest.TestCase):
+class ExpectmaxTestCase(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
         self.synth_file = os.path.join(self.tempdir, 'synth_data.pkl')
@@ -112,7 +112,7 @@ class GroupfitterTestCase(unittest.TestCase):
         #        self.assertEqual(round(np.min(memb)), 1.0)
 
         for ctr, (best_fit, group_pars_ex) in enumerate(zip(best_fits, groups_pars_ex)):
-            pdb.set_trace()
+            #pdb.set_trace()
             means = best_fit[0:6]
             stds = 1 / best_fit[6:10]
             corrs = best_fit[10:13]
@@ -141,7 +141,7 @@ class GroupfitterTestCase(unittest.TestCase):
                 format(ctr, age, tol_age, group_pars_ex[13]))
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(GroupfitterTestCase)
+    suite = unittest.TestLoader().loadTestsFromTestCase(ExpectmaxTestCase)
     return suite
 
 
