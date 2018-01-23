@@ -47,6 +47,13 @@ class ExpectmaxTestCase(unittest.TestCase):
             pass
         os.rmdir(self.tempdir)
 
+
+    @unittest.skip("not yet implemented")
+    def test_calc_errors(self):
+        means = np.array([10,50,100,10,10,10, .2, .2, .2,  .1,  0 , 0,  0,10])
+        stds  = np.array([ 2, 5, 10, 2, 2, 2,.05,.05,.05,.025,.05,.05,.05, 1])
+
+
     def test_maximisation(self):
         """
         Synthesise a tb file with negligible error, retrieve initial

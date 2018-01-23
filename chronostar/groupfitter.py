@@ -14,12 +14,59 @@ try:
 except ImportError:
     import pyfits
 
+def weighted_mean(interp_mns, z):
+    """Calculated the approximate X,Y,Z,U,V,W mean values of weighted stars
+
+    Parameters
+    ----------
+    interp_mns : [nstars, 6] array
+        interpolated means of the stars
+    z : [nstars] array
+        membership probabilities to group currently being fitted
+
+    Returns
+    -------
+    - : [6] float array
+        the mean values of the X,Y,Z,U,V,W
+    """
+    exp_star_cnt = np.sum(z)
+    six_tiled_z = np.tile(z, (6,1))
+    weighted_mns = np.multiply(six_tiled_z.T, interp_mns)
+    return np.sum(weighted_mns, axis=0) / exp_star_cnt
+
+
+def weighted_std(interp_mns, weighted_mns, z):
+    """Calculated the approximate X,Y,Z,U,V,W stds of weighted stars
+
+    dU, dV and dW are combined into a single average velocity dispersion
+
+    Parameters
+    ----------
+    interp_mns : [nstars, 6] array
+        interpolated means of the stars
+    weighted_mns : [6] array
+        output of weighted_mean
+    z : [nstars] array
+        membership probabilities to group currently being fitted
+
+    Returns
+    -------
+    - : [4] float array
+        the std values of X,Y,Z,V
+    """
+    exp_star_cnt = np.sum(z)
+    six_tiled_z = np.tile(z, (6, 1))
+    diffs = interp_mns - weighted_mns
+    weighted_devs = np.multiply(six_tiled_z.T, np.square(diffs))
+    weighted_stds = np.sqrt( np.sum(weighted_devs, axis=0) / exp_star_cnt)
+    pos_stds = weighted_stds[:3]
+    vel_std = np.power(np.prod(weighted_stds[3:]), 1.0/3.0)
+    return np.append(pos_stds, vel_std)
+
 
 def read_stars(tb_file):
     """Read stars from traceback file into a dictionary.
 
-    Notes
-    -----
     The input is an error ellipse in 6D (X,Y,Z,U,V,W) of a list of stars at
     a bucn of times in the past.
 
@@ -224,17 +271,17 @@ def lnprobfunc(pars, z, star_pars):
     logprob
         the logarithm of the posterior probability of the fit
     """
-    global N_FAILS
-    global N_SUCCS
+    #global N_FAILS
+    #global N_SUCCS
+
     lp = lnprior(pars, z, star_pars)
     if not np.isfinite(lp):
-        N_FAILS += 1
+        #N_FAILS += 1
         return -np.inf
-    N_SUCCS += 1
+    #N_SUCCS += 1
     return lp + lnlike(pars, z, star_pars)
 
-
-def get_initial_pars(star_pars, initial_age):
+def get_initial_pars(star_pars, initial_age, z):
     """Initialise the walkers around the mean XYZUVW of the stars
 
     Having this step cuts number of steps required for convergence by
@@ -251,8 +298,10 @@ def get_initial_pars(star_pars, initial_age):
     # init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
     init_pars = np.zeros(14)
     _, interp_mns = interp_cov(initial_age, star_pars)
-    init_pars[0:6] = np.mean(interp_mns[:, :], axis=0)
-    init_pars[6:10] = 1 / np.std(interp_mns[:, :4], axis=0)
+
+    wmns = weighted_mean(interp_mns, z)
+    init_pars[0:6] = wmns
+    init_pars[6:10] = 1.0 / weighted_std(interp_mns, wmns, z)
     return init_pars
 
 def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
@@ -292,8 +341,9 @@ def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
     probability
         [nwalkers, nsteps] array of probabilities for each sample
     """
-    global N_FAILS
-    global N_SUCCS
+    #global N_FAILS
+    #global N_SUCCS
+
     #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
     INIT_SDEV = [1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.02, 0.1, 0.1, 0.1, 0.5]
     star_pars = read_stars(tb_file)
@@ -302,9 +352,13 @@ def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
     else:
         initial_age = fixed_age
 
+    # initialise z if needed as array of 1s of length nstars
+    if z is None:
+        z = np.ones(star_pars['xyzuvw'].shape[0])
+
     # Initialise the fit
     if init_pars is None:
-        init_pars = get_initial_pars(star_pars, initial_age)
+        init_pars = get_initial_pars(star_pars, initial_age, z)
 
     NPAR = len(init_pars)
     NWALKERS = 2 * NPAR
@@ -315,9 +369,6 @@ def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
         init_pars[-1] = fixed_age
         INIT_SDEV[-1] = 0.0
 
-    # initialise z if needed as array of 1s of length nstars
-    if z is None:
-        z = np.ones(star_pars['xyzuvw'].shape[0])
 
     # Whole emcee shebang
     sampler = emcee.EnsembleSampler(
@@ -330,8 +381,8 @@ def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
         for i in range(NWALKERS)
     ]
 
-    N_SUCCS = 0
-    N_FAILS = 0
+    #N_SUCCS = 0
+    #N_FAILS = 0
 
     # Perform burnin
     state = None
@@ -354,8 +405,8 @@ def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
     for ix in poor_ixs:
         pos[ix] = pos[best_ix]
     sampler.reset()
-    N_FAILS = 0
-    N_SUCCS = 0
+    #N_FAILS = 0
+    #N_SUCCS = 0
 
     pos, final_lnprob, rstate = sampler.run_mcmc(
         pos, sampling_steps, rstate0=state,

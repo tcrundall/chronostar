@@ -12,6 +12,7 @@ import os.path
 import sys
 import tempfile
 import unittest
+import pdb
 
 sys.path.insert(0, '..')  # hacky way to get access to module
 
@@ -19,12 +20,17 @@ import chronostar.groupfitter as gf
 import chronostar.synthesiser as syn
 import chronostar.analyser as an
 import chronostar.traceback as tb
+from chronostar import utils
 import numpy as np
 import pickle
 
 
 class GroupfitterTestCase(unittest.TestCase):
     def setUp(self):
+        self.group_pars_ex = np.array(
+            # X, Y, Z, U,  V,  W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars
+            [0, 0, 0, 0, 0, 0, 10, 10, 10, 5, -.3, -.6, .2, 10, 100],
+        )
         self.times = np.array([0.0, 1.0, 2.0])
 
         self.xyzuvw = np.array([
@@ -266,6 +272,75 @@ class GroupfitterTestCase(unittest.TestCase):
         )
         return 0
 
+    def test_get_initial_pars(self):
+        """
+        TODO: why does the init_conditions stds not match group_pars_in
+        """
+
+        def get_initial_pars_old(star_pars, initial_age):
+            """Initialise the walkers around the mean XYZUVW of the stars
+
+            Having this step cuts number of steps required for convergence by
+            a few hundred for small data sets (~40 stars) and a few thousand
+            for larger data sets (~8,000 stars)
+            """
+            #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
+            # init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
+            init_pars = np.zeros(14)
+            _, interp_mns = gf.interp_cov(initial_age, star_pars)
+            init_pars[0:6] = np.mean(interp_mns[:, :], axis=0)
+            init_pars[6:10] = 1 / np.std(interp_mns[:, :4], axis=0)
+            return init_pars
+
+        # an 'external' parametrisation, with everything in physical
+        # format
+        group_pars_ex = self.group_pars_ex
+        init_age = group_pars_ex[13]
+
+        # an 'internal' parametrisation, stds are listed as the inverse,
+        # no need to know how many stars etc.
+        group_pars_in = utils.internalise_pars(group_pars_ex)
+
+        # neligible error, anything smaller runs into problems with matrix
+        # inversions
+        error = 1e-5
+        ntimes = 20
+
+        tb_file = "tmp_groupfitter_tb_file.pkl"
+
+        # to save time, check if tb_file is already created
+        try:
+            with open(tb_file):
+                pass
+        # if not created, then create it. Careful though! May not be the same
+        # as group_pars. So if test fails try deleting tb_file from
+        # directory
+        except IOError:
+            # generate synthetic data
+            syn.synthesise_data(
+                1, group_pars_ex, error, savefile=self.synth_file
+            )
+            with open(self.synth_file, 'r') as fp:
+                t = pickle.load(fp)
+
+            times = np.linspace(0, 2 * group_pars_ex[-2], ntimes)
+            tb.traceback(t, times, savefile=tb_file)
+
+        star_pars = gf.read_stars(tb_file)
+        old_init_pars = get_initial_pars_old(star_pars, init_age)
+
+        nstars = len(star_pars['xyzuvw'])
+        z = np.ones(nstars)
+        new_init_pars = gf.get_initial_pars(star_pars, init_age, z)
+        self.assertTrue(
+            np.allclose(old_init_pars[:9], new_init_pars[:9], rtol=1e-5)
+        )
+
+        half_z = np.ones(nstars)*0.5
+        half_new_init_pars = gf.get_initial_pars(star_pars, init_age, half_z)
+        self.assertTrue(np.allclose(half_new_init_pars, new_init_pars))
+
+
     def test_fit_group(self):
         """
         Synthesise a tb file with negligible error, retrieve initial
@@ -274,10 +349,7 @@ class GroupfitterTestCase(unittest.TestCase):
 
         # an 'external' parametrisation, with everything in physical
         # format
-        group_pars_ex = np.array(
-            # X, Y, Z, U,  V,  W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars
-            [0, 0, 0, 0, 0, 0, 10, 10, 10, 5, -.3, -.6, .2, 10, 100],
-        )
+        group_pars_ex = self.group_pars_ex
 
         # an 'internal' parametrisation, stds are listed as the inverse,
         # no need to know how many stars etc.
@@ -311,17 +383,8 @@ class GroupfitterTestCase(unittest.TestCase):
 
         # find best fit
         best_fit, _, _ = gf.fit_group(
-            tb_file, burnin_steps=1000, sampling_steps=1000, plot_it=True
+            tb_file, burnin_steps=2000, sampling_steps=1000, plot_it=True
         )
-
-        # this code belongs in expect_max
-        #        # check membership list totals to nstars in group
-        #        self.assertEqual(int(round(np.sum(memb))), group_pars[-1])
-        #        self.assertEqual(round(np.max(memb)), 1.0)
-        #        self.assertEqual(round(np.min(memb)), 1.0)
-
-        ctr = 0  # left here for convenience... tidy up later
-
         means = best_fit[0:6]
         stds = 1 / best_fit[6:10]
         corrs = best_fit[10:13]
@@ -334,20 +397,20 @@ class GroupfitterTestCase(unittest.TestCase):
 
         self.assertTrue(
             np.max(abs(means - group_pars_ex[0:6])) < tol_mean,
-            msg="\nFailed {} received:\n{}\nshould be within {} to:\n{}".
-                format(ctr, means, tol_mean, group_pars_ex[0:6]))
+            msg="\nReceived:\n{}\nshould be within {} to:\n{}".
+                format(means, tol_mean, group_pars_ex[0:6]))
         self.assertTrue(
             np.max(abs(stds - group_pars_ex[6:10])) < tol_std,
-            msg="\nFailed {} received:\n{}\nshould be close to:\n{}".
-                format(ctr, stds, tol_std, group_pars_ex[6:10]))
+            msg="\nReceived:\n{}\nshould be close to:\n{}".
+                format(stds, tol_std, group_pars_ex[6:10]))
         self.assertTrue(
             np.max(abs(corrs - group_pars_ex[10:13])) < tol_corr,
-            msg="\nFailed {} received:\n{}\nshould be close to:\n{}". \
-            format(ctr, corrs, tol_corr, group_pars_ex[10:13]))
+            msg="\nReceived:\n{}\nshould be close to:\n{}". \
+            format(corrs, tol_corr, group_pars_ex[10:13]))
         self.assertTrue(
             np.max(abs(age - group_pars_ex[13])) < tol_age,
-            msg="\nFailed {} received:\n{}\nshould be close to:\n{}". \
-            format(ctr, age, tol_age, group_pars_ex[13]))
+            msg="\nReceived:\n{}\nshould be close to:\n{}". \
+            format(age, tol_age, group_pars_ex[13]))
 
 
     def test_get_bayes_spreads(self):
@@ -369,7 +432,8 @@ class GroupfitterTestCase(unittest.TestCase):
         tb.traceback(t, times, savefile=self.tb_file)
         star_pars = gf.read_stars(self.tb_file)
         xyzuvw = star_pars['xyzuvw']
-        bayes_spreads, time_probs = gf.get_bayes_spreads(self.tb_file)
+        bayes_spreads, time_probs =\
+            gf.get_bayes_spreads(self.tb_file, plot_it=True)
         naive_spreads = an.get_naive_spreads(xyzuvw)
 
         self.assertTrue(np.isclose(bayes_spreads, naive_spreads, rtol=0.1).all())

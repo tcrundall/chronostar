@@ -46,6 +46,52 @@ def ix_snd(array, ix):
     else:
         return array[:,ix]
 
+def calc_errors(chain):
+    """
+    Given a set of aligned (converted?) samples, calculate the median and
+    errors of each parameter
+
+    Parameters
+    ----------
+    chain : [nwalkers, nsteps, npars]
+        The chain of samples (in internal encoding)
+    """
+    npars = chain.shape[-1]     # will now also work on flatchain as input
+    flat_chain = np.reshape(chain, (-1, npars))
+
+    conv_chain = np.copy(flat_chain)
+    conv_chain[:, 6:10] = 1/conv_chain[:, 6:10]
+
+    return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+                     zip(*np.percentile(conv_chain, [16,50,84], axis=0))))
+
+def check_convergence(new_best_fit, old_best_fit, new_chain, old_chain, tol=1.0):
+    """Check if the last maximisation step yielded consistent fit to new fit
+
+    Convergence is achieved if key values are within 'tol' sigma across the two
+    most recent fits.
+
+    Parameters
+    ----------
+    new_best_fit : [15] array
+        paraameters (in external encoding) of the best fit from the new run
+    old_best_fit : [15] array
+        paraameters (in external encoding) of the best fit from the old run
+    new_chain : [nwalkers, nsteps, npars] array
+        the sampler chain from the new run
+    old_chain : [nwalkers, nsteps, npars] array
+        the sampler chain from the old run
+    tol : float
+        Within how many sigma the values should be
+
+    Returns
+    -------
+    converged : bool
+        If the runs have converged, return true
+    """
+    return False
+
+
 def calc_lnoverlaps(group_pars, star_pars, nstars):
     """Find the lnoverlaps given the parameters of a group
 
