@@ -52,7 +52,17 @@ def build_basic_plot():
     #times = np.array([
     #    0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.
     #])
-    times = np.linspace(0,10,31)
+    times = np.linspace(0,10,51)
+
+    # CANNOT DO SOMETHING LIKE THIS, TOO MANY FUNCTIONS EXPECT TIMES TO BE
+    # LINEARLY SPACED TODO: FIX LINEAR EXPECTATION OF TIMES
+#    times = np.append(
+#        np.append(
+#            np.linspace(0, 6, 6, endpoint=False),
+#            np.linspace(6, 8, 20, endpoint=False)
+#        ),
+#        np.linspace(8, 10, 3)
+#    )
 
     mock_twa_pars = [
         -80, 80, 50, 10, -20, -5, 5, 5, 5, 2, 0.0, 0.0, 0.0, 7, 40
@@ -73,15 +83,16 @@ def build_basic_plot():
         with open(tb_file, 'r') as fp:
             pass
     except IOError:
-        times = np.linspace(0, 10, 11)
         tb.traceback(t, times, savefile=tb_file)
 
     qp.plot_quadplots(
         tb_file, bayes_spreads=bayes_spreads, time_probs=time_probs,
-        naive_spreads=naive_spreads, init_conditions=mock_twa_pars)
+        naive_spreads=naive_spreads, init_conditions=mock_twa_pars,
+        plot_it=True
+    )
 
 
 if __name__ == '__main__':
-    test_basic_plot()
+    build_basic_plot()
 
 sys.path.insert(0, '.')  # reinserting home directory into path

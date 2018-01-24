@@ -136,7 +136,7 @@ def plot_sub_age_pdf(times, time_probs, init_conditions, ax):
     ax.set_ylabel("Age probability")
 
 def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=None,
-                   init_conditions=None, dir=''):
+                   init_conditions=None, dir='', plot_it=False):
     """
     Generates many quad plots in the provided directory
 
@@ -155,7 +155,7 @@ def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=No
     if naive_spreads is None:
         naive_spreads = an.get_naive_spreads(xyzuvw)
     if bayes_spreads is None or time_probs is None:
-        bayes_spreads, time_probs = gf.get_bayes_spreads(infile)
+        bayes_spreads, time_probs = gf.get_bayes_spreads(infile, plot_it=plot_it)
     assert(len(times) == len(naive_spreads))
     assert(len(times) == len(bayes_spreads))
 
