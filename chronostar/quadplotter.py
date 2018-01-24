@@ -108,6 +108,33 @@ def plot_sub_spreads(times, bayes_spreads, naive_spreads, init_conditions, ax):
     ax.set_xlabel("Traceback Time [Myr]")
     ax.set_ylabel("Radius of average spread in XYZ [pc]")
 
+def plot_age_hist(chain, ax, init_conditions=None):
+    """Plot a histogram of the ages
+
+    A histogram marginalises over all the parameters yielding a
+    bayesian statistical description of the best fitting age
+
+    Parameters
+    -----------
+    chain : [nsteps, nwalkers, npars] array
+        the chain of samples
+    ax : pyplot axes object
+        the axes on which to plot
+    """
+    print("In plot_age_hist")
+    ax.hist(chain[:,:,-1].flatten(), bins=20)
+
+    ax.set_xlabel("Ages [Myr]")
+    ax.set_ylabel("Number of samples")
+
+    if init_conditions is not None:
+        init_age = init_conditions[13]
+        ax.axvline(
+            init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
+        )
+
+    print("Done most of plot_age_hist")
+
 def plot_sub_age_pdf(times, time_probs, init_conditions, ax):
     """
     Normalise and the plot the age pdf
@@ -159,13 +186,19 @@ def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=No
     assert(len(times) == len(naive_spreads))
     assert(len(times) == len(bayes_spreads))
 
+    best_fit_free, chain_free, lnprob_free =\
+        gf.fit_group(
+            infile, burnin_steps=1000, sampling_steps=1000, plot_it=plot_it
+        )
+
     # Plot spread fits
     plt.clf()
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
     f.set_size_inches(20, 20)
 
     plot_sub_traceback(xyzuvw, xyzuvw_cov, times, 0, 1, ax1)
-    plot_sub_traceback(xyzuvw, xyzuvw_cov, times, 3, 4, ax3)
     plot_sub_spreads(times, bayes_spreads, naive_spreads, init_conditions, ax2)
+    #plot_sub_traceback(xyzuvw, xyzuvw_cov, times, 3, 4, ax3)
+    plot_age_hist(chain_free, ax3, init_conditions=init_conditions)
     plot_sub_age_pdf(times, time_probs, init_conditions, ax4)
     f.savefig("temp_plot.png")

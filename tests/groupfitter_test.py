@@ -341,6 +341,117 @@ class GroupfitterTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(half_new_init_pars, new_init_pars))
 
 
+    def test_burnin_convergence(self):
+        slice_size=5
+        nwalkers1 = 30
+        nsteps1 = 100
+        lnprob1 = np.random.randn(nwalkers1, nsteps1)
+        self.assertTrue(gf.burnin_convergence(lnprob1, slice_size=slice_size))
+
+        nwalkers2 = 30
+        nsteps2   = 40
+        lnprob2 = np.random.randn(nwalkers2, nsteps2)
+        lnprob2[-20] = 100+lnprob2[-20]
+        #array too small
+        self.assertTrue(gf.burnin_convergence(lnprob2, slice_size=slice_size))
+
+        # initialise lnprob with std of 10 and mean of -200
+        mean = -200
+        std  = 10
+        tol  = 0.5
+        nwalkers3 = 30
+        nsteps3   = 100
+        lnprob3   = np.random.randn(nwalkers3, nsteps3) * std + mean
+
+        # the lnprob should increase by 10 over the "fitting"
+        for i in range(nsteps3):
+            lnprob3[:,i] = lnprob3[:,i] + float(i) / nsteps3 * (0.9*tol) * std
+        self.assertTrue(gf.burnin_convergence(
+            lnprob3, tol=tol, slice_size=slice_size
+        ))
+
+        lnprob4 = np.random.randn(nwalkers3, nsteps3) * std + mean
+
+        # Here, the final lnprob mean should exceed the (tol)sigma range
+        for i in range(nsteps3):
+            lnprob4[:, i] = lnprob4[:, i] + float(i) / nsteps3 *\
+                            (1.5 * tol) * std
+        self.assertFalse(gf.burnin_convergence(
+            lnprob4, tol=tol, slice_size=slice_size
+        ))
+
+
+    def test_convergence_applied(self):
+        """Basically the same as test_fit_group, however we run with barely
+        any burnin steps and see if it will repeat burning in until
+        convergence is achieved
+        """
+
+        # an 'external' parametrisation, with everything in physical
+        # format
+        group_pars_ex = self.group_pars_ex
+
+        # an 'internal' parametrisation, stds are listed as the inverse,
+        # no need to know how many stars etc.
+        group_pars_in = np.copy(group_pars_ex[:-1])
+        group_pars_in[6:10] = 1 / group_pars_in[6:10]
+
+        # neligible error, anything smaller runs into problems with matrix
+        # inversions
+        error = 1e-5
+        ntimes = 20
+
+        tb_file = "tmp_groupfitter_tb_file.pkl"
+
+        # to save time, check if tb_file is already created
+        try:
+            with open(tb_file):
+                pass
+        # if not created, then create it. Careful though! May not be the same
+        # as group_pars. So if test fails try deleting tb_file from
+        # directory
+        except IOError:
+            # generate synthetic data
+            syn.synthesise_data(
+                1, group_pars_ex, error, savefile=self.synth_file
+            )
+            with open(self.synth_file, 'r') as fp:
+                t = pickle.load(fp)
+
+            times = np.linspace(0, 2 * group_pars_ex[-2], ntimes)
+            tb.traceback(t, times, savefile=tb_file)
+
+        # find best fit
+        best_fit, _, _ = gf.fit_group(
+            tb_file, burnin_steps=200, sampling_steps=1000, plot_it=True
+        )
+        means = best_fit[0:6]
+        stds = 1 / best_fit[6:10]
+        corrs = best_fit[10:13]
+        age = best_fit[13]
+
+        tol_mean = 3.5
+        tol_std = 2.5
+        tol_corr = 0.3
+        tol_age = 0.5
+
+        self.assertTrue(
+            np.max(abs(means - group_pars_ex[0:6])) < tol_mean,
+            msg="\nReceived:\n{}\nshould be within {} to:\n{}".
+                format(means, tol_mean, group_pars_ex[0:6]))
+        self.assertTrue(
+            np.max(abs(stds - group_pars_ex[6:10])) < tol_std,
+            msg="\nReceived:\n{}\nshould be close to:\n{}".
+                format(stds, tol_std, group_pars_ex[6:10]))
+        self.assertTrue(
+            np.max(abs(corrs - group_pars_ex[10:13])) < tol_corr,
+            msg="\nReceived:\n{}\nshould be close to:\n{}". \
+            format(corrs, tol_corr, group_pars_ex[10:13]))
+        self.assertTrue(
+            np.max(abs(age - group_pars_ex[13])) < tol_age,
+            msg="\nReceived:\n{}\nshould be close to:\n{}". \
+            format(age, tol_age, group_pars_ex[13]))
+
     def test_fit_group(self):
         """
         Synthesise a tb file with negligible error, retrieve initial
@@ -437,6 +548,7 @@ class GroupfitterTestCase(unittest.TestCase):
         naive_spreads = an.get_naive_spreads(xyzuvw)
 
         self.assertTrue(np.isclose(bayes_spreads, naive_spreads, rtol=0.1).all())
+
 
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(GroupfitterTestCase)

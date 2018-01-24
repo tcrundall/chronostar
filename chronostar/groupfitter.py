@@ -304,6 +304,33 @@ def get_initial_pars(star_pars, initial_age, z):
     init_pars[6:10] = 1.0 / weighted_std(interp_mns, wmns, z)
     return init_pars
 
+
+def burnin_convergence(lnprob, tol=0.5, slice_size=20):
+    """Checks early lnprob vals with final lnprob vals for convergence
+
+    Parameters
+    ----------
+    lnprob : [nwalkers, nsteps] array
+
+    tol : float
+        The number of standard deviations the final mean lnprob should be within
+        of the initial mean lnprob
+
+    slice_size : int
+        Number of steps at each end to use for mean lnprob calcultions
+    """
+    # Don't bother if only 50 steps have been taken
+    if lnprob.shape[1] < 50:
+        return True
+
+    start_lnprob_mn = np.mean(lnprob[:,:slice_size])
+    start_lnprob_std = np.std(lnprob[:,:slice_size])
+
+    end_lnprob_mn = np.mean(lnprob[:, -slice_size:])
+
+    return np.isclose(start_lnprob_mn, end_lnprob_mn, atol=tol*start_lnprob_std)
+
+
 def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
               init_pars=None, plot_it=False, fixed_age=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
@@ -327,7 +354,9 @@ def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
         remain static on that age
 
     init_pars : [14]
-        optionally can initialise the walkers around this point
+        Optionally can initialise the walkers around this point. If left as
+        none, walkers will be initialised around the mean kinematic values
+        of the suspected group members.
     
     Returns
     -------
@@ -386,25 +415,29 @@ def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
 
     # Perform burnin
     state = None
-    pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
+    converged = False
+    while not converged:
+        pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
+        converged = burnin_convergence(sampler.lnprobability)
 
-    if plot_it:
-        plt.clf()
-        plt.plot(sampler.lnprobability)
-        plt.savefig("burnin_lnprob.png")
-        plt.clf()
-        plt.plot(sampler.lnprobability.T)
-        plt.savefig("burnin_lnprobT.png")
+        if plot_it:
+            plt.clf()
+            plt.plot(sampler.lnprobability)
+            plt.savefig("burnin_lnprob.png")
+            plt.clf()
+            plt.plot(sampler.lnprobability.T)
+            plt.savefig("burnin_lnprobT.png")
 
-    #    print("Number of failed priors after burnin:\n{}".format(N_FAILS))
-    #    print("Number of succeeded priors after burnin:\n{}".format(N_SUCCS))
+        #    print("Number of failed priors after burnin:\n{}".format(N_FAILS))
+        #    print("Number of succeeded priors after burnin:\n{}".format(N_SUCCS))
 
-    # Help out the struggling walkers
-    best_ix = np.argmax(lnprob)
-    poor_ixs = np.where(lnprob < np.percentile(lnprob, 33))
-    for ix in poor_ixs:
-        pos[ix] = pos[best_ix]
-    sampler.reset()
+        # Help out the struggling walkers
+        best_ix = np.argmax(lnprob)
+        poor_ixs = np.where(lnprob < np.percentile(lnprob, 33))
+        for ix in poor_ixs:
+            pos[ix] = pos[best_ix]
+        sampler.reset()
+
     #N_FAILS = 0
     #N_SUCCS = 0
 
@@ -466,7 +499,7 @@ def get_bayes_spreads(tb_file, z=None, plot_it=False):
             fixed_age=time, plot_it=plot_it
         )
         bayes_spreads[i] = utils.approx_spread_from_chain(chain)
-        lntime_probs[i] = np.max(lnprobability)
+        lntime_probs[i] = np.mean(lnprobability)
 
     lntime_probs -= np.max(lntime_probs) # shift the max to 0
 

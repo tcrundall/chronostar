@@ -77,10 +77,12 @@ def test_basic_plot():
 
     qp.plot_quadplots(
         tb_file, bayes_spreads=bayes_spreads, time_probs=time_probs,
-        naive_spreads=naive_spreads, init_conditions=mock_twa_pars)
+        naive_spreads=naive_spreads, init_conditions=mock_twa_pars,
+        plot_it=True)
 
 
 if __name__ == '__main__':
     test_basic_plot()
+
 
 sys.path.insert(0, '.')  # reinserting home directory into path
