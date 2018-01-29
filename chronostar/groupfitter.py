@@ -495,7 +495,7 @@ def get_bayes_spreads(tb_file, z=None, plot_it=False):
 
     for i, time in enumerate(times):
         _, chain, lnprobability = fit_group(
-            tb_file, burnin_steps=500, sampling_steps=500, z=z,
+            tb_file, burnin_steps=300, sampling_steps=500, z=z,
             fixed_age=time, plot_it=plot_it
         )
         bayes_spreads[i] = utils.approx_spread_from_chain(chain)

@@ -8,6 +8,7 @@ import pickle
 import chronostar.groupfitter as gf
 import chronostar.analyser as an
 import chronostar.error_ellipse as ee
+from chronostar import utils
 import matplotlib.pyplot as plt
 
 def calc_area(ys):
@@ -120,6 +121,8 @@ def plot_age_hist(chain, ax, init_conditions=None):
         the chain of samples
     ax : pyplot axes object
         the axes on which to plot
+    init_conditions : [15] array {None}
+        group parameters that initialised the data - external encoding
     """
     print("In plot_age_hist")
     ax.hist(chain[:,:,-1].flatten(), bins=20)
@@ -134,6 +137,44 @@ def plot_age_hist(chain, ax, init_conditions=None):
         )
 
     print("Done most of plot_age_hist")
+
+
+def plot_age_radius_hist(chain, ax, init_conditions=None):
+    """Plot a 2D histogram of effective position radius and age
+
+    Parameters
+    ----------
+    chain : [nsteps, nwalkers, npars] array
+        the chain of samples
+    ax : pypot axes object
+        the axes on which to plot
+    init_conditions : [15] array {None}
+        group parameters that initialised the data - external encoding
+    """
+    print("In plot_age_radius_hist")
+    npars = chain.shape[-1]
+    nsamples = chain.shape[0] * chain.shape[1]
+    flatchain = chain.reshape((nsamples, npars))
+    radii = np.zeros(nsamples)
+
+    # OMG SO FKN SLOW, maybe swig up a determinant calculator
+    for i, sample in enumerate(flatchain):
+        if i % 1000 == 0:
+            print("{} of {} done".format(i, len(flatchain)))
+        radii[i] = utils.approx_spread_from_sample(sample)
+    #data = zip(radii, flatchain[:,-1])
+    #pdb.set_trace()
+    ax.hist2d(flatchain[:,-1], radii, bins=30)
+    ax.set_xlabel("Traceback age [Myr]")
+    ax.set_ylabel("Radius of spread in XYZ [pc]")
+    #pdb.set_trace()
+
+    if init_conditions is not None:
+        init_age = init_conditions[13]
+        ax.axvline(
+            init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
+        )
+
 
 def plot_sub_age_pdf(times, time_probs, init_conditions, ax):
     """
@@ -173,10 +214,20 @@ def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=No
         The traceback file of a set of stars
     bayes_fits : ???
         Some means of conveying the bayesian fit to each age step
+    naive_spreads :
+    time_probs :
+    init_conditions :
+
     """
 
     stars, times, xyzuvw, xyzuvw_cov = pickle.load(open(infile, 'r'))
     nstars = len(xyzuvw)
+
+    best_fit_free, chain_free, lnprob_free = \
+        gf.fit_group(
+            infile, burnin_steps=300, sampling_steps=1000, plot_it=plot_it
+        )
+
 
     # Gather data of spread fits
     if naive_spreads is None:
@@ -186,11 +237,6 @@ def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=No
     assert(len(times) == len(naive_spreads))
     assert(len(times) == len(bayes_spreads))
 
-    best_fit_free, chain_free, lnprob_free =\
-        gf.fit_group(
-            infile, burnin_steps=1000, sampling_steps=1000, plot_it=plot_it
-        )
-
     # Plot spread fits
     plt.clf()
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
@@ -198,7 +244,8 @@ def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=No
 
     plot_sub_traceback(xyzuvw, xyzuvw_cov, times, 0, 1, ax1)
     plot_sub_spreads(times, bayes_spreads, naive_spreads, init_conditions, ax2)
-    #plot_sub_traceback(xyzuvw, xyzuvw_cov, times, 3, 4, ax3)
     plot_age_hist(chain_free, ax3, init_conditions=init_conditions)
-    plot_sub_age_pdf(times, time_probs, init_conditions, ax4)
+    plot_age_radius_hist(chain_free, ax4, init_conditions=init_conditions)
+    #plot_sub_traceback(xyzuvw, xyzuvw_cov, times, 3, 4, ax3)
+    #plot_sub_age_pdf(times, time_probs, init_conditions, ax4)
     f.savefig("temp_plot.png")

@@ -49,10 +49,10 @@ def build_basic_plot():
     ])
     time_probs = None
 
-    #times = np.array([
-    #    0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.
-    #])
-    times = np.linspace(0,10,51)
+    times = np.array([
+        0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.
+    ])
+    times = np.linspace(0,10,21)
 
     # CANNOT DO SOMETHING LIKE THIS, TOO MANY FUNCTIONS EXPECT TIMES TO BE
     # LINEARLY SPACED TODO: FIX LINEAR EXPECTATION OF TIMES
@@ -94,5 +94,3 @@ def build_basic_plot():
 
 if __name__ == '__main__':
     build_basic_plot()
-
-sys.path.insert(0, '.')  # reinserting home directory into path

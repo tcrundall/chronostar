@@ -102,6 +102,18 @@ def approx_spread(cov_matrix):
     return (np.prod(eig_vals)) ** (1.0 / 3.0)
 
 
+def approx_spread_from_sample(sample):
+    """Approximate the spread of a sample in position space
+
+    Parameters
+    ----------
+    sample : [14] array
+        emcee parameters in interal encoding (1/dX, no nstars, etc)
+    """
+    cov = generate_cov(sample)
+    return approx_spread(cov)
+
+
 def approx_spread_from_chain(chain):
     """Approximate the spread of emcee samples in XYZ space"""
     if len(chain.shape) > 2:
