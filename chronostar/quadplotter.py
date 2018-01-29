@@ -172,7 +172,8 @@ def plot_age_radius_hist(chain, ax, init_conditions=None):
     if init_conditions is not None:
         init_age = init_conditions[13]
         ax.axvline(
-            init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
+            #init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
+            init_age, 0, 10, color='r', ls='--'
         )
 
 
