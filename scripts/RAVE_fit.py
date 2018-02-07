@@ -7,41 +7,36 @@ import chronostar.groupfitter as gf
 import pickle
 import matplotlib.pyplot as plt
 import numpy as np
+import argparse
+import pdb
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', '--tbfile',  dest = 'f',
+                    help='tb_file being fitted to')
+args = parser.parse_args()
 
-print("New1")
-infile = "../data/tb_rave_active_star_candidates_with_TGAS_kinematics.pkl"
+tbfile = args.f
 
-with open(infile, 'r') as fp:
+with open(tbfile, 'r') as fp:
     stars, ts, xyzuvw, xyzuvw_cov = pickle.load(fp)
 
-#init_pars = np.zeros(14)
-#init_pars[0:6] = np.mean(xyzuvw[:,0,:], axis=0)
-#init_pars[6:10] = 1/np.std(xyzuvw[:,0,:4], axis=0)
-#
-#init_pars = np.array([
-#        -3.25428874e+01,  -5.57343789e+01,  -3.26822860e+01,
-#         1.45180826e+00,  -6.50189696e+00,   3.05571179e-01,
-#         1.38614076e-02,   1.72206362e-02,   1.01477181e-02,
-#         4.11418947e-02,  -2.85696722e-01,  -2.15276243e-01,
-#        -2.91917283e-01,   0.00000000e+00
-#])
-#
+init_pars=None
 init_pars = np.array([
-        -3.23224760e+01,  -5.20039277e+01,  -2.79503162e+01,
-         1.47052647e+00,  -6.96123777e+00,   1.05548836e-01,
-         1.40728422e-02,   1.72754663e-02,   1.01462923e-02,
-         4.14475921e-02,  -2.71573687e-01,  -2.09653483e-01,
-        -2.83523985e-01,   0.00000000e+00
+    -2.77515851e+01,  -5.12709248e+01,  -3.51019638e+01,
+     5.15272650e+00,   5.38943567e+00,   5.44265710e-01,
+     3.29030694e-02,   1.78098988e-02,   1.51952143e-02,
+     6.65467580e-02,   9.99999855e-01,   9.99999874e-01,
+     9.99999992e-01,   0.00000000e+00
 ])
 
-print(init_pars)
 
+pdb.set_trace()
+print("About to fit...")
 best_fit, chain, _ = gf.fit_group(
-    infile, plot_it=True, fixed_age=0.0, init_pars=init_pars
+    tbfile, plot_it=True, fixed_age=0.0, init_pars=init_pars
 )
 
-with open("fit_result.pkl", 'w') as fp:
-    pickle.dump(best_fit, fp)
+with open("temp_results/fit_result.pkl", 'w') as fp:
+    pickle.dump((best_fit, chain), fp)
 
 #pdb.set_trace()
