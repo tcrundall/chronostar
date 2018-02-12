@@ -108,7 +108,7 @@ def generate_current_pos(ngroups, group_pars):
         nstars = int(np.sum(group_pars[:,-1]))
     return xyzuvw_now, nstars
 
-def generate_table_with_error(sky_coord_now, error_perc):
+def generate_table_with_error(sky_coord_now, error_frac):
     """Generate an "astrometry" table based on current coords and error
 
     Parameters
@@ -116,8 +116,8 @@ def generate_table_with_error(sky_coord_now, error_perc):
     sky_coord_now - [nstars, 6] array
         Sky coordinates (RA, Dec, pi, pmRA, pmDE, RV) of all synthetic stars
 
-    error_perc - float
-        Percentage of gaia DR2-esque error. 1e-5 --> barely any measuremnt
+    error_frac - float
+        Fraction of gaia DR2-esque error. 1e-5 --> barely any measurement
         error. 1.0 --> gaia DR2 typical error
 
     Output
@@ -131,23 +131,23 @@ def generate_table_with_error(sky_coord_now, error_perc):
 
     nstars = sky_coord_now.shape[0]
 
-    errs = np.ones(nstars) * error_perc
+    errs = np.ones(nstars) * error_frac
     ids = np.arange(nstars)
-    # note, x + error_perc*x*N(0,1) == x * N(1,error_perc)
+    # note, x + error_frac*x*N(0,1) == x * N(1,error_frac)
     # i.e., we resample the measurements based on the measurement
-    # 'error_perc'
+    # 'error_frac'
     t = Table(
         [
         ids,                #names
         sky_coord_now[:,0], #RAdeg
         sky_coord_now[:,1], #DEdeg
-        np.random.normal(sky_coord_now[:,2], e_plx*error_perc),  #Plx [mas]
+        np.random.normal(sky_coord_now[:,2], e_plx*error_frac),  #Plx [mas]
         e_plx * errs,
-        np.random.normal(sky_coord_now[:,5], e_RV*error_perc),   #RV [km/s]
+        np.random.normal(sky_coord_now[:,5], e_RV*error_frac),   #RV [km/s]
         e_RV * errs,
-        np.random.normal(sky_coord_now[:,3], e_pm*error_perc),   #pmRA [mas/yr]
+        np.random.normal(sky_coord_now[:,3], e_pm*error_frac),   #pmRA [mas/yr]
         e_pm * errs,
-        np.random.normal(sky_coord_now[:,4], e_pm*error_perc),   #pmDE [mas/yr]
+        np.random.normal(sky_coord_now[:,4], e_pm*error_frac),   #pmDE [mas/yr]
         e_pm * errs,
         ],
         names=('Name', 'RAdeg','DEdeg','Plx','e_Plx','RV','e_RV',
@@ -155,7 +155,8 @@ def generate_table_with_error(sky_coord_now, error_perc):
         )
     return t
 
-def synthesise_data(ngroups, group_pars, error_perc, savefile=None):
+def synthesise_data(ngroups, group_pars, error_frac, savefile=None,
+                    return_data=False):
     """
     Entry point of module; synthesise the observational measurements of an
     arbitrary number of groups with arbitrary initial conditions, with 
@@ -169,7 +170,7 @@ def synthesise_data(ngroups, group_pars, error_perc, savefile=None):
         array of parameters describing the initial conditions of a group.
         NOTE, group_pars[-1] is nstars
         {X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars}
-    error_perc
+    error_frac
         float [0,1+], degree of precision in our "instruments" linearly 
         ranging from perfect (0) to Gaia-like (1)
     savefile
@@ -188,11 +189,11 @@ def synthesise_data(ngroups, group_pars, error_perc, savefile=None):
 
     xyzuvw_now, nstars = generate_current_pos(ngroups, group_pars)
     sky_coord_now = measure_stars(xyzuvw_now)
-    synth_table = generate_table_with_error(sky_coord_now, error_perc)
+    synth_table = generate_table_with_error(sky_coord_now, error_frac)
 
     if savefile is None:
         savefile = "data/synth_data_{}groups_{}stars{}err.pkl".\
-                format(ngroups, nstars, int(100*error_perc))
+                format(ngroups, nstars, int(100*error_frac))
     pickle.dump(synth_table, open(savefile, 'w'))
     #print("Synthetic data file successfully created")
 
@@ -202,10 +203,13 @@ def synthesise_data(ngroups, group_pars, error_perc, savefile=None):
             logfile.write("\n------------------------\n")
             logfile.write(
                 "filename: {}\ngroup parameters [X,Y,Z,U,V,W,dX,dY,dZ,dV,"
-                "Cxy,Cxz,Cyz,age,nstars]:\n{}\nerror_perc: {}\n".\
-                format(savefile, group_pars,error_perc))
+                "Cxy,Cxz,Cyz,age,nstars]:\n{}\nerror_frac: {}\n".\
+                format(savefile, group_pars,error_frac))
     except IOError:
         pass
+
+    if return_data:
+        return synth_table
 
 if __name__ == '__main__':
     """ simple, sample usage """

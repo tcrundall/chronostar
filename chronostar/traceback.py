@@ -193,7 +193,7 @@ def stars_table(params):
         
 def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
               dims=[1,2],xoffset=[],yoffset=[],text_ix=[],axis_range=[],
-              plot_text=True):
+              plot_text=True, return_tb=False):
     """Trace back stellar orbits
 
     Parameters
@@ -420,6 +420,12 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
             raise UserWarning
     else:
         return xyzuvw
+
+    if return_tb:
+        return {
+            'stars':stars, 'times':times, 'xyzuvw':xyzuvw,
+            'xyzuvw_cov':xyzuvw_cov
+        }
   
 def trace_forward(xyzuvw, time_in_past, Potential=MWPotential2014, \
         solarmotion='schoenrich'):
