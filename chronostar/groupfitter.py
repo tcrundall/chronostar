@@ -2,7 +2,10 @@ from __future__ import division, print_function
 
 import numpy as np
 
-from chronostar._overlap import get_lnoverlaps
+# not sure if this is right, needed to change to this so I could run
+# investigator
+from _overlap import get_lnoverlaps
+#from chronostar._overlap import get_lnoverlaps
 import corner
 import emcee
 import matplotlib.pyplot as plt
@@ -114,15 +117,16 @@ def interp_cov(target_time, star_pars):
         The desired time to be fitted to
     star_pars
         Dictionary with
-        xyzuvw
-            [nstars, nts, 6] array with the phase values for each star
-            at each traceback time
-        xyzuvw_cov
-            [nstars, nts, 6, 6] array with the covariance matrix of the
-            phase values for each star at each traceback time
-        times
-            [nts] array with a linearly spaced times spanning 0 to some
-            maximum time
+
+            xyzuvw
+                [nstars, nts, 6] array with the phase values for each star
+                at each traceback time
+            xyzuvw_cov
+                [nstars, nts, 6, 6] array with the covariance matrix of the
+                phase values for each star at each traceback time
+            times
+                [nts] array with a linearly spaced times spanning 0 to some
+                maximum time
 
     Returns
     -------

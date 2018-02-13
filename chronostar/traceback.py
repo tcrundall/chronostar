@@ -213,6 +213,18 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
         Dimensions to be plotted (out of xyzuvw)
     xoffset, yoffset: nstars long list
         Offsets for text position in star labels.
+
+    Returns (opt)
+    -------------
+    star_pars: dict
+        'stars' : astropy table
+            stellar astrometry
+        'times' : [ntimes] array
+            traceback times
+        'xyzuvw' : [nstars, 6] array
+            mean phase kinematics of each star
+        'xyzuvw_cov' : [nstrs, 6, 6] array
+            covariance matrix of kinematics for each star
     """
     nstars = len(stars)
     nts = len(times)
@@ -422,10 +434,11 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
         return xyzuvw
 
     if return_tb:
-        return {
+        star_pars = {
             'stars':stars, 'times':times, 'xyzuvw':xyzuvw,
             'xyzuvw_cov':xyzuvw_cov
         }
+        return star_pars
   
 def trace_forward(xyzuvw, time_in_past, Potential=MWPotential2014, \
         solarmotion='schoenrich'):

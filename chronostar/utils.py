@@ -156,3 +156,15 @@ def generate_cov(pars):
         [0.0, 0.0, 0.0, 0.0, 0.0, dV ** 2],
     ])
     return cov
+
+
+def generate_pars(cov):
+    """Reverse engineer variance and correlations from cov matrix"""
+    dX = np.sqrt(cov[0,0])
+    dY = np.sqrt(cov[1,1])
+    dZ = np.sqrt(cov[2,2])
+    dV = (cov[3,3] * cov[4,4] * cov[5,5]) ** (1/6)
+    Cxy = cov[0,1] / (dX**2 * dY**2)
+    Cxz = cov[0,2] / (dX**2 * dZ**2)
+    Cyz = cov[1,2] / (dY**2 * dZ**2)
+    return [dX, dY, dZ, dV, Cxy, Cxz, Cyz]
