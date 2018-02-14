@@ -15,11 +15,11 @@ def investigate():
     #age = 7
     age = 5
     mock_twa_pars = [
-        -80, 80, 50, 10, -20, -5, 5, 5, 5, 2, 0.0, 0.0, 0.0, age, 40
+        -80, 80, 50, 10, -20, -5, 5, 5, 5, 10, 0.0, 0.0, 0.0, age, 50
     ]
     maxtime = 10
     times = np.linspace(0,maxtime,11)
-    nfixed_fits = 3
+    nfixed_fits = 21
 
     test_save = SAVE_DIR + 'test.npy'
     np.save(test_save, mock_twa_pars)
@@ -34,7 +34,7 @@ def investigate():
     )
 
     logging.info('__Investigating__')
-    my_synth_fit.investigate()
+    my_synth_fit.investigate(plot_it=True)
     save_file = SAVE_DIR + 'my_synth_fit.npy'
     logging.info('__Storing__')
     np.save(save_file, my_synth_fit)

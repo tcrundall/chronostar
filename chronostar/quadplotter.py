@@ -2,6 +2,7 @@ from __future__ import division, print_function
 
 import pdb
 
+import logging
 import numpy as np
 import pickle
 
@@ -83,7 +84,8 @@ def plot_sub_traceback(xyzuvw, xyzuvw_cov, times, dim1, dim2, ax):
     ax.set_xlim(-axis_ranges[dim1], axis_ranges[dim1]) # note inverse X axis
     ax.set_ylim(-axis_ranges[dim2], axis_ranges[dim2])
 
-def plot_sub_spreads(fixed_times, bayes_spreads, naive_spreads, init_conditions, ax):
+def plot_sub_spreads( fixed_times, bayes_spreads, naive_spreads,
+                      init_conditions, ax, init_radius=None):
     """Plot the bayesian and naive fits to the spread of stars
 
     Parameters
@@ -111,6 +113,11 @@ def plot_sub_spreads(fixed_times, bayes_spreads, naive_spreads, init_conditions,
         ax.axvline(
             init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
         )
+
+    if init_radius is not None:
+        ax.axhline(
+            init_radius, ax.get_xlim()[0], ax.get_xlim()[1], color='r', ls='--'
+        )
     ax.legend(loc=1)
     ax.set_xlabel("Traceback Time [Myr]")
     ax.set_ylabel("Radius of average spread in XYZ [pc]")
@@ -130,7 +137,7 @@ def plot_age_hist(chain, ax, init_conditions=None):
     init_conditions : [15] array {None}
         group parameters that initialised the data - external encoding
     """
-    print("In plot_age_hist")
+    logging.info("In plot_age_hist")
     ax.hist(chain[:,:,-1].flatten(), bins=20)
 
     ax.set_xlabel("Ages [Myr]")
@@ -141,11 +148,11 @@ def plot_age_hist(chain, ax, init_conditions=None):
         ax.axvline(
             init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
         )
+    logging.info("Done most of plot_age_hist")
 
-    print("Done most of plot_age_hist")
 
-
-def plot_age_radius_hist(chain, ax, init_conditions=None):
+def plot_age_radius_hist(chain, ax, init_conditions=None, init_radius=None,
+                         radii=None):
     """Plot a 2D histogram of effective position radius and age
 
     Parameters
@@ -157,29 +164,36 @@ def plot_age_radius_hist(chain, ax, init_conditions=None):
     init_conditions : [15] array {None}
         group parameters that initialised the data - external encoding
     """
-    print("In plot_age_radius_hist")
+    logging.info("In plot_age_radius_hist")
     npars = chain.shape[-1]
     nsamples = chain.shape[0] * chain.shape[1]
     flatchain = chain.reshape((nsamples, npars))
-    radii = np.zeros(nsamples)
 
     # OMG SO FKN SLOW, maybe swig up a determinant calculator
-    for i, sample in enumerate(flatchain):
-        if i % 1000 == 0:
-            print("{} of {} done".format(i, len(flatchain)))
-        radii[i] = utils.approx_spread_from_sample(sample)
+    if radii is None:
+        logging.info("!!! why is radii none? !!!")
+        radii = np.zeros(nsamples)
+        for i, sample in enumerate(flatchain):
+            if i % 1000 == 0:
+                logging.info("{} of {} done".format(i, len(flatchain)))
+            radii[i] = utils.approx_spread_from_sample(sample)
+
     #data = zip(radii, flatchain[:,-1])
-    #pdb.set_trace()
     ax.hist2d(flatchain[:,-1], radii, bins=30)
     ax.set_xlabel("Traceback age [Myr]")
     ax.set_ylabel("Radius of spread in XYZ [pc]")
-    #pdb.set_trace()
 
     if init_conditions is not None:
         init_age = init_conditions[13]
         ax.axvline(
             #init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
             init_age, 0, 10, color='r', ls='--'
+        )
+    if init_radius is not None:
+        logging.info("Attempting to plot horizontal line on 2D hist at: {}"\
+                     .format(init_radius))
+        ax.axhline(
+            init_radius, 0, 10, color='r', ls='--'
         )
 
 
@@ -212,7 +226,8 @@ def plot_sub_age_pdf(times, time_probs, init_conditions, ax):
 
 def plot_quadplots(infile, fixed_times,
                    bayes_spreads=None, naive_spreads=None, #time_probs=None,
-                   init_conditions=None, plot_it=False, save_dir=''):
+                   init_conditions=None, plot_it=False, save_dir='',
+                   init_radius=None, radii=None, free_fit=None):
     """
     Generates many quad plots in the provided directory
 
@@ -236,6 +251,11 @@ def plot_quadplots(infile, fixed_times,
         Generates temp plots of fitting process
     save_dir : str
         directory to save plots etc
+    init_radius : float
+        The radius of an idealised sphere corresponding ot the volume in XYZ
+        space of the initial PDF from which the group was generated
+    radii : [nfree_fit_samples] array
+        The XYZ space radii of each sample from the free fit
 
     Returns
     -------
@@ -252,16 +272,22 @@ def plot_quadplots(infile, fixed_times,
     stars, trace_times, xyzuvw, xyzuvw_cov = pickle.load(open(infile, 'r'))
     nstars = len(xyzuvw)
 
-    best_fit_free, chain_free, lnprob_free = \
-        gf.fit_group(
-            infile, burnin_steps=300, sampling_steps=1000, plot_it=plot_it
-        )
+    best_fit_free = free_fit.best_like_fit
+    chain_free = free_fit.chain
+    lnprob_free = free_fit.lnprob
+
+#    best_fit_free, chain_free, lnprob_free = \
+#        gf.fit_group(
+#            infile, burnin_steps=300, sampling_steps=1000, plot_it=plot_it
+#        )
 
     #pdb.set_trace()
     # Gather data of spread fits
     if naive_spreads is None:
+        logging.info("Getting naive spreads (shouldn't do this!)")
         naive_spreads = an.get_naive_spreads(xyzuvw)
     if bayes_spreads is None: # or time_probs is None:
+        logging.info("Getting naive spreads (shouldn't do this!)")
         bayes_spreads, _ = gf.get_bayes_spreads(infile, plot_it=plot_it)
     assert(len(fixed_times) == len(naive_spreads))
     assert(len(fixed_times) == len(bayes_spreads))
@@ -272,9 +298,13 @@ def plot_quadplots(infile, fixed_times,
     f.set_size_inches(20, 20)
 
     plot_sub_traceback(xyzuvw, xyzuvw_cov, trace_times, 0, 1, ax1)
-    plot_sub_spreads(fixed_times, bayes_spreads, naive_spreads, init_conditions, ax2)
+    plot_sub_spreads(
+        fixed_times, bayes_spreads, naive_spreads, init_conditions, ax2,
+        init_radius=init_radius,
+    )
     plot_age_hist(chain_free, ax3, init_conditions=init_conditions)
-    plot_age_radius_hist(chain_free, ax4, init_conditions=init_conditions)
+    plot_age_radius_hist(chain_free, ax4, init_conditions=init_conditions,
+                         radii=radii, init_radius=init_radius)
     #plot_sub_traceback(xyzuvw, xyzuvw_cov, trace_times, 3, 4, ax3)
     #plot_sub_age_pdf(trace_times, time_probs, init_conditions, ax4)
     f.savefig(save_dir+'temp_plot.png')
@@ -299,6 +329,9 @@ def quadplot_synth_res(synthfit, save_dir='', maxtime=None):
         naive_spreads=synthfit.naive_spreads,
         init_conditions=synthfit.init_group_pars_ex,
         save_dir=save_dir,
+        init_radius=synthfit.true_pos_radius,
+        radii=synthfit.free_age_fit.pos_radii,
+        free_fit=synthfit.free_age_fit,
     )
 
 

@@ -44,6 +44,10 @@ class SynthFit():
         self.perf_tb_file = save_dir + 'perf_tb.pkl'
         self.gaia_tb_file = save_dir + 'gaia_tb.pkl'
 
+        self.true_pos_radius = utils.approx_spread_from_sample(
+            utils.internalise_pars(self.init_group_pars_ex)
+        )
+
     def synthesise_data(self):
         logging.info("Synthesising data...")
         self.perf_data = syn.synthesise_data(
@@ -51,7 +55,7 @@ class SynthFit():
             return_data=True
         )
         self.gaia_data = syn.synthesise_data(
-            1, self.init_group_pars_ex, 1e-5, self.gaia_data_file,
+            1, self.init_group_pars_ex, 1, self.gaia_data_file,
             return_data=True
         )
 
@@ -65,10 +69,10 @@ class SynthFit():
             return_tb=True
         )
 
-    def perform_free_fit(self):
+    def perform_free_fit(self, plot_it=False):
         logging.info("Performing free age fit..")
         self.free_age_fit = FreeFit(self.gaia_tb_file, self.gaia_tb)
-        self.free_age_fit.run_fit()
+        self.free_age_fit.run_fit(plot_it=plot_it)
         logging.info("..completed free age fit")
 
     def analyse_free_fit(self):
@@ -105,10 +109,10 @@ class SynthFit():
             self.bayes_spreads.append(fixed_age_fit.mean_radius)
             self.naive_spreads.append(fixed_age_fit.naive_spread)
 
-    def investigate(self):
+    def investigate(self, plot_it=False):
         self.synthesise_data()
         self.calc_tracebacks()
-        self.perform_free_fit()
+        self.perform_free_fit(plot_it=plot_it)
         self.analyse_free_fit()
         self.perform_fixed_fits()
         self.analyse_fixed_fits()
@@ -120,8 +124,9 @@ class FreeFit():
         self.tb_file = tb_file
         self.tb = tb
 
-    def run_fit(self):
-        self.best_like_fit, self.chain, self.lnprob = gf.fit_group(self.tb_file)
+    def run_fit(self, plot_it=False):
+        self.best_like_fit, self.chain, self.lnprob =\
+            gf.fit_group(self.tb_file, plot_it=plot_it)
         self.nwalkers, self.nsteps, self.npars = self.chain.shape
         self.flat_chain = np.reshape(self.chain, (-1, self.npars))
         self.nsamples = self.nwalkers*self.nsteps
@@ -167,7 +172,7 @@ class FixedFit(FreeFit):
         FreeFit.__init__(self, tb_file, tb)
         self.fixed_age = fixed_age
 
-    def run_fit(self):
+    def run_fit(self, plot_it=False):
         self.best_like_fit, self.chain, self.lnprob =\
             gf.fit_group(self.tb_file, fixed_age=self.fixed_age)
         self.nwalkers, self.nsteps, self.npars = self.chain.shape
@@ -193,7 +198,7 @@ class FixedFit(FreeFit):
         naive_group_mean = np.mean(xyzuvw_interp, axis=0)
         naive_group_cov = np.cov(xyzuvw_interp.T)
 
-        self.naive_spread = np.linalg.det(naive_group_cov[:3,:3]) ** (1/3)
+        self.naive_spread = np.linalg.det(naive_group_cov[:3,:3]) ** (1/6)
 
     def analyse(self):
         FreeFit.analyse(self)

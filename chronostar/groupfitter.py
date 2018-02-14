@@ -335,7 +335,7 @@ def burnin_convergence(lnprob, tol=0.5, slice_size=20):
     return np.isclose(start_lnprob_mn, end_lnprob_mn, atol=tol*start_lnprob_std)
 
 
-def fit_group(tb_file, z=None, burnin_steps=500, sampling_steps=1000,
+def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
               init_pars=None, plot_it=False, fixed_age=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
