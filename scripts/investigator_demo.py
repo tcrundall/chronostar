@@ -29,7 +29,7 @@ fixed_ages = np.linspace(0,20,3)
 
 logging.info('__Initialising__')
 mysf = iv.SynthFit(
-    mock_group_pars, times=times, fixed_ages=fixed_ages, save_dir=save_dir
+    mock_group_pars, times=times, nfixed_fits=3, save_dir=save_dir
 )
 logging.info('__Investigating__')
 mysf.investigate()

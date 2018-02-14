@@ -5,11 +5,12 @@ import pdb
 import numpy as np
 import pickle
 
-import chronostar.groupfitter as gf
-import chronostar.analyser as an
-import chronostar.error_ellipse as ee
+import groupfitter as gf
+import analyser as an
+import error_ellipse as ee
 from chronostar import utils
 import matplotlib.pyplot as plt
+from investigator import SynthFit
 
 def calc_area(ys):
     """Calculate the area under the curve provided
@@ -46,6 +47,11 @@ def plot_sub_traceback(xyzuvw, xyzuvw_cov, times, dim1, dim2, ax):
         Denotes which phase dimensions will be plotted [0,1,2,3,4,5] -> [XYZUVW]
     ax : pyplot axes object
         the axes to be plotted in
+
+    Notes
+    -----
+    TODO: Maybe adjust so it takes in "fixed times" as its time parameter
+        This way I can map fits from the fixed time fits onto the traceback plot
     """
     labels = ['X [pc]', 'Y [pc]', 'Z [pc]', 'U [km/s]', 'V [km/s]', 'W [km/s]']
     # X and U are negative as per convention
@@ -77,12 +83,12 @@ def plot_sub_traceback(xyzuvw, xyzuvw_cov, times, dim1, dim2, ax):
     ax.set_xlim(-axis_ranges[dim1], axis_ranges[dim1]) # note inverse X axis
     ax.set_ylim(-axis_ranges[dim2], axis_ranges[dim2])
 
-def plot_sub_spreads(times, bayes_spreads, naive_spreads, init_conditions, ax):
+def plot_sub_spreads(fixed_times, bayes_spreads, naive_spreads, init_conditions, ax):
     """Plot the bayesian and naive fits to the spread of stars
 
     Parameters
     ----------
-    times : [ntimes] array
+    fixed_times : [ntimes] array
         Discrete time steps corresponding to the exact traceback steps
     bayes_spreads : [ntimes] array
         The idealised spherical radius of the position component of the
@@ -94,9 +100,9 @@ def plot_sub_spreads(times, bayes_spreads, naive_spreads, init_conditions, ax):
     ax : pyplot axes object
         The axes on which to be plotted
     """
-    ax.plot(times, naive_spreads, label="Naive fit")
-    ax.plot(times, bayes_spreads, label="Bayes fit")
-    ax.set_xlim(times[0], times[-1])
+    ax.plot(fixed_times, naive_spreads, label="Naive fit")
+    ax.plot(fixed_times, bayes_spreads, label="Bayes fit")
+    ax.set_xlim(fixed_times[0], fixed_times[-1])
     ax.set_ylim(
         bottom=0.0, top=max(np.max(naive_spreads), np.max(bayes_spreads))
     )
@@ -204,8 +210,9 @@ def plot_sub_age_pdf(times, time_probs, init_conditions, ax):
     ax.set_xlabel("Traceback Time [Myr]")
     ax.set_ylabel("Age probability")
 
-def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=None,
-                   init_conditions=None, dir='', plot_it=False):
+def plot_quadplots(infile, fixed_times,
+                   bayes_spreads=None, naive_spreads=None, #time_probs=None,
+                   init_conditions=None, plot_it=False, save_dir=''):
     """
     Generates many quad plots in the provided directory
 
@@ -213,15 +220,36 @@ def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=No
     ----------
     infile : str
         The traceback file of a set of stars
-    bayes_fits : ???
-        Some means of conveying the bayesian fit to each age step
-    naive_spreads :
-    time_probs :
-    init_conditions :
+    fixed_times : [nfixed_ages] array
+        The times at which fixed age fits were performed. Not necessarily
+        the same times as the traceback timesteps.
+    bayes_spreads : [nfixed_ages] array
+        The radius of an idealised sphere corresponding to the volume
+        in XYZ space of the bayesian fit at each timestep
+    naive_spreads : [nfixed_ages] array
+        The radius of an idealised sphere corresponding to the volume
+        in XYZ space of the each star's mean position (fitting a cov matrix
+        to the stellar postional distribution)
+    init_conditions : [15] array
+        Group pars (external incoding) which initialised the synthesis
+    plot_it : boolean {False}
+        Generates temp plots of fitting process
+    save_dir : str
+        directory to save plots etc
 
+    Returns
+    -------
+    -
+
+    Notes
+    -----
+    TODO: take in a dir argument to investigate that directory
+
+    TODO: incorporate the bayesian fit to the traceback
     """
 
-    stars, times, xyzuvw, xyzuvw_cov = pickle.load(open(infile, 'r'))
+    #pdb.set_trace()
+    stars, trace_times, xyzuvw, xyzuvw_cov = pickle.load(open(infile, 'r'))
     nstars = len(xyzuvw)
 
     best_fit_free, chain_free, lnprob_free = \
@@ -229,24 +257,48 @@ def plot_quadplots(infile, bayes_spreads=None, naive_spreads=None, time_probs=No
             infile, burnin_steps=300, sampling_steps=1000, plot_it=plot_it
         )
 
-
+    #pdb.set_trace()
     # Gather data of spread fits
     if naive_spreads is None:
         naive_spreads = an.get_naive_spreads(xyzuvw)
-    if bayes_spreads is None or time_probs is None:
-        bayes_spreads, time_probs = gf.get_bayes_spreads(infile, plot_it=plot_it)
-    assert(len(times) == len(naive_spreads))
-    assert(len(times) == len(bayes_spreads))
+    if bayes_spreads is None: # or time_probs is None:
+        bayes_spreads, _ = gf.get_bayes_spreads(infile, plot_it=plot_it)
+    assert(len(fixed_times) == len(naive_spreads))
+    assert(len(fixed_times) == len(bayes_spreads))
 
     # Plot spread fits
     plt.clf()
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
     f.set_size_inches(20, 20)
 
-    plot_sub_traceback(xyzuvw, xyzuvw_cov, times, 0, 1, ax1)
-    plot_sub_spreads(times, bayes_spreads, naive_spreads, init_conditions, ax2)
+    plot_sub_traceback(xyzuvw, xyzuvw_cov, trace_times, 0, 1, ax1)
+    plot_sub_spreads(fixed_times, bayes_spreads, naive_spreads, init_conditions, ax2)
     plot_age_hist(chain_free, ax3, init_conditions=init_conditions)
     plot_age_radius_hist(chain_free, ax4, init_conditions=init_conditions)
-    #plot_sub_traceback(xyzuvw, xyzuvw_cov, times, 3, 4, ax3)
-    #plot_sub_age_pdf(times, time_probs, init_conditions, ax4)
-    f.savefig("temp_plot.png")
+    #plot_sub_traceback(xyzuvw, xyzuvw_cov, trace_times, 3, 4, ax3)
+    #plot_sub_age_pdf(trace_times, time_probs, init_conditions, ax4)
+    f.savefig(save_dir+'temp_plot.png')
+
+def quadplot_synth_res(synthfit, save_dir='', maxtime=None):
+    """Generate a quadplot from a synthfit result
+
+    Parameters
+    ----------
+    synthfit: investigator.SynthFit instance
+        encapsulates the synthesis, fitting and analysis of a group
+
+    maxtime: float
+        determines the highest traceback age to be calculated
+    """
+    if maxtime is None:
+        maxtime = synthfit.fixed_ages[-1]
+    plot_quadplots(
+        synthfit.gaia_tb_file,
+        synthfit.fixed_ages,
+        bayes_spreads=synthfit.bayes_spreads,
+        naive_spreads=synthfit.naive_spreads,
+        init_conditions=synthfit.init_group_pars_ex,
+        save_dir=save_dir,
+    )
+
+

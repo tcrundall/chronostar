@@ -13,28 +13,16 @@ import pdb
 
 import logging
 
-mock_group_pars = [20,20,5,-22,-10,-3,5,5,5,3,0.5,0.5,0.3,10,10]
+#mock_group_pars = [20,20,5,-22,-10,-3,5,5,5,3,0.5,0.5,0.3,10,10]
 
 class SynthFit():
-    ntimes = None
-    times = None
-    init_group_pars_ex = None
     fixed_age_fits = None
-    nfixed_age = None
     free_age_fit = None
     perf_data = None
     perf_tb   = None
-    gaia_data = None
-    gaia_tb   = None
-    save_dir  = None
-
-    perf_tb_file   = None
-    gaia_data_file = None
-    gaia_tb_file   = None
-    save_dir_file  = None
 
     def __init__(self, init_group_pars, save_dir='', times=None,
-                 nfixed_fits=21, fixed_ages=None):
+                 nfixed_fits=21):
         logging.info("Initialising SynthFit object")
         self.init_group_pars_ex = init_group_pars
         self.save_dir = save_dir
@@ -45,13 +33,10 @@ class SynthFit():
 
         self.ntimes = len(self.times)
         self.nfixed_fits = nfixed_fits
+        self.fixed_ages = np.linspace(
+            np.min(self.times), np.max(self.times), self.nfixed_fits
+            )
 
-        if fixed_ages is None:
-            self.fixed_ages = np.linspace(
-                np.min(self.times), np.max(self.times), self.nfixed_fits
-                )
-        else:
-            self.fixed_ages = fixed_ages
         self.fixed_age_fits = []
 
         self.perf_data_file = save_dir + 'perf_data.dat'
@@ -96,6 +81,7 @@ class SynthFit():
 
     def perform_fixed_fits(self):
         logging.info("Performing fixed age fits")
+        self.fixed_age_fits = []
         for fixed_age in self.fixed_ages:
             logging.info("Initialising fit object for {}".format(fixed_age))
             self.fixed_age_fits.append(
@@ -112,6 +98,13 @@ class SynthFit():
             )
             fixed_fit.analyse()
 
+    def gather_results(self):
+        self.bayes_spreads = []
+        self.naive_spreads = []
+        for fixed_age_fit in self.fixed_age_fits:
+            self.bayes_spreads.append(fixed_age_fit.mean_radius)
+            self.naive_spreads.append(fixed_age_fit.naive_spread)
+
     def investigate(self):
         self.synthesise_data()
         self.calc_tracebacks()
@@ -119,6 +112,8 @@ class SynthFit():
         self.analyse_free_fit()
         self.perform_fixed_fits()
         self.analyse_fixed_fits()
+        self.gather_results()
+
 
 class FreeFit():
     def __init__(self, tb_file, tb):
@@ -148,7 +143,8 @@ class FreeFit():
         self.pos_radii = np.zeros(self.nsamples)
         for i, cov_mat in enumerate(self.cov_mats):
             # since eigen values are dX^2 maybe need to take the 1/6 root???
-            self.pos_radii[i] = (np.linalg.det(cov_mat[:3,:3]) ** (1/3))
+            self.pos_radii[i] = (np.linalg.det(cov_mat[:3,:3]) ** (1/6))
+        self.mean_radius = np.mean(self.pos_radii)
 
     def calc_phase_radius(self):
         """Not sure if useful...."""
