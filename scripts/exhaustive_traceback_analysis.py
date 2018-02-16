@@ -3,6 +3,17 @@
 their results in a hierarchical directory structure.
 """
 
+try:
+    import matplotlib as mpl
+    mpl.use('Agg')
+    import matplotlib.pyplot as plt
+except ImportError:
+    print("Warning: matplotlib not imported")
+    pass
+    
+
+from multiprocessing import Pool
+from itertools import product
 import logging
 import numpy as np
 import sys
@@ -12,29 +23,31 @@ import pdb
 sys.path.insert(0, '..')
 
 import chronostar.investigator as iv
+import chronostar.quadplotter as qp
 
 SAVE_DIR = '../results/synth_results/'
-NTIMES = 21
-NFIXED_FITS = 11
+NTIMES = 3
+NFIXED_FITS = 3
 
-#precs = ['perf']#, 'gaia']
+precs = ['perf', 'gaia', 'double']
 precs = ['gaia']
-ages = [10, 20]
-spreads = [5]#, 10]
-v_disps = [2]#, 5]
-sizes   = [50]#, 100]
+ages = [10]#, 20, 40]
+spreads = [5]#, 10, 20]
+v_disps = [2]#, 5, 10]
+sizes   = [25]#, 50, 100, 200]
 
 base_group_pars = [
     -80, 80, 50, 10, -20, -5, None, None, None, None,
     0.0, 0.0, 0.0, None, None
 ]
 
-prec_val = {'perf':1e-5, 'gaia':1.0}
+prec_val = {'perf':1e-5, 'gaia':1.0, 'double':2.0}
 
 def do_something(age,spread,v_disp,size,prec):
     path_name = SAVE_DIR + "{}_{}_{}_{}_{}/".format(
         age, spread, v_disp, size, prec
     )
+    mkpath(path_name)
     logging.basicConfig(
         filename=path_name + 'investigator_demo.log',
         level=logging.DEBUG, filemode='w'
@@ -47,13 +60,30 @@ def do_something(age,spread,v_disp,size,prec):
 
     times = np.linspace(0, 2*age, NTIMES)
 
-    mkpath(path_name)
     sf = iv.SynthFit(init_group_pars=group_pars, save_dir=path_name,
                 times=times, nfixed_fits=NFIXED_FITS)
     sf.investigate()
+    #np.save(path_name+"synthfit.npy", sf)
+    qp.quadplot_synth_res(sf, save_dir=path_name)
+
+def do_something_wrapper(scenario):
+    print("In wrapper")
+    print(".. scneario")
+    do_something(*scenario)
 
 if __name__ == '__main__':
-    [do_something(age, spread, v_disp, size, prec)
+    if len(sys.argv) > 1:
+        ncpus = int(sys.argv[1])
+    else:
+        ncpus = 1
+    scenarios = product(ages, spreads, v_disps, sizes, precs)
+    if ncpus > 1:
+        p = Pool(ncpus)
+        p.map(do_something_wrapper, scenarios)
+    else:
+        map(do_something_wrapper, scenarios)
+        
+"""    [do_something(age, spread, v_disp, size, prec)
      for age in ages
      for spread in spreads
      for v_disp in v_disps
@@ -61,3 +91,4 @@ if __name__ == '__main__':
      for prec in precs
      ]
 
+"""
