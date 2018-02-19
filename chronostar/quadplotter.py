@@ -274,7 +274,6 @@ def plot_quadplots(infile, fixed_times,
 
     best_fit_free = free_fit.best_like_fit
     chain_free = free_fit.chain
-    lnprob_free = free_fit.lnprob
 
 #    best_fit_free, chain_free, lnprob_free = \
 #        gf.fit_group(
