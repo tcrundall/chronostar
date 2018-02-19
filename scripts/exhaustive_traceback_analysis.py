@@ -10,16 +10,15 @@ try:
 except ImportError:
     print("Warning: matplotlib not imported")
     pass
-    
+
 
 from distutils.dir_util import mkpath
 from multiprocessing import Pool
 from itertools import product
 import logging
 import numpy as np
-import os
-import pdb
 import sys
+import pdb
 
 sys.path.insert(0, '..')
 
@@ -70,7 +69,7 @@ def do_something(age,spread,v_disp,size,prec):
     os.remove(sf.gaia_data_file)
     os.remove(sf.perf_tb_file)
     os.remove(sf.gaia_tb_file)
-    
+
 
 def do_something_wrapper(scenario):
     print("In wrapper")
@@ -88,7 +87,7 @@ if __name__ == '__main__':
         p.map(do_something_wrapper, scenarios)
     else:
         map(do_something_wrapper, scenarios)
-        
+
 """    [do_something(age, spread, v_disp, size, prec)
      for age in ages
      for spread in spreads

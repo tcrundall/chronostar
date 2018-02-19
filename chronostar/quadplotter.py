@@ -281,6 +281,9 @@ def plot_quadplots(infile, fixed_times,
 #            infile, burnin_steps=300, sampling_steps=1000, plot_it=plot_it
 #        )
 
+    _, _, _, _, _, _, dX, dY, dZ, dV, _, _, _, age, size =\
+        init_conditions
+
     #pdb.set_trace()
     # Gather data of spread fits
     if naive_spreads is None:
@@ -296,6 +299,8 @@ def plot_quadplots(infile, fixed_times,
     plt.clf()
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
     f.set_size_inches(20, 20)
+    f.suptitle("Age: {}Myr, Radius: {}pc, vel_disp: {}km/s, nstars: {}".\
+               format(age, init_radius, dV, size))
 
     plot_sub_traceback(xyzuvw, xyzuvw_cov, trace_times, 0, 1, ax1)
     plot_sub_spreads(
@@ -307,7 +312,7 @@ def plot_quadplots(infile, fixed_times,
                          radii=radii, init_radius=init_radius)
     #plot_sub_traceback(xyzuvw, xyzuvw_cov, trace_times, 3, 4, ax3)
     #plot_sub_age_pdf(trace_times, time_probs, init_conditions, ax4)
-    f.savefig(save_dir+'temp_plot.png')
+    f.savefig(save_dir+'quadplot.png')
 
 def quadplot_synth_res(synthfit, save_dir='', maxtime=None):
     """Generate a quadplot from a synthfit result
