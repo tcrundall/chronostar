@@ -227,7 +227,7 @@ def plot_sub_age_pdf(times, time_probs, init_conditions, ax):
 def plot_quadplots(infile, fixed_times,
                    bayes_spreads=None, naive_spreads=None, #time_probs=None,
                    init_conditions=None, plot_it=False, save_dir='',
-                   init_radius=None, radii=None, free_fit=None):
+                   init_radius=None, radii=None, free_fit=None, prec=None):
     """
     Generates many quad plots in the provided directory
 
@@ -256,6 +256,9 @@ def plot_quadplots(infile, fixed_times,
         space of the initial PDF from which the group was generated
     radii : [nfree_fit_samples] array
         The XYZ space radii of each sample from the free fit
+    prec : float
+        Fraction of gaia_error incorporated into synthetic data. 1.0 is 
+        roughly gaia DR2. Lowest it can go is 1e-5.
 
     Returns
     -------
@@ -298,8 +301,10 @@ def plot_quadplots(infile, fixed_times,
     plt.clf()
     f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
     f.set_size_inches(20, 20)
-    f.suptitle("Age: {}Myr, Radius: {}pc, vel_disp: {}km/s, nstars: {}".\
-               format(age, init_radius, dV, size))
+    f.suptitle(
+        "Age: {}Myr, Radius: {}pc, vel_disp: {}km/s, nstars: {}, precision: {}".\
+               format(age, init_radius, dV, size, prec)
+    )
 
     plot_sub_traceback(xyzuvw, xyzuvw_cov, trace_times, 0, 1, ax1)
     plot_sub_spreads(
@@ -336,6 +341,7 @@ def quadplot_synth_res(synthfit, save_dir='', maxtime=None):
         init_radius=synthfit.true_pos_radius,
         radii=synthfit.free_age_fit.pos_radii,
         free_fit=synthfit.free_age_fit,
+        prec=synthfit.prec
     )
 
 

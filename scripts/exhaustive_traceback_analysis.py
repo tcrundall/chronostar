@@ -26,23 +26,22 @@ import chronostar.investigator as iv
 import chronostar.quadplotter as qp
 
 SAVE_DIR = '../results/synth_results/'
-NTIMES =  5
-NFIXED_FITS = 3
-NSTEPS = 200
+NTIMES = 41 
+NFIXED_FITS = 21 
+NSTEPS = 2000
 
+ages = [5, 10, 20]
+spreads = [2, 5, 10]
+v_disps = [2, 5]
+sizes   = [25, 50]
+precs = ['perf', 'gaia']
 """
-precs = ['perf', 'gaia', 'double']
-ages = [10, 20, 40]
-spreads = [5, 10, 20]
-v_disps = [2, 5, 10]
-sizes   = [25, 50, 100, 200]
-"""
-
-precs = ['gaia']
 ages = [15]
 spreads = [5]
 v_disps = [5]
 sizes   = [25]
+precs = ['gaia']
+"""
 
 base_group_pars = [
     -80, 80, 50, 10, -20, -5, None, None, None, None,
@@ -69,7 +68,7 @@ def do_something(age,spread,v_disp,size,prec):
     times = np.linspace(0, 2*age, NTIMES)
 
     sf = iv.SynthFit(init_group_pars=group_pars, save_dir=path_name,
-                times=times, nfixed_fits=NFIXED_FITS)
+                times=times, nfixed_fits=NFIXED_FITS, prec=prec_val[prec])
     sf.investigate(period=NSTEPS)
     np.save(path_name+"synthfit.npy", sf)
     qp.quadplot_synth_res(sf, save_dir=path_name)
