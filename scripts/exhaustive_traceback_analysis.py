@@ -12,13 +12,14 @@ except ImportError:
     pass
     
 
+from distutils.dir_util import mkpath
 from multiprocessing import Pool
 from itertools import product
 import logging
 import numpy as np
-import sys
-from distutils.dir_util import mkpath
+import os
 import pdb
+import sys
 
 sys.path.insert(0, '..')
 
@@ -26,15 +27,15 @@ import chronostar.investigator as iv
 import chronostar.quadplotter as qp
 
 SAVE_DIR = '../results/synth_results/'
-NTIMES = 3
-NFIXED_FITS = 3
+NTIMES = 21
+NFIXED_FITS = 21
 
 precs = ['perf', 'gaia', 'double']
-precs = ['gaia']
-ages = [10]#, 20, 40]
-spreads = [5]#, 10, 20]
-v_disps = [2]#, 5, 10]
-sizes   = [25]#, 50, 100, 200]
+#precs = ['gaia']
+ages = [10, 20, 40]
+spreads = [5, 10, 20]
+v_disps = [2, 5, 10]
+sizes   = [25, 50, 100, 200]
 
 base_group_pars = [
     -80, 80, 50, 10, -20, -5, None, None, None, None,
@@ -62,13 +63,18 @@ def do_something(age,spread,v_disp,size,prec):
 
     sf = iv.SynthFit(init_group_pars=group_pars, save_dir=path_name,
                 times=times, nfixed_fits=NFIXED_FITS)
-    sf.investigate()
+    sf.investigate(period=2000)
     #np.save(path_name+"synthfit.npy", sf)
     qp.quadplot_synth_res(sf, save_dir=path_name)
+    os.remove(sf.perf_data_file)
+    os.remove(sf.gaia_data_file)
+    os.remove(sf.perf_tb_file)
+    os.remove(sf.gaia_tb_file)
+    
 
 def do_something_wrapper(scenario):
     print("In wrapper")
-    print(".. scneario")
+    print(".. scenario: {}".format(scenario))
     do_something(*scenario)
 
 if __name__ == '__main__':

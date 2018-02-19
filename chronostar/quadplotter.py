@@ -187,13 +187,13 @@ def plot_age_radius_hist(chain, ax, init_conditions=None, init_radius=None,
         init_age = init_conditions[13]
         ax.axvline(
             #init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
-            init_age, 0, 10, color='r', ls='--'
+            init_age, 0, 40, color='r', ls='--'
         )
     if init_radius is not None:
         logging.info("Attempting to plot horizontal line on 2D hist at: {}"\
                      .format(init_radius))
         ax.axhline(
-            init_radius, 0, 10, color='r', ls='--'
+            init_radius, 0, 40, color='r', ls='--'
         )
 
 
