@@ -510,8 +510,8 @@ def trace_forward_sky(sky_coord, time_in_past):
     return xyzuvw_now[-1]
         
 def traceback_group(xyzuvw, age):
-    """Trace back a modern moving group, using standard co-ordinate conventions e.g. 
-    from http://www.astro.umontreal.ca/~malo/banyan.php.
+    """Trace back a modern moving group, using standard co-ordinate conventions
+    e.g. from http://www.astro.umontreal.ca/~malo/banyan.php.
     
     Parameters
     ----------
@@ -526,12 +526,14 @@ def traceback_group(xyzuvw, age):
     return tb.traceback(np.array([0,age]))[0,-1]
         
 def traceback2(params,times):
-    """Trace forward a cluster. First column of returned array is the position of the cluster at a given age.
+    """Trace forward a cluster. First column of returned array is the
+    position of the cluster at a given age.
 
     Parameters
     ----------
     times: float array
-        Times to trace forward, in Myr. Note that positive numbers are going forward in time.
+        Times to trace forward, in Myr. Note that positive numbers are going
+        forward in time.
     params: float array
         [RA,DE,Plx,PM(RA),PM(DE),RV]
         RA = Right Ascension (Deg)
