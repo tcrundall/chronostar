@@ -385,7 +385,8 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
         #"local" coordinates. 
         for k in range(nts):
             xyzuvw_cov[i,k] = np.dot(np.dot(xyzuvw_jac[i,k].T,cov_obs),xyzuvw_jac[i,k])
-            
+            # !!! TODO: ^^ seems to be executing J.T X J instead of J X J.T
+
         
         #Test for problems...
         if (np.linalg.eigvalsh(xyzuvw_cov[i,k])[0]<0):
@@ -440,8 +441,8 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
         }
         return star_pars
   
-def trace_forward(xyzuvw, time_in_past, Potential=MWPotential2014, \
-        solarmotion='schoenrich'):
+def trace_forward(xyzuvw, time_in_past,
+                  Potential=MWPotential2014, solarmotion='schoenrich'):
     """Trace forward one star in xyzuvw coords
     
     Parameters
@@ -500,6 +501,60 @@ def trace_forward(xyzuvw, time_in_past, Potential=MWPotential2014, \
     xyzuvw_now[5] = o.W(-ts[-1]) - xyzuvw_sun[5]
     
     return xyzuvw_now
+
+def transform_cov_mat(xyzuvw, xyzuvw_cov, tstep):
+    h = 1e-3
+    J = np.zeros((6,6))
+
+    for coord in range(6):
+        xyzuvw_plus = xyzuvw.copy()
+        xyzuvw_neg  = xyzuvw.copy()
+        xyzuvw_plus[coord] += h
+        xyzuvw_neg[coord]  -= h
+
+        # filling out the coordth column of the jacobian matrix
+        J[:, coord] =\
+            (trace_forward(xyzuvw_plus, tstep)
+             - trace_forward(xyzuvw_neg, tstep)) / h
+
+    new_cov = np.dot(J, np.dot(xyzuvw_cov, J.T))
+
+    return new_cov
+
+def trace_forward_group(xyzuvw, xyzuvw_cov, time, nsteps):
+    """Take a group's origin in galactic coordinates and project forward
+
+    Parameters
+    ----------
+    xyzuvw : [6] float array
+        initial mean
+    xyzuvw_cov : [6,6] float array
+        initial covariance matrix
+    time : float
+        age of group in Myr
+    nsteps : int
+        number of steps to iterate through. The transformation of the
+        covariance matrix is only valid over a linear regime, so need to
+        restrict the step size in order to maintain accuracy
+
+    Returns
+    -------
+    xyzuvw_current : [6] float array
+        current age xyzuvw mean
+    xyzuvw_cov_current : [6,6] float array
+        current age covariance matrix
+    """
+    tstep = time / nsteps
+
+    old_xyzuvw = xyzuvw
+    old_cov = xyzuvw_cov
+    for i in range(nsteps):
+        new_cov = transform_cov_mat(old_xyzuvw, old_cov, tstep) # do we need current xyzuvw too?
+        new_xyzuvw = trace_forward(old_xyzuvw, tstep)
+        old_xyzuvw = new_xyzuvw
+        old_cov = new_cov
+
+    return new_xyzuvw, new_cov
     
 def trace_forward_sky(sky_coord, time_in_past):
     """Trace forward one star in xyzuvw coords"""
