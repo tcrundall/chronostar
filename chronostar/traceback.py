@@ -499,23 +499,31 @@ def trace_forward(xyzuvw, time_in_past,
     xyzuvw_now[3] = o.U(-ts[-1]) - xyzuvw_sun[3]
     xyzuvw_now[4] = o.V(-ts[-1]) - xyzuvw_sun[4]
     xyzuvw_now[5] = o.W(-ts[-1]) - xyzuvw_sun[5]
-    
+
+    #pdb.set_trace()
+
     return xyzuvw_now
 
 def transform_cov_mat(xyzuvw, xyzuvw_cov, tstep):
-    h = 1e-3
+    dp = 1e-3
     J = np.zeros((6,6))
 
     for coord in range(6):
-        xyzuvw_plus = xyzuvw.copy()
-        xyzuvw_neg  = xyzuvw.copy()
-        xyzuvw_plus[coord] += h
-        xyzuvw_neg[coord]  -= h
+        xyzuvw_plus = np.array(map(np.float, xyzuvw.copy()))
+        xyzuvw_neg  = np.array(map(np.float, xyzuvw.copy()))
+        xyzuvw_plus[coord] += dp
+        xyzuvw_neg[coord]  -= dp
 
         # filling out the coordth column of the jacobian matrix
         J[:, coord] =\
-            (trace_forward(xyzuvw_plus, tstep)
-             - trace_forward(xyzuvw_neg, tstep)) / h
+            (trace_forward(xyzuvw_plus, tstep, solarmotion=None)
+             - trace_forward(xyzuvw_neg, tstep, solarmotion=None)) / (2*dp)
+
+#        J[:, coord] =\
+#            (trace_forward(xyzuvw_plus, tstep, solarmotion=None)
+#                - trace_forward(xyzuvw, tstep, solarmotion=None)) / dp
+
+    # pdb.set_trace()
 
     new_cov = np.dot(J, np.dot(xyzuvw_cov, J.T))
 
@@ -550,7 +558,7 @@ def trace_forward_group(xyzuvw, xyzuvw_cov, time, nsteps):
     old_cov = xyzuvw_cov
     for i in range(nsteps):
         new_cov = transform_cov_mat(old_xyzuvw, old_cov, tstep) # do we need current xyzuvw too?
-        new_xyzuvw = trace_forward(old_xyzuvw, tstep)
+        new_xyzuvw = trace_forward(old_xyzuvw, tstep, solarmotion=None)
         old_xyzuvw = new_xyzuvw
         old_cov = new_cov
 

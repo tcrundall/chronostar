@@ -56,6 +56,11 @@ import numpy as np
 from astropy import units as u 
 from astropy.coordinates import SkyCoord
 import pdb
+
+import sys
+
+sys.path.insert(0,'../..')
+
 import chronostar.traceback as tb
 
 #Start with the coordinates of beta Pic.
