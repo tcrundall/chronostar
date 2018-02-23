@@ -2,6 +2,7 @@
 from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014
 import numpy as np
+import pdb
 
 lsr_orbit = Orbit(vxvv=[1.0,0,1,0,0.,0],vo=220,ro=8,solarmotion='schoenrich')
 lsr_orbit.integrate(np.linspace(0,10,10), MWPotential2014)
@@ -11,6 +12,7 @@ true_solar_motion = np.array([-11.1, -12.24, -7.25])
 U = lsr_orbit.U(0)
 V = lsr_orbit.V(0)
 W = lsr_orbit.W(0)
+
 results = np.array([U, V, W])
 #needed for portability, for galpy 1.2+, U as flaot, galpy 1.1 U as [float]
 results = np.reshape(results, (3))
