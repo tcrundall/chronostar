@@ -22,7 +22,7 @@ class SynthFit():
    # perf_tb   = None
 
     def __init__(self, init_group_pars, save_dir='', times=None,
-                 nfixed_fits=21, prec=1.0):
+                 nfixed_fits=21, prec=1.0, prec_name=None):
         logging.info("Initialising SynthFit object")
         self.init_group_pars_ex = init_group_pars
         self.save_dir = save_dir
@@ -39,6 +39,7 @@ class SynthFit():
 
         self.fixed_age_fits = []
         self.prec = prec
+        self.prec_name = prec_name
 
         self.perf_data_file = save_dir + 'perf_data.dat'
         self.gaia_data_file = save_dir + 'gaia_data.dat'

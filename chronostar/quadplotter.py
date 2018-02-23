@@ -33,7 +33,7 @@ def calc_area(ys):
 
     return total_area
 
-def plot_sub_traceback(xyzuvw, xyzuvw_cov, times, dim1, dim2, ax):
+def plot_sub_traceback(xyzuvw, xyzuvw_cov, times, dim1, dim2, ax, age=None):
     """Plot the 2D traceback of stars with their error ellipses
 
     Parameters
@@ -48,6 +48,8 @@ def plot_sub_traceback(xyzuvw, xyzuvw_cov, times, dim1, dim2, ax):
         Denotes which phase dimensions will be plotted [0,1,2,3,4,5] -> [XYZUVW]
     ax : pyplot axes object
         the axes to be plotted in
+    age : float
+        the true age of the group, if known
 
     Notes
     -----
@@ -59,14 +61,22 @@ def plot_sub_traceback(xyzuvw, xyzuvw_cov, times, dim1, dim2, ax):
     axis_ranges = [-300, 300, 300, -50, 50, 50]
 
     nstars = len(xyzuvw)
+    # setting max time index
+    if age is None:
+        mt_ix = -1
+    else:
+        mt_ix = (np.abs(times - age)).argmin()
+    logging.info("Max time index is {}".format(mt_ix))
+    logging.info("--> approx age of {}, true_age: {}".\
+        format(times[mt_ix], age))
 
     cov_ix1 = [[dim1, dim2], [dim1, dim2]]
     cov_ix2 = [[dim1, dim1], [dim2, dim2]]
     for i in range(nstars):
-        ax.plot(xyzuvw[i, :, dim1], xyzuvw[i, :, dim2], 'b-')
+        ax.plot(xyzuvw[i, :mt_ix, dim1], xyzuvw[i, :mt_ix, dim2], 'b-')
 
         cov_start = xyzuvw_cov[i,  0, cov_ix1, cov_ix2]
-        cov_end = xyzuvw_cov[i, -1, cov_ix1, cov_ix2]
+        cov_end = xyzuvw_cov[i, mt_ix, cov_ix1, cov_ix2]
         ee.plot_cov_ellipse(
             cov_start,
             [xyzuvw[i, 0, dim1], xyzuvw[i, 0, dim2]],
@@ -74,7 +84,7 @@ def plot_sub_traceback(xyzuvw, xyzuvw_cov, times, dim1, dim2, ax):
         )
         ee.plot_cov_ellipse(
             cov_end,
-            [xyzuvw[i, -1, dim1], xyzuvw[i, -1, dim2]],
+            [xyzuvw[i, mt_ix, dim1], xyzuvw[i, mt_ix, dim2]],
             color='r', alpha=0.1, ax=ax
         )
 
@@ -227,7 +237,8 @@ def plot_sub_age_pdf(times, time_probs, init_conditions, ax):
 def plot_quadplots(infile, fixed_times,
                    bayes_spreads=None, naive_spreads=None, #time_probs=None,
                    init_conditions=None, plot_it=False, save_dir='',
-                   init_radius=None, radii=None, free_fit=None, prec=None):
+                   init_radius=None, radii=None, free_fit=None, prec=None,
+                   prec_name=None):
     """
     Generates many quad plots in the provided directory
 
@@ -259,6 +270,9 @@ def plot_quadplots(infile, fixed_times,
     prec : float
         Fraction of gaia_error incorporated into synthetic data. 1.0 is 
         roughly gaia DR2. Lowest it can go is 1e-5.
+    prec_name : str
+        A descriptive name applied to degree of synthetic measurement
+        precision, e.g. 'perf', 'half', 'gaia', 'double'
 
     Returns
     -------
@@ -271,7 +285,6 @@ def plot_quadplots(infile, fixed_times,
     TODO: incorporate the bayesian fit to the traceback
     """
 
-    #pdb.set_trace()
     stars, trace_times, xyzuvw, xyzuvw_cov = pickle.load(open(infile, 'r'))
     nstars = len(xyzuvw)
 
@@ -286,7 +299,6 @@ def plot_quadplots(infile, fixed_times,
     _, _, _, _, _, _, dX, dY, dZ, dV, _, _, _, age, size =\
         init_conditions
 
-    #pdb.set_trace()
     # Gather data of spread fits
     if naive_spreads is None:
         logging.info("Getting naive spreads (shouldn't do this!)")
@@ -303,10 +315,10 @@ def plot_quadplots(infile, fixed_times,
     f.set_size_inches(20, 20)
     f.suptitle(
         "Age: {}Myr, Radius: {}pc, vel_disp: {}km/s, nstars: {}, precision: {}".\
-               format(age, init_radius, dV, size, prec)
+               format(age, init_radius, dV, size, prec_name)
     )
 
-    plot_sub_traceback(xyzuvw, xyzuvw_cov, trace_times, 0, 1, ax1)
+    plot_sub_traceback(xyzuvw, xyzuvw_cov, trace_times, 0, 1, ax1, age=age)
     plot_sub_spreads(
         fixed_times, bayes_spreads, naive_spreads, init_conditions, ax2,
         init_radius=init_radius,
@@ -316,7 +328,8 @@ def plot_quadplots(infile, fixed_times,
                          radii=radii, init_radius=init_radius)
     #plot_sub_traceback(xyzuvw, xyzuvw_cov, trace_times, 3, 4, ax3)
     #plot_sub_age_pdf(trace_times, time_probs, init_conditions, ax4)
-    f.savefig(save_dir+'quadplot.png')
+    desc = save_dir.split('/')[-2]
+    f.savefig(save_dir+'quadplot_{}.png'.format(desc))
 
 def quadplot_synth_res(synthfit, save_dir='', maxtime=None):
     """Generate a quadplot from a synthfit result
@@ -341,7 +354,8 @@ def quadplot_synth_res(synthfit, save_dir='', maxtime=None):
         init_radius=synthfit.true_pos_radius,
         radii=synthfit.free_age_fit.pos_radii,
         free_fit=synthfit.free_age_fit,
-        prec=synthfit.prec
+        prec=synthfit.prec,
+        prec_name=synthfit.prec_name,
     )
 
 

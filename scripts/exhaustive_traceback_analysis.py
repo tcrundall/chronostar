@@ -5,7 +5,6 @@ their results in a hierarchical directory structure.
 
 try:
     import matplotlib as mpl
-
     mpl.use('Agg')
     import matplotlib.pyplot as plt
 except ImportError:
@@ -26,6 +25,7 @@ import chronostar.investigator as iv
 import chronostar.quadplotter as qp
 
 SAVE_DIR = '../results/synth_results/'
+
 NTIMES = 41
 NFIXED_FITS = 21
 NSTEPS = 2000
@@ -34,8 +34,12 @@ ages = [5, 10, 20]
 spreads = [2, 5, 10]
 v_disps = [2, 5]
 sizes = [25, 50]
-precs = ['perf', 'gaia']
+precs = ['perf', 'half', 'gaia', 'double']
 """
+NTIMES = 21
+NFIXED_FITS = 3
+NSTEPS = 200
+
 ages = [15]
 spreads = [5]
 v_disps = [5]
@@ -48,7 +52,7 @@ base_group_pars = [
     0.0, 0.0, 0.0, None, None
 ]
 
-prec_val = {'perf': 1e-5, 'gaia': 1.0, 'double': 2.0}
+prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 
 def do_something(age, spread, v_disp, size, prec):
@@ -69,7 +73,8 @@ def do_something(age, spread, v_disp, size, prec):
     times = np.linspace(0, 2 * age, NTIMES)
 
     sf = iv.SynthFit(init_group_pars=group_pars, save_dir=path_name,
-                     times=times, nfixed_fits=NFIXED_FITS, prec=prec_val[prec])
+                     times=times, nfixed_fits=NFIXED_FITS, prec=prec_val[prec],
+                     prec_name=prec)
     sf.investigate(period=NSTEPS)
     np.save(path_name + "synthfit.npy", sf)
     qp.quadplot_synth_res(sf, save_dir=path_name)
