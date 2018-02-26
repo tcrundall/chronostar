@@ -30,11 +30,15 @@ NTIMES = 41
 NFIXED_FITS = 21
 NSTEPS = 2000
 
-ages = [5, 10, 20]
-spreads = [2, 5, 10]
+# best pars: age: 5, spread: 10, v_disp: 2(?), size: 25
+#ages = [5, 10, 20]
+ages = [10, 18]
+#spreads = [2, 5, 10]
+spreads = [5, 10]
 v_disps = [2, 5]
-sizes = [25, 50]
-precs = ['perf', 'half', 'gaia', 'double']
+sizes = [25]
+#precs = ['perf', 'half', 'gaia', 'double']
+precs = ['half', 'gaia']
 """
 NTIMES = 21
 NFIXED_FITS = 3
