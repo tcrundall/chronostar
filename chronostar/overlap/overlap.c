@@ -19,6 +19,9 @@ void get_lnoverlaps(
   double* st_mns, int st_mn_dim1, int st_mn_dim2,
   double* lnoverlaps_vec, int n
   )
+  /* Calculates the natural log overlaps with the 6D Gaussians described by the star mean and cov matrices
+   * with the 6D Gaussian decribed by the group mean and cov matrix
+   */
 {
   // ALLOCATE MEMORY
   int star_count;

@@ -172,9 +172,11 @@ def eig_prior(char_min, eig_val):
     -------
     eig_prior
         A prior on the provided model eigen value
+
+    TODO: CONFIRMT HIS MATH IS CORRECT
     """
     # eig_val = 1 / inv_eig_val
-    prior = eig_val / (char_min ** (2) + eig_val ** 2)
+    prior = eig_val / (char_min**2 + eig_val**2)
     return prior
 
 
@@ -232,27 +234,37 @@ def lnlike(pars, z, star_pars):
     lnlike
         the logarithm of the likelihood of the fit
     """
+    CHAR_POS_MIN = 2 #pc
+    CHAR_VEL_MIN = 2 #km/s
 
-    # convert pars into (in?)covariance matrix
+    # convert pars into covariance matrix
     group_cov = utils.generate_cov(pars)
 
     # check if covariance matrix is singular
     if np.min(np.linalg.eigvalsh(group_cov)) < 0:
         return -np.inf
 
+    # incorporate eigenvalue prior
+    eig_val_prior = 0.0
+    pos_eig_vals = np.sqrt(np.linalg.eigvalsh(group_cov[:3,:3]))
+    for pos_eig_val in pos_eig_vals:
+        eig_val_prior += eig_prior(CHAR_POS_MIN, pos_eig_val)
+    v_disp = np.sqrt(group_cov[4,4])
+    eig_val_prior += eig_prior(CHAR_VEL_MIN, v_disp)
+
     group_mn = pars[0:6]
 
     # interpolate star data to modelled age
+    # TODO investigate clumping around integer (interp-less) traceback ages
     age = pars[13]
     interp_covs, interp_mns = interp_cov(age, star_pars)
     nstars = interp_mns.shape[0]
 
-    # PROGRESS HALTED! REWRITE C CODE IN LOGARITHMS BEFORE CONTINUING
     lnols = get_lnoverlaps(
         group_cov, group_mn, interp_covs, interp_mns, nstars
     )
 
-    return np.sum(z * lnols)
+    return np.sum(z * lnols) + np.log(eig_val_prior)
 
 
 def lnprobfunc(pars, z, star_pars):
