@@ -460,8 +460,9 @@ def trace_forward(xyzuvw, time_in_past,
     else:
         raise UserWarning
     if time_in_past == 0:
-        print("Time in past must be nonzero: {}".format(time_in_past))
-        raise UserWarning
+        time_in_past = 1e-5
+        #print("Time in past must be nonzero: {}".format(time_in_past))
+        #raise UserWarning
     times = np.linspace(0,time_in_past, 2)
 
     #Start off with an LSR orbit...
