@@ -19,7 +19,7 @@ plt.ion()
 # A constant - is this in astropy???
 spc_kmMyr = 1.022712165
 
-def xyzuvw_to_skycoord(xyzuvw_in, solarmotion=None, reverse_x_sign=False):
+def xyzuvw_to_skycoord(xyzuvw_in, solarmotion='schoenrich', reverse_x_sign=True):
     """Converts XYZUVW with respect to the LSR or the sun
     to RAdeg, DEdeg, plx, pmra, pmdec, RV
     
@@ -35,6 +35,8 @@ def xyzuvw_to_skycoord(xyzuvw_in, solarmotion=None, reverse_x_sign=False):
     reverse_x_sign: bool
         Do we reverse the sign of the X co-ordinate? This is needed for dealing with 
         galpy sign conventions.
+
+    TODO: not working at all... fix this
     """
     if solarmotion==None:
         xyzuvw_sun = np.zeros(6)
@@ -442,7 +444,7 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
         return star_pars
   
 def trace_forward(xyzuvw, time_in_past,
-                  Potential=MWPotential2014, solarmotion='schoenrich'):
+                  Potential=MWPotential2014, solarmotion=None):
     """Trace forward one star in xyzuvw coords
     
     Parameters

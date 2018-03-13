@@ -30,17 +30,20 @@ class TracebackTestCase(unittest.TestCase):
         ]
 
         NGROUPS = 1
-
-    def tearDown(self):
-        try:
-            os.remove(self.synth_file)
-        except OSError:
-            pass
-        try:
-            os.remove(self.tb_file)
-        except OSError:
-            pass
-        os.rmdir(self.tempdir)
+#
+#    def tearDown(self):
+#        try:
+#            os.remove(self.synth_file)
+#        except OSError, AttributeError:
+#            pass
+#        try:
+#            os.remove(self.tb_file)
+#        except OSError, AttributeError:
+#            pass
+#        try:
+#            os.rmdir(self.tempdir)
+#        except AttributeError:
+#            pass
 
     def test_get_naive_spreads(self):
         ntimes = 20
@@ -53,6 +56,30 @@ class TracebackTestCase(unittest.TestCase):
 
         self.assertEqual(naive_spreads.shape[0], ntimes)
         self.assertTrue(np.isclose(naive_spreads, dX, 1e-1).all())
+
+    def test_sky_coords(self):
+        """
+        Handy reference on how to utilise traceback functions...
+        :return:
+        """
+        # beta pic coordinates: (radecpipmrv)
+        bp_astr = [86.82, -51.067, 51.44, 4.65, 83.1, 20]
+        age = 20
+
+        times = np.array([0.0, age])
+        bp_xyzuvws = tb.integrate_xyzuvw(bp_astr, times)
+        bp_xyzuvw_now = bp_xyzuvws[0]
+        bp_xyzuvw_then = bp_xyzuvws[1]
+
+        assert(np.allclose(
+            tb.xyzuvw_to_skycoord(bp_xyzuvw_now, 'schoenrich', True),
+            bp_astr, rtol=1e-5
+        ))
+
+        bp_xyzuvw_now_same = tb.trace_forward(
+            bp_xyzuvw_then, age, solarmotion=None
+        )
+        assert np.allclose(bp_xyzuvw_now, bp_xyzuvw_now_same, rtol=1e-5)
 
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(TracebackTestCase)

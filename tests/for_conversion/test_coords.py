@@ -72,7 +72,7 @@ class TestCoords(unittest.TestCase):
             print("Star         Dec: {:8.3f}".format(star_radecpipmrv[1]))
             print("Group center Plx: {:6.1f}".format(1000./c.distance.pc))
             print("Star         Plx: {:6.1f}".format(star_radecpipmrv[2]))
-            group_radecpipmrv=traceback.xyzuvw_to_skycoord(xyzuvw_group)
+            group_radecpipmrv=traceback.xyzuvw_to_skycoord(xyzuvw_group, None, False)
             print("*** traceback.py computation ***")
             print("Group center  RA: {:8.3f}".format(group_radecpipmrv[0]))
             print("Star          RA: {:8.3f}".format(star_radecpipmrv[0]))
