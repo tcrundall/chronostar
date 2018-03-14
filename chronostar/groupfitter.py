@@ -321,7 +321,7 @@ def get_initial_pars(star_pars, initial_age, z):
     return init_pars
 
 
-def burnin_convergence(lnprob, tol=0.5, slice_size=20):
+def burnin_convergence(lnprob, tol=0.3, slice_size=20):
     """Checks early lnprob vals with final lnprob vals for convergence
 
     Parameters

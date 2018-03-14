@@ -342,6 +342,10 @@ class GroupfitterTestCase(unittest.TestCase):
 
 
     def test_burnin_convergence(self):
+        """
+        Synthesises some pretend lnprob arrays and sees if convergence
+        can be correctly detected.
+        """
         slice_size=5
         nwalkers1 = 30
         nsteps1 = 100
@@ -386,6 +390,7 @@ class GroupfitterTestCase(unittest.TestCase):
         any burnin steps and see if it will repeat burning in until
         convergence is achieved
         """
+        BURNIN_STEPS = 500
 
         # an 'external' parametrisation, with everything in physical
         # format
@@ -423,7 +428,7 @@ class GroupfitterTestCase(unittest.TestCase):
 
         # find best fit
         best_fit, _, _ = gf.fit_group(
-            tb_file, burnin_steps=200, sampling_steps=1000, plot_it=True
+            tb_file, burnin_steps=BURNIN_STEPS, sampling_steps=1000, plot_it=True
         )
         means = best_fit[0:6]
         stds = 1 / best_fit[6:10]
@@ -434,7 +439,6 @@ class GroupfitterTestCase(unittest.TestCase):
         tol_std = 2.5
         tol_corr = 0.3
         tol_age = 0.5
-
         self.assertTrue(
             np.max(abs(means - group_pars_ex[0:6])) < tol_mean,
             msg="\nReceived:\n{}\nshould be within {} to:\n{}".
@@ -547,7 +551,11 @@ class GroupfitterTestCase(unittest.TestCase):
             gf.get_bayes_spreads(self.tb_file, plot_it=True)
         naive_spreads = an.get_naive_spreads(xyzuvw)
 
-        self.assertTrue(np.isclose(bayes_spreads, naive_spreads, rtol=0.1).all())
+        self.assertTrue(
+            np.allclose(bayes_spreads, naive_spreads, rtol=0.1),
+            msg="\nReceived:\n{}\nshould be close to:\n{}".\
+            format(bayes_spreads, naive_spreads)
+        )
 
 
 def suite():
