@@ -7,6 +7,10 @@ sys.path.insert(0, '..')
 import chronostar.traceback as tb
 
 bp_astr = [86.82, -51.067, 51.44, 4.65, 83.1, 20]
+
+# modified so U is stronger
+#bp_astr = [86.82, -51.06, 51.43, 4.85, 51.04, 19.47]
+
 age = 2
 times = np.array([0., age])
 
@@ -62,7 +66,7 @@ print(
     ' ... which works fine. But if we increase the age, but leave the '
     'timestep fixed')
 
-if False:
+if True:
     larger_age = 10 * age
     larger_ntimes = 10 * (ntimes - 1) + 1
     larger_tstep = float(larger_age) / (larger_ntimes - 1)

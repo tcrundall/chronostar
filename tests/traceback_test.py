@@ -21,41 +21,10 @@ import pickle
 
 class TracebackTestCase(unittest.TestCase):
     def setUp(self):
+        pass
 
-        self.tempdir = tempfile.mkdtemp()
-        self.tb_file = os.path.join(self.tempdir, 'tb_data.pkl')
-
-        mock_twa_pars = [
-            -80, 80, 50, 10, -20, -5, 5, 5, 5, 2, 0.0, 0.0, 0.0, 7, 40
-        ]
-
-        NGROUPS = 1
-#
-#    def tearDown(self):
-#        try:
-#            os.remove(self.synth_file)
-#        except OSError, AttributeError:
-#            pass
-#        try:
-#            os.remove(self.tb_file)
-#        except OSError, AttributeError:
-#            pass
-#        try:
-#            os.rmdir(self.tempdir)
-#        except AttributeError:
-#            pass
-
-    def test_get_naive_spreads(self):
-        ntimes = 20
-        nstars = 1000
-        xyzuvw = np.zeros((nstars, ntimes, 6))
-        dX = 5
-        xyzuvw[:,:,:2] = np.random.randn(*xyzuvw[:,:,:2].shape) * dX
-
-        naive_spreads = an.get_naive_spreads(xyzuvw)
-
-        self.assertEqual(naive_spreads.shape[0], ntimes)
-        self.assertTrue(np.isclose(naive_spreads, dX, 1e-1).all())
+    def tearDown(self):
+        pass
 
     def test_sky_coords(self):
         """
@@ -81,12 +50,58 @@ class TracebackTestCase(unittest.TestCase):
         )
         assert np.allclose(bp_xyzuvw_now, bp_xyzuvw_now_same, rtol=1e-5)
 
+    def test_traceforward(self):
+        bp_astr = [86.82, -51.067, 51.44, 4.65, 83.1, 20]
+        age = 2
+        times = np.array([0., age])
+
+        bp_xyzuvws = tb.integrate_xyzuvw(bp_astr, times)
+        bp_xyzuvw_now = bp_xyzuvws[0]
+        bp_xyzuvw_then = bp_xyzuvws[1]
+
+        bp_xyzuvw_now_same = tb.trace_forward(bp_xyzuvw_then, age, solarmotion=None)
+        assert np.allclose(bp_xyzuvw_now, bp_xyzuvw_now_same)
+
+        # tracing forward via a mid point
+        half_age = 0.5 * age
+        bp_xyzuvw_mid = tb.trace_forward(bp_xyzuvw_then, half_age, solarmotion=None)
+        bp_xyzuvw_now_from_mid = tb.trace_forward(bp_xyzuvw_mid, half_age, solarmotion=None)
+        assert np.allclose(bp_xyzuvw_now, bp_xyzuvw_now_from_mid, atol = 1e-3)
+
+        # tracing forward via arbitrarily small steps
+        ntimes = 101
+        tstep = float(age) / (ntimes - 1)
+
+        bp_xyzuvw_many = np.zeros((ntimes, 6))
+        bp_xyzuvw_many[0] = bp_xyzuvw_then
+
+        for i in range(1, ntimes):
+            bp_xyzuvw_many[i] = tb.trace_forward(bp_xyzuvw_many[i - 1], tstep,
+                                                 solarmotion=None)
+        assert np.allclose(bp_xyzuvw_now, bp_xyzuvw_many[-1], atol=5e-3)
+
+        # tracing forward for a larger age, same step size
+        larger_age = 10 * age
+        larger_ntimes = 10 * (ntimes - 1) + 1
+        larger_tstep = float(larger_age) / (larger_ntimes - 1)
+
+        bp_xyzuvw_many_larger = np.zeros((larger_ntimes, 6))
+        bp_xyzuvw_then_larger = \
+            tb.integrate_xyzuvw(bp_astr, np.array([0., larger_age]))[1]
+        bp_xyzuvw_many_larger[0] = bp_xyzuvw_then_larger
+
+        for i in range(1, larger_ntimes):
+            bp_xyzuvw_many_larger[i] = tb.trace_forward(
+                bp_xyzuvw_many_larger[i - 1], larger_tstep, solarmotion=None)
+
+        # !!! for a larger age, but same step size, cannot retrieve original XYZUVW values
+        self.assertFalse(np.allclose(bp_xyzuvw_now, bp_xyzuvw_many_larger[-1], atol=1.))
+
+
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(TracebackTestCase)
     return suite
 
 if __name__ == '__main__':
     unittest.TextTestRunner(verbosity=2).run(suite())
-
-sys.path.insert(0, '.')  # reinserting home directory into path
 
