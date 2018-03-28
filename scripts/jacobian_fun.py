@@ -196,6 +196,12 @@ if __name__ == '__main__':
         # calculate the new mean and cov
         new_mean = trace_forward(mean, age)
         new_cov = transform_cov(cov, trace_forward, mean, dim=6, args=(age,))
+        new_eigvals = np.linalg.eigvalsh(new_cov)
+
+        estimated_cov = np.cov(new_stars.T)
+        estimated_eigvals = np.linalg.eigvalsh(estimated_cov)
+
+        assert np.allclose(new_eigvals, estimated_eigvals, rtol=.5)
 
         if plotit:
             #plt.clf()

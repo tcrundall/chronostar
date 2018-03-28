@@ -12,6 +12,7 @@ from galpy.potential import MWPotential2014
 from galpy.util import bovy_conversion
 from galpy.util import bovy_coords
 from error_ellipse import plot_cov_ellipse
+import transform as tf
 import pickle
 import time
 plt.ion()
@@ -507,54 +508,78 @@ def trace_forward(xyzuvw, time_in_past,
 
     return xyzuvw_now
 
-def transform_cov_mat(xyzuvw, xyzuvw_cov, tstep):
-    dp = 1e-3
-    J = np.zeros((6,6))
+def traceforward_group(mean, cov, age):
+    """
+    Trace a group's Gaussian description from some time in the past
+    to present day.
 
-    for coord in range(6):
-        xyzuvw_plus = np.array(map(np.float, xyzuvw.copy()))
-        xyzuvw_neg  = np.array(map(np.float, xyzuvw.copy()))
-        xyzuvw_plus[coord] += dp
-        xyzuvw_neg[coord]  -= dp
+    :param mean: [6] array;
+        the mean XYZUVW value
+    :param cov: [6,6] array;
+         Covariance matrix
+    :param age: float;
+        Age of "birth" of the group
+    :return:
+        - current_mean: [6] array;
+            the mean phase position at current day
+        - current_cov: [6,6] array;
+            the cov matrix at current day
+    """
+    new_mean = trace_forward(mean, age)
+    new_cov = tf.transform_cov(
+        cov, trace_forward, mean, dim=6, args=(age,)
+    )
+    return new_mean, new_cov
 
-        # filling out the coordth column of the jacobian matrix
-        J[:, coord] =\
-            (trace_forward(xyzuvw_plus, tstep, solarmotion=None)
-             - trace_forward(xyzuvw_neg, tstep, solarmotion=None)) / (2*dp)
-
+    # ------ everything in this block is rubbish I think -------
+#def transform_cov_mat(xyzuvw, xyzuvw_cov, tstep):
+#    dp = 1e-3
+#    J = np.zeros((6,6))
+#
+#    for coord in range(6):
+#        xyzuvw_plus = np.array(map(np.float, xyzuvw.copy()))
+#        xyzuvw_neg  = np.array(map(np.float, xyzuvw.copy()))
+#        xyzuvw_plus[coord] += dp
+#        xyzuvw_neg[coord]  -= dp
+#
+#        # filling out the coordth column of the jacobian matrix
 #        J[:, coord] =\
 #            (trace_forward(xyzuvw_plus, tstep, solarmotion=None)
-#                - trace_forward(xyzuvw, tstep, solarmotion=None)) / dp
-
-    # pdb.set_trace()
-
-    new_cov = np.dot(J, np.dot(xyzuvw_cov, J.T))
-
-    return new_cov
-
-def trace_forward_group(xyzuvw, xyzuvw_cov, time, nsteps):
-    """Take a group's origin in galactic coordinates and project forward
-
-    Parameters
-    ----------
-    xyzuvw : [6] float array
-        initial mean
-    xyzuvw_cov : [6,6] float array
-        initial covariance matrix
-    time : float
-        age of group in Myr
-    nsteps : int
-        number of steps to iterate through. The transformation of the
-        covariance matrix is only valid over a linear regime, so need to
-        restrict the step size in order to maintain accuracy
-
-    Returns
-    -------
-    xyzuvw_current : [6] float array
-        current age xyzuvw mean
-    xyzuvw_cov_current : [6,6] float array
-        current age covariance matrix
-    """
+#             - trace_forward(xyzuvw_neg, tstep, solarmotion=None)) / (2*dp)
+#
+##        J[:, coord] =\
+##            (trace_forward(xyzuvw_plus, tstep, solarmotion=None)
+##                - trace_forward(xyzuvw, tstep, solarmotion=None)) / dp
+#
+#    # pdb.set_trace()
+#
+#    new_cov = np.dot(J, np.dot(xyzuvw_cov, J.T))
+#
+#    return new_cov
+#
+#def trace_forward_group(xyzuvw, xyzuvw_cov, time, nsteps):
+#    """Take a group's origin in galactic coordinates and project forward
+#
+#    Parameters
+#    ----------
+#    xyzuvw : [6] float array
+#        initial mean
+#    xyzuvw_cov : [6,6] float array
+#        initial covariance matrix
+#    time : float
+#        age of group in Myr
+#    nsteps : int
+#        number of steps to iterate through. The transformation of the
+#        covariance matrix is only valid over a linear regime, so need to
+#        restrict the step size in order to maintain accuracy
+#
+#    Returns
+#    -------
+#    xyzuvw_current : [6] float array
+#        current age xyzuvw mean
+#    xyzuvw_cov_current : [6,6] float array
+#        current age covariance matrix
+#    """
     tstep = time / nsteps
 
     old_xyzuvw = xyzuvw

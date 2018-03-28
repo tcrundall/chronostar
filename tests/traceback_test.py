@@ -15,6 +15,8 @@ sys.path.insert(0, '..')  # hacky way to get access to module
 
 import numpy as np
 import chronostar.traceback as tb
+from chronostar import utils
+import chronostar.transform as tf
 import pdb
 import pickle
 
@@ -97,6 +99,46 @@ class TracebackTestCase(unittest.TestCase):
         # !!! for a larger age, but same step size, cannot retrieve original XYZUVW values
         self.assertFalse(np.allclose(bp_xyzuvw_now, bp_xyzuvw_many_larger[-1], atol=1.))
 
+    def test_traceforward_group(self):
+        """
+        Compares the traceforward of a group with a covariance matrix
+        fitted to stars drawn from the initial sample.
+        """
+        nstars = 100
+        age = 20.
+
+        dummy_groups = [
+            # X,Y,Z,U,V,W,dX,dY,dZ, dV,Cxy,Cxz,Cyz,age,
+            [0, 0, 0, 0, 0, 0, 10, 10, 10, 2, 0., 0., 0., age],
+            # isotropic expansion
+            [0, 0, 0, 0, 0, 0, 10, 1, 1, .1, 0., 0., 0., 2 * age],
+            # should rotate anticlock
+            [-20, -20, 300, 0, 0, 0, 10, 10, 10, 2, 0., 0., 0., age],
+            # isotropic expansion
+        ]
+
+        for cnt, dummy_group_pars_ex in enumerate(dummy_groups):
+            mean = dummy_group_pars_ex[0:6]
+            cov = utils.generate_cov(
+                utils.internalise_pars(dummy_group_pars_ex)
+            )
+            stars = np.random.multivariate_normal(mean, cov, nstars)
+
+            new_stars = np.zeros(stars.shape)
+            for i, star in enumerate(stars):
+                new_stars[i] = tb.trace_forward(star, age)
+
+            # calculate the new mean and cov
+            new_mean = tb.trace_forward(mean, age)
+            new_cov = tf.transform_cov(
+                cov, tb.trace_forward, mean, dim=6, args=(age,)
+            )
+            new_eigvals = np.linalg.eigvalsh(new_cov)
+
+            estimated_cov = np.cov(new_stars.T)
+            estimated_eigvals = np.linalg.eigvalsh(estimated_cov)
+
+            assert np.allclose(new_eigvals, estimated_eigvals, rtol=.5)
 
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(TracebackTestCase)
