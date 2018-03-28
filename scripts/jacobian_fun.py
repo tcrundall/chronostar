@@ -1,7 +1,13 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pdb
+import sys
+sys.path.insert(0, '..')
+
+from chronostar.traceback import trace_forward
+import chronostar.traceback as tb
+from chronostar import utils
+import chronostar.error_ellipse as ee
 
 
 def x_from_pol(r, theta):
@@ -24,28 +30,8 @@ def transform_ptc(loc):
     return np.array([x,y])
 
 
-r_mean = np.sqrt(10**2+ 10**2)
-theta_mean = 14*np.pi / 6.
 
-r_std = 1.
-theta_std = np.pi / 24.
-
-C_rt = 0.0
-
-pol_mean = np.array([r_mean, theta_mean])
-pol_cov = np.array([
-    [r_std**2, C_rt * r_std * theta_std],
-    [C_rt * r_std * theta_std, theta_std**2],
-])
-
-nsamples = 100000
-pol_samples = np.random.multivariate_normal(pol_mean, pol_cov, nsamples)
-
-res = transform_ptcs(pol_samples[:, 0], pol_samples[:, 1])
-
-cart_mean = transform_ptcs(*pol_mean)
-
-def get_jac_col(trans_func, col_number, loc, dim=2, h=1e-3):
+def get_jac_col(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
     """
     Calculate a column of the Jacobian.
 
@@ -72,10 +58,12 @@ def get_jac_col(trans_func, col_number, loc, dim=2, h=1e-3):
     offset[col_number] = h
     loc_pl = loc + offset
     loc_mi = loc - offset
+    if args is None:
+        return (trans_func(loc_pl) - trans_func(loc_mi)) / (2*h)
+    else:
+        return (trans_func(loc_pl, *args) - trans_func(loc_mi, *args)) / (2*h)
 
-    return (trans_func(loc_pl) - trans_func(loc_mi)) / (2*h)
-
-def get_jac(trans_func, loc, dim=2, h=1e-3):
+def get_jac(trans_func, loc, dim=2, h=1e-3, args=None):
     """
 
     :param trans_func:
@@ -92,11 +80,11 @@ def get_jac(trans_func, loc, dim=2, h=1e-3):
     """
     jac = np.zeros((dim, dim))
     for i in range(dim):
-        jac[:,i] = get_jac_col(trans_func, i, loc, dim, h)
+        jac[:,i] = get_jac_col(trans_func, i, loc, dim, h, args)
 
     return jac
 
-def transform_cov(cov, trans_func, loc, dim=2):
+def transform_cov(cov, trans_func, loc, dim=2, args=None):
     """
     Transforming a covariance matrix from one coordinate frame to another
 
@@ -112,61 +100,118 @@ def transform_cov(cov, trans_func, loc, dim=2):
         The dimensionality of the coordinate frames
     :return:
     """
-    jac = get_jac(trans_func, loc, dim=2)
+    jac = get_jac(trans_func, loc, dim=dim, args=args)
     return np.dot(jac, np.dot(cov, jac.T))
 
-jac_from_func = get_jac(transform_ptc, pol_mean)
+def polar_demo():
+    plotit = True
+    # setting up polar points
+    r_mean = np.sqrt(10**2+ 10**2)
+    theta_mean = 14*np.pi / 6.
+    r_std = 1.
+    theta_std = np.pi / 24.
+    C_rt = 0.0
 
-h = 1e-3
-# loc 0,0
-mean_plus = pol_mean + np.array([h, 0.])
-mean_minus = pol_mean - np.array([h, 0.])
-first_jac_col =\
-    (transform_ptcs(mean_plus[0], mean_plus[1])
-     -transform_ptcs(mean_minus[0], mean_minus[1])) / (2*h)
+    pol_mean = np.array([r_mean, theta_mean])
+    pol_cov = np.array([
+        [r_std**2, C_rt * r_std * theta_std],
+        [C_rt * r_std * theta_std, theta_std**2],
+    ])
 
-mean_plus = pol_mean + np.array([0., h])
-mean_minus = pol_mean - np.array([0., h])
-second_jac_col = \
-    (transform_ptcs(mean_plus[0], mean_plus[1])
-     -transform_ptcs(mean_minus[0], mean_minus[1])) / (2*h)
+    nsamples = 100000
+    pol_samples = np.random.multivariate_normal(pol_mean, pol_cov, nsamples)
 
-jac = np.zeros((2,2))
-jac[:,0] = first_jac_col
-jac[:,1] = second_jac_col
+    # converting to cartesian manually for comparison
+    res = transform_ptcs(pol_samples[:, 0], pol_samples[:, 1])
 
-cart_mean = transform_ptc(pol_mean)
-#jac = get_jac(transform_ptc, pol_mean)
-cart_cov  = transform_cov(pol_cov, transform_ptc, pol_mean, dim=2)
+    cart_mean = transform_ptc(pol_mean)
+    cart_cov  = transform_cov(pol_cov, transform_ptc, pol_mean, dim=2)
 
-cart_samples = np.random.multivariate_normal(cart_mean, cart_cov, nsamples)
+    cart_samples = np.random.multivariate_normal(cart_mean, cart_cov, nsamples)
 
-estimated_mean = np.mean(res, axis=0)
-estimated_cov = np.cov(res.T)
+    estimated_mean = np.mean(res, axis=0)
+    estimated_cov = np.cov(res.T)
+
+    # plotting
+    if plotit:
+        nbins = 100
+        plt.clf()
+        plt.hist2d(res[:,0],res[:,1],bins=nbins,range=((-20,20),(-20,20)))
+        plt.savefig("temp_jac_hist.png")
+
+        plt.clf()
+        plt.plot(res[:,0], res[:,1], '.')
+        plt.ylim(-20,20)
+        plt.xlim(-20,20)
+        plt.savefig("temp_jac.png")
+
+        plt.clf()
+        plt.plot(cart_samples[:,0], cart_samples[:,1], '.')
+        plt.ylim(-20,20)
+        plt.xlim(-20,20)
+        plt.savefig("temp_jac_cart.png")
+
+        plt.clf()
+        plt.hist2d(cart_samples[:,0],cart_samples[:,1],bins=nbins,range=((-20,20),(-20,20)))
+        plt.savefig("temp_jac_cart_hist.png")
+
+    # tolerance is so high because dealing with non-linearity and
+    assert np.allclose(estimated_mean, cart_mean, rtol=1e-1)
+    assert np.allclose(estimated_cov, cart_cov, rtol=1e-1)
 
 
-if True:
-    nbins = 100
-    plt.clf()
-    plt.hist2d(res[:,0],res[:,1],bins=nbins,range=((-20,20),(-20,20)))
-    plt.savefig("temp_jac_hist.png")
+if __name__ == '__main__':
+    plotit = True
+    func = trace_forward
 
-    plt.clf()
-    plt.plot(res[:,0], res[:,1], '.')
-    plt.ylim(-20,20)
-    plt.xlim(-20,20)
-    plt.savefig("temp_jac.png")
+    #              X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars
 
-    plt.clf()
-    plt.plot(cart_samples[:,0], cart_samples[:,1], '.')
-    plt.ylim(-20,20)
-    plt.xlim(-20,20)
-    plt.savefig("temp_jac_cart.png")
+    nstars = 100
+    age = 20.
 
-    plt.clf()
-    plt.hist2d(cart_samples[:,0],cart_samples[:,1],bins=nbins,range=((-20,20),(-20,20)))
-    plt.savefig("temp_jac_cart_hist.png")
+    dummy_groups = [
+        #X,Y,Z,U,V,W,dX,dY,dZ, dV,Cxy,Cxz,Cyz,age,
+        [0,0,0,0,0,0,10,10,10,  2, 0., 0., 0.,age], # isotropic expansion
+        [0,0,0,0,0,0,10, 1, 1, .1, 0., 0., 0.,2*age], # should rotate anticlock
+        [-20,-20,300,0,0,0,10,10,10,  2, 0., 0., 0.,age], # isotropic expansion
+    ]
 
-# tolerance is so high because dealing with non-linearity and
-assert np.allclose(estimated_mean, cart_mean, rtol=1e-1)
-assert np.allclose(estimated_cov, cart_cov, rtol=1e-1)
+    for cnt, dummy_group_pars_ex in enumerate(dummy_groups):
+        mean = dummy_group_pars_ex[0:6]
+        cov  = utils.generate_cov(
+                    utils.internalise_pars(dummy_group_pars_ex)
+                )
+        stars = np.random.multivariate_normal(mean, cov, nstars)
+        if plotit:
+            plt.clf()
+            plt.plot(stars[:,0], stars[:,1], 'b.')
+            #plt.hist2d(stars[:,0], stars[:,1], bins=20)
+            ee.plot_cov_ellipse(cov[:2,:2], mean)
+            #plt.show()
+
+        new_stars = np.zeros(stars.shape)
+        for i, star in enumerate(stars):
+            new_stars[i] = trace_forward(star, age)
+
+        # calculate the new mean and cov
+        new_mean = trace_forward(mean, age)
+        new_cov = transform_cov(cov, trace_forward, mean, dim=6, args=(age,))
+
+        if plotit:
+            #plt.clf()
+            plt.plot(new_stars[:,0], new_stars[:,1], 'r.')
+            #plt.hist2d(stars[:,0], stars[:,1], bins=20)
+            ymin, ymax = plt.ylim()
+            xmin, xmax = plt.xlim()
+
+            upper = max(xmax, ymax)
+            lower = min(xmin, ymin)
+
+            plt.xlim(upper, lower)
+            plt.ylim(lower, upper)
+            ee.plot_cov_ellipse(
+                new_cov[:2,:2], new_mean, color='r', alpha=0.1
+            )
+            plt.savefig("temp_trace_forward{}.png".format(cnt))
+            plt.show()
+
