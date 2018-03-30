@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import pdb
 import numpy as np
 
 # not sure if this is right, needed to change to this so I could run
@@ -191,7 +192,7 @@ def lnprobfunc(pars, star_pars):
 
 
 def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
-              init_pars=None, plot_it=False, fixed_age=None):
+              plot_it=False):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -241,17 +242,17 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
         z = np.ones(star_pars['xyzuvw'].shape[0])
 
     # Initialise the fit
-    if init_pars is None:
-        init_pars = [0,0,0,0,0,0,0.1,0.2,5.0]
+#    if init_pars is None:
+    init_pars = [0,0,0,0,0,0,0.1,0.2,5.0]
 
     NPAR = len(init_pars)
     NWALKERS = 2 * NPAR
 
     # Since emcee linearly interpolates between walkers to determine next step
     # by initialising each walker to the same age, the age never varies
-    if fixed_age is not None:
-        init_pars[-1] = fixed_age
-        INIT_SDEV[-1] = 0.0
+#    if fixed_age is not None:
+#        init_pars[-1] = fixed_age
+#        INIT_SDEV[-1] = 0.0
 
 
     # Whole emcee shebang
@@ -266,19 +267,13 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
         for i in range(NWALKERS)
     ]
 
-    #N_SUCCS = 0
-    #N_FAILS = 0
-
     # Perform burnin
     state = None
-    converged = False
-
-    #while not converged:
-    # test
     print("Burning in")
     pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
     print("Burnt in")
-    #converged = burnin_convergence(sampler.lnprobability)
+
+    pdb.set_trace()
 
     if plot_it:
         plt.clf()
@@ -287,9 +282,6 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
         plt.clf()
         plt.plot(sampler.lnprobability.T)
         plt.savefig("burnin_lnprobT.png")
-
-    #    print("Number of failed priors after burnin:\n{}".format(N_FAILS))
-    #    print("Number of succeeded priors after burnin:\n{}".format(N_SUCCS))
 
     # Help out the struggling walkers
     best_ix = np.argmax(lnprob)
@@ -323,7 +315,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
     best_sample = sampler.flatchain[final_best_ix]
 
     # corner plotting is heaps funky on my laptop....
-    if False:
+    if plot_it:
         plt.clf()
         fig = corner.corner(sampler.flatchain, truths=best_sample)
         fig.savefig("corner.png")
