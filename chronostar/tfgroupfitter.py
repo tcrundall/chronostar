@@ -9,6 +9,7 @@ from _overlap import get_lnoverlaps
 #from chronostar._overlap import get_lnoverlaps
 import corner
 import emcee
+import logging
 import matplotlib.pyplot as plt
 import pickle
 import traceback as tb
@@ -190,9 +191,38 @@ def lnprobfunc(pars, star_pars):
     #N_SUCCS += 1
     return lp + lnlike(pars, star_pars)
 
+def burnin_convergence(lnprob, tol=3.1, slice_size=100, cutoff=0):
+    """Checks early lnprob vals with final lnprob vals for convergence
 
-def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
-              plot_it=False):
+    Parameters
+    ----------
+    lnprob : [nwalkers, nsteps] array
+
+    tol : float
+        The number of standard deviations the final mean lnprob should be within
+        of the initial mean lnprob
+
+    slice_size : int
+        Number of steps at each end to use for mean lnprob calcultions
+
+    cuttoff : int
+        Step number at which to start the analysis. i.e., a value of 0 would
+        mean to include the whole chain, whereas a value of 500 would be to
+        only confirm no deviation in the steps [500:END]
+    """
+    # Don't bother if only 50 steps have been taken
+    if lnprob.shape[1] < slice_size:
+        slice_size = int(round(0.5*lnprob.shape[1]))
+
+    start_lnprob_mn = np.mean(lnprob[:,:slice_size])
+    start_lnprob_std = np.std(lnprob[:,:slice_size])
+
+    end_lnprob_mn = np.mean(lnprob[:, -slice_size:])
+    end_lnprob_std = np.std(lnprob[:, -slice_size:])
+
+    return np.isclose(start_lnprob_mn, end_lnprob_mn, atol=tol*end_lnprob_std)
+
+def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -209,15 +239,10 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
         array of weights [0.0 - 1.0] for each star, describing how likely
         they are members of group to be fitted.
 
-    fixed_age : float
-        can optionally fix the age of group to some value. Walkers will
-        remain static on that age
+    burnin_steps : int {1000}
 
-    init_pars : [14]
-        Optionally can initialise the walkers around this point. If left as
-        none, walkers will be initialised around the mean kinematic values
-        of the suspected group members.
-    
+    plot_it : bool {False}
+
     Returns
     -------
     best_sample
@@ -269,35 +294,50 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
 
     # Perform burnin
     state = None
-    print("Burning in")
-    pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
-    print("Burnt in")
+    converged = False
+    cnt = 0
+    logging.info("Beginning burnin loop")
+    burnin_lnprob_res = np.zeros((NWALKERS,0))
+    while not converged:
+        logging.info("Burning in cnt: {}".format(cnt))
+        sampler.reset()
+        pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
+        converged = burnin_convergence(sampler.lnprobability)
 
-    pdb.set_trace()
+        # Help out the struggling walkers
+        best_ix = np.argmax(lnprob)
+        poor_ixs = np.where(lnprob < np.percentile(lnprob, 10))
+        for ix in poor_ixs:
+            pos[ix] = pos[best_ix]
 
+        if plot_it:
+            plt.clf()
+            plt.plot(sampler.lnprobability)
+            plt.savefig("burnin_lnprob{}.png".format(cnt))
+            plt.clf()
+            plt.plot(sampler.lnprobability.T)
+            plt.savefig("burnin_lnprobT{}.png".format(cnt))
+
+        burnin_lnprob_res = np.hstack((
+            burnin_lnprob_res, sampler.lnprobability
+        ))
+        cnt += 1
+
+    logging.info("Burnt in, with convergence: {}\n"
+          "Taking final burnin segment as sampling stage".format(converged))
     if plot_it:
         plt.clf()
-        plt.plot(sampler.lnprobability)
+        plt.plot(burnin_lnprob_res)
         plt.savefig("burnin_lnprob.png")
         plt.clf()
-        plt.plot(sampler.lnprobability.T)
+        plt.plot(burnin_lnprob_res.T)
         plt.savefig("burnin_lnprobT.png")
 
-    # Help out the struggling walkers
-    best_ix = np.argmax(lnprob)
-    poor_ixs = np.where(lnprob < np.percentile(lnprob, 33))
-    for ix in poor_ixs:
-        pos[ix] = pos[best_ix]
-    sampler.reset()
-
-    #N_FAILS = 0
-    #N_SUCCS = 0
-
-    print("Sampling")
-    pos, final_lnprob, rstate = sampler.run_mcmc(
-        pos, sampling_steps, rstate0=state,
-    )
-    print("Sampled")
+#    print("Sampling")
+#    pos, final_lnprob, rstate = sampler.run_mcmc(
+#        pos, sampling_steps, rstate0=state,
+#    )
+#    print("Sampled")
     #    print("Number of failed priors after sampling:\n{}".format(N_FAILS))
     #    print("Number of succeeded priors after sampling:\n{}".format(N_SUCCS))
     if plot_it:
@@ -315,9 +355,13 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
     best_sample = sampler.flatchain[final_best_ix]
 
     # corner plotting is heaps funky on my laptop....
-    if plot_it:
+    # am able to make it plot a nice square plot, but it affects
+    # the dimensions of ALL plots that come afterwards....
+    if False:
         plt.clf()
-        fig = corner.corner(sampler.flatchain, truths=best_sample)
-        fig.savefig("corner.png")
+        fig1, axes = plt.subplots(9,9)
+        fig1.set_size_inches(20,20)
+        corner.corner(sampler.flatchain, truths=best_sample, fig=fig1)
+        fig1.savefig("corner.png")
 
     return best_sample, sampler.chain, sampler.lnprobability

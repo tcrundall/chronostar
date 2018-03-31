@@ -14,9 +14,9 @@ import chronostar.transform as tf
 import chronostar.error_ellipse as ee
 from chronostar import utils
 
-dX = 2.
-dY = 3.
-dZ = 1.
+dX = 10.
+dY = 10.
+dZ = 10.
 dXav_check = (dX*dY*dZ)**(1./3.)
 dV = 5.
 age = 10
@@ -35,7 +35,12 @@ then_cov_true = utils.generate_cov(utils.internalise_pars(
 dXav = (np.prod(np.linalg.eigvals(then_cov_true[:3,:3]))**(1./6.))
 
 # This represents the target result - a simplified, spherical starting point
-group_pars_tf_style =  [50.,-20.,0.,0.,1.,0.,dXav,dV,age]
+group_pars_tf_style =\
+    np.append(
+        np.append(
+            np.append(np.copy(group_pars_old_style)[:6], dXav), dV
+        ), age
+    )
 
 tb_file = 'temp_traceforward_tb.pkl'
 synth_file = 'temp_traceforward_synth.pkl'
@@ -58,7 +63,7 @@ group_pars_in = np.copy(group_pars_tf_style)
 group_pars_in[6:8] = 1 / group_pars_in[6:8]
 
 # find best fit
-burnin_steps = 3000
+burnin_steps = 500
 sampling_steps = 500
 print("Burning in: {}".format(burnin_steps))
 print("Sampling: {}".format(sampling_steps))
@@ -90,12 +95,14 @@ now_cov_fitted = tf.transform_cov(then_cov_fitted, tb.trace_forward,
 now_mean_fitted = tb.trace_forward(best_fit[:6], best_fit[-1])
 
 plt.clf()
+
+
 def plot_results():
     plt.plot(xyzuvw[:,0,0], xyzuvw[:,0,1], 'b.')
     ee.plot_cov_ellipse(then_cov_simple[:2,:2], group_pars_tf_style[:2], color='orange',
                         alpha=0.2, hatch='|', ls='--')
-#    ee.plot_cov_ellipse(then_cov_true[:2,:2], group_pars_tf_style[:2], color='orange',
-#                        alpha=0.01)
+    ee.plot_cov_ellipse(then_cov_true[:2,:2], group_pars_tf_style[:2], color='orange',
+                        alpha=1, ls = ':', fill=False)
     ee.plot_cov_ellipse(then_cov_fitted[:2,:2], best_fit[:2], color='xkcd:neon purple',
                         alpha=0.2, hatch='/', ls='-.')
     ee.plot_cov_ellipse(now_cov_fitted[:2,:2], now_mean_fitted[:2], color='b',
@@ -105,7 +112,7 @@ def plot_results():
 
 plot_results()
 
-if False:
+if True:
     assert np.max(abs(means - group_pars_tf_style[0:6])) < tol_mean,\
        "\nReceived:\n{}\nshould be within {} to:\n{}".\
             format(means, tol_mean, group_pars_tf_style[0:6])
