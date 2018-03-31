@@ -1,9 +1,17 @@
 #! /usr/bin/env python
 from __future__ import division, print_function
 
+try:
+    # prevents displaying plots from generation from tasks in background
+    import matplotlib as mpl
+    mpl.use('Agg')
+    import matplotlib.pyplot as plt
+except ImportError:
+    print("Warning: matplotlib not imported")
+    pass
+
 from distutils.dir_util import mkpath
 import logging
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pickle
@@ -82,9 +90,6 @@ if __name__ == '__main__':
         best_fit, chain, lnprob = tfgf.fit_group(
             tb_file, burnin_steps=BURNIN_STEPS, plot_it=True
         )
-        # save and store result
-        result_file = "result.npy"
-        np.save(result_file, [best_fit, chain, lnprob])
 
         # plot Hex plot
         star_pars = tfgf.read_stars(tb_file=tb_file)
@@ -108,6 +113,10 @@ if __name__ == '__main__':
             )
         group_pars_in = np.copy(group_pars_tf_style)
         group_pars_in[6:8] = 1 / group_pars_in[6:8]
+
+        # save and store result so hex-plots can be calculated after the fact
+        result_file = "result.npy"
+        np.save(result_file, [best_fit, chain, lnprob, group_pars_ex, group_pars_tf_style])
 
         then_cov_true = utils.generate_cov(
             utils.internalise_pars(group_pars_ex))
@@ -141,6 +150,10 @@ if __name__ == '__main__':
         plt.xlim(xmax + buffer, xmin - buffer)
         plt.ylim(ymin - buffer, ymax + buffer)
         plt.savefig("hex_plot.png")
+
+        plt.clf()
+        plt.hist(chain[:,:,-1], bins=20)
+        plt.savefig("age_hist.png")
 
         # return to main directory
         os.chdir('..')
