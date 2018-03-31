@@ -92,14 +92,14 @@ now_mean_fitted = tb.trace_forward(best_fit[:6], best_fit[-1])
 plt.clf()
 def plot_results():
     plt.plot(xyzuvw[:,0,0], xyzuvw[:,0,1], 'b.')
-    ee.plot_cov_ellipse(then_cov_simple[:2,:2], group_pars_tf_style[:2], color='g',
-                        alpha=0.1)
-    ee.plot_cov_ellipse(then_cov_true[:2,:2], group_pars_tf_style[:2], color='g',
-                        alpha=0.01)
-    ee.plot_cov_ellipse(then_cov_fitted[:2,:2], best_fit[:2], color='r',
-                        alpha=0.1)
+    ee.plot_cov_ellipse(then_cov_simple[:2,:2], group_pars_tf_style[:2], color='orange',
+                        alpha=0.2, hatch='|', ls='--')
+#    ee.plot_cov_ellipse(then_cov_true[:2,:2], group_pars_tf_style[:2], color='orange',
+#                        alpha=0.01)
+    ee.plot_cov_ellipse(then_cov_fitted[:2,:2], best_fit[:2], color='xkcd:neon purple',
+                        alpha=0.2, hatch='/', ls='-.')
     ee.plot_cov_ellipse(now_cov_fitted[:2,:2], now_mean_fitted[:2], color='b',
-                        alpha=0.1)
+                        alpha=0.03, hatch='.')
 
     plt.savefig("temp_tf_fits.png")
 
