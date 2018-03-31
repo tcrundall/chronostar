@@ -191,7 +191,7 @@ def lnprobfunc(pars, star_pars):
     #N_SUCCS += 1
     return lp + lnlike(pars, star_pars)
 
-def burnin_convergence(lnprob, tol=3.1, slice_size=100, cutoff=0):
+def burnin_convergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
     """Checks early lnprob vals with final lnprob vals for convergence
 
     Parameters
@@ -210,7 +210,7 @@ def burnin_convergence(lnprob, tol=3.1, slice_size=100, cutoff=0):
         mean to include the whole chain, whereas a value of 500 would be to
         only confirm no deviation in the steps [500:END]
     """
-    # Don't bother if only 50 steps have been taken
+    # take a chunk the smaller of 100 or half the chain
     if lnprob.shape[1] < slice_size:
         slice_size = int(round(0.5*lnprob.shape[1]))
 
@@ -311,9 +311,9 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
             pos[ix] = pos[best_ix]
 
         if plot_it:
-            plt.clf()
-            plt.plot(sampler.lnprobability)
-            plt.savefig("burnin_lnprob{}.png".format(cnt))
+            #plt.clf()
+            #plt.plot(sampler.lnprobability)
+            #plt.savefig("burnin_lnprob{}.png".format(cnt))
             plt.clf()
             plt.plot(sampler.lnprobability.T)
             plt.savefig("burnin_lnprobT{}.png".format(cnt))
@@ -326,9 +326,9 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
     logging.info("Burnt in, with convergence: {}\n"
           "Taking final burnin segment as sampling stage".format(converged))
     if plot_it:
-        plt.clf()
-        plt.plot(burnin_lnprob_res)
-        plt.savefig("burnin_lnprob.png")
+#        plt.clf()
+#        plt.plot(burnin_lnprob_res)
+#        plt.savefig("burnin_lnprob.png")
         plt.clf()
         plt.plot(burnin_lnprob_res.T)
         plt.savefig("burnin_lnprobT.png")
@@ -341,9 +341,9 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
     #    print("Number of failed priors after sampling:\n{}".format(N_FAILS))
     #    print("Number of succeeded priors after sampling:\n{}".format(N_SUCCS))
     if plot_it:
-        plt.clf()
-        plt.plot(sampler.lnprobability)
-        plt.savefig("lnprob.png")
+#        plt.clf()
+#        plt.plot(sampler.lnprobability)
+#        plt.savefig("lnprob.png")
         plt.clf()
         plt.plot(sampler.lnprobability.T)
         plt.savefig("lnprobT.png")
@@ -358,10 +358,12 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
     # am able to make it plot a nice square plot, but it affects
     # the dimensions of ALL plots that come afterwards....
     if False:
+        logging.info("Making corner plot")
         plt.clf()
         fig1, axes = plt.subplots(9,9)
         fig1.set_size_inches(20,20)
         corner.corner(sampler.flatchain, truths=best_sample, fig=fig1)
         fig1.savefig("corner.png")
+        logging.info("Made corner plot")
 
     return best_sample, sampler.chain, sampler.lnprobability

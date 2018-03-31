@@ -31,7 +31,7 @@ THIS_DIR = os.getcwd()
 NSTEPS = 1000
 
 # best pars: age: 5, spread: 10, v_disp: 2(?), size: 25
-"""
+#"""
 ages = [5, 10, 20]
 spreads = [2, 5, 10]
 v_disps = [1, 2, 5]
@@ -41,12 +41,12 @@ precs = ['perf', 'half', 'gaia', 'double']
 """
 NSTEPS = 200
 
-ages = [5]
+ages = [1, 2]
 spreads = [5]
 v_disps = [2]
 sizes   = [25]
 precs = ['perf', 'gaia']
-#"""
+"""
 
 precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
 
@@ -57,13 +57,7 @@ base_group_pars = [
 
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
-
-
-
 def do_something_wrapper(scenario):
-    print("In wrapper")
-    print(".. scenario: {}".format(scenario))
-
     # note that we leave off "prec" in path name
     # this is because the xyzuvw perfect stellar data is shared
     # across the prec scenarios
@@ -77,9 +71,7 @@ def do_something_wrapper(scenario):
         *scenario) + precs_string + " " + THIS_DIR + "/../"
               )
     os.chdir(THIS_DIR)
-
-    #do_something(*scenario)
-
+    print("Completed: {}".format(scenario))
 
 if __name__ == '__main__':
     # read in system arguments
@@ -94,12 +86,3 @@ if __name__ == '__main__':
     else:
         map(do_something_wrapper, scenarios)
 
-"""    [do_something(age, spread, v_disp, size, prec)
-     for age in ages
-     for spread in spreads
-     for v_disp in v_disps
-     for size in sizes
-     for prec in precs
-     ]
-
-"""

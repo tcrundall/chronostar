@@ -25,7 +25,7 @@ perf_data_file = "perf_xyzuvw"
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 
-BURNIN_STEPS = 300
+BURNIN_STEPS = 500
 if __name__ == '__main__':
 
     logging.basicConfig(
@@ -72,6 +72,7 @@ if __name__ == '__main__':
     np.save(perf_data_file, perf_xyzuvws)
 
     for prec in precs:
+        logging.info("Fitting to prec: {}".format(prec))
         # make new directory
         mkpath(prec)
         # change into directory
@@ -149,11 +150,18 @@ if __name__ == '__main__':
         ymax = max(group_pars_tf_style[1], best_fit[1], now_mean_fitted[1], *xyzuvw[:,1])
         plt.xlim(xmax + buffer, xmin - buffer)
         plt.ylim(ymin - buffer, ymax + buffer)
-        plt.savefig("hex_plot.png")
+        plt.title("age: {}, dX: {}, dV: {}, nstars: {}, prec: {}".format(
+            age, dX, dV, nstars, prec
+        ))
+        plt.savefig("XY_plot_{}_{}_{}_{}_{}.png".format(
+            age, dX, dV, nstars, prec
+        ))
 
         plt.clf()
-        plt.hist(chain[:,:,-1], bins=20)
-        plt.savefig("age_hist.png")
+        plt.hist(chain[:,:,-1].flatten(), bins=20)
+        plt.savefig("age_hist_{}_{}_{}_{}_{}.png".format(
+            age, dX, dV, nstars, prec
+        ))
 
         # return to main directory
         os.chdir('..')
