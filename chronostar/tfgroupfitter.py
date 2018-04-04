@@ -36,11 +36,13 @@ def generate_cov(pars):
     cov
         [6, 6] array : covariance matrix for group model or stellar pdf
     """
-    dX, dV = 1.0 / np.array(pars[6:8])
+    dX, dV = np.exp(np.array(pars[6:8]))
     cov = np.eye(6)
     cov[0:3] *= dX**2
     cov[3:6] *= dV**2
     return cov
+
+# ------- MAIN FUNCTIONS -----------
 
 def read_stars(tb_file):
     """Read stars from traceback file into a dictionary.
@@ -109,12 +111,12 @@ def lnprior(pars, star_pars):
     max_age = 200
 
     means = pars[0:6]
-    inv_stds = pars[6:8]
+    stds = np.exp(pars[6:8])
     age = pars[8]
 
     if np.min(means) < -1000 or np.max(means) > 1000:
         return -np.inf
-    if np.min(inv_stds) <= 0.0 or np.max(inv_stds) > 10.0:
+    if np.min(stds) <= 0.0 or np.max(stds) > 1000.0:
         return -np.inf
     if age < 0.0 or age > max_age:
         return -np.inf
@@ -157,8 +159,8 @@ def lnlike(pars, star_pars):
         cov_now, mean_now, star_covs, star_mns, nstars
     )
 
-    # including Jeffrey's prior on the group cov matrix
-    return np.sum(lnols) -4 * np.log(np.linalg.det(cov_now) )
+    # prior on covariance matrix incorporated into parametrisation of dX and dV
+    return np.sum(lnols)
 
 
 def lnprobfunc(pars, star_pars):
@@ -258,8 +260,8 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
     #global N_FAILS
     #global N_SUCCS
 
-    #            X,Y,Z,U,V,W,1/dX,1/dV,age
-    INIT_SDEV = [1,1,1,1,1,1,0.01,0.02,0.5]
+    #            X,Y,Z,U,V,W,lndX,lndV,age
+    INIT_SDEV = [1,1,1,1,1,1, 0.5, 0.5,0.5]
     star_pars = read_stars(tb_file)
 
     # initialise z if needed as array of 1s of length nstars
@@ -268,7 +270,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
 
     # Initialise the fit
 #    if init_pars is None:
-    init_pars = [0,0,0,0,0,0,0.1,0.2,5.0]
+    init_pars = [0,0,0,0,0,0,3.,2.,3.0]
 
     NPAR = len(init_pars)
     NWALKERS = 2 * NPAR
@@ -303,6 +305,9 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
         sampler.reset()
         pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
         converged = burnin_convergence(sampler.lnprobability)
+
+        # save the chain for later inspection
+        np.save("burnin_chain{}".format(cnt), sampler.chain)
 
         # Help out the struggling walkers
         best_ix = np.argmax(lnprob)

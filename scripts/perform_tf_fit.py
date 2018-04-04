@@ -28,11 +28,15 @@ prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 BURNIN_STEPS = 500
 if __name__ == '__main__':
-
-    age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
-    nstars = int(sys.argv[4])
-    precs = sys.argv[5:-1]
-    package_path = sys.argv[-1]
+    try:
+        age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
+        nstars = int(sys.argv[4])
+        precs = sys.argv[5:-1]
+        package_path = sys.argv[-1]
+    except ValueError:
+        print("Usage: ./perform_tf_fit.py [age] [dX] [dV] [nstars] [prec1]"
+              "[prec2] ... /relative/path/to/chronostar/")
+        raise
 
     # since this could be being executed anywhere, need to pass in package location
     sys.path.insert(0, package_path)
@@ -132,7 +136,7 @@ if __name__ == '__main__':
                     ), age
                 )
             group_pars_in = np.copy(group_pars_tf_style)
-            group_pars_in[6:8] = 1 / group_pars_in[6:8]
+            group_pars_in[6:8] = np.log(group_pars_in[6:8])
 
             # save and store result so hex-plots can be calculated after the fact
             np.save(result_file, [best_fit, chain, lnprob, group_pars_ex, group_pars_tf_style])
@@ -177,6 +181,9 @@ if __name__ == '__main__':
 
             plt.clf()
             plt.hist(chain[:,:,-1].flatten(), bins=20)
+            plt.title("age: {}, dX: {}, dV: {}, nstars: {}, prec: {}".format(
+                age, dX, dV, nstars, prec
+            ))
             plt.savefig("age_hist_{}_{}_{}_{}_{}.png".format(
                 age, dX, dV, nstars, prec
             ))
