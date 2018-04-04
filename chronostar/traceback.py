@@ -445,7 +445,8 @@ def traceback(stars,times,max_plot_error=50,plotit=False, savefile='',
         return star_pars
   
 def trace_forward(xyzuvw, time_in_past,
-                  Potential=MWPotential2014, solarmotion=None):
+                  Potential=MWPotential2014, solarmotion=None,
+                  lsr_orbit=None):
     """Trace forward one star in xyzuvw coords
     
     Parameters
@@ -469,7 +470,8 @@ def trace_forward(xyzuvw, time_in_past,
     times = np.linspace(0,time_in_past, 2)
 
     #Start off with an LSR orbit...
-    lsr_orbit = get_lsr_orbit(times)
+    if lsr_orbit is None:
+        lsr_orbit = get_lsr_orbit(times)
 
     #Convert times to galpy units:
     ts = -(times/1e3)/bovy_conversion.time_in_Gyr(220.,8.)

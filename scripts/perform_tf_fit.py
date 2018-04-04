@@ -136,6 +136,7 @@ if __name__ == '__main__':
             # convert astrometry back into XYZUVW data
             tb_file = "tb_data.pkl"
             tb.traceback(synth_table, np.array([0,1]), savefile=tb_file)
+            logging.info("Generated [{}] traceback file".format(prec))
 
             # apply traceforward fitting (with lnprob, corner plots as side effects)
             best_fit, chain, lnprob = tfgf.fit_group(
