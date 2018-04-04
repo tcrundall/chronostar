@@ -30,25 +30,6 @@ prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 BURNIN_STEPS = 200
 if __name__ == '__main__':
-
-    # Initialize the MPI-based pool used for parallelization.
-    using_mpi = True
-    mpi_msg = ""    # can't use loggings yet, unclear if appending or rewriting
-    try:
-        pool = MPIPool()
-        mpi_msg += "Successfully initialised mpi pool"
-    except:
-        #print("MPI doesn't seem to be installed... maybe install it?")
-        mpi_msg += "MPI doesn't seem to be installed... maybe install it?"
-        using_mpi = False
-        pool=None
-
-    if using_mpi:
-        if not pool.is_master():
-            # Wait for instructions from the master process.
-            pool.wait()
-            sys.exit(0)
-
     try:
         age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
         nstars = int(sys.argv[4])
@@ -71,6 +52,24 @@ if __name__ == '__main__':
     except ImportError:
         #logging.info("Failed to import chronostar package")
         raise
+
+    # Initialize the MPI-based pool used for parallelization.
+    using_mpi = True
+    mpi_msg = ""    # can't use loggings yet, unclear if appending or rewriting
+    try:
+        pool = MPIPool()
+        mpi_msg += "Successfully initialised mpi pool"
+    except:
+        #print("MPI doesn't seem to be installed... maybe install it?")
+        mpi_msg += "MPI doesn't seem to be installed... maybe install it?"
+        using_mpi = False
+        pool=None
+
+    if using_mpi:
+        if not pool.is_master():
+            # Wait for instructions from the master process.
+            pool.wait()
+            sys.exit(0)
 
     # collect inputs
     group_pars_ex = list(base_group_pars)
