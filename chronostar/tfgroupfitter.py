@@ -264,7 +264,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None):
     #global N_SUCCS
 
     #            X,Y,Z,U,V,W,lndX,lndV,age
-    INIT_SDEV = [1,1,1,1,1,1, 0.5, 0.5,0.5]
+    INIT_SDEV = [20,20,20,5,5,5, 0.5, 0.5,3]
     star_pars = read_stars(tb_file)
 
     # initialise z if needed as array of 1s of length nstars
@@ -273,7 +273,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None):
 
     # Initialise the fit
 #    if init_pars is None:
-    init_pars = [0,0,0,0,0,0,3.,2.,3.0]
+    init_pars = [0,0,0,0,0,0,3.,2.,10.0]
 
     NPAR = len(init_pars)
     NWALKERS = 2 * NPAR
@@ -314,7 +314,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None):
 
         # Help out the struggling walkers
         best_ix = np.argmax(lnprob)
-        poor_ixs = np.where(lnprob < np.percentile(lnprob, 10))
+        poor_ixs = np.where(lnprob < np.percentile(lnprob, 33))
         for ix in poor_ixs:
             pos[ix] = pos[best_ix]
 
