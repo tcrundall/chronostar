@@ -224,7 +224,7 @@ def burnin_convergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
 
     return np.isclose(start_lnprob_mn, end_lnprob_mn, atol=tol*end_lnprob_std)
 
-def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
+def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -244,6 +244,9 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
     burnin_steps : int {1000}
 
     plot_it : bool {False}
+
+    pool : MPIPool object {None}
+        pool of threads to execute walker steps concurrently
 
     Returns
     -------
@@ -284,7 +287,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False):
 
     # Whole emcee shebang
     sampler = emcee.EnsembleSampler(
-        NWALKERS, NPAR, lnprobfunc, args=[star_pars]
+        NWALKERS, NPAR, lnprobfunc, args=[star_pars], pool=pool,
         #NWALKERS, NPAR, lnprobfunc, args=[z, star_pars] # retired
     )
     # initialise walkers, note that INIT_SDEV is carefully chosen such that

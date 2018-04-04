@@ -16,6 +16,8 @@ import numpy as np
 import os
 import pickle
 import sys
+from emcee.utils import MPIPool
+
 
 base_group_pars = [
     -80, 80, 50, 10, -20, -5, None, None, None, None,
@@ -28,6 +30,25 @@ prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 BURNIN_STEPS = 500
 if __name__ == '__main__':
+
+    # Initialize the MPI-based pool used for parallelization.
+    using_mpi = True
+    mpi_msg = ""    # can't use loggings yet, unclear if appending or rewriting
+    try:
+        pool = MPIPool()
+        mpi_msg += "Successfully initialised mpi pool"
+    except:
+        #print("MPI doesn't seem to be installed... maybe install it?")
+        mpi_msg += "MPI doesn't seem to be installed... maybe install it?"
+        using_mpi = False
+        pool=None
+
+    if using_mpi:
+        if not pool.is_master():
+            # Wait for instructions from the master process.
+            pool.wait()
+            sys.exit(0)
+
     try:
         age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
         nstars = int(sys.argv[4])
@@ -86,6 +107,11 @@ if __name__ == '__main__':
         perf_xyzuvws, _ = syn.generate_current_pos(1, group_pars_ex)
         np.save(perf_data_file, perf_xyzuvws)
 
+    logging.info(mpi_msg)
+    if not using_mpi:
+        logging.info("MPI available! - call this with e.g. mpirun -np 4"
+                     " python fitting_TWA.py")
+
     for prec in precs:
         # if we are being PEDANTIC can also check if traceback
         # measurements have already been made, and skip those
@@ -112,7 +138,7 @@ if __name__ == '__main__':
 
             # apply traceforward fitting (with lnprob, corner plots as side effects)
             best_fit, chain, lnprob = tfgf.fit_group(
-                tb_file, burnin_steps=BURNIN_STEPS, plot_it=True
+                tb_file, burnin_steps=BURNIN_STEPS, plot_it=True, pool=pool,
             )
 
             # plot Hex plot TODO, atm, just got a simple res plot going
