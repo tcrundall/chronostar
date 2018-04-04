@@ -28,7 +28,7 @@ result_file = "result.npy"
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 
-BURNIN_STEPS = 200
+BURNIN_STEPS = 500
 if __name__ == '__main__':
     try:
         age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
@@ -119,6 +119,8 @@ if __name__ == '__main__':
         logging.info("Fitting to prec: {}".format(prec))
         mkpath(prec)
         os.chdir(prec)
+
+        # check if this precision has already been fitted
         try:
             res = np.load(result_file)
             logging.info("Precision [{}] already fitted for".format(prec))
@@ -217,3 +219,5 @@ if __name__ == '__main__':
         finally:
             os.chdir('..')
 
+    if using_mpi:
+        pool.close()
