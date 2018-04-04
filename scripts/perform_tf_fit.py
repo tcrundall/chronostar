@@ -28,7 +28,7 @@ result_file = "result.npy"
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 
-BURNIN_STEPS = 500
+BURNIN_STEPS = 200
 if __name__ == '__main__':
 
     # Initialize the MPI-based pool used for parallelization.
