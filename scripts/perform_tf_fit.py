@@ -28,7 +28,7 @@ result_file = "result.npy"
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 
-BURNIN_STEPS = 500
+BURNIN_STEPS = 1000
 if __name__ == '__main__':
     try:
         age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
