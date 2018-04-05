@@ -14,6 +14,11 @@ import matplotlib.pyplot as plt
 import pickle
 import traceback as tb
 import transform as tf
+
+from galpy.orbit import Orbit
+from galpy.potential import MWPotential2014
+from galpy.util import bovy_conversion
+#from galpy.util import bovy_coords
 import utils
 
 try:
@@ -41,6 +46,91 @@ def generate_cov(pars):
     cov[0:3] *= dX**2
     cov[3:6] *= dV**2
     return cov
+
+# ------- DUPLICATED FROM TRACEBACK CAUSE OF ISSUES --------
+def get_lsr_orbit(times, Potential=MWPotential2014):
+    """Integrate the local standard of rest backwards in time, in order to provide
+    a reference point to our XYZUVW coordinates.
+
+    Parameters
+    ----------
+    times: numpy float array
+        Times at which we want the orbit of the local standard of rest.
+
+    Potential: galpy potential object.
+    """
+    ts = -(times / 1e3) / bovy_conversion.time_in_Gyr(220., 8.)
+    lsr_orbit = Orbit(vxvv=[1., 0, 1, 0, 0., 0], vo=220, ro=8,
+                      solarmotion='schoenrich')
+    lsr_orbit.integrate(ts, Potential)  # ,method='odeint')
+    return lsr_orbit
+
+def trace_forward(xyzuvw, time_in_past,
+                  Potential=MWPotential2014, solarmotion=None):
+    """Trace forward one star in xyzuvw coords
+
+    Parameters
+    ----------
+    xyzuvw: numpy float array
+        xyzuvw relative to the local standard of rest at some point in the past.
+
+    time_in_past: float
+        Time in the past that we want to trace forward to the present.
+    """
+    if solarmotion == None:
+        xyzuvw_sun = np.zeros(6)
+    elif solarmotion == 'schoenrich':
+        xyzuvw_sun = [0, 0, 25, 11.1, 12.24, 7.25]
+    else:
+        raise UserWarning
+    if time_in_past == 0:
+        time_in_past = 1e-5
+        # print("Time in past must be nonzero: {}".format(time_in_past))
+        # raise UserWarning
+    times = np.linspace(0, time_in_past, 2)
+
+    # Start off with an LSR orbit...
+    lsr_orbit = get_lsr_orbit(times)
+
+    # Convert times to galpy units:
+    ts = -(times / 1e3) / bovy_conversion.time_in_Gyr(220., 8.)
+
+    # Add on the lsr_orbit to get the times in the past.
+    xyzuvw_gal = np.zeros(6)
+    xyzuvw_gal[0] = xyzuvw[0] / 1e3 + lsr_orbit.x(ts[-1]) - lsr_orbit.x(ts[0])
+    xyzuvw_gal[1] = xyzuvw[1] / 1e3 + lsr_orbit.y(ts[-1]) - lsr_orbit.y(ts[0])
+    # Relative to a zero-height orbit, excluding the solar motion.
+    xyzuvw_gal[2] = xyzuvw[2] / 1e3
+    xyzuvw_gal[3] = xyzuvw[3] + lsr_orbit.U(ts[-1]) - lsr_orbit.U(ts[0])
+    xyzuvw_gal[4] = xyzuvw[4] + lsr_orbit.V(ts[-1]) - lsr_orbit.V(ts[0])
+    xyzuvw_gal[5] = xyzuvw[5] + lsr_orbit.W(ts[-1]) - lsr_orbit.W(ts[0])
+
+    # Now convert to units that galpy understands by default.
+    # FIXME: !!! Reverse [0] sign here.
+    l = np.degrees(np.arctan2(xyzuvw_gal[1], -xyzuvw_gal[0]))
+    b = np.degrees(
+        np.arctan2(xyzuvw_gal[2], np.sqrt(np.sum(xyzuvw_gal[:2] ** 2))))
+    dist = np.sqrt(np.sum(xyzuvw_gal[:3] ** 2))
+    # As we are already in LSR co-ordinates, put in zero for solar motion and
+    #  zo.
+    o = Orbit([l, b, dist, xyzuvw_gal[3], xyzuvw_gal[4], xyzuvw_gal[5]],
+              solarmotion=[0, 0, 0], zo=0, lb=True, uvw=True, vo=220, ro=8)
+
+    # Integrate this orbit forwards in time.
+    o.integrate(-ts, Potential)  # ,method='odeint')
+
+    # Add in the solar z and the solar motion.
+    xyzuvw_now = np.zeros(6)
+    xyzuvw_now[0] = 1e3 * (o.x(-ts[-1]) - lsr_orbit.x(0))
+    xyzuvw_now[1] = 1e3 * o.y(-ts[-1])
+    xyzuvw_now[2] = 1e3 * o.z(-ts[-1]) - xyzuvw_sun[2]
+    xyzuvw_now[3] = o.U(-ts[-1]) - xyzuvw_sun[3]
+    xyzuvw_now[4] = o.V(-ts[-1]) - xyzuvw_sun[4]
+    xyzuvw_now[5] = o.W(-ts[-1]) - xyzuvw_sun[5]
+
+    # pdb.set_trace()
+
+    return xyzuvw_now
 
 # ------- MAIN FUNCTIONS -----------
 
@@ -123,7 +213,7 @@ def lnprior(pars, star_pars):
     return 0.0
 
 
-def lnlike(pars, star_pars):
+def lnlike(pars, star_pars, z=None, return_lnols=False):
     """Computes the log-likelihood for a fit to a group.
 
     Parameters
@@ -146,9 +236,9 @@ def lnlike(pars, star_pars):
     cov_then = generate_cov(pars)
     age = pars[8]
 
-    mean_now = tb.trace_forward(mean_then, age)
+    mean_now = trace_forward(mean_then, age)
     cov_now = tf.transform_cov(
-        cov_then, tb.trace_forward, mean_then, dim=6, args=(age,)
+        cov_then, trace_forward, mean_then, dim=6, args=(age,)
     )
 
     star_covs = star_pars['xyzuvw_cov'][:,0]
@@ -158,12 +248,14 @@ def lnlike(pars, star_pars):
     lnols = get_lnoverlaps(
         cov_now, mean_now, star_covs, star_mns, nstars
     )
+    if return_lnols:
+        return lnols
 
     # prior on covariance matrix incorporated into parametrisation of dX and dV
-    return np.sum(lnols)
+    return np.sum(lnols * z)
 
 
-def lnprobfunc(pars, star_pars):
+def lnprobfunc(pars, star_pars, z):
     """Computes the log-probability for a fit to a group.
 
     Parameters
@@ -191,7 +283,7 @@ def lnprobfunc(pars, star_pars):
         #N_FAILS += 1
         return -np.inf
     #N_SUCCS += 1
-    return lp + lnlike(pars, star_pars)
+    return lp + lnlike(pars, star_pars, z)
 
 def burnin_convergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
     """Checks early lnprob vals with final lnprob vals for convergence
@@ -224,7 +316,8 @@ def burnin_convergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
 
     return np.isclose(start_lnprob_mn, end_lnprob_mn, atol=tol*end_lnprob_std)
 
-def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None):
+def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
+              init_pars=None, convergence_tol=0.1, tight=False, init_pos=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -264,7 +357,10 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None):
     #global N_SUCCS
 
     #            X,Y,Z,U,V,W,lndX,lndV,age
-    INIT_SDEV = [20,20,20,5,5,5, 0.5, 0.5,3]
+    if tight:
+        INIT_SDEV = [5,5,5,2,2,2, 0.2, 0.2,0.5]
+    else:
+        INIT_SDEV = [20,20,20,5,5,5, 0.5, 0.5,1]
     star_pars = read_stars(tb_file)
 
     # initialise z if needed as array of 1s of length nstars
@@ -287,15 +383,17 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None):
 
     # Whole emcee shebang
     sampler = emcee.EnsembleSampler(
-        NWALKERS, NPAR, lnprobfunc, args=[star_pars], pool=pool,
-        #NWALKERS, NPAR, lnprobfunc, args=[z, star_pars] # retired
+        NWALKERS, NPAR, lnprobfunc, args=[star_pars, z], pool=pool,
     )
     # initialise walkers, note that INIT_SDEV is carefully chosen such that
     # all generated positions are permitted by lnprior
-    pos = [
-        init_pars + (np.random.random(size=len(INIT_SDEV)) - 0.5) * INIT_SDEV
-        for i in range(NWALKERS)
-    ]
+    if init_pos is None:
+        pos = [
+            init_pars + (np.random.random(size=len(INIT_SDEV)) - 0.5) * INIT_SDEV
+            for _ in range(NWALKERS)
+        ]
+    else:
+        pos = init_pos
 
     # Perform burnin
     state = None
@@ -307,7 +405,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None):
         logging.info("Burning in cnt: {}".format(cnt))
         sampler.reset()
         pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
-        converged = burnin_convergence(sampler.lnprobability)
+        converged = burnin_convergence(sampler.lnprobability, tol=convergence_tol)
 
         # save the chain for later inspection
         np.save("burnin_chain{}".format(cnt), sampler.chain)

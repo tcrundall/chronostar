@@ -96,6 +96,7 @@ def generate_current_pos(ngroups, group_pars):
     group_pars
         The parametrisation of the group's initial condition
     """
+    group_pars = np.array(group_pars)
     # For each group, generate current XYZUVW positions
     if ngroups == 1:
         xyzuvw_now = synth_group(group_pars)

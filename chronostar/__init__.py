@@ -10,9 +10,11 @@ __version__ = "0.1"
 #!!! Note that from traceback import * doesn't work!
 import error_ellipse
 import expectmax
+import tfexpectmax
 import traceback 
 import fit_group
 import groupfitter
+import tfgroupfitter
 import analyser
 import synthesiser
 import utils
