@@ -161,6 +161,7 @@ def polar_demo():
 
 
 if __name__ == '__main__':
+    polar_demo()
     plotit = True
     func = trace_forward
 
@@ -201,7 +202,6 @@ if __name__ == '__main__':
         estimated_cov = np.cov(new_stars.T)
         estimated_eigvals = np.linalg.eigvalsh(estimated_cov)
 
-        assert np.allclose(new_eigvals, estimated_eigvals, rtol=.5)
 
         if plotit:
             #plt.clf()
@@ -221,3 +221,4 @@ if __name__ == '__main__':
             plt.savefig("temp_trace_forward{}.png".format(cnt))
             plt.show()
 
+        assert np.allclose(new_eigvals, estimated_eigvals, rtol=.5)

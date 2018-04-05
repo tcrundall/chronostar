@@ -169,7 +169,7 @@ if __name__ == '__main__':
             xyzuvw_cov = star_pars['xyzuvw_cov'][:,0]
 
             # save and store result so hex-plots can be calculated after the fact
-            np.save(result_file, [best_fit, chain, lnprob, group_pars_in, group_pars_tf_style])
+            np.save(result_file, [best_fit, chain, lnprob, group_pars_in, group_pars_tf_style, group_pars_ex])
             import pdb; pdb.set_trace()
 
             then_cov_true = utils.generate_cov(
