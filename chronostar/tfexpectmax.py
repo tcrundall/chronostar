@@ -326,58 +326,6 @@ if __name__ == "__main__":
         print("Warning: matplotlib not imported")
         pass
 
-    def plot_all(new_gps, star_pars, origins, ngroups, iter_count=None):
-        all_origin_mn_then = [None] * ngroups
-        all_origin_cov_then = [None] * ngroups
-        all_origin_mn_now  = [None] * ngroups
-        all_origin_cov_now  = [None] * ngroups
-        all_fitted_mn_then = [None] * ngroups
-        all_fitted_cov_then = [None] * ngroups
-        all_fitted_mn_now  = [None] * ngroups
-        all_fitted_cov_now  = [None] * ngroups
-
-        for i in range(ngroups):
-            all_origin_mn_then[i]  = origins[i][:6]
-            all_origin_cov_then[i] = utils.generate_cov(origins[i])
-            all_origin_mn_now[i]   = tb.trace_forward(all_origin_mn_then, origins[i][-2])
-            all_origin_cov_now[i]  = tf.transform_cov(
-                all_origin_cov_then, tb.trace_forward, all_origin_mn_then,
-                dim=6, args=(origins[i][-2],)
-            )
-            all_fitted_mn_then[i]  = new_gps[i][:6]
-            all_fitted_cov_then[i] = tfgf.generate_cov(new_gps[i])
-            all_fitted_mn_now[i]   = tb.trace_forward(all_fitted_mn_then[i], new_gps[i][-1])
-            all_fitted_cov_now[i]  = tf.transform_cov(
-                all_fitted_cov_now[i], tb.trace_forward, all_fitted_mn_then,
-                dim=6, args=(new_gps[i][-1])
-            )
-        pdb.set_trace()
-
-        plt.clf()
-        xyzuvw = star_pars['xyzuvw'][:,0]
-        xyzuvw_cov = star_pars['xyzuvw_cov'][:,0]
-        plt.plot(xyzuvw[:,0], xyzuvw[:,1], 'b.')
-        for mn, cov in zip(xyzuvw, xyzuvw_cov):
-            ee.plot_cov_ellipse(xyzuvw_cov[:2,:2], xyzuvw[:2], color='b',
-                                alpha=0.3)
-        for i in range(ngroups):
-            ee.plot_cov_ellipse(all_origin_cov_then[i][:2, :2],
-                                all_origin_mn_then[i][:2], color='orange',
-                                alpha=0.2, hatch='|', ls='--')
-            ee.plot_cov_ellipse(all_origin_cov_now[i][:2, :2],
-                                all_origin_mn_now[i][:2], color='xkcd:gold',
-                                alpha=0.2, hatch='|', ls='--')
-            ee.plot_cov_ellipse(all_fitted_cov_then[i][:2, :2],
-                                all_fitted_mn_then[i][:2],
-                                color='xkcd:neon purple',
-                                alpha=0.2, hatch='/', ls='-.')
-            ee.plot_cov_ellipse(all_fitted_cov_now[i][:2, :2],
-                                all_fitted_mn_now[i][:2],
-                                color='b',
-                                alpha=0.03, hatch='.')
-        plt.title("Iteration: {}".format(iter_count))
-        return None
-
     logging.basicConfig(
         level=logging.DEBUG, filemode='w',
         filename='em.log',
@@ -445,8 +393,8 @@ if __name__ == "__main__":
                 mkpath(pathname)
                 os.chdir(pathname)
             best_fit, samples, lnprob = tfgf.fit_group(
-                "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=400, plot_it=True,
-                init_pars=old_gps[i], convergence_tol=10., tight=True, init_pos=all_init_pos[i])
+                "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=100, plot_it=True,
+                init_pars=old_gps[i], convergence_tol=15., tight=True, init_pos=all_init_pos[i])
             logging.info("Finished fit")
             new_gps[i] = best_fit
             all_samples.append(samples)
@@ -454,7 +402,79 @@ if __name__ == "__main__":
             all_init_pos[i] = samples[:,-1,:]
             os.chdir("..")
 
-        plot_all(new_gps, star_pars, origins, ngroups, iter_count)
+        #plot_all(new_gps, star_pars, origins, ngroups, iter_count)
+
+        # ----- PLOTTING --------- #
+        all_origin_mn_then = [None] * ngroups
+        all_origin_cov_then = [None] * ngroups
+        all_origin_mn_now = [None] * ngroups
+        all_origin_cov_now = [None] * ngroups
+        all_fitted_mn_then = [None] * ngroups
+        all_fitted_cov_then = [None] * ngroups
+        all_fitted_mn_now = [None] * ngroups
+        all_fitted_cov_now = [None] * ngroups
+
+        for i in range(ngroups):
+            all_origin_mn_then[i] = origins[i][:6]
+            all_origin_cov_then[i] = utils.generate_cov(origins[i])
+            all_origin_mn_now[i] = tb.trace_forward(all_origin_mn_then[i],
+                                                    origins[i][-2])
+            all_origin_cov_now[i] = tf.transform_cov(
+                all_origin_cov_then[i], tb.trace_forward, all_origin_mn_then[i],
+                dim=6, args=(origins[i][-2],)
+            )
+            all_fitted_mn_then[i] = new_gps[i][:6]
+            all_fitted_cov_then[i] = tfgf.generate_cov(new_gps[i])
+            all_fitted_mn_now[i] = tb.trace_forward(all_fitted_mn_then[i],
+                                                    new_gps[i][-1])
+            all_fitted_cov_now[i] = tf.transform_cov(
+                all_fitted_cov_then[i], tb.trace_forward, all_fitted_mn_then[i],
+                dim=6, args=(new_gps[i][-1],)
+            )
+
+        pdb.set_trace()
+        np.save("means.npy",
+            [all_origin_mn_then, all_origin_mn_now, all_fitted_mn_then,
+             all_fitted_mn_now])
+        np.save("means.npy",
+            [all_origin_cov_then, all_origin_cov_now, all_fitted_cov_then,
+             all_fitted_cov_now])
+##        np.save("cov_matrices.npy", [
+#            all_origin_mn_then,
+#            all_origin_cov_then,
+#            all_origin_mn_now,
+#            all_origin_cov_now,
+#            all_fitted_mn_then,
+#            all_fitted_cov_then,
+#            all_fitted_mn_now,
+#            all_fitted_cov_now,
+#        ])
+
+        plt.clf()
+        xyzuvw = star_pars['xyzuvw'][:, 0]
+        xyzuvw_cov = star_pars['xyzuvw_cov'][:, 0]
+        plt.plot(xyzuvw[:, 0], xyzuvw[:, 1], 'b.')
+        for mn, cov in zip(xyzuvw, xyzuvw_cov):
+            ee.plot_cov_ellipse(cov[:2, :2], mn[:2], color='b',
+                                alpha=0.3)
+        for i in range(ngroups):
+            ee.plot_cov_ellipse(all_origin_cov_then[i][:2, :2],
+                                all_origin_mn_then[i][:2], color='orange',
+                                alpha=0.2, hatch='|', ls='--')
+            ee.plot_cov_ellipse(all_origin_cov_now[i][:2, :2],
+                                all_origin_mn_now[i][:2], color='xkcd:gold',
+                                alpha=0.2, hatch='|', ls='--')
+            ee.plot_cov_ellipse(all_fitted_cov_then[i][:2, :2],
+                                all_fitted_mn_then[i][:2],
+                                color='xkcd:neon purple',
+                                alpha=0.2, hatch='/', ls='-.')
+            ee.plot_cov_ellipse(all_fitted_cov_now[i][:2, :2],
+                                all_fitted_mn_now[i][:2],
+                                color='b',
+                                alpha=0.03, hatch='.')
+        plt.title("Iteration: {}".format(iter_count))
+        plt.savefig("XY_plot.png")
+
 
         converged = check_convergence(old_best_fits=old_gps, new_chains=all_samples)
         logging.info("Convergence status: {}".format(converged))
