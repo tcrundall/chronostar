@@ -193,7 +193,7 @@ def lnprobfunc(pars, star_pars):
     #N_SUCCS += 1
     return lp + lnlike(pars, star_pars)
 
-def burnin_convergence(lnprob, tol=5.1, slice_size=100, cutoff=0):
+def burnin_convergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
     """Checks early lnprob vals with final lnprob vals for convergence
 
     Parameters

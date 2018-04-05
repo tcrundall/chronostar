@@ -28,7 +28,7 @@ result_file = "result.npy"
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 
-BURNIN_STEPS = 200
+BURNIN_STEPS = 1000
 if __name__ == '__main__':
     try:
         age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
@@ -168,10 +168,9 @@ if __name__ == '__main__':
             xyzuvw = star_pars['xyzuvw'][:,0]
             xyzuvw_cov = star_pars['xyzuvw_cov'][:,0]
 
-            import pdb; pdb.set_trace()
-
             # save and store result so hex-plots can be calculated after the fact
             np.save(result_file, [best_fit, chain, lnprob, group_pars_in, group_pars_tf_style])
+            import pdb; pdb.set_trace()
 
             then_cov_true = utils.generate_cov(
                 utils.internalise_pars(group_pars_ex))
