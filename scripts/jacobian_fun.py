@@ -8,6 +8,7 @@ from chronostar.traceback import trace_forward
 import chronostar.traceback as tb
 from chronostar import utils
 import chronostar.error_ellipse as ee
+import chronostar.transform as tf
 
 
 def x_from_pol(r, theta):
@@ -29,79 +30,79 @@ def transform_ptc(loc):
     y = y_from_pol(loc[0], loc[1])
     return np.array([x,y])
 
-
-
-def get_jac_col(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
-    """
-    Calculate a column of the Jacobian.
-
-    A whole column can be done in one hit because we are incrementing
-    the same parameter of the initial coordinate system.
-
-    :param trans_func:
-        Transformation function taking us from the initial coordinate frame
-        to the final coordinate frame
-    :param col_number:
-        The index in question (which parameter of the intial frame we are
-        incrementing
-    :param loc:
-        The position (in the initial coordinte frame) around which we are
-        calculting the jacobian
-    :param dim: [2]
-        The dimensionality of the coordinate frames.
-    :param h: [1e-3]
-        The size of the increment
-    :return: The column
-
-    """
-    offset = np.zeros(dim)
-    offset[col_number] = h
-    loc_pl = loc + offset
-    loc_mi = loc - offset
-    if args is None:
-        return (trans_func(loc_pl) - trans_func(loc_mi)) / (2*h)
-    else:
-        return (trans_func(loc_pl, *args) - trans_func(loc_mi, *args)) / (2*h)
-
-def get_jac(trans_func, loc, dim=2, h=1e-3, args=None):
-    """
-
-    :param trans_func:
-        Transformation function taking us from the initial coordinate frame
-        to the final coordinate frame
-    :param loc:
-        The position (in the initial coordinte frame) around which we are
-        calculting the jacobian
-    :param dim:
-        The dimensionality of the coordinate frames
-    :param h:
-        The size of the increment
-    :return: A jacobian
-    """
-    jac = np.zeros((dim, dim))
-    for i in range(dim):
-        jac[:,i] = get_jac_col(trans_func, i, loc, dim, h, args)
-
-    return jac
-
-def transform_cov(cov, trans_func, loc, dim=2, args=None):
-    """
-    Transforming a covariance matrix from one coordinate frame to another
-
-    :param cov:
-        Covariance matrix in the initial frame
-    :param trans_func:
-        Transformation function taking us from the initial coordinate frame
-        to the final coordinate frame
-    :param loc:
-        The position (in the initial coordinte frame) around which we are
-        calculting the jacobian
-    :param dim:
-        The dimensionality of the coordinate frames
-    :return:
-    """
-    jac = get_jac(trans_func, loc, dim=dim, args=args)
-    return np.dot(jac, np.dot(cov, jac.T))
+#
+#
+#def get_jac_col(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
+#    """
+#    Calculate a column of the Jacobian.
+#
+#    A whole column can be done in one hit because we are incrementing
+#    the same parameter of the initial coordinate system.
+#
+#    :param trans_func:
+#        Transformation function taking us from the initial coordinate frame
+#        to the final coordinate frame
+#    :param col_number:
+#        The index in question (which parameter of the intial frame we are
+#        incrementing
+#    :param loc:
+#        The position (in the initial coordinte frame) around which we are
+#        calculting the jacobian
+#    :param dim: [2]
+#        The dimensionality of the coordinate frames.
+#    :param h: [1e-3]
+#        The size of the increment
+#    :return: The column
+#
+#    """
+#    offset = np.zeros(dim)
+#    offset[col_number] = h
+#    loc_pl = loc + offset
+#    loc_mi = loc - offset
+#    if args is None:
+#        return (trans_func(loc_pl) - trans_func(loc_mi)) / (2*h)
+#    else:
+#        return (trans_func(loc_pl, *args) - trans_func(loc_mi, *args)) / (2*h)
+#
+#def get_jac(trans_func, loc, dim=2, h=1e-3, args=None):
+#    """
+#
+#    :param trans_func:
+#        Transformation function taking us from the initial coordinate frame
+#        to the final coordinate frame
+#    :param loc:
+#        The position (in the initial coordinte frame) around which we are
+#        calculting the jacobian
+#    :param dim:
+#        The dimensionality of the coordinate frames
+#    :param h:
+#        The size of the increment
+#    :return: A jacobian
+#    """
+#    jac = np.zeros((dim, dim))
+#    for i in range(dim):
+#        jac[:,i] = get_jac_col(trans_func, i, loc, dim, h, args)
+#
+#    return jac
+#
+#def transform_cov(cov, trans_func, loc, dim=2, args=None):
+#    """
+#    Transforming a covariance matrix from one coordinate frame to another
+#
+#    :param cov:
+#        Covariance matrix in the initial frame
+#    :param trans_func:
+#        Transformation function taking us from the initial coordinate frame
+#        to the final coordinate frame
+#    :param loc:
+#        The position (in the initial coordinte frame) around which we are
+#        calculting the jacobian
+#    :param dim:
+#        The dimensionality of the coordinate frames
+#    :return:
+#    """
+#    jac = get_jac(trans_func, loc, dim=dim, args=args)
+#    return np.dot(jac, np.dot(cov, jac.T))
 
 def polar_demo():
     plotit = True
@@ -125,7 +126,7 @@ def polar_demo():
     res = transform_ptcs(pol_samples[:, 0], pol_samples[:, 1])
 
     cart_mean = transform_ptc(pol_mean)
-    cart_cov  = transform_cov(pol_cov, transform_ptc, pol_mean, dim=2)
+    cart_cov  = tf.transform_cov(pol_cov, transform_ptc, pol_mean, dim=2)
 
     cart_samples = np.random.multivariate_normal(cart_mean, cart_cov, nsamples)
 
@@ -196,7 +197,8 @@ if __name__ == '__main__':
 
         # calculate the new mean and cov
         new_mean = trace_forward(mean, age)
-        new_cov = transform_cov(cov, trace_forward, mean, dim=6, args=(age,))
+        new_cov = tf.transform_cov(cov, trace_forward, mean, dim=6, args=(age,))
+        import pdb; pdb.set_trace()
         new_eigvals = np.linalg.eigvalsh(new_cov)
 
         estimated_cov = np.cov(new_stars.T)
