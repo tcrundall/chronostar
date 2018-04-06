@@ -9,6 +9,7 @@ todo:
 from __future__ import print_function, division
 
 import sys
+import logging
 import numpy as np
 
 try:
@@ -22,24 +23,21 @@ except ImportError:
     pass
 
 import tfgroupfitter as tfgf
-import pdb  # for debugging
+from chronostar import utils
+import chronostar.transform as tf
+import chronostar.traceback as tb
+import chronostar.error_ellipse as ee
 
-# for permuting samples when realigning
-try:
-    import astropy.io.fits as pyfits
-except:
-    import pyfits
+#try:
+#    import _overlap as overlap  # &TC
+#except:
+#    print(
+#        "overlap not imported, SWIG not possible. Need to make in directory...")
 
-try:
-    import _overlap as overlap  # &TC
-except:
-    print(
-        "overlap not imported, SWIG not possible. Need to make in directory...")
-
-try:  # don't know why we use xrange to initialise walkers
-    xrange
-except NameError:
-    xrange = range
+#try:  # don't know why we use xrange to initialise walkers
+#    xrange
+#except NameError:
+#    xrange = range
 
 
 def ix_fst(array, ix):
@@ -373,11 +371,13 @@ def calc_mns_covs(origins, new_gps, ngroups):
     np.save("covs.npy",
             [all_origin_cov_then, all_origin_cov_now, all_fitted_cov_then,
              all_fitted_cov_now])
+    np.save("means.npy", all_means)
+    np.save("covs.npy", all_covs)
 
     return all_means, all_covs
 
 
-def plot_all(star_pars, means, covs):
+def plot_all(star_pars, means, covs, ngroups, iter_count):
     plt.clf()
     xyzuvw = star_pars['xyzuvw'][:, 0]
     xyzuvw_cov = star_pars['xyzuvw_cov'][:, 0]
@@ -388,63 +388,65 @@ def plot_all(star_pars, means, covs):
     for i in range(ngroups):
         ee.plot_cov_ellipse(covs['origin_then'][i][:2, :2],
                             means['origin_then'][i][:2], color='orange',
-                            alpha=0.1, hatch='|', ls='--')
+                            alpha=0.3, hatch='|', ls='--')
         #ee.plot_cov_ellipse(covs['origin_now'][i][:2, :2],
         #                    means['origin_now'][i][:2], color='xkcd:gold',
         #                    alpha=0.1, hatch='|', ls='--')
         ee.plot_cov_ellipse(covs['fitted_then'][i][:2, :2],
                             means['fitted_then'][i][:2],
                             color='xkcd:neon purple',
-                            alpha=0.2, hatch='/', ls='-.')
+                            alpha=0.3, hatch='/', ls='-.')
         ee.plot_cov_ellipse(covs['fitted_now'][i][:2, :2],
                             means['fitted_now'][i][:2],
                             color='b',
-                            alpha=0.03, hatch='.')
+                            alpha=0.1, hatch='.')
+    min_means = np.min(np.array(means.values()).reshape(-1,9), axis=0)
+    max_means = np.max(np.array(means.values()).reshape(-1,9), axis=0)
 
-    xmin = min(np.min(means['origin_then'][:,0]),
-                np.min(means['origin_now'][:,0]),
-               np.min(means['fitted_then'][:,0]),
-                np.min(means['fitted_now'][:,0]),
-               )
+    xmin = min(min_means[0], np.min(xyzuvw[:,0]))
+    xmax = max(max_means[0], np.max(xyzuvw[:,0]))
+    ymin = min(min_means[1], np.min(xyzuvw[:,1]))
+    ymax = max(max_means[1], np.max(xyzuvw[:,1]))
 
-    xmax = max(np.max(means['origin_then'][:,0]),
-               np.max(means['origin_now'][:,0]),
-               np.max(means['fitted_then'][:,0]),
-               np.max(means['fitted_now'][:,0]),
-               )
-
-    ymin = min(np.min(means['origin_then'][:,1]),
-               np.min(means['origin_now'][:,1]),
-               np.min(means['fitted_then'][:,1]),
-               np.min(means['fitted_now'][:,1]),
-               )
-
-    ymax = max(np.max(means['origin_then'][:,1]),
-               np.max(means['origin_now'][:,1]),
-               np.max(means['fitted_then'][:,1]),
-               np.max(means['fitted_now'][:,1]),
-               )
+    #xmin = min(np.min(means['origin_then'][:,0]),
+    #            np.min(means['origin_now'][:,0]),
+    #           np.min(means['fitted_then'][:,0]),
+    #            np.min(means['fitted_now'][:,0]),
+    #           )
+#    xmax = max(np.max(means['origin_then'][:,0]),
+#               np.max(means['origin_now'][:,0]),
+#               np.max(means['fitted_then'][:,0]),
+#               np.max(means['fitted_now'][:,0]),
+#               )
+#
+#    ymin = min(np.min(means['origin_then'][:,1]),
+#               np.min(means['origin_now'][:,1]),
+#               np.min(means['fitted_then'][:,1]),
+#               np.min(means['fitted_now'][:,1]),
+#               )
+#
+#    ymax = max(np.max(means['origin_then'][:,1]),
+#               np.max(means['origin_now'][:,1]),
+#               np.max(means['fitted_then'][:,1]),
+#               np.max(means['fitted_now'][:,1]),
+#               )
 
     buffer = 30
     plt.xlim(xmax+buffer, xmin-buffer)
     plt.ylim(ymin-buffer, ymax+buffer)
 
     plt.title("Iteration: {}".format(iter_count))
-    plt.savefig("XY_plot.png")
+    plt.savefig("XY_plot.pdf", bbox_inches='tight', format='pdf')
+
     logging.info("Iteration {}: XY plot plotted".format(iter_count))
 
 if __name__ == "__main__":
     # TODO: ammend calc_lnols such that group sizes impact membership probs
     from distutils.dir_util import mkpath
     import os
-    import logging
     import random
     import chronostar.synthesiser as syn
     import pickle
-    import chronostar.traceback as tb
-    from chronostar import utils
-    import chronostar.transform as tf
-    import chronostar.error_ellipse as ee
 
 
 
@@ -459,10 +461,10 @@ if __name__ == "__main__":
          0., 0., 3., 50.],
         [-10., 10., 0., -10., -10., 0., 10., 10., 10., 5., 0.,
          0., 0., 5., 30.],
-        [10., -50., 0., -30., 50., 0., 5., 5., 5., 5., 0.,
+        [10., -50., 0., -10., 10., -2., 15., 15., 15., 2., 0.,
          0., 0., 10., 60.],
     ])
-    ERROR = 0.3
+    ERROR = 1.0
 
     ngroups = origins.shape[0]
     TB_FILE = "perf_tb_file.pkl"
@@ -471,9 +473,8 @@ if __name__ == "__main__":
     logging.info("Origin:\n{}".format(origins))
 
     np.save("origins.npy", origins)
-    perf_xyzuvws, _ = syn.generate_current_pos(2, origins)
+    perf_xyzuvws, _ = syn.generate_current_pos(ngroups, origins)
 
-    perf_xyzuvws, _ = syn.generate_current_pos(2, origins)
     np.save("perf_xyzuvw.npy", perf_xyzuvws)
     sky_coord_now = syn.measure_stars(perf_xyzuvws)
 
@@ -534,7 +535,7 @@ if __name__ == "__main__":
 
         # ----- PLOTTING --------- #
         means, covs = calc_mns_covs(origins, new_gps, ngroups)
-        plot_all(star_pars, means, covs)
+        plot_all(star_pars, means, covs, ngroups, iter_count)
 
         converged = check_convergence(old_best_fits=old_gps,
                                       new_chains=all_samples)
