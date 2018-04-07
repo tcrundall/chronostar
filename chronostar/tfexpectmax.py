@@ -365,12 +365,12 @@ def calc_mns_covs(origins, new_gps, ngroups):
         'fitted_now'  : all_fitted_cov_now ,
     }
 
-    np.save("means.npy",
-            [all_origin_mn_then, all_origin_mn_now, all_fitted_mn_then,
-             all_fitted_mn_now])
-    np.save("covs.npy",
-            [all_origin_cov_then, all_origin_cov_now, all_fitted_cov_then,
-             all_fitted_cov_now])
+#    np.save("means.npy",
+#            [all_origin_mn_then, all_origin_mn_now, all_fitted_mn_then,
+#             all_fitted_mn_now])
+#    np.save("covs.npy",
+#            [all_origin_cov_then, all_origin_cov_now, all_fitted_cov_then,
+#             all_fitted_cov_now])
     np.save("means.npy", all_means)
     np.save("covs.npy", all_covs)
 
@@ -400,8 +400,8 @@ def plot_all(star_pars, means, covs, ngroups, iter_count):
                             means['fitted_now'][i][:2],
                             color='b',
                             alpha=0.1, hatch='.')
-    min_means = np.min(np.array(means.values()).reshape(-1,9), axis=0)
-    max_means = np.max(np.array(means.values()).reshape(-1,9), axis=0)
+    min_means = np.min(np.array(means.values()).reshape(-1,6), axis=0)
+    max_means = np.max(np.array(means.values()).reshape(-1,6), axis=0)
 
     xmin = min(min_means[0], np.min(xyzuvw[:,0]))
     xmax = max(max_means[0], np.max(xyzuvw[:,0]))
@@ -461,6 +461,8 @@ if __name__ == "__main__":
          0., 0., 3., 50.],
         [-10., 10., 0., -10., -10., 0., 10., 10., 10., 5., 0.,
          0., 0., 5., 30.],
+        [0., 10., 0., -5., -8., 0., 10., 10., 10., 5., 0.,
+         0., 0., 4., 50.],
         [10., -50., 0., -10., 10., -2., 15., 15., 15., 2., 0.,
          0., 0., 10., 60.],
     ])
@@ -549,3 +551,7 @@ if __name__ == "__main__":
     logging.info("Origin:\n{}".format(origins))
     logging.info("Best fits:\n{}".format(new_gps))
     logging.info("Memberships: \n{}".format(z))
+
+    np.save("final_gps.npy", new_gps)
+    np.save("prev_gps.npy", old_old_gps) # old groups is overwritten by new grps
+    np.save("memberships.npy", z)
