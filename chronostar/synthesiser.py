@@ -20,9 +20,13 @@ from utils import generate_cov
 
 # Stored as global constant for ease of comparison in testing suite           
 GAIA_ERRS = {
-    'e_Plx':0.6, #e_Plx [mas]
-    'e_RV' :0.5,  #e_RV [km/s]
-    'e_pm' :0.42, #e_pm [mas/yr]
+#    'e_Plx':0.6, #e_Plx [mas]
+#    'e_RV' :0.5,  #e_RV [km/s]
+#    'e_pm' :0.42, #e_pm [mas/yr]
+# ^^^^ previously implemented errors ^^^^^^
+    'e_Plx':0.04, #e_Plx [mas]
+    'e_RV' :0.3,  #e_RV [km/s]
+    'e_pm' :0.06, #e_pm [mas/yr]
     }
 
 def synth_group(group_pars):
