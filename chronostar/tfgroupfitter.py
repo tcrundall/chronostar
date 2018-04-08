@@ -216,6 +216,11 @@ def lnprior(pars, star_pars):
 def lnlike(pars, star_pars, z=None, return_lnols=False):
     """Computes the log-likelihood for a fit to a group.
 
+    The emcee parameters encode the modelled origin point of the stars. Using
+    the parameters, a mean and covariance in 6D space are constructed as well as
+    an age. The kinematics are then projected forward to the current age and
+    compared with the current stars' XYZUVW values (and uncertainties)
+
     Parameters
     ----------
     pars

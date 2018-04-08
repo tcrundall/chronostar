@@ -78,7 +78,10 @@ def calc_errors(chain):
 
 def check_convergence(old_best_fits, new_chains,
                       tol=1.0):
-    """Check if the last maximisation step yielded consistent fit to new fit
+    """Check if the last maximisation step yielded is consistent fit to new fit
+
+    TODO: incorporate Z into this convergence checking. e.g.
+    np.allclose(z_prev, z, rtol=1e-2)
 
     Convergence is achieved if key values are within 'tol' sigma across the two
     most recent fits.
@@ -166,7 +169,6 @@ def calc_membership_probs(star_lnols):
 
 def expectation(star_pars, groups):
     """Calculate membership probabilities given fits to each group
-
     TODO: incorporate group sizes into the weighting
 
     Parameters
@@ -298,6 +300,7 @@ def run_fit(infile, nburnin, nsteps, ngroups=1):
 def get_initial_group_pars(ngroups):
     """
     Generate the parameter list with which walkers will be initialised
+    TODO: CENTRE THIS BY MEAN U AND V OF STARS
 
     :param ngroups:
     :return:
