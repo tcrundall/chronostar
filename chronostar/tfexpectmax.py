@@ -27,6 +27,7 @@ from chronostar import utils
 import chronostar.transform as tf
 import chronostar.traceback as tb
 import chronostar.error_ellipse as ee
+import chronostar.hexplotter as hp
 
 #try:
 #    import _overlap as overlap  # &TC
@@ -54,7 +55,7 @@ def ix_snd(array, ix):
         return array[:, ix]
 
 
-def calc_errors(chain):
+def calc_errors(chain, perc=34):
     """
     Given a set of aligned (converted?) samples, calculate the median and
     errors of each parameter
@@ -73,7 +74,7 @@ def calc_errors(chain):
     # return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
     #                 zip(*np.percentile(flat_chain, [16,50,84], axis=0))))
     return np.array(map(lambda v: (v[1], v[2], v[0]),
-                        zip(*np.percentile(flat_chain, [16, 50, 84], axis=0))))
+                        zip(*np.percentile(flat_chain, [50-perc, 50, 50+perc], axis=0))))
 
 
 def check_convergence(old_best_fits, new_chains,
@@ -107,7 +108,7 @@ def check_convergence(old_best_fits, new_chains,
     each_converged = []
 
     for old_best_fit, new_chain in zip(old_best_fits, new_chains):
-        errors = calc_errors(new_chain)
+        errors = calc_errors(new_chain, perc=25)
         upper_contained = old_best_fit < errors[:, 1]
         lower_contained = old_best_fit > errors[:, 2]
 
@@ -457,15 +458,22 @@ if __name__ == "__main__":
     )
 
     # initial conditions
+    #origins = np.array([
+    #    [20., 0., 0., 10., 10., 0., 10., 10., 10., 5., 0.,
+    #     0., 0., 3., 50.],
+    #    [-10., 10., 0., -10., -10., 0., 10., 10., 10., 5., 0.,
+    #     0., 0., 5., 30.],
+    #    [0., 10., 0., -5., -8., 0., 10., 10., 10., 5., 0.,
+    #     0., 0., 4., 50.],
+    #    [10., -50., 0., -10., 10., -2., 15., 15., 15., 2., 0.,
+    #     0., 0., 10., 60.],
+    #])
     origins = np.array([
-        [20., 0., 0., 10., 10., 0., 10., 10., 10., 5., 0.,
-         0., 0., 3., 50.],
-        [-10., 10., 0., -10., -10., 0., 10., 10., 10., 5., 0.,
-         0., 0., 5., 30.],
-        [0., 10., 0., -5., -8., 0., 10., 10., 10., 5., 0.,
-         0., 0., 4., 50.],
-        [10., -50., 0., -10., 10., -2., 15., 15., 15., 2., 0.,
-         0., 0., 10., 60.],
+        #  X    Y    Z    U    V    W   dX  dY    dZ  dVCxyCxzCyz age nstars
+        [ 25.,  0., 11., -5.,  0., -2., 10., 10., 10., 5.,0.,0.,0., 3.,50.],
+        [-21.,-60.,  4.,  3., 10., -1.,  7.,  7.,  7., 3.,0.,0.,0., 7.,30.],
+        [-10., 20.,  0.,  1., -4., 15., 10., 10., 10., 2.,0.,0.,0.,10.,40.],
+        [-80., 80.,-80.,  5., -5.,  5., 20., 20., 20., 5.,0.,0.,0.,13.,80.],
     ])
     ERROR = 1.0
 
@@ -524,25 +532,23 @@ if __name__ == "__main__":
                 mkpath(pathname)
                 os.chdir(pathname)
             best_fit, samples, lnprob = tfgf.fit_group(
-                "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=300,
+                "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=1000, #burnin was 300
                 plot_it=True,
-                init_pars=old_gps[i], convergence_tol=10., tight=True,
+                init_pars=old_gps[i], convergence_tol=10., tight=True, #tol was 10
                 init_pos=all_init_pos[i])
             logging.info("Finished fit")
             new_gps[i] = best_fit
             np.save('final_chain.npy', samples)
-            np.save('final_lnprob.npy', samples)
+            np.save('final_lnprob.npy', lnprob)
             all_samples.append(samples)
             all_lnprob.append(lnprob)
             all_init_pos[i] = samples[:, -1, :]
             os.chdir("..")
 
-        # plot_all(new_gps, star_pars, origins, ngroups, iter_count)
-
-
         # ----- PLOTTING --------- #
         means, covs = calc_mns_covs(origins, new_gps, ngroups)
         plot_all(star_pars, means, covs, ngroups, iter_count)
+        hp.plot_hexplot(star_pars, means, covs, iter_count, prec=ERROR)
 
         converged = check_convergence(old_best_fits=old_gps,
                                       new_chains=all_samples)

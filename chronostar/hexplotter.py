@@ -134,7 +134,7 @@ def plot_hexplot(star_pars, means, covs, iter_count, prec=None,
     """
     Generates hex plot in the provided directory
     """
-    print("In plot_hexplot, iter {}".format(iter_count))
+    logging.info("In plot_hexplot, iter {}".format(iter_count))
 
     ngroups = covs.values()[0].shape[0]
 
