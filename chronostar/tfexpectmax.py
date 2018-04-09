@@ -451,8 +451,6 @@ if __name__ == "__main__":
     import chronostar.synthesiser as syn
     import pickle
 
-
-
     logging.basicConfig(
         level=logging.DEBUG, filemode='w',
         filename='em.log',
@@ -508,6 +506,7 @@ if __name__ == "__main__":
 
         # EXPECTATION
         z = expectation(star_pars, old_gps)
+        np.save("membership.npy", z)
 
         # MAXIMISE
         new_gps = np.zeros(old_gps.shape)
@@ -531,12 +530,15 @@ if __name__ == "__main__":
                 init_pos=all_init_pos[i])
             logging.info("Finished fit")
             new_gps[i] = best_fit
+            np.save('final_chain.npy', samples)
+            np.save('final_lnprob.npy', samples)
             all_samples.append(samples)
             all_lnprob.append(lnprob)
             all_init_pos[i] = samples[:, -1, :]
             os.chdir("..")
 
         # plot_all(new_gps, star_pars, origins, ngroups, iter_count)
+
 
         # ----- PLOTTING --------- #
         means, covs = calc_mns_covs(origins, new_gps, ngroups)
