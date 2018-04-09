@@ -15,10 +15,11 @@ from investigator import SynthFit
 
 COLORS = ['xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']*12
+#COLORS = ['xkcd:cyan'] * 60
 color_codes = ['0xF97306','0x00FFFF', '0xFFDF22',   '0x7F5F00','0xFE01B1',    '0xBC13FE',]
 color_names = ['orange',  'cyan',     'sun yellow', 'shit',    'bright pink', 'neon purple',]
 
-HATCHES = ['|', '/', '0', '+', '*', '.'] * 10
+HATCHES = ['|', '/',  '+', '.', '*'] * 10
 
 
 def plot_age_hist(ages, ax, init_conditions=None):
@@ -143,10 +144,10 @@ def plot_hexplot(star_pars, means, covs, iter_count, prec=None,
     plt.clf()
     f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
     f.set_size_inches(30, 20)
-    f.suptitle(
-        "Iteration {}, precision {}".\
-               format(iter_count, prec)
-    )
+#    f.suptitle(
+#        "Iteration {}, precision {}".\
+#               format(iter_count, prec)
+#    )
 
     # PLOT THE OVAL PLOTS
     plot_fit(star_pars, means, covs, ngroups, iter_count, ax1, 0, 1)
