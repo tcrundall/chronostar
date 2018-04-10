@@ -59,6 +59,7 @@ if __name__ == '__main__':
         import chronostar.error_ellipse as ee
         import chronostar.transform as tf
         from chronostar import utils
+        import chronostar.hexplotter as hp
     except ImportError:
         #logging.info("Failed to import chronostar package")
         raise
@@ -175,57 +176,67 @@ if __name__ == '__main__':
 
             # plot Hex plot TODO, atm, just got a simple res plot going
             star_pars = tfgf.read_stars(tb_file=tb_file)
-            xyzuvw = star_pars['xyzuvw'][:,0]
-            xyzuvw_cov = star_pars['xyzuvw_cov'][:,0]
+#            xyzuvw = star_pars['xyzuvw'][:,0]
+#            xyzuvw_cov = star_pars['xyzuvw_cov'][:,0]
+
+            means = {}
+            covs  = {}
 
             # save and store result so hex-plots can be calculated after the fact
+            means['origin_then'] = np.array([group_pars_ex[:6]])
             np.save(result_file, [best_fit, chain, lnprob, group_pars_in, group_pars_tf_style, group_pars_ex])
-            then_cov_true = utils.generate_cov(
+
+            #then_cov_true
+            covs['origin_then'] = utils.generate_cov(
                 utils.internalise_pars(group_pars_ex))
+
             then_cov_simple = tfgf.generate_cov(group_pars_in)
-            then_cov_fitted = tfgf.generate_cov(best_fit)
-            now_cov_fitted = tf.transform_cov(then_cov_fitted, tb.trace_forward,
-                                              best_fit[0:6], dim=6,
+            means['fitted_then'] = best_fit[0:6]
+            #then_cov_fitted
+            covs['fitted_then'] = tfgf.generate_cov(best_fit)
+
+            means['fitted_now'] = tb.trace_forward(best_fit[:6], best_fit[-1])
+            covs['fitted_now'] = tf.transform_cov(covs['fitted_then'], tb.trace_forward,
+                                              means['fitted_then'], dim=6,
                                               args=(best_fit[-1],))
-            now_mean_fitted = tb.trace_forward(best_fit[:6], best_fit[-1])
+            hp.plot_hexplot(star_pars, means, covs, iter_count=0)
 
-            plt.clf()
-            plt.plot(xyzuvw[:, 0], xyzuvw[:, 1], 'b.')
-            ee.plot_cov_ellipse(then_cov_simple[:2, :2], group_pars_tf_style[:2],
-                                color='orange',
-                                alpha=0.2, hatch='|', ls='--')
-            ee.plot_cov_ellipse(then_cov_true[:2, :2], group_pars_tf_style[:2],
-                                color='orange',
-                                alpha=1, ls=':', fill=False)
-            ee.plot_cov_ellipse(then_cov_fitted[:2, :2], best_fit[:2],
-                                color='xkcd:neon purple',
-                                alpha=0.2, hatch='/', ls='-.')
-            ee.plot_cov_ellipse(now_cov_fitted[:2, :2], now_mean_fitted[:2],
-                                color='b',
-                                alpha=0.03, hatch='.')
-
-            buffer = 30
-            xmin = min(group_pars_tf_style[0], best_fit[0], now_mean_fitted[0], *xyzuvw[:,0])
-            xmax = max(group_pars_tf_style[0], best_fit[0], now_mean_fitted[0], *xyzuvw[:,0])
-            ymin = min(group_pars_tf_style[1], best_fit[1], now_mean_fitted[1], *xyzuvw[:,1])
-            ymax = max(group_pars_tf_style[1], best_fit[1], now_mean_fitted[1], *xyzuvw[:,1])
-            plt.xlim(xmax + buffer, xmin - buffer)
-            plt.ylim(ymin - buffer, ymax + buffer)
-            plt.title("age: {}, dX: {}, dV: {}, nstars: {}, prec: {}".format(
-                age, dX, dV, nstars, prec
-            ))
-            plt.savefig("XY_plot_{}_{}_{}_{}_{}.png".format(
-                age, dX, dV, nstars, prec
-            ))
-
-            plt.clf()
-            plt.hist(chain[:,:,-1].flatten(), bins=20)
-            plt.title("age: {}, dX: {}, dV: {}, nstars: {}, prec: {}".format(
-                age, dX, dV, nstars, prec
-            ))
-            plt.savefig("age_hist_{}_{}_{}_{}_{}.png".format(
-                age, dX, dV, nstars, prec
-            ))
+#            plt.plot(xyzuvw[:, 0], xyzuvw[:, 1], 'b.')
+#            ee.plot_cov_ellipse(then_cov_simple[:2, :2], group_pars_tf_style[:2],
+#                                color='orange',
+#                                alpha=0.2, hatch='|', ls='--')
+#            ee.plot_cov_ellipse(then_cov_true[:2, :2], group_pars_tf_style[:2],
+#                                color='orange',
+#                                alpha=1, ls=':', fill=False)
+#            ee.plot_cov_ellipse(then_cov_fitted[:2, :2], best_fit[:2],
+#                                color='xkcd:neon purple',
+#                                alpha=0.2, hatch='/', ls='-.')
+#            ee.plot_cov_ellipse(now_cov_fitted[:2, :2], now_mean_fitted[:2],
+#                                color='b',
+#                                alpha=0.03, hatch='.')
+#
+#            buffer = 30
+#            xmin = min(group_pars_tf_style[0], best_fit[0], now_mean_fitted[0], *xyzuvw[:,0])
+#            xmax = max(group_pars_tf_style[0], best_fit[0], now_mean_fitted[0], *xyzuvw[:,0])
+#            ymin = min(group_pars_tf_style[1], best_fit[1], now_mean_fitted[1], *xyzuvw[:,1])
+#            ymax = max(group_pars_tf_style[1], best_fit[1], now_mean_fitted[1], *xyzuvw[:,1])
+#            plt.xlim(xmax + buffer, xmin - buffer)
+#            plt.ylim(ymin - buffer, ymax + buffer)
+#            plt.title("age: {}, dX: {}, dV: {}, nstars: {}, prec: {}".format(
+#                age, dX, dV, nstars, prec
+#            ))
+#            plt.savefig("XY_plot_{}_{}_{}_{}_{}.png".format(
+#                age, dX, dV, nstars, prec
+#            ))
+#
+#            plt.clf()
+#            plt.hist(chain[:,:,-1].flatten(), bins=20)
+#            plt.title("age: {}, dX: {}, dV: {}, nstars: {}, prec: {}".format(
+#                age, dX, dV, nstars, prec
+#            ))
+#            plt.savefig("age_hist_{}_{}_{}_{}_{}.png".format(
+#                age, dX, dV, nstars, prec
+#            ))
 
             # return to main directory
         finally:

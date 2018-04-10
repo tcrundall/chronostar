@@ -140,6 +140,25 @@ def plot_hexplot(star_pars, means, covs, iter_count, prec=None,
                   save_dir=''):
     """
     Generates hex plot in the provided directory
+
+    Paramters
+    ---------
+    star_pars : dict
+        'xyzuvw'
+        'xyzuvw_cov'
+        'times'
+        'something else...'
+    means : dict
+        'fitted_now'
+        'fitted_then'
+        'origin_now'  - optional (currently not in use)
+        'origin_then' - optional
+    covs : dict
+        'fitted_now'
+        'fitted_then'
+        'origin_now'  - optional (currently not in use)
+        'origin_then' - optional
+    iter_count : integer
     """
     logging.info("In plot_hexplot, iter {}".format(iter_count))
 
