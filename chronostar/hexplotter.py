@@ -125,8 +125,14 @@ def get_age_samples(ngroups):
     for group in range(ngroups):
         # extract final burnin chain through trial and error XD
         burnin_cnt = 0
-        while True:
-            # NEED TO MODIFY FOR GROUPFITTER RESULTS
+        try:
+            # tfgroupfitter stores in this format
+            final_burnin_chain = np.load("final_chain.npy")
+            got_one = True
+        except IOError:
+            got_one = False
+        while not got_one:
+            # tfexpectmax stores in this format
             try:
                 final_burnin_chain = np.load(
                     "group{}/burnin_chain{}.npy".format(group, burnin_cnt)
@@ -134,6 +140,7 @@ def get_age_samples(ngroups):
             except IOError:
                 break
             burnin_cnt += 1
+        # hopefully one of the formats worked....
         age_samples.append(final_burnin_chain[:,:,-1].flatten())
     return np.array(age_samples)
 
