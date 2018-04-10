@@ -412,9 +412,6 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
         pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
         converged = burnin_convergence(sampler.lnprobability, tol=convergence_tol)
 
-        # save the chain for later inspection
-        np.save("burnin_chain{}".format(cnt), sampler.chain)
-
         # Help out the struggling walkers
         best_ix = np.argmax(lnprob)
         poor_ixs = np.where(lnprob < np.percentile(lnprob, 33))
@@ -436,6 +433,8 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
 
     logging.info("Burnt in, with convergence: {}\n"
           "Taking final burnin segment as sampling stage".format(converged))
+    # save the chain for later inspection
+    np.save("final_chain", sampler.chain)
     if plot_it:
 #        plt.clf()
 #        plt.plot(burnin_lnprob_res)

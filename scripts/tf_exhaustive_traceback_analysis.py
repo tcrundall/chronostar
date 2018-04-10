@@ -1,6 +1,9 @@
 #! /usr/bin/env python
 """Script to run an exhaustive analysis of synthetic fits and store
 their results in a hierarchical directory structure.
+
+include a number to run concurrently e.g.
+python tf_exhaustive_traceback_analysis.py 4
 """
 
 try:
@@ -57,7 +60,7 @@ def do_something_wrapper(scenario):
     mkpath(path_name)
     os.chdir(path_name)
 
-    os.system("mpirun -np 19 python " +THIS_DIR + "/perform_tf_fit.py {} {} {} {} ".format(
+    os.system("mpirun -np 5 python " +THIS_DIR + "/perform_tf_fit.py {} {} {} {} ".format(
         *scenario) + precs_string + " " + THIS_DIR + "/../"
               )
     os.chdir(THIS_DIR)

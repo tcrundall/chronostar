@@ -19,7 +19,6 @@ import pickle
 import sys
 from emcee.utils import MPIPool
 
-
 base_group_pars = [
     100, -80, 40, -7, -17, -7, None, None, None, None,
     0.0, 0.0, 0.0, None, None
@@ -28,9 +27,8 @@ perf_data_file = "perf_xyzuvw.npy"
 result_file = "result.npy"
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
-
 BURNIN_STEPS = 1000
-C_TOL = 0.1
+C_TOL = 0.15
 if __name__ == '__main__':
     # stops plots popping up as they are created, mayhaps too late if only
     # put here....
@@ -177,7 +175,7 @@ if __name__ == '__main__':
 
             # apply traceforward fitting (with lnprob, corner plots as side effects)
             best_fit, chain, lnprob = tfgf.fit_group(
-                tb_file, burnin_steps=BURNIN_STEPS, plot_it=True, pool=pool,
+                tb_file, burnin_steps=BURNIN_STEPS, plot_it=False, pool=pool,
                 convergence_tol=C_TOL,
             )
 
