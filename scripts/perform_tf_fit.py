@@ -14,13 +14,14 @@ from distutils.dir_util import mkpath
 import logging
 import numpy as np
 import os
+import pdb
 import pickle
 import sys
 from emcee.utils import MPIPool
 
 
 base_group_pars = [
-    -80, 80, 50, 10, -20, -5, None, None, None, None,
+    100, -80, 40, -7, -17, -7, None, None, None, None,
     0.0, 0.0, 0.0, None, None
 ]
 perf_data_file = "perf_xyzuvw.npy"
@@ -29,6 +30,7 @@ prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 
 BURNIN_STEPS = 1000
+C_TOL = 0.1
 if __name__ == '__main__':
     # stops plots popping up as they are created, mayhaps too late if only
     # put here....
@@ -59,7 +61,6 @@ if __name__ == '__main__':
         import chronostar.error_ellipse as ee
         import chronostar.transform as tf
         from chronostar import utils
-        import chronostar.hexplotter as hp
     except ImportError:
         #logging.info("Failed to import chronostar package")
         raise
@@ -88,6 +89,12 @@ if __name__ == '__main__':
     group_pars_ex[9] = dV
     group_pars_ex[13] = age
     group_pars_ex[14] = nstars
+
+    # decrement position by approx vel*t so final result is
+    # in similar location across ages
+    group_pars_ex[0] -= age * group_pars_ex[3]
+    group_pars_ex[1] -= age * group_pars_ex[4]
+    group_pars_ex[2] -= age * group_pars_ex[5]
 
     try:
         perf_xyzuvws = np.load(perf_data_file)
@@ -171,6 +178,7 @@ if __name__ == '__main__':
             # apply traceforward fitting (with lnprob, corner plots as side effects)
             best_fit, chain, lnprob = tfgf.fit_group(
                 tb_file, burnin_steps=BURNIN_STEPS, plot_it=True, pool=pool,
+                convergence_tol=C_TOL,
             )
 
 
@@ -187,20 +195,29 @@ if __name__ == '__main__':
             np.save(result_file, [best_fit, chain, lnprob, group_pars_in, group_pars_tf_style, group_pars_ex])
 
             #then_cov_true
-            covs['origin_then'] = utils.generate_cov(
-                utils.internalise_pars(group_pars_ex))
+            covs['origin_then'] = np.array([
+                utils.generate_cov( utils.internalise_pars(group_pars_ex))
+            ])
 
             then_cov_simple = tfgf.generate_cov(group_pars_in)
-            means['fitted_then'] = best_fit[0:6]
-            #then_cov_fitted
-            covs['fitted_then'] = tfgf.generate_cov(best_fit)
+            means['fitted_then'] = np.array([
+                best_fit[0:6]
+            ])
+            covs['fitted_then'] = np.array([
+                tfgf.generate_cov(best_fit)
+            ])
 
-            means['fitted_now'] = tb.trace_forward(best_fit[:6], best_fit[-1])
-            covs['fitted_now'] = tf.transform_cov(covs['fitted_then'], tb.trace_forward,
-                                              means['fitted_then'], dim=6,
-                                              args=(best_fit[-1],))
-            hp.plot_hexplot(star_pars, means, covs, iter_count=0)
-
+            means['fitted_now'] = np.array([
+                tb.trace_forward(best_fit[:6], best_fit[-1])
+            ])
+            covs['fitted_now'] = np.array([
+                tf.transform_cov(covs['fitted_then'][0], tb.trace_forward,
+                                 means['fitted_then'][0], dim=6,
+                                 args=(best_fit[-1],))
+            ])
+            np.save('covs.npy', covs)
+            np.save('means.npy', means)
+            
 #            plt.plot(xyzuvw[:, 0], xyzuvw[:, 1], 'b.')
 #            ee.plot_cov_ellipse(then_cov_simple[:2, :2], group_pars_tf_style[:2],
 #                                color='orange',

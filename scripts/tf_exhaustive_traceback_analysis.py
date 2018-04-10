@@ -29,7 +29,7 @@ SAVE_DIR = '../results/tf_results/'
 THIS_DIR = os.getcwd()
 
 # best pars: age: 5, spread: 10, v_disp: 2(?), size: 25
-"""
+#"""
 ages = [5, 10, 20]
 spreads = [2, 5, 10]
 v_disps = [1, 2, 5]
@@ -42,15 +42,9 @@ spreads = [5]
 v_disps = [2]
 sizes   = [25]
 precs = ['perf', 'gaia']
-#"""
+"""
 
 precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
-
-base_group_pars = [
-    -80, 80, 50, 10, -20, -5, None, None, None, None,
-    0.0, 0.0, 0.0, None, None
-]
-
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 def do_something_wrapper(scenario):
@@ -63,7 +57,7 @@ def do_something_wrapper(scenario):
     mkpath(path_name)
     os.chdir(path_name)
 
-    os.system("python " +THIS_DIR + "/perform_tf_fit.py {} {} {} {} ".format(
+    os.system("mpirun -np 19 python " +THIS_DIR + "/perform_tf_fit.py {} {} {} {} ".format(
         *scenario) + precs_string + " " + THIS_DIR + "/../"
               )
     os.chdir(THIS_DIR)

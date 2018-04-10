@@ -126,6 +126,7 @@ def get_age_samples(ngroups):
         # extract final burnin chain through trial and error XD
         burnin_cnt = 0
         while True:
+            # NEED TO MODIFY FOR GROUPFITTER RESULTS
             try:
                 final_burnin_chain = np.load(
                     "group{}/burnin_chain{}.npy".format(group, burnin_cnt)
