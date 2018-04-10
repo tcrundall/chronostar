@@ -3,7 +3,7 @@
 Ducourant+ 2014.
 
 Using astrometry info from Donaldson 2016, converts into preferred units,
-then applies chronostar.traceback.traceback() (?) function.
+then applies chronostar.tracingback.traceback() (?) function.
 """
 
 import chronostar.tracingback as tb

@@ -54,7 +54,7 @@ if __name__ == '__main__':
     sys.path.insert(0, package_path)
     try:
         import chronostar.synthesiser as syn
-        import chronostar.traceback as tb
+        import chronostar.tracingback as tb
         import chronostar.tfgroupfitter as tfgf
         import chronostar.error_ellipse as ee
         import chronostar.transform as tf

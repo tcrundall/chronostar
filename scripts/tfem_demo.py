@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, '..')
 
 import chronostar.synthesiser as syn
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 import chronostar.tfgroupfitter as tfgf
 import chronostar.tfexpectmax as tfem
 

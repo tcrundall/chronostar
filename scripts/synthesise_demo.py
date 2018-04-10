@@ -12,7 +12,7 @@ import subprocess
 sys.path.insert(0,'..') #hacky way to get access to module
 
 import chronostar.synthesiser as syn
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 import chronostar.error_ellipse as ee
 import numpy as np
 import pdb

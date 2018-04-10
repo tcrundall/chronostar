@@ -3,7 +3,7 @@
 from Donaldson+ 2016 measured astrometry.
 """
 
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 import chronostar.groupfitter as gf
 import chronostar._overlap as ov
 import numpy as np

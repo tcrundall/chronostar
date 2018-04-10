@@ -2,7 +2,7 @@
 import sys
 sys.path.insert(0, '..')
 
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 import numpy as np
 import pdb
 import pickle

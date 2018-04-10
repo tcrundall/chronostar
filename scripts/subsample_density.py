@@ -63,10 +63,10 @@ xyzuvw_hyades =[43.1, 0.7, -17.3, -41.1, -19.2, -1.4]
 #xyzuvw_comaber = [ 10.127,  -8.276,  92.509,  -1.182,  -5.486,   0.282] 
 xyzuvw_comaber = [  9.66 ,  -7.368,  85.717,  -1.887,  -5.712,   0.643]
 #From the Simbad coordinates of Plieades:
-#pleiades = chronostar.traceback.TraceBack(target_times, params=[15*(3+47./60),24.1,1e3/136.2,19.7,-44.82,3.5]).traceback(target_times)[0]
+#pleiades = chronostar.tracingback.TraceBack(target_times, params=[15*(3+47./60),24.1,1e3/136.2,19.7,-44.82,3.5]).traceback(target_times)[0]
 #pleiades[0] - xyzuvw_sun
 xyzuvw_pleiades = [ 121.633,   28.975,  -54.003,   -4.857,  -28.54 ,  -13.139]
-#usco = chronostar.traceback.TraceBack(target_times, params=[15*(16+12./60),-23.5,1e3/145.,-11,-23,-5]).traceback(target_times)[0]
+#usco = chronostar.tracingback.TraceBack(target_times, params=[15*(16+12./60),-23.5,1e3/145.,-11,-23,-5]).traceback(target_times)[0]
 xyzuvw_usco = [-134.927,  -20.315,   49.062,   -5.347,  -16.07 ,   -6.713]
 
 #Shoenrich and galpy
@@ -85,8 +85,8 @@ compute_density = False
 #Trace back the groups
 xyzuvw_traceback_groups = []
 for xyzuvw in xyzuvw_groups:
-    params = chronostar.traceback.xyzuvw_to_skycoord(xyzuvw, solarmotion='schoenrich', reverse_x_sign=True)
-    xyzuvw_traceback_groups.append(chronostar.traceback.TraceBack(target_times, params=params).traceback(target_times)[0])
+    params = chronostar.tracingback.xyzuvw_to_skycoord(xyzuvw, solarmotion='schoenrich', reverse_x_sign=True)
+    xyzuvw_traceback_groups.append(chronostar.tracingback.TraceBack(target_times, params=params).traceback(target_times)[0])
 
 #Read in the parameters
 star_params = chronostar.fit_group.read_stars(infile)

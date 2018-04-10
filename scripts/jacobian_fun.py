@@ -4,8 +4,8 @@ import pdb
 import sys
 sys.path.insert(0, '..')
 
-from chronostar.traceback import trace_forward
-import chronostar.traceback as tb
+from chronostar.tracingback import trace_forward
+import chronostar.tracingback as tb
 from chronostar import utils
 import chronostar.error_ellipse as ee
 import chronostar.transform as tf

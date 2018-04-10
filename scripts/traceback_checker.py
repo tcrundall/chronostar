@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, '..')
 
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 
 bp_astr = [86.82, -51.067, 51.44, 4.65, 83.1, 20]
 

@@ -5,7 +5,7 @@ sys.path.insert(0,'..')
 
 import numpy as np
 import pickle
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 
 restricted_data_file = \
     "../data/rave_active_stars_distance_better_than_5_percent_3k_stars.pkl"
