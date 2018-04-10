@@ -19,7 +19,7 @@ sys.path.insert(0, '..')  # hacky way to get access to module
 import chronostar.groupfitter as gf
 import chronostar.synthesiser as syn
 import chronostar.analyser as an
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 from chronostar import utils
 import numpy as np
 import pickle

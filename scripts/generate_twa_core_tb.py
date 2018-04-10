@@ -6,7 +6,7 @@ Using astrometry info from Donaldson 2016, converts into preferred units,
 then applies chronostar.traceback.traceback() (?) function.
 """
 
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 import chronostar.groupfitter as gf
 import chronostar._overlap as ov
 import numpy as np

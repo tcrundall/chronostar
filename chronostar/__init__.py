@@ -11,7 +11,7 @@ __version__ = "0.1"
 import error_ellipse
 import expectmax
 import tfexpectmax
-import traceback 
+import tracingback 
 import fit_group
 import groupfitter
 import tfgroupfitter

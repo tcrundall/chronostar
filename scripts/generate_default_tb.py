@@ -6,7 +6,7 @@ script is predominatly used to generate tb file for the synthesised data
 sets.
 """
 
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 import pickle
 import sys
 import numpy as np

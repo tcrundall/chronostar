@@ -9,12 +9,17 @@ todo:
 from __future__ import print_function, division
 
 import sys
+from distutils.dir_util import mkpath
 import logging
 import numpy as np
+import os
+import pickle
+import random
+
+import chronostar.synthesiser as syn
 
 try:
     import matplotlib as mpl
-
     # prevents displaying plots from generation from tasks in background
     mpl.use('Agg')
     import matplotlib.pyplot as plt
@@ -25,21 +30,9 @@ except ImportError:
 import tfgroupfitter as tfgf
 from chronostar import utils
 import chronostar.transform as tf
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 import chronostar.error_ellipse as ee
 import chronostar.hexplotter as hp
-
-#try:
-#    import _overlap as overlap  # &TC
-#except:
-#    print(
-#        "overlap not imported, SWIG not possible. Need to make in directory...")
-
-#try:  # don't know why we use xrange to initialise walkers
-#    xrange
-#except NameError:
-#    xrange = range
-
 
 def ix_fst(array, ix):
     if array is None:
@@ -287,17 +280,6 @@ def get_points_on_circle(npoints, v_dist=20):
     return np.vstack((us, vs)).T
 
 
-def run_fit(infile, nburnin, nsteps, ngroups=1):
-    """
-    Entry point for module. Given the traceback of stars, fit a set number
-    of groups to the data.
-    """
-
-
-#    star_params = gf.read_stars(infile)
-#    samples, lnprob = gf.fit_one_group(star_params, nburnin, nsteps)
-
-
 def get_initial_group_pars(ngroups):
     """
     Generate the parameter list with which walkers will be initialised
@@ -317,7 +299,7 @@ def get_initial_group_pars(ngroups):
         init_group_pars[3:5] = pt
     return np.array(all_init_group_pars, dtype=np.float64)
 
-def calc_mns_covs(origins, new_gps, ngroups):
+def calc_mns_covs(new_gps, ngroups, origins=None):
     all_origin_mn_then = [None] * ngroups
     all_origin_cov_then = [None] * ngroups
     all_origin_mn_now = [None] * ngroups
@@ -328,16 +310,17 @@ def calc_mns_covs(origins, new_gps, ngroups):
     all_fitted_cov_now = [None] * ngroups
 
     for i in range(ngroups):
-        all_origin_mn_then[i] = origins[i][:6]
-        all_origin_cov_then[i] = utils.generate_cov(
-            utils.internalise_pars(origins[i])
-        )
-        all_origin_mn_now[i] = tb.trace_forward(all_origin_mn_then[i],
-                                                origins[i][-2])
-        all_origin_cov_now[i] = tf.transform_cov(
-            all_origin_cov_then[i], tb.trace_forward, all_origin_mn_then[i],
-            dim=6, args=(origins[i][-2],)
-        )
+        if origins:
+            all_origin_mn_then[i] = origins[i][:6]
+            all_origin_cov_then[i] = utils.generate_cov(
+                utils.internalise_pars(origins[i])
+            )
+            all_origin_mn_now[i] = tb.trace_forward(all_origin_mn_then[i],
+                                                    origins[i][-2])
+            all_origin_cov_now[i] = tf.transform_cov(
+                all_origin_cov_then[i], tb.trace_forward, all_origin_mn_then[i],
+                dim=6, args=(origins[i][-2],)
+            )
         all_fitted_mn_then[i] = new_gps[i][:6]
         all_fitted_cov_then[i] = tfgf.generate_cov(new_gps[i])
         all_fitted_mn_now[i] = tb.trace_forward(all_fitted_mn_then[i],
@@ -346,35 +329,33 @@ def calc_mns_covs(origins, new_gps, ngroups):
             all_fitted_cov_then[i], tb.trace_forward, all_fitted_mn_then[i],
             dim=6, args=(new_gps[i][-1],)
         )
-    all_origin_mn_then  = np.array(all_origin_mn_then )
-    all_origin_cov_then = np.array(all_origin_cov_then)
-    all_origin_mn_now   = np.array(all_origin_mn_now  )
-    all_origin_cov_now  = np.array(all_origin_cov_now )
+
+    if origins:
+        all_origin_mn_then  = np.array(all_origin_mn_then )
+        all_origin_cov_then = np.array(all_origin_cov_then)
+        all_origin_mn_now   = np.array(all_origin_mn_now  )
+        all_origin_cov_now  = np.array(all_origin_cov_now )
     all_fitted_mn_then  = np.array(all_fitted_mn_then )
     all_fitted_cov_then = np.array(all_fitted_cov_then)
     all_fitted_mn_now   = np.array(all_fitted_mn_now  )
     all_fitted_cov_now  = np.array(all_fitted_cov_now )
 
     all_means = {
-        'origin_then' : all_origin_mn_then,
-        'origin_now'  : all_origin_mn_now ,
         'fitted_then' : all_fitted_mn_then,
         'fitted_now'  : all_fitted_mn_now ,
     }
 
     all_covs = {
-        'origin_then' : all_origin_cov_then,
-        'origin_now'  : all_origin_cov_now ,
         'fitted_then' : all_fitted_cov_then,
         'fitted_now'  : all_fitted_cov_now ,
     }
 
-#    np.save("means.npy",
-#            [all_origin_mn_then, all_origin_mn_now, all_fitted_mn_then,
-#             all_fitted_mn_now])
-#    np.save("covs.npy",
-#            [all_origin_cov_then, all_origin_cov_now, all_fitted_cov_then,
-#             all_fitted_cov_now])
+    if origins:
+        all_means['origin_then'] = all_origin_mn_then
+        all_means['origin_now']  = all_origin_mn_now
+        all_covs['origin_then']  = all_origin_cov_then
+        all_covs['origin_now']   = all_origin_cov_now
+
     np.save("means.npy", all_means)
     np.save("covs.npy", all_covs)
 
@@ -412,30 +393,7 @@ def plot_all(star_pars, means, covs, ngroups, iter_count):
     ymin = min(min_means[1], np.min(xyzuvw[:,1]))
     ymax = max(max_means[1], np.max(xyzuvw[:,1]))
 
-    #xmin = min(np.min(means['origin_then'][:,0]),
-    #            np.min(means['origin_now'][:,0]),
-    #           np.min(means['fitted_then'][:,0]),
-    #            np.min(means['fitted_now'][:,0]),
-    #           )
-#    xmax = max(np.max(means['origin_then'][:,0]),
-#               np.max(means['origin_now'][:,0]),
-#               np.max(means['fitted_then'][:,0]),
-#               np.max(means['fitted_now'][:,0]),
-#               )
-#
-#    ymin = min(np.min(means['origin_then'][:,1]),
-#               np.min(means['origin_now'][:,1]),
-#               np.min(means['fitted_then'][:,1]),
-#               np.min(means['fitted_now'][:,1]),
-#               )
-#
-#    ymax = max(np.max(means['origin_then'][:,1]),
-#               np.max(means['origin_now'][:,1]),
-#               np.max(means['fitted_then'][:,1]),
-#               np.max(means['fitted_now'][:,1]),
-#               )
-
-    buffer = 30
+    buffer = 20
     plt.xlim(xmax+buffer, xmin-buffer)
     plt.ylim(ymin-buffer, ymax+buffer)
 
@@ -444,64 +402,19 @@ def plot_all(star_pars, means, covs, ngroups, iter_count):
 
     logging.info("Iteration {}: XY plot plotted".format(iter_count))
 
-if __name__ == "__main__":
-    # TODO: ammend calc_lnols such that group sizes impact membership probs
-    from distutils.dir_util import mkpath
-    import os
-    import random
-    import chronostar.synthesiser as syn
-    import pickle
+def fit_multi_groups(star_pars, ngroups, res_dir='', init_z=None, origins=None):
+    """
+    Entry point: Fit multiple Gaussians to data set
 
-    logging.basicConfig(
-        level=logging.DEBUG, filemode='w',
-        filename='em.log',
-    )
-
-    # initial conditions
-    #origins = np.array([
-    #    [20., 0., 0., 10., 10., 0., 10., 10., 10., 5., 0.,
-    #     0., 0., 3., 50.],
-    #    [-10., 10., 0., -10., -10., 0., 10., 10., 10., 5., 0.,
-    #     0., 0., 5., 30.],
-    #    [0., 10., 0., -5., -8., 0., 10., 10., 10., 5., 0.,
-    #     0., 0., 4., 50.],
-    #    [10., -50., 0., -10., 10., -2., 15., 15., 15., 2., 0.,
-    #     0., 0., 10., 60.],
-    #])
-    origins = np.array([
-        #  X    Y    Z    U    V    W   dX  dY    dZ  dVCxyCxzCyz age nstars
-        [ 25.,  0., 11., -5.,  0., -2., 10., 10., 10., 5.,0.,0.,0., 3.,50.],
-        [-21.,-60.,  4.,  3., 10., -1.,  7.,  7.,  7., 3.,0.,0.,0., 7.,30.],
-        [-10., 20.,  0.,  1., -4., 15., 10., 10., 10., 2.,0.,0.,0.,10.,40.],
-        [-80., 80.,-80.,  5., -5.,  5., 20., 20., 20., 5.,0.,0.,0.,13.,80.],
-    ])
-    ERROR = 1.0
-
-    ngroups = origins.shape[0]
-    TB_FILE = "perf_tb_file.pkl"
-    astr_file = "perf_astr_data.pkl"
-
-    logging.info("Origin:\n{}".format(origins))
-
-    np.save("origins.npy", origins)
-    perf_xyzuvws, _ = syn.generate_current_pos(ngroups, origins)
-
-    np.save("perf_xyzuvw.npy", perf_xyzuvws)
-    sky_coord_now = syn.measure_stars(perf_xyzuvws)
-
-    synth_table = syn.generate_table_with_error(
-        sky_coord_now, ERROR
-    )
-
-    pickle.dump(synth_table, open(astr_file, 'w'))
-
-    tb.traceback(synth_table, np.array([0, 1]), savefile=TB_FILE)
-
-    star_pars = tfgf.read_stars(TB_FILE)
+    :param star_pars:
+    :param ngroups:
+    :return:
+    """
+    if res_dir:
+        os.chdir(res_dir)
 
     # INITIALISE GROUPS
     old_gps = get_initial_group_pars(ngroups)
-
 
     all_init_pos = ngroups * [None]
     iter_count = 0
@@ -532,9 +445,9 @@ if __name__ == "__main__":
                 mkpath(pathname)
                 os.chdir(pathname)
             best_fit, samples, lnprob = tfgf.fit_group(
-                "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=1000, #burnin was 300
+                "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=50, #burnin was 500
                 plot_it=True,
-                init_pars=old_gps[i], convergence_tol=10., tight=True, #tol was 10
+                init_pars=old_gps[i], convergence_tol=50., tight=True, #tol was 5.
                 init_pos=all_init_pos[i])
             logging.info("Finished fit")
             new_gps[i] = best_fit
@@ -546,9 +459,9 @@ if __name__ == "__main__":
             os.chdir("..")
 
         # ----- PLOTTING --------- #
-        means, covs = calc_mns_covs(origins, new_gps, ngroups)
-        plot_all(star_pars, means, covs, ngroups, iter_count)
-        hp.plot_hexplot(star_pars, means, covs, iter_count, prec=ERROR)
+        means, covs = calc_mns_covs(new_gps, ngroups, origins=origins)
+        #plot_all(star_pars, means, covs, ngroups, iter_count)
+        hp.plot_hexplot(star_pars, means, covs, iter_count)
 
         converged = check_convergence(old_best_fits=old_gps,
                                       new_chains=all_samples)
@@ -558,11 +471,87 @@ if __name__ == "__main__":
 
         os.chdir("..")
         iter_count += 1
-    logging.info("COMPLETE")
-    logging.info("Origin:\n{}".format(origins))
-    logging.info("Best fits:\n{}".format(new_gps))
-    logging.info("Memberships: \n{}".format(z))
+    logging.info("CONVERGENCE COMPLETE")
 
     np.save("final_gps.npy", new_gps)
     np.save("prev_gps.npy", old_old_gps) # old groups is overwritten by new grps
     np.save("memberships.npy", z)
+
+    # PERFORM FINAL EXPLORATION OF PARAMETER SPACE
+    mkpath("final")
+    os.chidr("final")
+    final_z = expectation(star_pars, new_gps)
+    final_gps = [None] * ngroups
+    final_med_errs = [None] * ngroups
+
+    for i in range(ngroups):
+        logging.info("Characterising group {}".format(i))
+        try:
+            mkpath("group{}".format(i))
+            os.chdir("group{}".format(i))
+        except:
+            pathname = random.shuffle("apskjfa")
+            mkpath(pathname)
+            os.chdir(pathname)
+        best_fit, samples, lnprob = tfgf.fit_group(
+            "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=2000,
+            plot_it=True,
+            init_pars=old_gps[i], convergence_tol=20., tight=True,  # tol was 10
+            init_pos=all_init_pos[i])
+        logging.info("Finished fit")
+        final_gps[i] = best_fit
+        final_med_errs[i] = calc_errors(samples)
+        np.save('final_chain.npy', samples)
+        np.save('final_lnprob.npy', lnprob)
+
+        all_init_pos[i] = samples[:, -1, :]
+        os.chdir("..")
+    np.save('final_med_errs.npy', final_med_errs)
+    logging.info("FINISHED CHARACTERISATION")
+    logging.info("Origin:\n{}".format(origins))
+    logging.info("Best fits:\n{}".format(new_gps))
+    logging.info("Memberships: \n{}".format(z))
+
+
+if __name__ == "__main__":
+    # TODO: ammend calc_lnols such that group sizes impact membership probs
+
+    if len(sys.argv) > 1:
+        sys.path.insert(0, sys.argv[1])
+
+    logging.basicConfig(
+        level=logging.DEBUG, filemode='w',
+        filename='em.log',
+    )
+
+    origins = np.array([
+       #  X    Y    Z    U    V    W   dX  dY    dZ  dVCxyCxzCyz age nstars
+       [25., 0., 11., -5., 0., -2., 10., 10., 10., 5., 0., 0., 0., 3., 50.],
+       [-21., -60., 4., 3., 10., -1., 7., 7., 7., 3., 0., 0., 0., 7., 30.],
+#       [-10., 20., 0., 1., -4., 15., 10., 10., 10., 2., 0., 0., 0., 10., 40.],
+#       [-80., 80., -80., 5., -5., 5., 20., 20., 20., 5., 0., 0., 0., 13., 80.],
+
+    ])
+    ERROR = 1.0
+
+    ngroups = origins.shape[0]
+    TB_FILE = "perf_tb_file.pkl"
+    astr_file = "perf_astr_data.pkl"
+
+    logging.info("Origin:\n{}".format(origins))
+    np.save("origins.npy", origins)
+    perf_xyzuvws, _ = syn.generate_current_pos(ngroups, origins)
+
+    np.save("perf_xyzuvw.npy", perf_xyzuvws)
+    sky_coord_now = syn.measure_stars(perf_xyzuvws)
+
+    synth_table = syn.generate_table_with_error(
+        sky_coord_now, ERROR
+    )
+
+    pickle.dump(synth_table, open(astr_file, 'w'))
+    tb.traceback(synth_table, np.array([0, 1]), savefile=TB_FILE)
+    star_pars = tfgf.read_stars(TB_FILE)
+
+    fit_multi_groups(star_pars, ngroups)
+

@@ -9,7 +9,7 @@ sys.path.insert(0, '..')
 
 import chronostar.tfgroupfitter as tfgf
 import chronostar.synthesiser as syn
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 import chronostar.transform as tf
 import chronostar.error_ellipse as ee
 from chronostar import utils

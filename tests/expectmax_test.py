@@ -17,7 +17,7 @@ sys.path.insert(0, '..')  # hacky way to get access to module
 
 import chronostar.expectmax as em
 import chronostar.synthesiser as syn
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 import chronostar.groupfitter as gf
 from chronostar import utils
 import numpy as np

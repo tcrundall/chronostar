@@ -13,7 +13,7 @@ import astropy.io.fits as pyfits
 import sys
 import pdb
 import numpy as np
-import chronostar.traceback as tb
+import chronostar.tracingback as tb
 from collections import defaultdict
 
 parser = argparse.ArgumentParser()

@@ -6,7 +6,7 @@ from __future__ import division, print_function
 import numpy as np
 
 import synthesiser as syn
-import traceback as tb
+import tracingback as tb
 import groupfitter as gf
 import utils
 import pdb

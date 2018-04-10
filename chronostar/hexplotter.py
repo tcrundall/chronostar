@@ -58,6 +58,12 @@ def plot_age_hist(ages, ax, init_conditions=None):
 #        )
 
 def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
+    try:
+        means['origin_then']
+        origins_inc = True
+    except KeyError:
+        origins_inc = False
+
     dim_label = 'XYZUVW'
     units = ['pc']*3 + ['km/s']*3
     xyzuvw = star_pars['xyzuvw'][:, 0]
@@ -68,15 +74,16 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
                             mn[np.ix_([dim1,dim2])],
                             ax=ax, color='b', alpha=0.1)
     for i in range(ngroups):
-        ee.plot_cov_ellipse(
-            covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
-            means['origin_then'][i][np.ix_([dim1,dim2])],
-            ax=ax, color="xkcd:neon purple", alpha=0.3, ls='--', #hatch='|',
-        )
-        #ee.plot_cov_ellipse(covs['origin_now'][i][:2, :2],
-        #                    means['origin_now'][i][:2], ax=ax,
-        #                    color='xkcd:gold',
-        #                    alpha=0.1, hatch='|', ls='--')
+        if origins_inc:
+            ee.plot_cov_ellipse(
+                covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
+                means['origin_then'][i][np.ix_([dim1,dim2])],
+                ax=ax, color="xkcd:neon purple", alpha=0.3, ls='--', #hatch='|',
+            )
+            #ee.plot_cov_ellipse(covs['origin_now'][i][:2, :2],
+            #                    means['origin_now'][i][:2], ax=ax,
+            #                    color='xkcd:gold',
+            #                    alpha=0.1, hatch='|', ls='--')
         ee.plot_cov_ellipse(
             covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_then'][i][np.ix_([dim1,dim2])],
@@ -136,7 +143,7 @@ def plot_hexplot(star_pars, means, covs, iter_count, prec=None,
     """
     logging.info("In plot_hexplot, iter {}".format(iter_count))
 
-    ngroups = covs.values()[0].shape[0]
+    ngroups = covs['fitted_then'].shape[0]
 
     # Get chains for each group to get the ages
 
