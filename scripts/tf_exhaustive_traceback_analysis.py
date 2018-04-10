@@ -28,10 +28,8 @@ sys.path.insert(0, '..')
 SAVE_DIR = '../results/tf_results/'
 THIS_DIR = os.getcwd()
 
-NSTEPS = 1000
-
 # best pars: age: 5, spread: 10, v_disp: 2(?), size: 25
-#"""
+"""
 ages = [5, 10, 20]
 spreads = [2, 5, 10]
 v_disps = [1, 2, 5]
@@ -39,14 +37,12 @@ sizes = [25, 50, 100]
 precs = ['perf', 'half', 'gaia', 'double']
 
 """
-NSTEPS = 200
-
 ages = [1, 2]
 spreads = [5]
 v_disps = [2]
 sizes   = [25]
 precs = ['perf', 'gaia']
-"""
+#"""
 
 precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
 
@@ -67,7 +63,7 @@ def do_something_wrapper(scenario):
     mkpath(path_name)
     os.chdir(path_name)
 
-    os.system(THIS_DIR + "/perform_tf_fit.py {} {} {} {} ".format(
+    os.system("python " +THIS_DIR + "/perform_tf_fit.py {} {} {} {} ".format(
         *scenario) + precs_string + " " + THIS_DIR + "/../"
               )
     os.chdir(THIS_DIR)

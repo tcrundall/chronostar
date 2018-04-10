@@ -6,8 +6,9 @@ import numpy as np
 # investigator
 from _overlap import get_lnoverlaps
 #from chronostar._overlap import get_lnoverlaps
-import corner
 import emcee
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import pickle
 import utils
@@ -477,10 +478,6 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
     best_sample = sampler.flatchain[final_best_ix]
 
     # corner plotting is heaps funky on my laptop....
-    if False:
-        plt.clf()
-        fig = corner.corner(sampler.flatchain, truths=best_sample)
-        fig.savefig("corner.png")
 
     return best_sample, sampler.chain, sampler.lnprobability
 

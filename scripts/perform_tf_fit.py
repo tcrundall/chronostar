@@ -118,8 +118,8 @@ if __name__ == '__main__':
 
     logging.info(mpi_msg)
     if not using_mpi:
-        logging.info("MPI available! - call this with e.g. mpirun -np 4"
-                     " python fitting_TWA.py")
+        logging.info("MPI available! - call this with e.g. mpirun -np 19"
+                     " python perform_tf_fit.py")
 
 
     # calculating all the relevant covariance matrices
@@ -180,8 +180,6 @@ if __name__ == '__main__':
 
             # save and store result so hex-plots can be calculated after the fact
             np.save(result_file, [best_fit, chain, lnprob, group_pars_in, group_pars_tf_style, group_pars_ex])
-            import pdb; pdb.set_trace()
-
             then_cov_true = utils.generate_cov(
                 utils.internalise_pars(group_pars_ex))
             then_cov_simple = tfgf.generate_cov(group_pars_in)
