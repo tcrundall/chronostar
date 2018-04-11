@@ -19,7 +19,8 @@ except ImportError:
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     if len(sys.argv) == 1:
-        print("Not enough arguments")
+        print(" ----- Not enough arguments --------------------------\n"
+              "Must provide relative path to chronostar main directory")
         raise UserWarning
 
     chr_path = sys.argv[1]
