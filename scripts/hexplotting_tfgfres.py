@@ -25,8 +25,10 @@ if __name__ == '__main__':
     chr_path = sys.argv[1]
     sys.path.insert(0, chr_path)
     import chronostar.tfgroupfitter as tfgf
-    import chronostar.tfexpectmax as tfem
+    #import chronostar.tfexpectmax as tfem
     import chronostar.hexplotter as hp
+
+    logging.info("Imports complete")
 
     precs = ['perf', 'half', 'gaia', 'double']
     for prec in precs:
@@ -42,7 +44,7 @@ if __name__ == '__main__':
                 hp.plot_hexplot(star_pars, means, covs, iter_count=0, prec=prec,
                                 save_dir=prec+'-')
                 # tfem.plot_all(star_pars, means, covs, ngroups, iter_count)
-
+                logging.info("finished plot for {}".format(prec))
             os.chdir("..")
 
         except OSError:
