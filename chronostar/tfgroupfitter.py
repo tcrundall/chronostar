@@ -434,7 +434,8 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
     logging.info("Burnt in, with convergence: {}\n"
           "Taking final burnin segment as sampling stage".format(converged))
     # save the chain for later inspection
-    np.save("final_chain", sampler.chain)
+    np.save("final_chain.npy", sampler.chain)
+    np.save("final_lnprob.npy", lnprob)
     if plot_it:
 #        plt.clf()
 #        plt.plot(burnin_lnprob_res)
