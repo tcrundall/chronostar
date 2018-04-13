@@ -140,12 +140,12 @@ def interp_cov(target_time, star_pars):
     """
     times = star_pars['times']
     ix = np.interp(target_time, times, np.arange(len(times)))
-    # check if interpolation is necessary
-    if np.isclose(target_time, times, atol=1e-5).any():
-        ix0 = int(round(ix))
-        interp_mns = star_pars['xyzuvw'][:, ix0]
-        interp_covs = star_pars['xyzuvw_cov'][:, ix0]
-        return interp_covs, interp_mns
+    ## check if interpolation is necessary
+    #if np.isclose(target_time, times, atol=1e-5).any():
+    #    ix0 = int(round(ix))
+    #    interp_mns = star_pars['xyzuvw'][:, ix0]
+    #    interp_covs = star_pars['xyzuvw_cov'][:, ix0]
+    #    return interp_covs, interp_mns
 
     ix0 = np.int(ix)
     frac = ix - ix0
@@ -235,8 +235,8 @@ def lnlike(pars, z, star_pars):
     lnlike
         the logarithm of the likelihood of the fit
     """
-    CHAR_POS_MIN = 2 #pc
-    CHAR_VEL_MIN = 2 #km/s
+    #CHAR_POS_MIN = 2 #pc
+    #CHAR_VEL_MIN = 2 #km/s
 
     # convert pars into covariance matrix
     group_cov = utils.generate_cov(pars)
@@ -245,13 +245,13 @@ def lnlike(pars, z, star_pars):
     if np.min(np.linalg.eigvalsh(group_cov)) < 0:
         return -np.inf
 
-    # incorporate eigenvalue prior
-    eig_val_prior = 0.0
-    pos_eig_vals = np.sqrt(np.linalg.eigvalsh(group_cov[:3,:3]))
-    for pos_eig_val in pos_eig_vals:
-        eig_val_prior += eig_prior(CHAR_POS_MIN, pos_eig_val)
-    v_disp = np.sqrt(group_cov[4,4])
-    eig_val_prior += eig_prior(CHAR_VEL_MIN, v_disp)
+#    # incorporate eigenvalue prior
+#    eig_val_prior = 0.0
+#    pos_eig_vals = np.sqrt(np.linalg.eigvalsh(group_cov[:3,:3]))
+#    for pos_eig_val in pos_eig_vals:
+#        eig_val_prior += eig_prior(CHAR_POS_MIN, pos_eig_val)
+#    v_disp = np.sqrt(group_cov[4,4])
+#    eig_val_prior += eig_prior(CHAR_VEL_MIN, v_disp)
 
     group_mn = pars[0:6]
 
@@ -265,7 +265,7 @@ def lnlike(pars, z, star_pars):
         group_cov, group_mn, interp_covs, interp_mns, nstars
     )
 
-    return np.sum(z * lnols) + np.log(eig_val_prior)
+    return np.sum(z * lnols) #+ np.log(eig_val_prior)
 
 
 def lnprobfunc(pars, z, star_pars):
@@ -312,13 +312,7 @@ def get_initial_pars(star_pars, initial_age, z):
     :return:
     """
     #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
-    # init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
-    init_pars = np.zeros(14)
-    _, interp_mns = interp_cov(initial_age, star_pars)
-
-    wmns = weighted_mean(interp_mns, z)
-    init_pars[0:6] = wmns
-    init_pars[6:10] = 1.0 / weighted_std(interp_mns, wmns, z)
+    init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,2.0]
     return init_pars
 
 
@@ -394,7 +388,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
     INIT_SDEV = [1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.02, 0.1, 0.1, 0.1, 0.5]
     star_pars = read_stars(tb_file)
     if fixed_age is None:
-        initial_age = 0.0
+        initial_age = 2.0
     else:
         initial_age = fixed_age
 
@@ -404,7 +398,8 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
 
     # Initialise the fit
     if init_pars is None:
-        init_pars = get_initial_pars(star_pars, initial_age, z)
+        init_pars = [0,0,0,0,0,0, 0.1, 0.1, 0.1, 0.2,0.0,0.0,0.0,initial_age]
+        #init_pars = get_initial_pars(star_pars, initial_age, z)
 
     NPAR = len(init_pars)
     NWALKERS = 2 * NPAR
@@ -415,7 +410,6 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
         init_pars[-1] = fixed_age
         INIT_SDEV[-1] = 0.0
 
-
     # Whole emcee shebang
     sampler = emcee.EnsembleSampler(
         NWALKERS, NPAR, lnprobfunc, args=[z, star_pars]
@@ -424,7 +418,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
     # all generated positions are permitted by lnprior
     pos = [
         init_pars + (np.random.random(size=len(INIT_SDEV)) - 0.5) * INIT_SDEV
-        for i in range(NWALKERS)
+        for _ in range(NWALKERS)
     ]
 
     #N_SUCCS = 0
