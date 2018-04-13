@@ -1,5 +1,6 @@
 from __future__ import division, print_function
 
+import logging
 import numpy as np
 
 # not sure if this is right, needed to change to this so I could run
@@ -338,12 +339,15 @@ def burnin_convergence(lnprob, tol=0.3, slice_size=20):
     start_lnprob_std = np.std(lnprob[:,:slice_size])
 
     end_lnprob_mn = np.mean(lnprob[:, -slice_size:])
+    end_lnprob_std = np.std(lnprob[:,-slice_size:])
+    logging.info("start mean {}, end mean {}, end std {}".\
+                 format(start_lnprob_mn, end_lnprob_mn, end_lnprob_std))
 
-    return np.isclose(start_lnprob_mn, end_lnprob_mn, atol=tol*start_lnprob_std)
+    return np.isclose(start_lnprob_mn, end_lnprob_mn, atol=tol*end_lnprob_std)
 
 
 def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
-              init_pars=None, plot_it=False, fixed_age=None):
+              init_pars=None, plot_it=False, fixed_age=None, conv_tol=0.3):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -383,6 +387,9 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
     """
     #global N_FAILS
     #global N_SUCCS
+    logging.info("Running a fit with {} burnin steps and {} sampling steps,"
+                 "with iterative convergence".\
+                 format(burnin_steps, sampling_steps))
 
     #            X,Y,Z,U,V,W,1/dX,1/dY,1/dZ,1/dV,Cxy,Cxz,Cyz,age
     INIT_SDEV = [1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.02, 0.1, 0.1, 0.1, 0.5]
@@ -427,17 +434,19 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
     # Perform burnin
     state = None
     converged = False
+    run_cnt = 0
     while not converged:
         pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
-        converged = burnin_convergence(sampler.lnprobability)
+        converged = burnin_convergence(sampler.lnprobability, conv_tol)
+        logging.info("Run {} converge? {}".format(run_cnt, converged))
 
         if plot_it:
             plt.clf()
             plt.plot(sampler.lnprobability)
-            plt.savefig("burnin_lnprob.png")
+            plt.savefig("burnin_lnprob{}.png".format(run_cnt))
             plt.clf()
             plt.plot(sampler.lnprobability.T)
-            plt.savefig("burnin_lnprobT.png")
+            plt.savefig("burnin_lnprobT{}.png".format(run_cnt))
 
         #    print("Number of failed priors after burnin:\n{}".format(N_FAILS))
         #    print("Number of succeeded priors after burnin:\n{}".format(N_SUCCS))
@@ -448,6 +457,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, sampling_steps=1000,
         for ix in poor_ixs:
             pos[ix] = pos[best_ix]
         sampler.reset()
+        run_cnt += 1
 
     #N_FAILS = 0
     #N_SUCCS = 0

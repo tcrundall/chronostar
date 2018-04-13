@@ -131,8 +131,9 @@ def plot_something(dims, infile, fit_bayes=True):
     if fit_bayes:
         logging.info("Calculate Bayes fit")
         for i in range(len(times)-1):
-            best_fit, chain = gf.fit_group(
-                infile, fixed_age=times[i], plot_it=True
+            best_fit, chain, lnprob = gf.fit_group(
+                infile, fixed_age=times[i], plot_it=True, burnin_steps=300,
+                sampling_steps=500, conv_tol=5.0
             )
             #bayes_cov = utils.generate_cov(best_fit)
             #bayes_spread[i] = utils.approx_spread(bayes_cov)
