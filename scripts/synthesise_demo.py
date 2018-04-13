@@ -19,8 +19,9 @@ import numpy as np
 import pdb
 import pickle
 
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+#logger = logging.getLogger()
+#logger.setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, filename='mylog.log')
 
 generate_files = True
 fit_bayes = True
