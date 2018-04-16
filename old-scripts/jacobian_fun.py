@@ -176,6 +176,7 @@ if __name__ == '__main__':
         [0,0,0,0,0,0,10,10,10,  2, 0., 0., 0.,age], # isotropic expansion
         [0,0,0,0,0,0,10, 1, 1, .1, 0., 0., 0.,2*age], # should rotate anticlock
         [-20,-20,300,0,0,0,10,10,10,  2, 0., 0., 0.,age], # isotropic expansion
+        [0,0,0,0,10,0,10, 1, 1, .1, 0., 0., 0., 1000],
     ]
 
     for cnt, dummy_group_pars_ex in enumerate(dummy_groups):
@@ -188,7 +189,7 @@ if __name__ == '__main__':
             plt.clf()
             plt.plot(stars[:,0], stars[:,1], 'b.')
             #plt.hist2d(stars[:,0], stars[:,1], bins=20)
-            ee.plot_cov_ellipse(cov[:2,:2], mean)
+            ee.plot_cov_ellipse(cov[:2,:2], mean, color='b', alpha=0.3)
             #plt.show()
 
         new_stars = np.zeros(stars.shape)
@@ -198,7 +199,6 @@ if __name__ == '__main__':
         # calculate the new mean and cov
         new_mean = trace_forward(mean, age)
         new_cov = tf.transform_cov(cov, trace_forward, mean, dim=6, args=(age,))
-        import pdb; pdb.set_trace()
         new_eigvals = np.linalg.eigvalsh(new_cov)
 
         estimated_cov = np.cov(new_stars.T)
