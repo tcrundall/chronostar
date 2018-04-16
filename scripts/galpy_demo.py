@@ -1,12 +1,39 @@
 from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014 as mp
+from galpy.util import bovy_conversion
 import matplotlib.pyplot as plt
 import numpy as np
+import astropy.units as u
+
+from IPython.core.debugger import Tracer
 
 # GALPY STORES ORBITAL INFO IN GALACTOCENTRIC CYLINDRICAL COORDINATES
 # [R, vR, vT, z, vZ, phi]
 
-def galpy_coords_to_xyzuvw(data, ro=8., vo=220.):
+def observed_to_xyzuvw(obs, ts, lsr_orbit=None):
+    """
+    Convert six-parameter astrometric solution to XYZUVW orbit.
+
+    Parameters
+    ----------
+    obs :   [RA (deg), DEC (deg), pi (mas),
+             mu_ra (mas/yr), mu_dec (mas/yr), vlos (km/s)]
+        Current kinematics
+    ts : [ntimes] array
+        times (in Gyr) to traceback to
+
+    lsr_orbit : Orbit
+        the orbit of the local standard of rest for comparison, if None can
+        calculate on the fly
+
+    XYZUVW : [ntimes, 6] array
+        The space position and velocities of the star in a co-rotating frame
+        centred on the LSR
+    """
+
+    Tracer()()
+
+def galpy_coords_to_xyzuvw(data, ro=8., vo=220., rc=True):
     """
     Converts orbits from galactocentric and takes them to XYZUVW
 
@@ -34,26 +61,48 @@ def galpy_coords_to_xyzuvw(data, ro=8., vo=220.):
         physical units. If left as default, output will be in km/s
         This is also the circular velocity of a circular orbit with X,Y
         equal to that of the sun.
+    rc : boolean
+        whether to calculate XYZUVW in a right handed coordinate system
+        (X, U positive towards galactic centre)
     """
-    return None
+    R, vR, vT, z, vz, phi = data.T
+    phi = data[:, 5]
+    X = ro * R * np.cos(phi)
+    Y = ro * R * np.sin(phi)
+    Z = ro * z
 
-#def demo_lsr_and_sun_calc():
-if __name__ == '__main__':
-    max_age = 1 #Gyr
-    ntimes = 100
-    ts= np.linspace(0,max_age,ntimes)
+    U = vo * (vT * np.cos(phi) + vR * np.sin(phi))
+    V = vo * (-vR * np.cos(phi) + vT * np.sin(phi))
+    W = vo * vz
+    XYZUVW = np.vstack((X,Y,Z,U,V,W)).T
+    return XYZUVW
+
+def demo_lsr_and_sun_cal():
+    """
+    Litte demo showing how one would calculate the orbit of the LSR and sun
+    :return:
+    """
+    perimeter = 2 * np.pi * 8 * u.kpc
+    velocity  = 220 * u.km/ u.s
+    # for reference, LSR (at 8 kpc, with V = 220 km/s) should take this long
+    # to complete one orbit
+    orbit_time = (perimeter / velocity).to("Gyr")
+
+    max_age = 100 * orbit_time / bovy_conversion.time_in_Gyr(220., 8.) # Gyr
+    ntimes = 10000
+    ts = np.linspace(0,max_age,ntimes)
 
     # INITIALISING SUN COORDINATES AND ORBIT
     #deg, deg, kpc,  mas/yr, mas/yr, km/s
-    ra,   dec, dist, mu_ra,  mu_dec, vlos = 0., 0., 0., 0., 0., 0.
+    ra, dec, dist, mu_ra,  mu_dec, vlos = 0., 0., 0., 0., 0., 0.
     solar_coords = [ra, dec, dist, mu_ra, mu_dec, vlos]
     sun = Orbit(vxvv=solar_coords, radec=True, solarmotion='schoenrich') # should just be the sun's orbit
     sun.integrate(ts,mp,method='odeint')
 
-    # get the orbit (not sure what coords...)
+    # get the orbit [R, vR, vT, z, vz, phi] (pos scaled by ro, vel scaled by vo)
     sun_data = sun.getOrbit()
 
-    # plots the sun's motion with respect to LSR(?)
+    # plots the sun's motion with respect to Galactic Centre
     sunR = 8 * sun_data[:,0]
     sunphi = sun_data[:,5]
     sunX = sunR * np.cos(sunphi)
@@ -67,7 +116,7 @@ if __name__ == '__main__':
     plt.plot(sunX, sunZ)
     plt.savefig('temp_plots/sunXZ.png')
 
-    # plot the XY of the sun's motion using galpy's plot function
+    # plot the XY of the sun's motion using galpy's plot function (w.r.t GC)
     plt.clf()
     sun.plot(d1='x', d2='y')
     plt.savefig('temp_plots/galpy_sunXY.png')
@@ -75,15 +124,19 @@ if __name__ == '__main__':
     sun.plot(d1='x', d2='z')
     plt.savefig('temp_plots/galpy_sunXZ.png')
 
+    plt.clf()
+    sun.plot(d1='R', d2='z')
+    plt.savefig('temp_plots/galpy_sunRZ.png')
+
     #                                                        kpc, km/s
     # INITIALISING THE LSR (at XYZUVW (w.r.t sun) of [0,0,-0.025,0,220,0]
-    R, vR, vT, z, vz, phi = 1., 0., 1., 0., 0./220, 0.
+    R, vR, vT, z, vz, phi = 1., 0., 1., 0., 0., 0. # <--- Galpy units
     LSR_coords = [R, vR, vT, z, vz, phi]
     lsr = Orbit(vxvv=LSR_coords, solarmotion='schoenrich', vo=220, ro=8)
     lsr.integrate(ts, mp, method='odeint')
 
+    # plots a perfect circle
     plt.clf()
-    # SHOULD PLOT A PERFECT CIRCLE
     lsr.plot(d1='x', d2='y')
     plt.savefig('temp_plots/galpy_lsrXY.png')
 
@@ -91,6 +144,7 @@ if __name__ == '__main__':
     lsr.plot(d1='x', d2='z')
     plt.savefig('temp_plots/galpy_lsrXZ.png')
 
+    # Manually reconstructing orbit
     lsr_data = lsr.getOrbit()
     lsrR = 8 * lsr_data[:,0]
     lsrphi = lsr_data[:,5]
@@ -158,31 +212,48 @@ if __name__ == '__main__':
     ax.plot(lsrX, lsrY, lsrZ, label='lsr')
     ax.legend()
     plt.savefig('temp_plots/3D_sun_lsr.png')
-    #plt.show()
+    plt.show()
+    galpy_coords_to_xyzuvw(lsr_data)
+    print("Max age is {} and max phi is {}... does this make sense?".\
+        format(max_age, np.max(lsr_data[:,5])))
+    print("Max age is {} and max phi is {}... does this make sense?". \
+        format(max_age, np.max(sun_data[:,5])))
 
 
-#if __name__ == '__main__':
-def lsr_nonsense():
-    max_age = 4. #Gyr
+if __name__ == '__main__':
+#def lsr_nonsense():
+    demo_lsr_and_sun_cal()
+
+    RO = 8.
+    VO = 220.
+    BOVY_TIME_CONVERSION = bovy_conversion.time_in_Gyr(VO, RO)
+
+    perimeter = 2 * np.pi * 8 * u.kpc
+    velocity = 220 * u.km / u.s
+    # for reference, LSR (at 8 kpc, with V = 220 km/s) should take this long
+    # to complete one orbit
+    orbit_time = (perimeter / velocity).to("Gyr")
+
+    max_age = orbit_time.value / BOVY_TIME_CONVERSION
     ntimes = 100
-    ts= np.linspace(0,max_age,ntimes)
+    ts = np.linspace(0, max_age, ntimes)
 
     # demo a star (with vT=220, vR=0, vZ=0, z=0, phi=0.1 pi) staying
     # fixed in our coordinate frame
-    R, vR, vT, z, vz, phi = 1., 0., 1., 0., 0./220, 0.
+    R, vR, vT, z, vz, phi = 1., 0., 1., 0., 0., 0.
     LSR_coords = [R, vR, vT, z, vz, phi]
     lsr = Orbit(vxvv=LSR_coords, solarmotion='schoenrich', vo=220, ro=8)
     lsr.integrate(ts, mp, method='odeint')
 
     lsr_data = lsr.getOrbit()
-    lsrR = 8 * lsr_data[:,0]
+    lsrR = RO * lsr_data[:,0]
     lsrphi = lsr_data[:,5]
 
     lsrX = lsrR * np.cos(lsrphi)
     lsrY = lsrR * np.sin(lsrphi)
-    lsrZ = 8 * lsr_data[:,3]
+    lsrZ = RO * lsr_data[:,3]
 
-    R, vR, vT, z, vz, phi = 1., 0., 1., 0., 0./220, 0.25*np.pi
+    R, vR, vT, z, vz, phi = 1., 0., 1., 0., 0., 0.25*np.pi
     rot_lsr_coords = [R, vR, vT, z, vz, phi]
     rot_lsr = Orbit(vxvv=rot_lsr_coords, solarmotion='schoenrich', vo=220, ro=8)
     rot_lsr.integrate(ts, mp, method='odeint')
@@ -206,5 +277,7 @@ def lsr_nonsense():
 
     # putting into corotating cartesian system centred on LSR
     rel_data = rot_lsr_data - lsr_data
+    XYZUVW_rot = galpy_coords_to_xyzuvw(rel_data)
 
-
+    #observed_to_xyzuvw(0, np.linspace(0,orbit_time.value, 100))
+    galpy_ts = np.linspace(0, orbit_time.value, 100) / BOVY_TIME_CONVERSION
