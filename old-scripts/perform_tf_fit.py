@@ -39,8 +39,8 @@ perf_data_file = "perf_xyzuvw.npy"
 result_file = "result.npy"
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
-BURNIN_STEPS = 600
-C_TOL = 0.15
+BURNIN_STEPS = 1000
+C_TOL = 0.2
 
 print("In preamble")
 
