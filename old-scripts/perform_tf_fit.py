@@ -106,7 +106,7 @@ group_pars_ex[14] = nstars
 
 # decrement position by approx vel*t so final result is
 # in similar location across ages
-group_pars_ex[0] -= age * group_pars_ex[3]
+group_pars_ex[0] += age * group_pars_ex[3]
 group_pars_ex[1] -= age * group_pars_ex[4]
 group_pars_ex[2] -= age * group_pars_ex[5]
 
