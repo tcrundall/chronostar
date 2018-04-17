@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
 
+import pdb
+
 from IPython.core.debugger import Tracer
 
 # GALPY STORES ORBITAL INFO IN GALACTOCENTRIC CYLINDRICAL COORDINATES
@@ -33,7 +35,7 @@ def observed_to_xyzuvw(obs, ts, lsr_orbit=None):
 
     Tracer()()
 
-def galpy_coords_to_xyzuvw(data, ro=8., vo=220., rc=True):
+def galpy_coords_to_xyzuvw(data, ts, ro=8., vo=220., rc=True):
     """
     Converts orbits from galactocentric and takes them to XYZUVW
 
@@ -53,6 +55,8 @@ def galpy_coords_to_xyzuvw(data, ro=8., vo=220., rc=True):
         z  : vertical distance from plane / ro
         vz : vertical velocity / vo
         phi : angle about the galaxy
+    ts : [ntimes] float array [galpy time units]
+        times used to generate orbit. Ensure the units are in galpy time units
     ro : float
         a conversion factor that takes units from galpy units to
         physical units. If left as default, output will be in kpc
@@ -65,15 +69,20 @@ def galpy_coords_to_xyzuvw(data, ro=8., vo=220., rc=True):
         whether to calculate XYZUVW in a right handed coordinate system
         (X, U positive towards galactic centre)
     """
-    R, vR, vT, z, vz, phi = data.T
-    phi = data[:, 5]
-    X = ro * R * np.cos(phi)
-    Y = ro * R * np.sin(phi)
+    phi_lsr = ts
+    R, vR, vT, z, vz, phi_s = data.T
+
+    phi = phi_s - phi_lsr
+
+    X = ro * (1. - R * np.cos(phi))
+    Y = ro * (- np.sin(phi))
     Z = ro * z
 
-    U = vo * (vT * np.cos(phi) + vR * np.sin(phi))
-    V = vo * (-vR * np.cos(phi) + vT * np.sin(phi))
+    U = vo * (-vR*np.cos(phi) - vT*np.sin(phi))
+    V = vo * ( vT*np.cos(phi) - vR*np.sin(phi) - 1.)
     W = vo * vz
+    #pdb.set_trace()
+
     XYZUVW = np.vstack((X,Y,Z,U,V,W)).T
     return XYZUVW
 
@@ -213,7 +222,7 @@ def demo_lsr_and_sun_cal():
     ax.legend()
     plt.savefig('temp_plots/3D_sun_lsr.png')
     plt.show()
-    galpy_coords_to_xyzuvw(lsr_data)
+    #galpy_coords_to_xyzuvw(lsr_data)
     print("Max age is {} and max phi is {}... does this make sense?".\
         format(max_age, np.max(lsr_data[:,5])))
     print("Max age is {} and max phi is {}... does this make sense?". \
@@ -222,17 +231,17 @@ def demo_lsr_and_sun_cal():
 
 if __name__ == '__main__':
 #def lsr_nonsense():
-    demo_lsr_and_sun_cal()
+    #demo_lsr_and_sun_cal()
 
     RO = 8.
     VO = 220.
-    BOVY_TIME_CONVERSION = bovy_conversion.time_in_Gyr(VO, RO)
+    BOVY_TIME_CONVERSION = bovy_conversion.time_in_Gyr(VO, RO) * 1000 # Myr/bovy_time
 
     perimeter = 2 * np.pi * 8 * u.kpc
     velocity = 220 * u.km / u.s
     # for reference, LSR (at 8 kpc, with V = 220 km/s) should take this long
     # to complete one orbit
-    orbit_time = (perimeter / velocity).to("Gyr")
+    orbit_time = (perimeter / velocity).to("Myr")
 
     max_age = orbit_time.value / BOVY_TIME_CONVERSION
     ntimes = 100
@@ -259,25 +268,31 @@ if __name__ == '__main__':
     rot_lsr.integrate(ts, mp, method='odeint')
 
     rot_lsr_data = rot_lsr.getOrbit()
-    rot_lsrR = 8 * rot_lsr_data[:,0]
-    rot_lsrphi = rot_lsr_data[:,5]
-
-    rot_lsrX = rot_lsrR * np.cos(rot_lsrphi)
-    rot_lsrY = rot_lsrR * np.sin(rot_lsrphi)
-    rot_lsrZ = 8 * rot_lsr_data[:,3]
-
-    plt.clf()
-    plt.plot(lsrX, lsrY + 1)
-    plt.plot(rot_lsrX, rot_lsrY)
-    plt.savefig('temp_plots/rotXY.png')
-    plt.clf()
-    plt.plot(lsrX, lsrZ)
-    plt.plot(rot_lsrX, rot_lsrZ)
-    plt.savefig('temp_plots/rotXZ.png')
 
     # putting into corotating cartesian system centred on LSR
-    rel_data = rot_lsr_data - lsr_data
-    XYZUVW_rot = galpy_coords_to_xyzuvw(rel_data)
+    XYZUVW_rot = galpy_coords_to_xyzuvw(rot_lsr_data, ts)
+    plt.clf()
+    plt.plot(XYZUVW_rot[:,0], XYZUVW_rot[:,1])
+    plt.savefig("temp_plots/rotXY.png")
+
+
+    orbit_time = (perimeter / velocity).to("Myr")
+    ts = np.linspace(0., 10*orbit_time.value, 1000) / BOVY_TIME_CONVERSION
+    ra, dec, dist, mu_ra, mu_dec, vlos = 0., 0., 0., 0., 0., 0.
+    solar_coords = [ra, dec, dist, mu_ra, mu_dec, vlos]
+    sun = Orbit(vxvv=solar_coords, radec=True,
+                solarmotion='schoenrich')  # should just be the sun's orbit
+    sun.integrate(ts, mp, method='odeint')
+
+    # get the orbit [R, vR, vT, z, vz, phi] (pos scaled by ro, vel scaled by vo)
+    sun_data = sun.getOrbit()
+    XYZUVW_sun = galpy_coords_to_xyzuvw(sun_data, ts)
+    plt.clf()
+    plt.plot(XYZUVW_sun[:,0], XYZUVW_sun[:,1])
+    plt.savefig("temp_plots/sunXY.png")
+    plt.clf()
+    plt.plot(XYZUVW_sun[:,0], XYZUVW_sun[:,2])
+    plt.savefig("temp_plots/sunXZ.png")
 
     #observed_to_xyzuvw(0, np.linspace(0,orbit_time.value, 100))
     galpy_ts = np.linspace(0, orbit_time.value, 100) / BOVY_TIME_CONVERSION
