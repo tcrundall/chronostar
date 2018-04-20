@@ -6,6 +6,7 @@ logs/*
 # Data
 *.fits
 *.pkl
+*.npy
 
 # Temp files
 data/synth_log.txt
@@ -20,6 +21,10 @@ data/temp.txt
 logs/*.txt
 *.csv
 *.dat
+
+# Log files
+*.out
+*.log
 
 # Plots and saves
 *.eps

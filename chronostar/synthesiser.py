@@ -222,7 +222,7 @@ def synthesise_data(ngroups, group_pars, error_perc=1.0, savefile=None,
     ------
     * a saved astropy table: data/synth_[N]groups_[N]stars.pkl
     """
-    if init_xyzuvw and age:
+    if init_xyzuvw is not None and age is not None:
         if type(init_xyzuvw) == str:
             init_xyzuvw = np.load(init_xyzuvw)
         xyzuvw_now = project_group(init_xyzuvw, age)

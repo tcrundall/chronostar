@@ -31,9 +31,11 @@ import pickle
 import sys
 from emcee.utils import MPIPool
 
+init_stars_file = "init_stars.npy"
 perf_data_file = "perf_xyzuvw.npy"
 result_file = "result.npy"
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
+
 
 BURNIN_STEPS = 1000
 C_TOL = 0.2
@@ -56,7 +58,7 @@ try:
     precs = sys.argv[2:-1]
     package_path = sys.argv[-1]
     data_path = package_path + "/data/sink_init_xyzuvw.npy"
-except ValueError:
+except (IndexError, NameError, ValueError):
     print("Usage: ./perform_tf_fit.py [age] [prec1]"
           "[prec2] ... /relative/path/to/chronostar/")
     raise
@@ -94,11 +96,26 @@ if using_mpi:
         sys.exit(0)
 print("Only one thread is master")
 
-## decrement position by approx vel*t so final result is
-## in similar location across ages
-#group_pars_ex[0] += age * group_pars_ex[3]
-#group_pars_ex[1] -= age * group_pars_ex[4]
-#group_pars_ex[2] -= age * group_pars_ex[5]
+try:
+    init_xyzuvw = np.load(init_stars_file)
+except IOError:
+    ## decrement position by approx vel*t so final result is
+    ## in similar location across ages
+
+    # approx region of present day positions
+    approx_final_pos = np.array([80, 100, -20])
+    # velocities set that group travels approx 50 pc through X-Y plane
+    dist_travelled = 50. #pc
+    vel_offset = np.array([dist_travelled/age, dist_travelled/age, 0.])
+    offset = np.append([0,0,0], vel_offset)
+    offset[0] += age * offset[3]
+    offset[1] -= age * offset[4]
+    offset[2] -= age * offset[5]
+
+    init_xyzuvw = np.load(data_path)
+    init_xyzuvw += offset
+    init_xyzuvw[:,:3] += approx_final_pos
+    np.save(init_stars_file, init_xyzuvw)
 
 try:
     perf_xyzuvws = np.load(perf_data_file)
@@ -127,7 +144,7 @@ except IOError:
     logging.info("Synthesising data")
 #    perf_xyzuvws, _ = syn.generate_current_pos(0, None, )
 #    np.save(perf_data_file, perf_xyzuvws)
-    syn.synthesise_data(None, None, init_xyzuvw=data_path, age=age,
+    syn.synthesise_data(None, None, init_xyzuvw=init_xyzuvw, age=age,
                         perf_data_file=perf_data_file)
     perf_xyzuvws = np.load(perf_data_file)
 
@@ -137,21 +154,10 @@ if not using_mpi:
                  " python perform_tf_fit.py")
 
 # calculating all the relevant covariance matrices
-init_xyzuvw = np.load(data_path)
+# init_xyzuvw = np.load(init_xyzuvw)
 then_cov_true = np.cov(init_xyzuvw.T)
 
 dXav = (np.prod(np.linalg.eigvals(then_cov_true[:3, :3])) ** (1. / 6.))
-
-# This represents the target result - a simplified, spherical
-# starting point
-#group_pars_tf_style = \
-#    np.append(
-#        np.append(
-#            np.append(np.copy(group_pars_ex)[:6], dXav), dV
-#        ), age
-#    )
-#group_pars_in = np.copy(group_pars_tf_style)
-#group_pars_in[6:8] = np.log(group_pars_in[6:8])
 
 for prec in precs:
     # if we are being PEDANTIC can also check if traceback
