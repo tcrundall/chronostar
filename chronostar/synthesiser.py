@@ -30,25 +30,25 @@ GAIA_ERRS = {
     'e_pm' :0.06, #e_pm [mas/yr]
 }
 
-def synth_group(group_pars):
-    """Synthesise an association of stars in galactic coords at t=0
+def init_group(group_pars_ex):
+    """Initialise stars in XYZUVW based on a multivariate Guassian distribution
 
     Parameters
     ----------
-    group_pars
-        [15] array with the following values:
+    group_pars_ex : [15] array
+        group parameters in 'external' parametrisation
         [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars]
 
     Returns
     -------
-    xyzuvw_now
-        The XYZUVW phase space values of stars at current time
+    xyzuvw_then : [nstars, 6] array
+        The XYZUVW phase space values of stars at t=0
     """
-    nstars = int(group_pars[-1])
-    age = group_pars[-2]
+    nstars = int(group_pars_ex[-1])
+    age = group_pars_ex[-2]
 
     # build covariance matrix, using "internal" parametrisation
-    group_pars_in = np.copy(group_pars[:-1])
+    group_pars_in = np.copy(group_pars_ex[:-1])
     group_pars_in[6:10] = 1./group_pars_in[6:10]
     cov = generate_cov(group_pars_in)
 
@@ -56,13 +56,45 @@ def synth_group(group_pars):
     xyzuvw_init = np.random.multivariate_normal(
         mean=group_pars[0:6], cov=cov, size=nstars
         )
+    return xyzuvw_init
 
-    # Project forward in time
+def project_group(xyzuvw_init, age):
+    """Given stars in XYZUVW at t=0, project them forward to the currenty day
+
+    Parameters
+    ----------
+    xyzuvw_init : [nstars, 6] array
+        Initial XYZUVW values (pc, km/s)
+
+    Returns
+    -------
+    xyzuvw_now : [nstars, 6] array
+        Current XYZUVW values
+    """
+    nstars = xyzuvw_init.shape[0]
     xyzuvw_now = np.zeros((nstars,6))
     for i in range(nstars):
         xyzuvw_now[i] = tb.trace_forward(xyzuvw_init[i], age,
                                         solarmotion=None)
+    return xyzuvw_now
 
+def synth_group(group_pars_ex):
+    """Synthesise an association of stars in galactic coords at t=0
+
+    Parameters
+    ----------
+    group_pars_ex : [15] array
+        group parameters in 'external' parametrisation
+        [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars]
+
+    Returns
+    -------
+    xyzuvw_now
+        The XYZUVW phase space values of stars at current time
+    """
+    # Sample stars' initial parameters
+    xyzuvw_init = init_group(group_pars_ex)
+    xyzuvw_now = project_group(xyzuvw_init, group_pars_ex[-2])
     return xyzuvw_now
 
 def measure_stars(xyzuvw_now):
@@ -160,7 +192,8 @@ def generate_table_with_error(sky_coord_now, error_perc):
         )
     return t
 
-def synthesise_data(ngroups, group_pars, error_perc, savefile=None):
+def synthesise_data(ngroups, group_pars, error_perc=1.0, savefile=None,
+                    init_xyzuvw=None, age=None, perf_data_file=None):
     """
     Entry point of module; synthesise the observational measurements of an
     arbitrary number of groups with arbitrary initial conditions, with 
@@ -179,12 +212,26 @@ def synthesise_data(ngroups, group_pars, error_perc, savefile=None):
         ranging from perfect (0) to Gaia-like (1)
     savefile
         optional name for output file
+    init_xyzuvw : [nstars, 6] array {None}
+        if you already have the XYZUVW distriubtion of an association at age=0,
+        you can include them here
+    age : float
+        if including the XYZUVW distriubiton, need to explicitly state age in Myr
 
     Output
     ------
     * a saved astropy table: data/synth_[N]groups_[N]stars.pkl
     """
-    xyzuvw_now, nstars = generate_current_pos(ngroups, group_pars)
+    if init_xyzuvw and age:
+        if type(init_xyzuvw) == str:
+            init_xyzuvw = np.load(init_xyzuvw)
+        xyzuvw_now = project_group(init_xyzuvw, age)
+    else:
+        xyzuvw_now, nstars = generate_current_pos(ngroups, group_pars)
+    if perf_data_file:
+        np.save(perf_data_file, xyzuvw_now)
+        return
+
     sky_coord_now = measure_stars(xyzuvw_now)
     synth_table = generate_table_with_error(sky_coord_now, error_perc)
 
