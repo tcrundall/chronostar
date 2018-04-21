@@ -1,10 +1,14 @@
+import logging
 import numpy as np
+from scipy.stats import mstats
 import sys
 sys.path.insert(0, '..')
 
 import chronostar.synthesiser as syn
+LOGGINGLEVEL = logging.DEBUG
 
-def test_groupGeneration():
+def testGroupGeneration():
+    logging.basicConfig(level=LOGGINGLEVEL, filename="test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 50.]
     myGroup = syn.SynthGroup(pars, sphere=True)
     assert myGroup.age == pars[-2]
@@ -12,10 +16,47 @@ def test_groupGeneration():
     scmat = myGroup.generateSphericalCovMatrix()
     assert np.max(np.linalg.eigvalsh(scmat)) == np.max(pars[6:8])**2
 
-def test_starGenerate():
-    pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 50.]
+def testStarGenerate():
+    logging.basicConfig(level=LOGGINGLEVEL, filename="test_synthesiser.log")
+    pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100000.]
     init_xyzuvw = syn.synthesise_xyzuvw(pars, sphere=True)
     myGroup = syn.SynthGroup(pars, sphere=True)
-    np_cov = np.cov(init_xyzuvw.T)
+    fitted_cov = np.cov(init_xyzuvw.T)
+    fitted_dx = mstats.gmean((
+        fitted_cov[0,0], fitted_cov[1,1], fitted_cov[2,2]
+    ))
+    np.set_printoptions(suppress=True, precision=4)
+    assert np.allclose(fitted_cov, myGroup.generateSphericalCovMatrix(),
+                       atol=1),\
+        "\n{}\ndoesn't equal\n{}".format(
+            fitted_cov, myGroup.generateSphericalCovMatrix()
+        )
 
+def testEllipticalGeneration():
+    logging.basicConfig(level=LOGGINGLEVEL,
+                        filename="logs/test_synthesiser.log")
+    pars = [0., 0., 0., 0., 0., 0., 10., 15., 5., 5., 0.0, 0.0, 0.0, 20.,
+            100000.]
+    init_xyzuvw = syn.synthesise_xyzuvw(pars, sphere=False)
+    myGroup = syn.SynthGroup(pars, sphere=False)
+    sphere_dx = mstats.gmean(pars[6:9])
+    assert sphere_dx == myGroup.sphere_dx
+
+    fitted_cov = np.cov(init_xyzuvw.T)
+    fitted_sphere_dx = mstats.gmean((
+        fitted_cov[0,0], fitted_cov[1,1], fitted_cov[2,2]
+    ))**0.5
+    assert np.isclose(sphere_dx, fitted_sphere_dx, rtol=1e-2)
+
+    assert np.allclose(fitted_cov, myGroup.generateEllipticalCovMatrix(),
+                       atol=2), \
+        "\n{}\ndoesn't equal\n{}".format(
+            fitted_cov, myGroup.generateEllipticalCovMatrix()
+        )
+
+
+def testSaveFiles():
+    logging.basicConfig(level=LOGGINGLEVEL, filename="test_synthesiser.log")
+    pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100.]
+    assert False, "IMPLEMENT ME!!!"
 

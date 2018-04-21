@@ -1,16 +1,13 @@
 """
 synthesiser
-Goal: Have a bunch of synthesised traceback scenarios
 
-Tool: Generate initial conditions of a "group",
-project forward in time,
-make artificial "measurements",
-store as a star table,
-save "ground truths" in some log somewhere
+From a parametrised gaussian distribution, generate the starting
+XYZUVW values for a given number of stars
 """
 
 from __future__ import print_function, division
 
+import logging
 import numpy as np
 
 class SynthGroup:
@@ -19,20 +16,21 @@ class SynthGroup:
         # If not set, interpret pars another way
         # Simply supposed to be a neat way of packaging up a group's initial
         # conditions
+        logging.debug("Input: {}".format(pars))
         self.is_sphere = sphere
         if sphere:
             self.mean = pars[:6]
             self.dx = self.sphere_dx = pars[6]
             self.dv = pars[7]
             self.age = pars[8]
-            self.nstars = pars[9]
+            self.nstars = int(pars[9])
         else:
             self.mean = pars[:6]
             self.dx, self.dy, self.dz = pars[6:9]
             self.dv = pars[9]
             self.cxy, self.cxz, self.cyz = pars[10:13]
             self.age = pars[13]
-            self.nstars = pars[14]
+            self.nstars = int(pars[14])
 
             self.sphere_dx = (self.dx * self.dy * self.dz)**(1./3.)
 
@@ -79,7 +77,63 @@ class SynthGroup:
             assert np.allclose(ecmat, ecmat.T)
             return ecmat
 
+    def generateCovMatrix(self):
+        if self.is_sphere:
+            return self.generateSphericalCovMatrix()
+        else:
+            return self.generateEllipticalCovMatrix()
 
-def synthesise_xyzuvw(pars, sphere=True):
-    return
+def synthesise_xyzuvw(pars, sphere=True, return_group=False,
+                      xyzuvw_savefile='', group_savefile=''):
+    """
+    Generate a bunch of stars in situ based off a Guassian parametrisation
+
+    Parameters
+    ----------
+    pars : [10] or [15] float array
+        10 parameters : [X,Y,Z,U,V,W,dX,dV,age,nstars]
+            Covariance matrix describes a spherical distribution in pos
+            and vel space
+        15 parameters : [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars]
+            Covariance matrix descirbes a spherical distribution in velocity
+            space and freely orientable, triaxial ellipsoid in position space
+    sphere : boolean {True}
+        Set flag True if providing pars in 9 parameter form,
+        Set flag False if providing pars in 14 parameter form,
+    return_group : boolean {False}
+        Set flag if want to return the group object (for tracking input
+        parameters)
+    xyzuvw_savefile : String {''}
+        Provide a string to numpy.save the init_xyzuvw array
+    group_savefile : Stirng {''}
+        Provide a string to numpy.save the group object; note you need to
+        np.load(group_savefile).item() in order to retrieve it.
+
+    Returns
+    -------
+    xyzuvw_init : [nstars,6] float array
+        Initial distribution of stars in XYZUVW coordinates in corotating, RH
+        (X,U positive towards galactic anti-centre) cartesian coordinates
+        centred on local standard fo rest.
+
+    (if flag return_group is set)
+    group : SynthGroup object
+        An object that wraps initialisation parameters
+    """
+    group = SynthGroup(pars, sphere=sphere)
+    logging.debug("Mean {}".format(group.mean))
+    logging.debug("Cov\n{}".format(group.generateCovMatrix()))
+    logging.debug("Number of stars {}".format(group.nstars))
+    init_xyzuvw = np.random.multivariate_normal(
+        mean=group.mean, cov=group.generateCovMatrix(),
+        size=group.nstars,
+    )
+    if xyzuvw_savefile:
+        np.save(xyzuvw_savefile, init_xyzuvw)
+    if group_savefile:
+        np.save(group_savefile, group)
+    if return_group:
+        return init_xyzuvw, group
+    else:
+        return init_xyzuvw
 
