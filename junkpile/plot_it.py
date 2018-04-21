@@ -4,7 +4,7 @@ pkl files. Need to provide a timestamp and other parameters required
 to identify the file names.
 """
 
-import chronostar.analyser as anl
+import chronostar.retired.analyser as anl
 import pickle
 import argparse
 

@@ -8,22 +8,12 @@ __version__ = "0.1"
 
 
 #!!! Note that from traceback import * doesn't work!
-import error_ellipse
-import expectmax
-import tfexpectmax
-import tracingback 
-import fit_group
-import groupfitter
-import tfgroupfitter
-import analyser
-import synthesiser
-import utils
-import quadplotter
+#from chronostar.retired import quadplotter
+from chronostar import synthesiser
+
 try:
     import _overlap
 except:
     print("overlap not imported, SWIG not possible. Need to make in"
             " directory...")
 
-#Tim's code to play around with miscelaneous data sets neatly
-# import play

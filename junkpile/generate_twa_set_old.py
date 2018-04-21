@@ -6,13 +6,14 @@ then applies chronostar.traceback.traceback() (?) function.
 """
 
 import chronostar.traceback as tb
-import chronostar.groupfitter as gf
+import chronostar.retired.groupfitter as gf
 import chronostar._overlap as ov
 import numpy as np
 import pdb
 import pickle
 from csv import reader
-from astropy.table import Table, Column
+from astropy.table import Table
+
 try:
     import astropy.io.fits as pyfits
 except:

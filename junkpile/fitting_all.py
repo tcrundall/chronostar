@@ -2,13 +2,12 @@
 """Not sure how this file differs from fitting_BPMG and fitting_TWA....
 """
 
-from chronostar import groupfitter
-import chronostar.analyser as anl
+from chronostar.retired import groupfitter
+import chronostar.retired.analyser as anl
 import numpy as np
 import time
 import pickle
 
-import pdb
 import argparse
 
 parser = argparse.ArgumentParser()

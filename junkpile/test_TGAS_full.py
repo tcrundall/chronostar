@@ -30,12 +30,9 @@ hdulist.writeto('TGAS_traceback_165Myr_small.fits', clobber=True)
 from __future__ import print_function, division
 
 import numpy as np
-import matplotlib.pyplot as plt
-from astropy.table import Table
 import astropy.io.fits as pyfits
-import pylab as p
 import chronostar.traceback as traceback
-import chronostar.fit_group as fit_group
+import chronostar.retired.fit_group as fit_group
 #plt.ion()
 
 trace_it_back = True
@@ -107,7 +104,7 @@ if trace_it_back:
     tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=False,savefile="results/"+pklfile)
 
 if fit_the_group:
-    star_params = fit_group.read_stars("results/"+pklfile)
+    star_params = fit_group.read_stars("results/" + pklfile)
     
     beta_pic_group = np.array([-6.574, 66.560, 23.436, -1.327,-11.427, -6.527,\
         10.045, 10.319, 12.334,  0.762,  0.932,  0.735,  0.846, 20.589])

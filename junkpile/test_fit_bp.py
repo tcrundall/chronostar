@@ -7,10 +7,8 @@ REDUNDANT
 from __future__ import print_function, division
 
 import numpy as np
-import chronostar.fit_group as fit_group
-import astropy.io.fits as pyfits          # for reading in .fts files
+import chronostar.retired.fit_group as fit_group
 import pickle                             # for reading in .pkl files
-import pdb
 import corner                             # for producing the corner plots :O
 import argparse                           # for calling script with arguments
 import matplotlib.pyplot as plt           # for plotting the lnprob
@@ -148,10 +146,10 @@ null_init = np.array([0.0, 0.0, 0.0, 0.0, \
 
 ol_swig = fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=True, return_overlaps=True)
 
-sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
-        nwalkers=32,nchain=nsteps, nburn=burnin, return_sampler=True,pool=pool,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]),\
-        background_density=bgdens, use_swig=True, plotit=False)
+sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group, \
+                                  nwalkers=32, nchain=nsteps, nburn=burnin, return_sampler=True, pool=pool, \
+                                  init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1]), \
+                                  background_density=bgdens, use_swig=True, plotit=False)
 
 best_ix = np.argmax(sampler.flatlnprobability)
 fitted_group = sampler.flatchain[best_ix]

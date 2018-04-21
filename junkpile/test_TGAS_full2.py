@@ -14,12 +14,9 @@ pyfits.writeto('/Users/mireland/Google Drive/chronostar_catalogs/Astrometry_with
 from __future__ import print_function, division
 
 import numpy as np
-import matplotlib.pyplot as plt
-from astropy.table import Table
 import astropy.io.fits as pyfits
-import pylab as p
 import chronostar.traceback as traceback
-import chronostar.fit_group as fit_group
+import chronostar.retired.fit_group as fit_group
 from emcee.utils import MPIPool
 import sys
 import pickle
@@ -90,7 +87,7 @@ if trace_it_back:
     tb.traceback(times,xoffset=xoffset, yoffset=yoffset, axis_range=axis_range, dims=dims,plotit=False,savefile="results/"+pklfile)
 
 if fit_the_group:
-    star_params = fit_group.read_stars("results/"+pklfile)
+    star_params = fit_group.read_stars("results/" + pklfile)
     
     beta_pic_group = np.array([ -0.908, 60.998, 27.105, -0.651,-11.470, -0.148, \
       8.055,  4.645,  8.221,  0.655,  0.792,  0.911,  0.843, 18.924])
@@ -115,10 +112,10 @@ if fit_the_group:
     else:
         print("MPI available for this code! - call this with e.g. mpirun -np 16 python test_betapic_TGAS.py")
 
-    sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
-        nwalkers=30,nchain=10000,nburn=1000, return_sampler=True,pool=pool,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,.1]), background_density=1e-6, use_swig=True, \
-        plotit=False)
+    sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group, \
+                                      nwalkers=30, nchain=10000, nburn=1000, return_sampler=True, pool=pool, \
+                                      init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,.1]), background_density=1e-6, use_swig=True, \
+                                      plotit=False)
     
     if using_mpi:
         # Close the processes.

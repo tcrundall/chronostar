@@ -6,10 +6,8 @@ from __future__ import print_function, division
 #import matplotlib
 #matplotlib.use('Agg')		  # sposed to stop plt.savefig() from displaying
 import numpy as np
-import chronostar.fit_group as fit_group
-import astropy.io.fits as pyfits  # for reading in .fts files
+import chronostar.retired.fit_group as fit_group
 import pickle                     # for reading in .pkl files
-import pdb
 import argparse                   # for calling script with arguments
 import corner                     # for producing the corner plots :O
 import matplotlib.pyplot as plt   # for plotting the lnprob
@@ -243,10 +241,10 @@ else:
 print("About to run sampler")
 
 #pdb.set_trace()
-sampler = fit_group.fit_three_groups(star_params, init_mod=big_beta_group,\
-    nwalkers=100,nchain=nsteps, nburn=burnin, return_sampler=True,pool=pool,\
-    init_sdev = init_sdev,
-    use_swig=True, plotit=False)
+sampler = fit_group.fit_three_groups(star_params, init_mod=big_beta_group, \
+                                     nwalkers=100, nchain=nsteps, nburn=burnin, return_sampler=True, pool=pool, \
+                                     init_sdev = init_sdev,
+                                     use_swig=True, plotit=False)
 
 if using_mpi:
     # Close the processes

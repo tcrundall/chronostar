@@ -6,8 +6,7 @@ import chronostar.traceback as tb
 from astropy.table import Table
 import pickle
 import matplotlib.pyplot as plt
-import chronostar.error_ellipse as ee
-import pdb
+import chronostar.retired.error_ellipse as ee
 
 init_age = 20
 traceback_age = 20

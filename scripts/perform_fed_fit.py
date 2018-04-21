@@ -26,7 +26,6 @@ from distutils.dir_util import mkpath
 import logging
 import numpy as np
 import os
-import pdb
 import pickle
 import sys
 from emcee.utils import MPIPool
@@ -66,12 +65,12 @@ except (IndexError, NameError, ValueError):
 # since this could be being executed anywhere, need to pass in package location
 sys.path.insert(0, package_path)
 try:
-    import chronostar.synthesiser as syn
-    import chronostar.tracingback as tb
-    import chronostar.tfgroupfitter as tfgf
-    import chronostar.error_ellipse as ee
-    import chronostar.transform as tf
-    from chronostar import utils
+    import chronostar.retired.synthesiser as syn
+    import chronostar.retired.tracingback as tb
+    import chronostar.retired.tfgroupfitter as tfgf
+    import chronostar.retired.error_ellipse as ee
+    import chronostar.retired.transform as tf
+    from chronostar.retired import utils
 except ImportError:
     #logging.info("Failed to import chronostar package")
     raise

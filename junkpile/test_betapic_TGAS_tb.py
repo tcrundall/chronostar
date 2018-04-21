@@ -6,11 +6,9 @@ This script is redundant. Code can be incorporated into other files.
 from __future__ import print_function, division
 
 import numpy as np
-import matplotlib.pyplot as plt
 from astropy.table import Table
-import pylab as p
 import chronostar.traceback as traceback
-import chronostar.fit_group as fit_group
+import chronostar.retired.fit_group as fit_group
 from emcee.utils import MPIPool
 import sys
 import pickle
@@ -86,10 +84,10 @@ if fit_the_group:
     else:
         print("MPI available for this code! - call this with e.g. mpirun -np 16 python test_betapic_TGAS.py")
 
-    sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group,\
-        nwalkers=30,nchain=10000,nburn=1000, return_sampler=True,pool=pool,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,.1])*0.1, background_density=1e-9, use_swig=True, \
-        plotit=True)
+    sampler = fit_group.fit_one_group(star_params, init_mod=beta_pic_group, \
+                                      nwalkers=30, nchain=10000, nburn=1000, return_sampler=True, pool=pool, \
+                                      init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,.1])*0.1, background_density=1e-9, use_swig=True, \
+                                      plotit=True)
     
     if using_mpi:
         # Close the processes.

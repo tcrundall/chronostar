@@ -4,8 +4,7 @@
 from __future__ import print_function, division
 
 import numpy as np
-import chronostar.fit_group as fit_group
-import astropy.io.fits as pyfits          # for reading in .fts files
+import chronostar.retired.fit_group as fit_group
 import pickle                             # for reading in .pkl files
 import pdb
 try:
@@ -219,16 +218,16 @@ else:
 if False:
     pdb.set_trace()
     beta_pic_group = beta_pic_group[:-1]
-    sampler = fit_group.fit_two_groups(star_params, init_mod=beta_pic_group,\
-        nwalkers=60,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.1,1]),\
-        use_swig=True, plotit=False, t_ix=time)
+    sampler = fit_group.fit_two_groups(star_params, init_mod=beta_pic_group, \
+                                       nwalkers=60, nchain=nsteps, nburn=burnin, return_sampler=True, pool=None, \
+                                       init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.1,1]), \
+                                       use_swig=True, plotit=False, t_ix=time)
 else:
     #pdb.set_trace()
-    sampler = fit_group.fit_two_groups(star_params, init_mod=big_beta_group,\
-        nwalkers=60,nchain=nsteps, nburn=burnin, return_sampler=True,pool=None,\
-        init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.005,1]),\
-        use_swig=True, plotit=False)
+    sampler = fit_group.fit_two_groups(star_params, init_mod=big_beta_group, \
+                                       nwalkers=60, nchain=nsteps, nburn=burnin, return_sampler=True, pool=None, \
+                                       init_sdev = np.array([1,1,1,1,1,1,1,1,1,.01,.01,.01,.1,1,1,1,1,1,1,1,1,1,0.1,0.01,0.01,0.01,0.005,1]), \
+                                       use_swig=True, plotit=False)
 
 if using_mpi:
     # Close the processes

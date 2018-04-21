@@ -9,11 +9,10 @@ mpirun -np 4 python test_fit_group.py
 import chronostar
 from emcee.utils import MPIPool
 import numpy as np
-import sys 
-import matplotlib.pyplot as plt 
+import sys
 
 #star_params = chronostar.fit_group.read_stars("results/traceback_save.pkl")
-star_params = chronostar.fit_group.read_stars("results/bp_TGAS2_traceback_save.pkl")
+star_params = chronostar.retired.fit_group.read_stars("results/bp_TGAS2_traceback_save.pkl")
     
 if(True):
     using_mpi = True
@@ -39,10 +38,10 @@ if(True):
     plei_group = np.array([116.0,27.6, -27.6, 4.7, -23.1, -13.2, 20, 20, 20,\
                         3, 0, 0, 0, 70])
 
-    dummy = chronostar.fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=True)
+    dummy = chronostar.retired.fit_group.lnprob_one_group(beta_pic_group, star_params, use_swig=True)
 #    dummy = lnprob_one_group(plei_group, star_params, background_density=1e-10, use_swig=False)
         
-    fitted_params = chronostar.fit_group.fit_one_group(star_params, pool=pool, use_swig=True)
+    fitted_params = chronostar.retired.fit_group.fit_one_group(star_params, pool=pool, use_swig=True)
     
     if using_mpi:
         # Close the processes.

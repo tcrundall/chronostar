@@ -3,8 +3,8 @@
 The stuff here *should* be absorbed into fit_groups.py
 """
 # use for debugging age problem:
-import chronostar.analyser as anl
-from chronostar import groupfitter
+import chronostar.retired.analyser as anl
+from chronostar.retired import groupfitter
 import numpy as np
 import time
 import pickle

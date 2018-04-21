@@ -6,8 +6,7 @@ from __future__ import print_function, division
 
 import numpy as np
 import matplotlib.pyplot as plt
-from astropy.table import Table
-from chronostar.error_ellipse import plot_cov_ellipse
+from chronostar.retired.error_ellipse import plot_cov_ellipse
 import chronostar.traceback as traceback
 import play
 plt.ion()

@@ -3,12 +3,11 @@
 The stuff in here *should* be absorbed into fit_groups.py
 """
 # use for debugging age problem:
-import chronostar.analyser as anl
+import chronostar.retired.analyser as anl
 import numpy as np
 import time
 import pickle
 
-import pdb
 import argparse
 import sys
 from emcee.utils import MPIPool
@@ -79,7 +78,7 @@ if debug_age:
     if burnin < 200:
         burnin = 200
 else:
-    from chronostar import groupfitter
+    from chronostar.retired import groupfitter
 
 if not local:
     save_dir = '/short/kc5/'
