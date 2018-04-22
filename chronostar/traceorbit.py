@@ -13,6 +13,8 @@ from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014 as mp
 from galpy.util import bovy_conversion
 
+import coordinates as ccoord
+
 
 def convertToBovyTime(times):
     """
@@ -31,56 +33,6 @@ def convertToBovyTime(times):
     bovy_times = times*1e-3 / bovy_conversion.time_in_Gyr(220., 8.)
     return bovy_times
 
-def convertLSRToHelioCentric(xyzuvw_lsr):
-    """
-    Converting XYZUVW values from LSR centred coords to heliocentric coords
-
-    Galpy coordinates are from the vantage point of the sun.
-    So even though the sun changes position with time,  we still "observe" the
-    star from the current solar position and motion regardless of the traceback
-    or traceforward time
-
-    Parameters
-    ----------
-    xyzuvw_lsr : [6] (or [npoints, 6]) float array
-        The XYZUVW values (at various points) with respect to the local
-        standard of rest.
-        NOTE UNITS: [kpc, kpc, kpc, km/s, km/s, km/s]
-
-    Returns
-    -------
-    xyzuvw_helio : [6] (or [npoints, 6]) float array
-        The XYZUVW values (at various points) with respect to the solar position
-        and motion
-    """
-    XYZUVWSOLARNOW = np.array([0., 0., 0.025, 11.1, 12.24, 7.25])
-    return xyzuvw_lsr - XYZUVWSOLARNOW
-
-def lbdistFromXYZ(xyz):
-    """Convert position from chronostar coordinates into galactic coordinates
-
-    The unit of distance will match the units put in.
-
-    Parameters
-    ----------
-    xyz : [3] float array
-        The position of the star in standard chronostar coordinates.
-
-    Returns
-    -------
-    l : float
-        in degrees, galactic longitude angular position through galactic
-        plane (0 = GC, 90 = direction of circular velocity)
-    b : float
-        in degrees, galactic latitude, angle of object above galactic plane
-        as measured from the Sun
-    dist : float
-        in units of input, distance from Sun to object
-    """
-    l = np.degrees(np.arctan2(xyz[1], xyz[0]))
-    b = np.degrees(np.arctan2(xyz[2], np.sqrt(np.sum(xyz[:2]**2))))
-    dist = np.sqrt(np.sum(xyz[:3]**2))
-    return l, b, dist
 
 def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
     """
@@ -194,10 +146,10 @@ def traceOrbitXYZUVW(xyzuvw_start, times):
     logging.debug("Tracing up to {} Myr".format(times[-1]))
     logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
 
-    xyzuvw_gp = convertLSRToHelioCentric(xyzuvw_start)
+    xyzuvw_gp = ccoord.convertLSRToHelioCentric(xyzuvw_start)
     logging.debug("Galpy vector: {}".format(xyzuvw_gp))
 
-    l,b,dist = lbdistFromXYZ(xyzuvw_gp)
+    l,b,dist = ccoord.convertHelioCentricTolbdist(xyzuvw_gp)
     vxvv = [l,b,dist,xyzuvw_gp[3],xyzuvw_gp[4],xyzuvw_gp[5]]
     logging.debug("vxvv: {}".format(vxvv))
     o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich')
