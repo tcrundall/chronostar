@@ -8,6 +8,10 @@ a_o = 192.8595 * u.degree
 b_ncp = d_o = 27.1283 * u.degree
 l_ncp = l_o = 122.9319 * u.degree
 
+old_a_ngp = 192.25 * u.degree
+old_d_ngp = 27.4 * u.degree
+old_th = 123 * u.degree
+
 def get_l(a, d):
     numer = np.cos(d) * np.sin(a - a_o)
     denom = np.sin(d)*np.cos(d_o) - np.cos(d)*np.sin(d_o)*np.cos(a-a_o)
@@ -16,11 +20,19 @@ def get_l(a, d):
 a_ngp = 192.25 * u.degree
 d_ngp = 27.4 * u.degree
 
-eq_to_gc  = np.array([
+eq_to_gc = np.array([
     [-0.06699, -0.87276, -0.48354],
     [ 0.49273, -0.45035,  0.74458],
     [-0.86760, -0.18837,  0.46020],
 ])
+
+modern_eq_to_gc = np.array([
+    [-0.05487549, -0.87343736, -0.48383454],
+    [ 0.49411024, -0.44482901,  0.74698208],
+    [-0.86766569, -0.19807659,  0.45598455]
+])
+
+modern_gc_to_eq = np.linalg.inv(modern_eq_to_gc)
 
 gc_to_eq = np.linalg.inv(eq_to_gc)
 
@@ -50,6 +62,10 @@ def calcGCToEQMatrix(a, d, th):
         [np.sin(th), -np.cos(th), 0],
         [         0,           0, 1]
     ])
+    return np.dot(third_t, np.dot(second_t, first_t))
+
+def calcEQToGCMatrix(a, d, th):
+    return np.linalg.inv(calcGCToEQMatrix(a, d, th))
 
 def convertAnglesToCartesian(theta, phi):
     """
@@ -80,7 +96,7 @@ def convertEquatorialToGalactic(theta, phi):
         phi = phi * u.deg
     cart_eq = convertAnglesToCartesian(theta, phi)
     logging.debug("Cartesian eq coords: {}".format(cart_eq))
-    cart_gc = np.dot(eq_to_gc, cart_eq)
+    cart_gc = np.dot(modern_eq_to_gc, cart_eq)
     logging.debug("Cartesian gc coords: {}".format(cart_gc))
     return convertCartesianToAngles(*cart_gc)
 
@@ -93,7 +109,7 @@ def convertGalacticToEquatorial(theta, phi):
         phi = phi * u.deg
     cart_gc = convertAnglesToCartesian(theta, phi)
     logging.debug("Cartesian eq coords: {}".format(cart_gc))
-    cart_eq = np.dot(gc_to_eq, cart_gc)
+    cart_eq = np.dot(modern_gc_to_eq, cart_gc)
     logging.debug("Cartesian gc coords: {}".format(cart_eq))
     return convertCartesianToAngles(*cart_eq)
 
