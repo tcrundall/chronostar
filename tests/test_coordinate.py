@@ -184,9 +184,9 @@ def test_convertManyLSRXYZUVWToAstrometry():
     astr_bp = [ # astrometry from wikiepdia
         86.82125, #deg
         -51.0664, #deg
-        0.05144,  #as
-        0.00465,  #as/yr
-        0.0831,   #as/yr
+        51.44,  #mas
+        4.65,  #mas/yr
+        83.1,   #mas/yr
         20.0      #km/s
     ]
 
@@ -202,4 +202,4 @@ def test_convertManyLSRXYZUVWToAstrometry():
     ])
 
     calculated_astros = cc.convertManyLSRXYZUVWToAstrometry(xyzuvw_lsrs)
-    assert np.allclose(calculated_astros, astros)
+    assert np.allclose(calculated_astros, astros, rtol=1e-2)
