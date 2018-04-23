@@ -37,10 +37,31 @@ def convertArrayToTable(astros, errors):
             astros[:,5],
             errors[:,5],
         ],
-        names=('Name', 'RAdeg','DEdeg','Plx','e_Plx',
-               'pmRA','e_pmRA','pmDE','e_pmDE','RV','e_RV')
+        names=('name', 'radeg','dedeg','plx','e_plx',
+               'pmra','e_pmra','pmde','e_pmde','rv','e_rv')
     )
     return t
+
+def convertTableToArray(star_table):
+    nstars = star_table['radeg'].shape[0]
+    measured_vals = np.vstack((
+        star_table['radeg'],
+        star_table['dedeg'],
+        star_table['plx'],
+        star_table['pmra'],
+        star_table['pmde'],
+        star_table['rv'],
+    )).T
+
+    errors = np.vstack((
+        np.zeros(nstars),
+        np.zeros(nstars),
+        star_table['e_plx'],
+        star_table['e_pmra'],
+        star_table['e_pmde'],
+        star_table['e_rv'],
+    )).T
+    return measured_vals, errors
 
 
 def measureXYZUVW(xyzuvws, error_frac, savefile=''):
