@@ -15,7 +15,7 @@ sys.path.insert(0,'..')
 
 import chronostar.coordinate_fun as cf
 
-def test_calcGCToEQMatrix():
+def test_calcEQToGCMatrix():
     """
     Check the implementation of Johnson and Soderblom 1987
     """
@@ -30,19 +30,19 @@ def test_calcGCToEQMatrix():
     ])
 
     assert np.allclose(
-        js1987, cf.calcGCToEQMatrix(old_a_ngp,old_d_ngp,old_th),
+        js1987, cf.calcEQToGCMatrix(old_a_ngp,old_d_ngp,old_th),
         rtol=1e-4
     )
 
-    js1987_inv = cf.calcEQToGCMatrix(old_a_ngp,old_d_ngp,old_th)
+    js1987_inv = cf.calcGCToEQMatrix(old_a_ngp,old_d_ngp,old_th)
     assert np.allclose(
         js1987_inv, np.linalg.inv(js1987), rtol=1e-4
     )
 
     assert np.allclose(
         np.dot(
-            cf.calcGCToEQMatrix(old_a_ngp,old_d_ngp,old_th),
             cf.calcEQToGCMatrix(old_a_ngp,old_d_ngp,old_th),
+            cf.calcGCToEQMatrix(old_a_ngp,old_d_ngp,old_th),
         ), np.eye(3),
         rtol=1e-4
     )

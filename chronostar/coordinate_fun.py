@@ -39,7 +39,7 @@ gc_to_eq = np.linalg.inv(eq_to_gc)
 
 
 
-def calcGCToEQMatrix(a=192.8595, d=27.1283, th=122.9319):
+def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
     """
     Using the RA (a) DEC (d) of Galactic north, and theta, generate matrix
     Default values are from J2000
@@ -70,11 +70,11 @@ def calcGCToEQMatrix(a=192.8595, d=27.1283, th=122.9319):
     ])
     return np.dot(third_t, np.dot(second_t, first_t))
 
-def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
+def calcGCToEQMatrix(a=192.8595, d=27.1283, th=122.9319):
     """
     Tested
     """
-    return np.linalg.inv(calcGCToEQMatrix(a, d, th))
+    return np.linalg.inv(calcEQToGCMatrix(a, d, th))
 
 def convertAnglesToCartesian(theta, phi):
     """
@@ -182,7 +182,7 @@ def convertPMToSpaceVelocity(a, d, pi, mu_a, mu_d, rv):
         d = d * u.deg
 
     B = np.dot(
-        calcGCToEQMatrix(),
+        calcEQToGCMatrix(),
         calcPMCoordinateMatrix(a, d),
     )
     K = 4.74057 #(km/s) / (1AU/yr)
