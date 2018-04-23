@@ -15,6 +15,8 @@ sys.path.insert(0,'..')
 
 import chronostar.coordinate_fun as cf
 
+XYZUVWSOLARNOW = np.array([0., 0., 0.025, 11.1, 12.24, 7.25])
+
 def test_calcEQToGCMatrix():
     """
     Check the implementation of Johnson and Soderblom 1987
@@ -88,6 +90,7 @@ def test_convertEquatorialToGalactic():
 
 def test_famousPositions():
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+    # galactic north
     gnp_eq = (192.8595, 27.1283)
     gnp_gc = (0,90)
 
@@ -102,4 +105,75 @@ def test_famousPositions():
         gnp_eq, rtol=1e-4
     )
 
+    # beta pic
+    bp_eq = [86.82125, -51.0664]
+    bp_gc = [258.3638, -30.6117]
+    assert np.allclose(cf.convertEquatorialToGalactic(*bp_eq), bp_gc)
+    assert np.allclose(cf.convertGalacticToEquatorial(*bp_gc), bp_eq)
 
+def test_convertPMToSpaceVelocity():
+    astr_bp = [ # astrometry from wikiepdia
+        86.82125, #deg
+        -51.0664, #deg
+        0.05144,  #as
+        0.00465,  #as/yr
+        0.0831,   #as/yr
+        20.0      #km/s
+    ]
+
+    # kinematics (from Mamajek & Bell 2014)
+    xyzuvw_bp = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
+    uvw = cf.convertPMToHelioSpaceVelocity(*astr_bp)
+    assert np.allclose(uvw, xyzuvw_bp[3:], rtol=1e-2)
+
+    pos_uvw_bp = np.hstack((astr_bp[:3], xyzuvw_bp[3:]))
+    logging.debug("Input: {}".format(pos_uvw_bp))
+    logging.debug("Input: {} {} {} {} {} {}".format(*pos_uvw_bp))
+    pms_bp = cf.convertHelioSpaceVelocityToPM(*pos_uvw_bp)
+    assert np.allclose(pms_bp, astr_bp[3:], rtol=1e-1)
+
+def test_convertHelioXYZUVWToAstrometry():
+    astr_bp = [ # astrometry from wikiepdia
+        86.82125, #deg
+        -51.0664, #deg
+        0.05144,  #as
+        0.00465,  #as/yr
+        0.0831,   #as/yr
+        20.0      #km/s
+    ]
+    xyzuvw_bp_helio = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
+    calculated_astr_bp = cf.convertHelioXYZUVWToAstrometry(xyzuvw_bp_helio)
+    assert np.allclose(astr_bp, calculated_astr_bp, rtol=1e-2)
+
+    calculated_xyzuvw_bp_helio = cf.convertAstrometryToHelioXYZUVW(
+        *astr_bp
+    )
+    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+    assert np.allclose(calculated_xyzuvw_bp_helio, xyzuvw_bp_helio, rtol=1e-2)
+
+def test_convertLSRXYZUVWToAstrometry():
+    astr_bp = [ # astrometry from wikiepdia
+        86.82125, #deg
+        -51.0664, #deg
+        51.44,  #mas
+        4.65,  #mas/yr
+        83.1,   #mas/yr
+        20.0      #km/s
+    ]
+    xyzuvw_bp_helio = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
+    xyzuvw_bp_lsr =  xyzuvw_bp_helio + XYZUVWSOLARNOW
+
+    calculated_astr_bp = cf.convertLSRXYZUVWToAstrometry(xyzuvw_bp_lsr)
+    assert np.allclose(astr_bp, calculated_astr_bp, rtol=1e-2)
+
+    calculated_xyzuvw_bp_lsr = cf.convertAstrometryToLSRXYZUVW(
+        *astr_bp
+    )
+    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+    assert np.allclose(calculated_xyzuvw_bp_lsr, xyzuvw_bp_lsr, rtol=0.15)
+
+    calculated_astr_bp2 = cf.convertLSRXYZUVWToAstrometry(xyzuvw_bp_lsr)
+    calculated_xyzuvw_bp_lsr2 = cf.convertAstrometryToLSRXYZUVW(
+        *calculated_astr_bp2
+    )
+    assert np.allclose(calculated_xyzuvw_bp_lsr2, xyzuvw_bp_lsr)
