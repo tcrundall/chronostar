@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import astropy.units as u
+from astropy.coordinates import SkyCoord
 
 import sys
 
@@ -101,6 +102,7 @@ def convertCartesianToAngles(x,y,z):
     return theta, phi 
 
 def convertEquatorialToGalactic(theta, phi, value=True):
+    """Tested"""
     logging.debug("Converting eq ({}, {}) to gc: ".format(theta, phi))
     try:
         assert theta.unit == 'deg'
@@ -134,6 +136,65 @@ def convertGalacticToEquatorial(theta, phi, value=True):
     else:
         return pos_eq
 
+def calcPMCoordinateMatrix(a, d):
+    """
+    Generate a coordinate matrix for calculating proper motions
+    """
+    try:
+        assert a.unit == 'deg'
+    except (AttributeError, AssertionError):
+        a = a * u.deg
+        d = d * u.deg
+
+    first_t = np.array([
+        [ np.cos(d),  0, -np.sin(d)],
+        [         0, -1,          0],
+        [-np.sin(d),  0, -np.cos(d)]
+    ])
+    second_t = np.array([
+        [np.cos(a),  np.sin(a), 0],
+        [np.sin(a), -np.cos(a), 0],
+        [        0,         0, -1],
+    ])
+    return np.dot(second_t, first_t)
+
+def convertPMToSpaceVelocity(a, d, pi, mu_a, mu_d, rv):
+    """
+    Convert proper motions to space velocities
+
+    Paramters
+    ---------
+    a : (deg) right ascension in equatorial coordinates
+    d : (deg) declination in equatorial coordinates
+    pi : (arcsec) parallax
+    mu_a : (arcsec/yr) proper motion in right ascension
+    mu_d : (arcsec/yr) proper motion in declination
+    rv : (km/s) radial velocity
+
+    Returns
+    -------
+    UVW : [3] array
+    """
+    try:
+        assert a.unit == 'deg'
+    except (AttributeError, AssertionError):
+        a = a * u.deg
+        d = d * u.deg
+
+    B = np.dot(
+        calcGCToEQMatrix(),
+        calcPMCoordinateMatrix(a, d),
+    )
+    K = 4.74057 #(km/s) / (1AU/yr)
+    astr_vels = np.array([
+        rv,
+        K * mu_a / pi,
+        K * mu_d / pi
+    ])
+    space_vels = np.dot(B, astr_vels)
+    return space_vels
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     pos_gc = (10,-30)
@@ -149,4 +210,28 @@ if __name__ == '__main__':
     xyz_gc2 = convertAnglesToCartesian(*pos_gc2)
     logging.info("Pos_gc2 is {} in spherical coords".format(pos_gc2))
     logging.info("Pos_gc2 is {} in cartesian coords".format(xyz_gc2))
-    
+
+    logging.info("Trialing BPic")
+    bp_ra = '05h47m17.1s'
+    bp_dec = '-51d03m59s'
+    c = SkyCoord(bp_ra, bp_dec, unit=(u.hourangle, u.deg))
+    ra_deg = c.ra.value #deg
+    dec_deg = c.dec.value #deg
+    mu_ra = 4.65 #mas/yr
+    mu_dec = 83.10 #mas/yr
+    pi = 51.44 #mas
+    dist = 1. / pi #kpc
+    vlos = 20. #km/s
+
+
+    astr_bp = [ra_deg, dec_deg, pi*1e-3, mu_ra*1e-3, mu_dec*1e-3, vlos]
+    # [86.82, -51.066, 51.44, 4.65, 83.1, 20.0]
+
+    xyzuvw_bp = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
+    XYZUVWSOLARNOW = np.array([0., 0., 0.025, 11.1, 12.24, 7.25])
+
+    assert np.allclose(
+        xyzuvw_bp[3:],
+        convertPMToSpaceVelocity(*astr_bp),
+        atol=0.1
+    )

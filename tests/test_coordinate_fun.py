@@ -85,3 +85,21 @@ def test_convertEquatorialToGalactic():
         pos_ncp_gc = cf.convertEquatorialToGalactic(*pos_ncp, value=False)
         pos_ncp2 = cf.convertGalacticToEquatorial(*pos_ncp_gc, value=True)
         assert np.allclose(pos_ncp, pos_ncp2)
+
+def test_famousPositions():
+    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+    gnp_eq = (192.8595, 27.1283)
+    gnp_gc = (0,90)
+
+    # testing gnp_eq --> gnp_gc is tricky, since latitude=90 is degenerative
+    # w.r.t longitude
+    assert np.allclose(
+        cf.convertEquatorialToGalactic(*gnp_eq)[1],
+        gnp_gc[1], rtol=1e-4
+    )
+    assert np.allclose(
+        cf.convertGalacticToEquatorial(*gnp_gc),
+        gnp_eq, rtol=1e-4
+    )
+
+
