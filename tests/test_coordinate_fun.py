@@ -34,11 +34,26 @@ def test_calcGCToEQMatrix():
         rtol=1e-4
     )
 
+    js1987_inv = cf.calcEQToGCMatrix(old_a_ngp,old_d_ngp,old_th)
+    assert np.allclose(
+        js1987_inv, np.linalg.inv(js1987), rtol=1e-4
+    )
+
+    assert np.allclose(
+        np.dot(
+            cf.calcGCToEQMatrix(old_a_ngp,old_d_ngp,old_th),
+            cf.calcEQToGCMatrix(old_a_ngp,old_d_ngp,old_th),
+        ), np.eye(3),
+        rtol=1e-4
+    )
+
+
 def test_CartesianAngleConversions():
+    """Take position angles to cartesian vectors (on unit sphere) and back"""
     sphere_pos_list = [
         (0,0),
         (45,0),
-        (-45,0),
+        (315,0),
         (0,45),
         (0,90),
     ]
@@ -56,3 +71,17 @@ def test_CartesianAngleConversions():
         sphere_pos2 = cf.convertCartesianToAngles(*cart)
         assert np.allclose(sphere_pos,
                            [c.value for c in sphere_pos2])
+
+def test_convertEquatorialToGalactic():
+    """Take equatorial coords to galactic and back"""
+    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+    pos_ncp_list = [
+        (20,85),
+        (30,20),
+        (260, -30),
+        (100, -60)
+    ]
+    for pos_ncp in pos_ncp_list:
+        pos_ncp_gc = cf.convertEquatorialToGalactic(*pos_ncp, value=False)
+        pos_ncp2 = cf.convertGalacticToEquatorial(*pos_ncp_gc, value=True)
+        assert np.allclose(pos_ncp, pos_ncp2)

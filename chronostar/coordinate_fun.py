@@ -36,9 +36,14 @@ modern_gc_to_eq = np.linalg.inv(modern_eq_to_gc)
 
 gc_to_eq = np.linalg.inv(eq_to_gc)
 
-def calcGCToEQMatrix(a, d, th):
+
+
+def calcGCToEQMatrix(a=192.8595, d=27.1283, th=122.9319):
     """
     Using the RA (a) DEC (d) of Galactic north, and theta, generate matrix
+    Default values are from J2000
+
+    tested
     """
     try:
         assert a.unit == 'deg'
@@ -64,13 +69,18 @@ def calcGCToEQMatrix(a, d, th):
     ])
     return np.dot(third_t, np.dot(second_t, first_t))
 
-def calcEQToGCMatrix(a, d, th):
+def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
+    """
+    Tested
+    """
     return np.linalg.inv(calcGCToEQMatrix(a, d, th))
 
 def convertAnglesToCartesian(theta, phi):
     """
     theta   : angle (as astropy degrees) about the north pole (longitude, RA)
     phi : angle (as astropy degrees) from the plane (lattitude, dec))
+
+    Tested
     """
     try:
         assert theta.unit == 'deg'
@@ -83,11 +93,14 @@ def convertAnglesToCartesian(theta, phi):
     return np.array((x,y,z))
 
 def convertCartesianToAngles(x,y,z):
-    phi = (np.arcsin(z)*u.rad).to('deg')
-    theta = (np.arctan2(y,x)*u.rad).to('deg')
+    """Tested"""
+    #normalise values:
+    dist = np.sqrt(x**2 + y**2 + z**2)
+    phi = (np.arcsin(z/dist)*u.rad).to('deg')
+    theta = np.mod((np.arctan2(y/dist,x/dist)*u.rad).to('deg'), 360*u.deg)
     return theta, phi 
 
-def convertEquatorialToGalactic(theta, phi):
+def convertEquatorialToGalactic(theta, phi, value=True):
     logging.debug("Converting eq ({}, {}) to gc: ".format(theta, phi))
     try:
         assert theta.unit == 'deg'
@@ -98,9 +111,13 @@ def convertEquatorialToGalactic(theta, phi):
     logging.debug("Cartesian eq coords: {}".format(cart_eq))
     cart_gc = np.dot(modern_eq_to_gc, cart_eq)
     logging.debug("Cartesian gc coords: {}".format(cart_gc))
-    return convertCartesianToAngles(*cart_gc)
+    pos_gc = convertCartesianToAngles(*cart_gc)
+    if value:
+        return [a.value for a in pos_gc]
+    else:
+        return pos_gc
 
-def convertGalacticToEquatorial(theta, phi):
+def convertGalacticToEquatorial(theta, phi, value=True):
     logging.debug("Converting gc ({}, {}) to eq:".format(theta, phi))
     try:
         assert theta.unit == 'deg'
@@ -111,11 +128,16 @@ def convertGalacticToEquatorial(theta, phi):
     logging.debug("Cartesian eq coords: {}".format(cart_gc))
     cart_eq = np.dot(modern_gc_to_eq, cart_gc)
     logging.debug("Cartesian gc coords: {}".format(cart_eq))
-    return convertCartesianToAngles(*cart_eq)
+    pos_eq = convertCartesianToAngles(*cart_eq)
+    if value:
+        return [a.value for a in pos_eq]
+    else:
+        return pos_eq
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     pos_gc = (10,-30)
+    pos_gc = (0,90)
     xyz_gc = convertAnglesToCartesian(*pos_gc)
     logging.info("Pos_gc is {} in spherical coords".format(pos_gc))
     logging.info("Pos_gc is {} in cartesian coords".format(xyz_gc))
