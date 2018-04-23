@@ -340,3 +340,10 @@ def convertLSRXYZUVWToAstrometry(xyzuvw_lsr):
 
 def convertLSRToHelio(xyzuvw_lsr):
     return xyzuvw_lsr - XYZUVWSOLARNOW
+
+def convertManyLSRXYZUVWToAstrometry(xyzuvw_lsrs):
+
+    astros = np.zeros(xyzuvw_lsrs.shape)
+    for astro, xyzuvw_lsr in zip(astros, xyzuvw_lsrs):
+        astro = convertLSRXYZUVWToAstrometry(xyzuvw_lsr)
+    return astros

@@ -177,3 +177,29 @@ def test_convertLSRXYZUVWToAstrometry():
         *calculated_astr_bp2
     )
     assert np.allclose(calculated_xyzuvw_bp_lsr2, xyzuvw_bp_lsr)
+
+def test_convertManyLSRXYZUVWToAstrometry():
+    xyzuvw_bp_helio = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
+    xyzuvw_bp_lsr =  xyzuvw_bp_helio + XYZUVWSOLARNOW
+    astr_bp = [ # astrometry from wikiepdia
+        86.82125, #deg
+        -51.0664, #deg
+        0.05144,  #as
+        0.00465,  #as/yr
+        0.0831,   #as/yr
+        20.0      #km/s
+    ]
+
+    xyzuvw_lsrs = np.array([
+        xyzuvw_bp_lsr,
+        xyzuvw_bp_lsr,
+        xyzuvw_bp_lsr,
+    ])
+    astros = np.array([
+        astr_bp,
+        astr_bp,
+        astr_bp,
+    ])
+
+    calculated_astros = cc.convertManyLSRXYZUVWToAstrometry(xyzuvw_lsrs)
+    assert np.allclose(calculated_astros, astros)
