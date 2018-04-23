@@ -163,3 +163,36 @@ def traceOrbitXYZUVW(xyzuvw_start, times):
     logging.debug("Started orbit at {}".format(xyzuvw[0]))
     logging.debug("Finished orbit at {}".format(xyzuvw[-1]))
     return xyzuvw
+
+def traceManyOrbitXYZUVW(xyzuvw_starts, times):
+    """
+    Given a star's XYZUVW relative to the LSR (at any time), project its
+    orbit forward (or backward) to each of the times listed in *times*
+
+    Positive times --> traceforward
+    Negative times --> traceback
+
+    Parameters
+    ----------
+    xyzuvw_starts : [nstars, 6] array (pc,pc,pc,km/s,km/s,km/s)
+    times : [ntimes] float array
+        Myr - time of 0.0 must be present in the array. Times need not be
+        spread linearly.
+
+    Returns
+    -------
+    xyzuvw_to : [nstars, ntimes, 6] array
+        [pc, pc, pc, km/s, km/s, km/s] - the traced orbit with positions
+        and velocities
+    """
+    times = np.array(times)
+    ntimes = times.shape[0]
+
+    nstars = xyzuvw_starts.shape[0]
+
+    xyzuvw_to = np.zeros((nstars, ntimes, 6))
+
+    for st_ix in range(nstars):
+        xyzuvw_to[st_ix] = traceOrbitXYZUVW(xyzuvw_starts[st_ix], times)
+
+    return xyzuvw_to

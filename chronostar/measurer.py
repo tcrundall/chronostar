@@ -8,7 +8,10 @@ appropriate errors.
 
 from __future__ import print_function, division
 
+from astropy.table import Table
 import numpy as np
+import pickle
+
 import coordinate as cc
 
 GERROR = {
@@ -17,7 +20,30 @@ GERROR = {
     'e_pm' :0.06, #e_pm [mas/yr]
 }
 
-def measureXYZUVW(xyzuvws, error_frac):
+def convertArrayToTable(astros, errors):
+    """Utility function to generate table"""
+    nstars = astros.shape[0]
+    t = Table(
+        [
+            np.arange(nstars),
+            astros[:,0],
+            astros[:,1],
+            astros[:,2],
+            errors[:,2],
+            astros[:,3],
+            errors[:,3],
+            astros[:,4],
+            errors[:,4],
+            astros[:,5],
+            errors[:,5],
+        ],
+        names=('Name', 'RAdeg','DEdeg','Plx','e_Plx',
+               'pmRA','e_pmRA','pmDE','e_pmDE','RV','e_RV')
+    )
+    return t
+
+
+def measureXYZUVW(xyzuvws, error_frac, savefile=''):
     """
     Replicates the measurement of synthetic stars
 
@@ -47,6 +73,12 @@ def measureXYZUVW(xyzuvws, error_frac):
     random_errors = error_frac * raw_errors * np.random.randn(*raw_errors.shape)
 
     astros_w_errs = astros + random_errors
+    astrometry_table = convertArrayToTable(astros_w_errs, raw_errors)
+    #if as_table:
+    #    astros_w_errs = convertArrayToTable(astros_w_errs, raw_errors)
 
-    return astros_w_errs
+    if savefile:
+        astrometry_table.write(savefile, format='ascii')
+
+    return astrometry_table
 
