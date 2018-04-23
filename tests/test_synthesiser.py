@@ -49,7 +49,7 @@ def testEllipticalGeneration():
     assert np.isclose(sphere_dx, fitted_sphere_dx, rtol=1e-2)
 
     assert np.allclose(fitted_cov, myGroup.generateEllipticalCovMatrix(),
-                       atol=2), \
+                       atol=3), \
         "\n{}\ndoesn't equal\n{}".format(
             fitted_cov, myGroup.generateEllipticalCovMatrix()
         )

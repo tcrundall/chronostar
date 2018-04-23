@@ -95,12 +95,15 @@ def convertAnglesToCartesian(theta, phi, radius=1.0):
     z = radius * np.sin(phi)
     return np.array((x,y,z))
 
-def convertCartesianToAngles(x,y,z,return_dist=False):
+def convertCartesianToAngles(x,y,z,return_dist=False, value=False):
     """Tested"""
     #normalise values:
     dist = np.sqrt(x**2 + y**2 + z**2)
     phi = (np.arcsin(z/dist)*un.rad).to('deg')
     theta = np.mod((np.arctan2(y/dist,x/dist)*un.rad).to('deg'), 360*un.deg)
+    if value:
+        phi = phi.value
+        theta = theta.value
     if return_dist:
         return theta, phi, dist
     else:
@@ -335,3 +338,5 @@ def convertLSRXYZUVWToAstrometry(xyzuvw_lsr):
     astr[2:5] *= 1e3
     return astr
 
+def convertLSRToHelio(xyzuvw_lsr):
+    return xyzuvw_lsr - XYZUVWSOLARNOW

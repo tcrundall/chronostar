@@ -13,7 +13,7 @@ from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014 as mp
 from galpy.util import bovy_conversion
 
-import coordinates as ccoord
+import coordinate as cc
 
 
 def convertToBovyTime(times):
@@ -146,11 +146,14 @@ def traceOrbitXYZUVW(xyzuvw_start, times):
     logging.debug("Tracing up to {} Myr".format(times[-1]))
     logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
 
-    xyzuvw_gp = ccoord.convertLSRToHelioCentric(xyzuvw_start)
-    logging.debug("Galpy vector: {}".format(xyzuvw_gp))
+    xyzuvw_helio = cc.convertLSRToHelio(xyzuvw_start)
+    logging.debug("Galpy vector: {}".format(xyzuvw_helio))
 
-    l,b,dist = ccoord.convertHelioCentricTolbdist(xyzuvw_gp)
-    vxvv = [l,b,dist,xyzuvw_gp[3],xyzuvw_gp[4],xyzuvw_gp[5]]
+    l,b,dist = cc.convertCartesianToAngles(
+        *xyzuvw_helio[:3], return_dist=True, value=True
+    )
+    #l,b,dist = cc.convertHelioCentricTolbdist(xyzuvw_helio)
+    vxvv = [l,b,dist,xyzuvw_helio[3],xyzuvw_helio[4],xyzuvw_helio[5]]
     logging.debug("vxvv: {}".format(vxvv))
     o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich')
 
