@@ -25,7 +25,7 @@ def plotPointCov(points, nstd=2, ax=None, **kwargs):
     return plotCovEllipse(cov, pos, nstd, ax, **kwargs)
 
 
-def plotCovEllipse(cov, pos, nstd=2, ax=None, **kwargs):
+def plotCovEllipse(cov, pos, nstd=2, ax=None, with_line=False, **kwargs):
     """
     Plots an `nstd` sigma error ellipse based on the specified covariance
     matrix (`cov`). Additional keyword arguments are passed on to the
@@ -65,7 +65,7 @@ def plotCovEllipse(cov, pos, nstd=2, ax=None, **kwargs):
     if 'color' not in kwargs.keys():# and 'c' not in kwargs.keys():
         ellip.set_facecolor('red')
 
-    ax.add_artist(ellip)
+    ax.add_patch(ellip)
 
     # brute forcing axes limits so they contain ellipse patch
     # maybe a cleaner way of doing this, but I couldn't work it out
@@ -77,5 +77,7 @@ def plotCovEllipse(cov, pos, nstd=2, ax=None, **kwargs):
     uy = pos[1] + max_range
 
     # THEN just fucking plot an invisible line across the ellipse.
-    ax.plot((lx, ux), (ly, uy), alpha=0.)
+    if with_line:
+        ax.plot((lx, ux), (ly, uy), alpha=0.)
+
     return ellip

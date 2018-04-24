@@ -140,13 +140,15 @@ def traceOrbitXYZUVW(xyzuvw_start, times):
         and velocities
     """
     # convert positions to kpc
-    xyzuvw_start = np.array(xyzuvw_start)
+    xyzuvw_start = np.copy(xyzuvw_start)
     xyzuvw_start[:3] *= 1e-3
     bovy_times = convertToBovyTime(times)
     logging.debug("Tracing up to {} Myr".format(times[-1]))
     logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
 
-    xyzuvw_helio = cc.convertLSRToHelio(xyzuvw_start)
+    logging.debug("Initial lsr start: {}".format(xyzuvw_start))
+    xyzuvw_helio = cc.convertLSRToHelio(xyzuvw_start, kpc=True)
+    logging.debug("Initial helio start: {}".format(xyzuvw_helio))
     logging.debug("Galpy vector: {}".format(xyzuvw_helio))
 
     l,b,dist = cc.convertCartesianToAngles(

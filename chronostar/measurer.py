@@ -90,8 +90,8 @@ def measureXYZUVW(xyzuvws, error_frac, savefile=''):
     nstars = xyzuvws.shape[0]
     astros = cc.convertManyLSRXYZUVWToAstrometry(xyzuvws)
 
-    raw_errors = np.tile(errors, (nstars, 1))
-    random_errors = error_frac * raw_errors * np.random.randn(*raw_errors.shape)
+    raw_errors = error_frac * np.tile(errors, (nstars, 1))
+    random_errors = raw_errors * np.random.randn(*raw_errors.shape)
 
     astros_w_errs = astros + random_errors
     astrometry_table = convertArrayToTable(astros_w_errs, raw_errors)

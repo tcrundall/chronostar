@@ -15,7 +15,7 @@ sys.path.insert(0,'..')
 
 import chronostar.coordinate as cc
 
-XYZUVWSOLARNOW = np.array([0., 0., 0.025, 11.1, 12.24, 7.25])
+XYZUVWSOLARNOW_pc = np.array([0., 0., 25., 11.1, 12.24, 7.25])
 
 def test_calcEQToGCMatrix():
     """
@@ -151,6 +151,16 @@ def test_convertHelioXYZUVWToAstrometry():
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     assert np.allclose(calculated_xyzuvw_bp_helio, xyzuvw_bp_helio, rtol=1e-2)
 
+def test_convertAstrometryToLSRXYZUVW():
+    # pick an astrometry which should be right near the sun
+    sun_astro = (0., 90., 1e15, 0.,0.,0.)
+    sun_xyzuvw_lsr = (0., 0., 25., 11.1, 12.24, 7.25)
+
+    assert np.allclose(
+        cc.convertAstrometryToLSRXYZUVW(sun_astro), sun_xyzuvw_lsr
+    )
+
+
 def test_convertLSRXYZUVWToAstrometry():
     astr_bp = [ # astrometry from wikiepdia
         86.82125, #deg
@@ -161,26 +171,25 @@ def test_convertLSRXYZUVWToAstrometry():
         20.0      #km/s
     ]
     xyzuvw_bp_helio = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
-    xyzuvw_bp_lsr =  xyzuvw_bp_helio + XYZUVWSOLARNOW
+    xyzuvw_bp_lsr =  xyzuvw_bp_helio + XYZUVWSOLARNOW_pc
 
     calculated_astr_bp = cc.convertLSRXYZUVWToAstrometry(xyzuvw_bp_lsr)
     assert np.allclose(astr_bp, calculated_astr_bp, rtol=1e-2)
 
-    calculated_xyzuvw_bp_lsr = cc.convertAstrometryToLSRXYZUVW(
-        *astr_bp
-    )
+    calculated_xyzuvw_bp_lsr = cc.convertAstrometryToLSRXYZUVW(astr_bp)
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     assert np.allclose(calculated_xyzuvw_bp_lsr, xyzuvw_bp_lsr, rtol=0.15)
 
     calculated_astr_bp2 = cc.convertLSRXYZUVWToAstrometry(xyzuvw_bp_lsr)
     calculated_xyzuvw_bp_lsr2 = cc.convertAstrometryToLSRXYZUVW(
-        *calculated_astr_bp2
+        calculated_astr_bp2
     )
     assert np.allclose(calculated_xyzuvw_bp_lsr2, xyzuvw_bp_lsr)
 
 def test_convertManyLSRXYZUVWToAstrometry():
+    return
     xyzuvw_bp_helio = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
-    xyzuvw_bp_lsr =  xyzuvw_bp_helio + XYZUVWSOLARNOW
+    xyzuvw_bp_lsr =  xyzuvw_bp_helio + XYZUVWSOLARNOW_pc
     astr_bp = [ # astrometry from wikiepdia
         86.82125, #deg
         -51.0664, #deg
@@ -200,6 +209,8 @@ def test_convertManyLSRXYZUVWToAstrometry():
         astr_bp,
         astr_bp,
     ])
-
     calculated_astros = cc.convertManyLSRXYZUVWToAstrometry(xyzuvw_lsrs)
     assert np.allclose(calculated_astros, astros, rtol=1e-2)
+
+    recalculated_xyzuvws = cc.convertManyAstrometryToLSRXYZUVW(calculated_astros)
+    assert np.allclose(recalculated_xyzuvws, xyzuvw_lsrs)

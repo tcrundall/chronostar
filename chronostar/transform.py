@@ -65,7 +65,7 @@ def get_jac(trans_func, loc, dim=2, h=1e-3, args=None):
 
     return jac
 
-def transform_cov(cov, trans_func, loc, dim=2, args=None):
+def transform_cov(cov, trans_func, loc, dim=6, args=None):
     """
     Transforming a covariance matrix from one coordinate frame to another
 
