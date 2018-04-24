@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
 
-def plot_point_cov(points, nstd=2, ax=None, **kwargs):
+def plotPointCov(points, nstd=2, ax=None, **kwargs):
     """
     Plots an `nstd` sigma ellipse based on the mean and covariance of a point
     "cloud" (points, an Nx2 array).
@@ -22,10 +22,10 @@ def plot_point_cov(points, nstd=2, ax=None, **kwargs):
     """
     pos = points.mean(axis=0)
     cov = np.cov(points, rowvar=False)
-    return plot_cov_ellipse(cov, pos, nstd, ax, **kwargs)
+    return plotCovEllipse(cov, pos, nstd, ax, **kwargs)
 
 
-def plot_cov_ellipse(cov, pos, nstd=2, ax=None, **kwargs):
+def plotCovEllipse(cov, pos, nstd=2, ax=None, **kwargs):
     """
     Plots an `nstd` sigma error ellipse based on the specified covariance
     matrix (`cov`). Additional keyword arguments are passed on to the
