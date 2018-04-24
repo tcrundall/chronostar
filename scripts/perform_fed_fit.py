@@ -69,7 +69,7 @@ try:
     import chronostar.retired.tracingback as tb
     import chronostar.retired.tfgroupfitter as tfgf
     import chronostar.retired.error_ellipse as ee
-    import chronostar.retired.transform as tf
+    import chronostar.transform as tf
     from chronostar.retired import utils
 except ImportError:
     #logging.info("Failed to import chronostar package")

@@ -1,6 +1,5 @@
 from __future__ import division, print_function
 
-import pdb
 import numpy as np
 
 # not sure if this is right, needed to change to this so I could run
@@ -12,14 +11,12 @@ import emcee
 import logging
 import matplotlib.pyplot as plt
 import pickle
-import traceback as tb
-import transform as tf
+from chronostar import transform as tf
 
 from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014
 from galpy.util import bovy_conversion
 #from galpy.util import bovy_coords
-import utils
 
 try:
     import astropy.io.fits as pyfits

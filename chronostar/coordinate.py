@@ -1,11 +1,6 @@
 import logging
 import numpy as np
 import astropy.units as un
-from astropy.coordinates import SkyCoord
-
-import sys
-
-XYZUVWSOLARNOW = np.array([0., 0., 0.025, 11.1, 12.24, 7.25])
 
 a_o = 192.8595 * un.degree
 b_ncp = d_o = 27.1283 * un.degree
@@ -14,11 +9,6 @@ l_ncp = l_o = 122.9319 * un.degree
 old_a_ngp = 192.25 * un.degree
 old_d_ngp = 27.4 * un.degree
 old_th = 123 * un.degree
-
-def get_l(a, d):
-    numer = np.cos(d) * np.sin(a - a_o)
-    denom = np.sin(d)*np.cos(d_o) - np.cos(d)*np.sin(d_o)*np.cos(a-a_o)
-    return l_o - np.arctan(numer/denom)
 
 a_ngp = 192.25 * un.degree
 d_ngp = 27.4 * un.degree
@@ -38,7 +28,6 @@ modern_eq_to_gc = np.array([
 modern_gc_to_eq = np.linalg.inv(modern_eq_to_gc)
 
 gc_to_eq = np.linalg.inv(eq_to_gc)
-
 
 
 def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
@@ -72,11 +61,13 @@ def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
     ])
     return np.dot(third_t, np.dot(second_t, first_t))
 
+
 def calcGCToEQMatrix(a=192.8595, d=27.1283, th=122.9319):
     """
     Tested
     """
     return np.linalg.inv(calcEQToGCMatrix(a, d, th))
+
 
 def convertAnglesToCartesian(theta, phi, radius=1.0):
     """
@@ -95,6 +86,7 @@ def convertAnglesToCartesian(theta, phi, radius=1.0):
     z = radius * np.sin(phi)
     return np.array((x,y,z))
 
+
 def convertCartesianToAngles(x,y,z,return_dist=False, value=False):
     """Tested"""
     #normalise values:
@@ -108,6 +100,7 @@ def convertCartesianToAngles(x,y,z,return_dist=False, value=False):
         return theta, phi, dist
     else:
         return theta, phi
+
 
 def convertEquatorialToGalactic(theta, phi, value=True):
     """Tested"""
@@ -128,6 +121,7 @@ def convertEquatorialToGalactic(theta, phi, value=True):
     else:
         return pos_gc
 
+
 def convertGalacticToEquatorial(theta, phi, value=True):
     logging.debug("Converting gc ({}, {}) to eq:".format(theta, phi))
     try:
@@ -145,6 +139,7 @@ def convertGalacticToEquatorial(theta, phi, value=True):
         return [a.value for a in pos_eq]
     else:
         return pos_eq
+
 
 def calcPMCoordinateMatrix(a, d):
     """
@@ -167,6 +162,7 @@ def calcPMCoordinateMatrix(a, d):
         [        0,         0, -1],
     ])
     return np.dot(second_t, first_t)
+
 
 def convertPMToHelioSpaceVelocity(a, d, pi, mu_a, mu_d, rv):
     """
@@ -203,6 +199,7 @@ def convertPMToHelioSpaceVelocity(a, d, pi, mu_a, mu_d, rv):
     ])
     space_vels = np.dot(B, astr_vels)
     return space_vels
+
 
 def convertHelioSpaceVelocityToPM(a, d, pi, u, v, w):
     """Take the position and space velocities, return proper motions and rv
@@ -243,6 +240,7 @@ def convertHelioSpaceVelocityToPM(a, d, pi, u, v, w):
     mu_d = pi * sky_vels[2] / K
     return mu_a, mu_d, rv
 
+
 def convertHelioXYZUVWToAstrometry(xyzuvw_helio):
     """
     Takes as input heliocentric XYZUVW values, returns astrometry
@@ -269,6 +267,7 @@ def convertHelioXYZUVWToAstrometry(xyzuvw_helio):
     mu_a, mu_d, rv = convertHelioSpaceVelocityToPM(a, d, pi, u, v, w)
     return a, d, pi, mu_a, mu_d, rv
 
+
 def convertAstrometryToHelioXYZUVW(a, d, pi, mu_a, mu_d, rv):
     """
     Converts astrometry to heliocentric XYZUVW values
@@ -292,14 +291,27 @@ def convertAstrometryToHelioXYZUVW(a, d, pi, mu_a, mu_d, rv):
     logging.debug("XYZUVW heliocentric is : {}".format(xyzuvw_helio))
     return xyzuvw_helio
 
-def convertAstrometryToLSRXYZUVW(a, d, pi, mu_a, mu_d, rv):
+
+def convertLSRToHelio(xyzuvw_lsr):
+    """Assumes position is in kpc"""
+    XYZUVWSOLARNOW = np.array([0., 0., 0.025, 11.1, 12.24, 7.25])
+    return xyzuvw_lsr - XYZUVWSOLARNOW
+
+
+def convertHelioToLSR(xyzuvw_helio):
+    """Assumes position is in kpc"""
+    XYZUVWSOLARNOW = np.array([0., 0., 0.025, 11.1, 12.24, 7.25])
+    return xyzuvw_helio + XYZUVWSOLARNOW
+
+
+def convertAstrometryToLSRXYZUVW(a, d, pi, mu_a, mu_d, rv, mas=True):
     """
     Take a point straight from a catalogue, return it as XYZUVW
 
     This function takes astrometry in conventional units, and converts them
     into internal units for convenience.
 
-        Parameters
+    Parameters
     ----------
     a : (deg) right ascention
     d : (deg) declination
@@ -307,14 +319,22 @@ def convertAstrometryToLSRXYZUVW(a, d, pi, mu_a, mu_d, rv):
     mu_a : (mas/yr) proper motion in right ascension
     mu_d : (mas/yr) proper motion in declination
     rv : (km/s) line of sight velocity
+
+    mas : Boolean {True}
+        set if input parallax and proper motions are in mas
     """
+    if mas:
+        pi *= 1e-3
+        mu_a *= 1e-3
+        mu_d *= 1e-3
     xyzuvw_helio = convertAstrometryToHelioXYZUVW(
-        a, d, pi*1e-3, mu_a*1e-3, mu_d*1e-3, rv
+        a, d, pi, mu_a, mu_d, rv
     )
-    xyzuvw_lsr = xyzuvw_helio + XYZUVWSOLARNOW
+    xyzuvw_lsr = convertHelioToLSR(xyzuvw_helio)
     return xyzuvw_lsr
 
-def convertLSRXYZUVWToAstrometry(xyzuvw_lsr):
+
+def convertLSRXYZUVWToAstrometry(xyzuvw_lsr, pc=True):
     """
     Takes as input heliocentric XYZUVW values, returns astrometry
 
@@ -333,16 +353,14 @@ def convertLSRXYZUVWToAstrometry(xyzuvw_lsr):
     mu_d : (mas/yr) proper motion in declination
     rv : (km/s) line of sight velocity
     """
-    xyzuvw_helio = xyzuvw_lsr - XYZUVWSOLARNOW
+    xyzuvw_helio = convertLSRToHelio(xyzuvw_lsr)
     astr = np.array(convertHelioXYZUVWToAstrometry(xyzuvw_helio))
-    astr[2:5] *= 1e3
+
+    # Finally converts position to pc for external use
+    if pc:
+        astr[2:5] *= 1e3
     return astr
 
-def convertLSRToHelio(xyzuvw_lsr):
-    return xyzuvw_lsr - XYZUVWSOLARNOW
-
-def convertHelioToLSR(xyzuvw_helio):
-    return xyzuvw_helio + XYZUVWSOLARNOW
 
 def convertManyLSRXYZUVWToAstrometry(xyzuvw_lsrs):
 

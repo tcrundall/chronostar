@@ -14,7 +14,7 @@ sys.path.insert(0, '..')  # hacky way to get access to module
 import numpy as np
 import chronostar.retired.tracingback as tb
 from chronostar.retired import utils
-import chronostar.retired.transform as tf
+import chronostar.transform as tf
 
 
 class TracebackTestCase(unittest.TestCase):

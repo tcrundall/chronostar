@@ -29,7 +29,7 @@ except ImportError:
 
 import tfgroupfitter as tfgf
 from chronostar.retired import utils
-import chronostar.retired.transform as tf
+import chronostar.transform as tf
 import chronostar.retired.tracingback as tb
 import chronostar.retired.error_ellipse as ee
 import chronostar.retired.hexplotter as hp

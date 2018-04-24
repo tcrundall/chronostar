@@ -3,7 +3,7 @@ import sys
 sys.path.insert(0, '..')
 
 from chronostar.retired.tracingback import trace_forward
-import chronostar.retired.transform as tf
+import chronostar.transform as tf
 
 cov = np.eye(6,6)
 cov[:3] *= 4.

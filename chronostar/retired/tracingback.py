@@ -12,7 +12,7 @@ from galpy.potential import MWPotential2014
 from galpy.util import bovy_conversion
 from galpy.util import bovy_coords
 from error_ellipse import plot_cov_ellipse
-import transform as tf
+from chronostar import transform as tf
 import pickle
 import time
 plt.ion()
