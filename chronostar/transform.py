@@ -19,18 +19,20 @@ def get_jac_col(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
     just take the difference with the forward increment with the current
     position.
 
-    :param trans_func:
+    Parameters
+    ----------
+    trans_func: (function)
         Transformation function taking us from the initial coordinate frame
         to the final coordinate frame
-    :param col_number:
+    col_number: (integer)
         The index in question (which parameter of the intial frame we are
         incrementing
-    :param loc:
+    loc: ([dim] float array)
         The position (in the initial coordinte frame) around which we are
         calculting the jacobian
-    :param dim: [2]
+    dim: (integer {2})
         The dimensionality of the coordinate frames.
-    :param h: [1e-3]
+    h: (float {1e-3})
         The size of the increment
     :return: The column
 
@@ -47,17 +49,21 @@ def get_jac_col(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
 def get_jac(trans_func, loc, dim=2, h=1e-3, args=None):
     """
 
-    :param trans_func:
+    trans_func:
         Transformation function taking us from the initial coordinate frame
         to the final coordinate frame
-    :param loc:
+    loc:
         The position (in the initial coordinte frame) around which we are
         calculting the jacobian
-    :param dim:
+    dim:
         The dimensionality of the coordinate frames
-    :param h:
+    h:
         The size of the increment
-    :return: A jacobian
+
+    Returns
+    -------
+    jac: ([dim,dim] float array)
+        A jacobian matrix
     """
     jac = np.zeros((dim, dim))
     for i in range(dim):
@@ -69,17 +75,24 @@ def transform_cov(cov, trans_func, loc, dim=6, args=None):
     """
     Transforming a covariance matrix from one coordinate frame to another
 
-    :param cov:
+    Paramters
+    ---------
+    cov: ([dim,dim] float array)
         Covariance matrix in the initial frame
-    :param trans_func:
-        Transformation function taking us from the initial coordinate frame
-        to the final coordinate frame
-    :param loc:
-        The position (in the initial coordinte frame) around which we are
-        calculting the jacobian
-    :param dim:
+    trans_func: (function)
+        Transformation function taking us from the initial
+        coordinate frame to the final coordinate frame. Output must be
+        mutable, i.e. single value, or an array
+    loc: ([dim] float array)
+        The position (in the initial coordinate frame)
+        around which we are calculting the jacobian
+    dim: (integer {6})
         The dimensionality of the coordinate frames
-    :return:
+
+    Returns
+    -------
+    conv_cov: ([dim,dim] float array)
+        The transformed covariance matrix
     """
     jac = get_jac(trans_func, loc, dim=dim, args=args)
     return np.dot(jac, np.dot(cov, jac.T))

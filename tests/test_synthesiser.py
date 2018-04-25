@@ -57,6 +57,16 @@ def testEllipticalGeneration():
 
 def testSaveFiles():
     logging.basicConfig(level=LOGGINGLEVEL, filename="test_synthesiser.log")
+    xyzuvw_savefile = 'temp_xyzuvw.npy'
+    group_savefile = 'temp_group.npy'
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100.]
-    assert False, "IMPLEMENT ME!!!"
+    xyzuvw_init, group = syn.synthesise_xyzuvw(
+        pars, return_group=True, xyzuvw_savefile=xyzuvw_savefile,
+        group_savefile=group_savefile
+    )
+    xyzuvw_saved = np.load(xyzuvw_savefile)
+    assert np.allclose(xyzuvw_init, xyzuvw_saved)
+
+    group_saved = np.load(group_savefile).item()
+    assert group == group_saved
 

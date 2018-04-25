@@ -17,6 +17,7 @@ class SynthGroup:
         # Simply supposed to be a neat way of packaging up a group's initial
         # conditions
         logging.debug("Input: {}".format(pars))
+        self.pars = pars
         self.is_sphere = sphere
         if sphere:
             self.mean = pars[:6]
@@ -33,6 +34,16 @@ class SynthGroup:
             self.nstars = int(pars[14])
 
             self.sphere_dx = (self.dx * self.dy * self.dz)**(1./3.)
+
+    def __eq__(self, other):
+        """Predominantly implemented for testing reasons"""
+        if isinstance(other, self.__class__):
+            return self.pars == other.pars and self.is_sphere == other.is_sphere
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def getSphericalPars(self):
         return np.hstack((self.mean, self.sphere_dx, self.dv, self.age))

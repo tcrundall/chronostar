@@ -138,6 +138,8 @@ def traceOrbitXYZUVW(xyzuvw_start, times):
     xyzuvw_tf : [ntimes, 6] array
         [pc, pc, pc, km/s, km/s, km/s] - the traced orbit with positions
         and velocities
+
+    TODO: allow for the input of a single age, instead of time array
     """
     # convert positions to kpc
     xyzuvw_start = np.copy(xyzuvw_start)
