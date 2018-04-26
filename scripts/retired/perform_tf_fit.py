@@ -5,9 +5,9 @@ origin point of a set of stars assuming a (separate) spherical distribution in
 position and velocity space.
 
 Call with:
-python perform_tf_fit.py [age] [dX] [dV] [nstars] [prec..] [path_to_chronostar]
+python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..] [path_to_chronostar]
 or
-mpirun -np [nthreads] python perform_tf_fit.py [age] [dX] [dV] [nstars] [prec..]
+mpirun -np [nthreads] python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..]
     [path_to_chronostar]
 where nthreads is the number of threads to be passed into emcee run
 """
@@ -60,7 +60,7 @@ try:
     precs = sys.argv[5:-1]
     package_path = sys.argv[-1]
 except ValueError:
-    print("Usage: ./perform_tf_fit.py [age] [dX] [dV] [nstars] [prec1]"
+    print("Usage: ./perform_synth_fit.py [age] [dX] [dV] [nstars] [prec1]"
           "[prec2] ... /relative/path/to/chronostar/")
     raise
 
@@ -141,7 +141,7 @@ except IOError:
 logging.info(mpi_msg)
 if not using_mpi:
     logging.info("MPI available! - call this with e.g. mpirun -np 19"
-                 " python perform_tf_fit.py")
+                 " python perform_synth_fit.py")
 
 
 # calculating all the relevant covariance matrices

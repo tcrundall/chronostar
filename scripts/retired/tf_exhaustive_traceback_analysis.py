@@ -60,7 +60,7 @@ def do_something_wrapper(scenario):
     mkpath(path_name)
     os.chdir(path_name)
 
-    os.system("mpirun -np 5 python " +THIS_DIR + "/perform_tf_fit.py {} {} {} {} ".format(
+    os.system("mpirun -np 5 python " +THIS_DIR + "/perform_synth_fit.py {} {} {} {} ".format(
         *scenario) + precs_string + " " + THIS_DIR + "/../"
               )
     os.chdir(THIS_DIR)

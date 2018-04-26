@@ -8,6 +8,7 @@ sys.path.insert(0,'..')
 import chronostar.groupfitter as gf
 import chronostar.converter as cv
 import chronostar.measurer as ms
+import chronostar.traceorbit as torb
 import chronostar.synthesiser as syn
 
 def test_mpirun():
@@ -43,7 +44,9 @@ def test_mpirun():
         pars, return_group=True, internal=True, group_savefile=group_savefile,
         xyzuvw_savefile=xyzuvw_init_savefile
     )
-    astro_table = ms.measureXYZUVW(xyzuvw_init, error_frac,
+    xyzuvw_now = torb.traceManyOrbitXYZUVW(xyzuvw_init, group.age,
+                                           single_age=True)
+    astro_table = ms.measureXYZUVW(xyzuvw_now, error_frac,
                                    savefile=astro_savefile)
     star_pars = cv.convertMeasurementsToCartesian(astro_table,
                                                   savefile=xyzuvw_conv_savefile)

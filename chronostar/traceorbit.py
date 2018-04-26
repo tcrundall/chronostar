@@ -177,7 +177,8 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     return xyzuvw
 
 
-def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=True):
+def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=True,
+                         savefile=''):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -217,4 +218,6 @@ def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=True):
     for st_ix in range(nstars):
         xyzuvw_to[st_ix] = traceOrbitXYZUVW(xyzuvw_starts[st_ix], times,
                                             single_age=single_age)
+    #TODO: test this
+    np.save(savefile, xyzuvw_to)
     return xyzuvw_to

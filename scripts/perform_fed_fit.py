@@ -5,9 +5,9 @@ origin point of a set of stars assuming a (separate) spherical distribution in
 position and velocity space.
 
 Call with:
-python perform_tf_fit.py [age] [dX] [dV] [nstars] [prec..] [path_to_chronostar]
+python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..] [path_to_chronostar]
 or
-mpirun -np [nthreads] python perform_tf_fit.py [age] [dX] [dV] [nstars] [prec..]
+mpirun -np [nthreads] python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..]
     [path_to_chronostar]
 where nthreads is the number of threads to be passed into emcee run
 """
@@ -58,7 +58,7 @@ try:
     package_path = sys.argv[-1]
     data_path = package_path + "/data/sink_init_xyzuvw.npy"
 except (IndexError, NameError, ValueError):
-    print("Usage: ./perform_tf_fit.py [age] [prec1]"
+    print("Usage: ./perform_synth_fit.py [age] [prec1]"
           "[prec2] ... /relative/path/to/chronostar/")
     raise
 
@@ -150,7 +150,7 @@ except IOError:
 logging.info(mpi_msg)
 if not using_mpi:
     logging.info("MPI available! - call this with e.g. mpirun -np 19"
-                 " python perform_tf_fit.py")
+                 " python perform_synth_fit.py")
 
 # calculating all the relevant covariance matrices
 # init_xyzuvw = np.load(init_xyzuvw)
