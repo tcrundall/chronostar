@@ -19,31 +19,6 @@ try:
 except ImportError:
     import pyfits as fits
 
-# ----- UTILITY FUNCTIONS -----------
-
-def generateCovFromInternalPars(pars):
-    """Generate covariance matrix from standard devs and correlations
-
-    provided parameters should be in the emcee internal parametrisation form,
-    that is, dX and dV are stored as their logarithms
-
-    Parameters
-    ----------
-    pars : [9] array
-        [X,Y,Z,U,V,W,dX,dV,age]
-
-    Returns
-    -------
-    cov
-        [6, 6] array : covariance matrix for group model or stellar pdf
-    """
-    dX, dV = np.exp(np.array(pars[6:8]))
-    cov = np.eye(6)
-    cov[0:3] *= dX**2
-    cov[3:6] *= dV**2
-    return cov
-
-# ------- MAIN FUNCTIONS -----------
 
 def loadXYZUVW(xyzuvw_file):
     """Load mean and covariances of stars in XYZUVW space from fits file
@@ -141,26 +116,23 @@ def lnlike(pars, star_pars, z=None, return_lnols=False):
     cov_then = g.generateCovMatrix()
     age = g.age
 
-    mean_now = torb.traceOrbitXYZUVW(g.mean, age=g.age)
+    # Trace group pars forward to now
+    mean_now = torb.traceOrbitXYZUVW(g.mean, g.age, True)
     cov_now = tf.transform_cov(
-        cov_then, torb.traceOrbitXYZUVW, g.mean, dim=6, args=(g.age,)
+        cov_then, torb.traceOrbitXYZUVW, g.mean, dim=6, args=(g.age, True)
     )
 
-    star_covs = star_pars['xyzuvw_cov'][:,0]
-    star_mns  = star_pars['xyzuvw'][:,0]
-    nstars = star_mns.shape[0]
-
+    nstars = star_pars['xyzuvw'].shape[0]
     lnols = get_lnoverlaps(
-        cov_now, mean_now, star_covs, star_mns, nstars
+        cov_now, mean_now, star_pars['xyzuvw_cov'], star_pars['xyzuvw'], nstars
     )
     if return_lnols:
         return lnols
 
-    # prior on covariance matrix incorporated into parametrisation of dX and dV
     return np.sum(lnols * z)
 
 
-def lnprobfunc(pars, star_pars, z):
+def lnprobFunc(pars, star_pars, z):
     """Computes the log-probability for a fit to a group.
 
     Parameters
@@ -190,7 +162,7 @@ def lnprobfunc(pars, star_pars, z):
     #N_SUCCS += 1
     return lp + lnlike(pars, star_pars, z)
 
-def burnin_convergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
+def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
     """Checks early lnprob vals with final lnprob vals for convergence
 
     Parameters
@@ -221,8 +193,8 @@ def burnin_convergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
 
     return np.isclose(start_lnprob_mn, end_lnprob_mn, atol=tol*end_lnprob_std)
 
-def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
-              init_pars=None, convergence_tol=0.1, init_pos=None):
+def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
+             plot_it=False, pool=None, convergence_tol=0.1, init_pos=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -258,16 +230,19 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
     probability
         [nwalkers, nsteps] array of probabilities for each sample
     """
+    if xyzuvw_dict is None:
+        star_pars = loadXYZUVW(xyzuvw_file)
+    else:
+        star_pars = xyzuvw_dict
+
     #            X,Y,Z,U,V,W,lndX,lndV,age
     INIT_SDEV = [20,20,20,5,5,5, 0.5, 0.5,1]
-    star_pars = read_stars(tb_file)
 
     # initialise z if needed as array of 1s of length nstars
     if z is None:
         z = np.ones(star_pars['xyzuvw'].shape[0])
 
     # Initialise the fit
-#    if init_pars is None:
     init_pars = [0,0,0,0,0,0,3.,2.,10.0]
 
     NPAR = len(init_pars)
@@ -279,10 +254,9 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
 #        init_pars[-1] = fixed_age
 #        INIT_SDEV[-1] = 0.0
 
-
     # Whole emcee shebang
     sampler = emcee.EnsembleSampler(
-        NWALKERS, NPAR, lnprobfunc, args=[star_pars, z], pool=pool,
+        NWALKERS, NPAR, lnprobFunc, args=[star_pars, z], pool=pool,
     )
     # initialise walkers, note that INIT_SDEV is carefully chosen such that
     # all generated positions are permitted by lnprior
@@ -304,7 +278,7 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
         logging.info("Burning in cnt: {}".format(cnt))
         sampler.reset()
         pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
-        converged = burnin_convergence(sampler.lnprobability, tol=convergence_tol)
+        converged = burninConvergence(sampler.lnprobability, tol=convergence_tol)
 
         # Help out the struggling walkers
         best_ix = np.argmax(lnprob)
@@ -313,9 +287,6 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
             pos[ix] = pos[best_ix]
 
         if plot_it:
-            #plt.clf()
-            #plt.plot(sampler.lnprobability)
-            #plt.savefig("burnin_lnprob{}.png".format(cnt))
             plt.clf()
             plt.plot(sampler.lnprobability.T)
             plt.savefig("burnin_lnprobT{}.png".format(cnt))
@@ -331,14 +302,11 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
     np.save("final_chain.npy", sampler.chain)
     np.save("final_lnprob.npy", lnprob)
     if plot_it:
-#        plt.clf()
-#        plt.plot(burnin_lnprob_res)
-#        plt.savefig("burnin_lnprob.png")
         plt.clf()
         plt.plot(burnin_lnprob_res.T)
         plt.savefig("burnin_lnprobT.png")
 
-#    print("Sampling")
+#    logging.info("Sampling")
 #    pos, final_lnprob, rstate = sampler.run_mcmc(
 #        pos, sampling_steps, rstate0=state,
 #    )
@@ -346,9 +314,6 @@ def fit_group(tb_file, z=None, burnin_steps=1000, plot_it=False, pool=None,
     #    print("Number of failed priors after sampling:\n{}".format(N_FAILS))
     #    print("Number of succeeded priors after sampling:\n{}".format(N_SUCCS))
     if plot_it:
-#        plt.clf()
-#        plt.plot(sampler.lnprobability)
-#        plt.savefig("lnprob.png")
         plt.clf()
         plt.plot(sampler.lnprobability.T)
         plt.savefig("lnprobT.png")

@@ -27,6 +27,7 @@ class Group:
             # convert logarithms into linear vals
             self.pars[6:6+nstdevs] = np.exp(self.pars[6:6+nstdevs])
 
+        logging.debug("Interpreted: {}".format(self.pars))
         self.is_sphere = sphere
         if sphere:
             self.mean = pars[:6]
@@ -107,7 +108,7 @@ class Group:
             return self.generateEllipticalCovMatrix()
 
 def synthesise_xyzuvw(pars, sphere=True, return_group=False,
-                      xyzuvw_savefile='', group_savefile=''):
+                      xyzuvw_savefile='', group_savefile='', internal=False):
     """
     Generate a bunch of stars in situ based off a Guassian parametrisation
 
@@ -131,6 +132,8 @@ def synthesise_xyzuvw(pars, sphere=True, return_group=False,
     group_savefile : Stirng {''}
         Provide a string to numpy.save the group object; note you need to
         np.load(group_savefile).item() in order to retrieve it.
+    internal : Boolean {False}
+        Set if parameters are provided in emcee internalised form
 
     Returns
     -------
@@ -143,7 +146,8 @@ def synthesise_xyzuvw(pars, sphere=True, return_group=False,
     group : SynthGroup object
         An object that wraps initialisation parameters
     """
-    group = Group(pars, sphere=sphere)
+    logging.debug("Internal?: {}".format(internal))
+    group = Group(pars, sphere=sphere, internal=internal)
     logging.debug("Mean {}".format(group.mean))
     logging.debug("Cov\n{}".format(group.generateCovMatrix()))
     logging.debug("Number of stars {}".format(group.nstars))
