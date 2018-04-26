@@ -16,8 +16,11 @@ def test_mpirun():
         pool = MPIPool()
         using_mpi = True
     except:
+        logging.error("Need to have mpi installed; need to run with:\n"
+                      "mpirun -np 19 python test_mpirun.py")
         using_mpi = False
         pool = None
+        raise
 
     logging.info("Using_mpi: {}".format(using_mpi))
     if using_mpi:
