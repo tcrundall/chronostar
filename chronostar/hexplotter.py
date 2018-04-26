@@ -3,6 +3,7 @@ from __future__ import division, print_function
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
+import pdb
 
 from astropy.io import fits
 
@@ -39,6 +40,7 @@ def plot_age_hist(ages, ax, init_conditions=None):
     """
     logging.info("In plot_age_hist")
     ngroups = ages.shape[0]
+    import pdb; pdb.set_trace()
     max_age = np.max(ages)
     bins = np.linspace(0,max_age,100)
 
@@ -83,6 +85,7 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
             means['fitted_then'][i][np.ix_([dim1,dim2])],
             ax=ax, color=COLORS[i], alpha=0.3, ls='-.', #hatch='/',
         )
+        pdb.set_trace()
         ee.plot_cov_ellipse(
             covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_now'][i][np.ix_([dim1,dim2])],
@@ -216,6 +219,7 @@ def dataGatherer(res_dir=''):
         covs['fitted_then'], torb.traceOrbitXYZUVW, means['fitted_then'][0],
         args=(best_group.age,True)
     )])
+    pdb.set_trace()
 
     plot_hexplot(star_pars, means, covs, iter_count=0, save_dir=res_dir)
 
