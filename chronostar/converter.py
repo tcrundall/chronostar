@@ -11,6 +11,12 @@ import measurer as ms
 import coordinate as cc
 import transform as tf
 
+try:
+    import astropy.io.fits as pyfits
+except ImportError:
+    import pyfits
+
+
 def convertAstrErrsToCovs(err_arr):
     """
     Converts astrometry errors for each star into covariance matrices
@@ -39,14 +45,27 @@ def convertAstrErrsToCovs(err_arr):
         astr_covs[ix] = np.eye(6) * np.tile(err_arr_cp[ix], (6, 1))**2
     return astr_covs
 
+
 def transformAstrCovsToCartesian(astr_covs, astr_arr):
     nstars = astr_arr.shape[0]
     xyzuvw_covs = np.zeros((nstars, 6, 6))
     for ix in range(nstars):
         xyzuvw_covs[ix] = tf.transform_cov(
-            astr_covs[ix], cc.convertAstrmetryToLSRXYZUVW, astr_arr[ix], dim=6
+            astr_covs[ix], cc.convertAstrometryToLSRXYZUVW, astr_arr[ix], dim=6
         )
     return xyzuvw_covs
+
+
+def saveDictAsFits(savefile, xyzuvw_dict):
+    """Convert dict into fits format and save"""
+    if (savefile[-3:] != 'fit') and (savefile[-4:] != 'fits'):
+        savefile = savefile + ".fits"
+    hl = pyfits.HDUList()
+    hl.append(pyfits.PrimaryHDU())
+    #hl.append(pyfits.TableHDU(xyzuvw_dict['table']))
+    hl.append(pyfits.ImageHDU(xyzuvw_dict['xyzuvw']))
+    hl.append(pyfits.ImageHDU(xyzuvw_dict['xyzuvw_cov']))
+    hl.writeto(savefile, clobber=True)
 
 
 def convertMeasurementsToCartesian(t=None, loadfile='', savefile=''):
@@ -65,6 +84,11 @@ def convertMeasurementsToCartesian(t=None, loadfile='', savefile=''):
         e_pmde  : error of pm in declination in mas/yr
         rv      : radial velocity in km/s
         e_rv    : error of radial velocity in km/s
+    loadfile : (String {''})
+        if t is None, try and load table from loadfile
+    savefile : (String {''})
+        if non-empty, will save a fits file with this filename. Appropriate
+        file extension is applied if not there.
 
     Returns
     -------
@@ -85,4 +109,9 @@ def convertMeasurementsToCartesian(t=None, loadfile='', savefile=''):
     xyzuvw = cc.convertManyAstrometryToLSRXYZUVW(astr_arr, mas=True)
     xyzuvw_cov = transformAstrCovsToCartesian(astr_covs, astr_arr)
 
-    return {'table':t, 'xyzuvw':xyzuvw, 'xyzuvw_cov':xyzuvw_cov}
+    xyzuvw_dict = {'table':t, 'xyzuvw':xyzuvw, 'xyzuvw_cov':xyzuvw_cov}
+
+    if savefile:
+        saveDictAsFits(savefile, xyzuvw_dict)
+
+    return xyzuvw_dict

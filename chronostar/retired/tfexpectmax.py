@@ -447,7 +447,7 @@ def fit_multi_groups(star_pars, ngroups, res_dir='', init_z=None, origins=None):
             best_fit, samples, lnprob = tfgf.fit_group(
                 "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=500, #burnin was 500
                 plot_it=True,
-                init_pars=old_gps[i], convergence_tol=5., tight=True, #tol was 5.
+                init_pars=old_gps[i], convergence_tol=5., #tight=True, #tol was 5. tight dprecated
                 init_pos=all_init_pos[i])
             logging.info("Finished fit")
             new_gps[i] = best_fit
@@ -499,7 +499,7 @@ def fit_multi_groups(star_pars, ngroups, res_dir='', init_z=None, origins=None):
         best_fit, samples, lnprob = tfgf.fit_group(
             "../../perf_tb_file.pkl", z=final_z[:, i], burnin_steps=2000,
             plot_it=True,
-            init_pars=old_gps[i], convergence_tol=20., tight=True,  # tol was 10
+            init_pars=old_gps[i], convergence_tol=20., #tight=True, tight deprecated. if providing init_pos. tight isn't used
             init_pos=all_init_pos[i])
         logging.info("Finished fit")
         final_gps[i] = best_fit
