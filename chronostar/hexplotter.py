@@ -75,16 +75,19 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
             ee.plotCovEllipse(
                 covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['origin_then'][i][np.ix_([dim1,dim2])],
+                with_line=True,
                 ax=ax, color="xkcd:neon purple", alpha=0.3, ls='--', #hatch='|',
             )
         ee.plotCovEllipse(
             covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_then'][i][np.ix_([dim1,dim2])],
+            with_line=True,
             ax=ax, color=COLORS[i], alpha=0.3, ls='-.', #hatch='/',
         )
         ee.plotCovEllipse(
             covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_now'][i][np.ix_([dim1,dim2])],
+            with_line=True,
             ax=ax, color=COLORS[i], ec=COLORS[i],
             fill=False, alpha=0.3, hatch=HATCHES[i], ls='-.',
         )
