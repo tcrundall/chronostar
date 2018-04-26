@@ -27,7 +27,7 @@ def testStarGenerate():
     ))
     np.set_printoptions(suppress=True, precision=4)
     assert np.allclose(fitted_cov, myGroup.generateSphericalCovMatrix(),
-                       atol=1),\
+                       atol=2),\
         "\n{}\ndoesn't equal\n{}".format(
             fitted_cov, myGroup.generateSphericalCovMatrix()
         )

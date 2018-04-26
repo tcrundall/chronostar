@@ -160,6 +160,12 @@ def test_convertAstrometryToLSRXYZUVW():
         cc.convertAstrometryToLSRXYZUVW(sun_astro), sun_xyzuvw_lsr
     )
 
+def test_origin():
+    """Checks that the sun can be put in without breaking angle calculations"""
+    xyzuvw_solar_helio = np.zeros(6) # = [0.,0.,25.,11.1,12.24,7.25]
+    astro = cc.convertHelioXYZUVWToAstrometry(xyzuvw_solar_helio)
+    assert not np.any(np.isnan(astro))
+
 
 def test_convertLSRXYZUVWToAstrometry():
     astr_bp = [ # astrometry from wikiepdia

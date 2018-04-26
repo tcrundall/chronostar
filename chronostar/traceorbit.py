@@ -118,7 +118,7 @@ def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
         xyzuvw = xyzuvw[0]
     return xyzuvw
 
-def traceOrbitXYZUVW(xyzuvw_start, times):
+def traceOrbitXYZUVW(xyzuvw_start, times=None, age=None):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -142,6 +142,8 @@ def traceOrbitXYZUVW(xyzuvw_start, times):
     TODO: allow for the input of a single age, instead of time array
     """
     # convert positions to kpc
+    if age is not None:
+        times = np.array([0., age])
     xyzuvw_start = np.copy(xyzuvw_start)
     xyzuvw_start[:3] *= 1e-3
     bovy_times = convertToBovyTime(times)
@@ -166,9 +168,11 @@ def traceOrbitXYZUVW(xyzuvw_start, times):
     xyzuvw = convertGalpyCoordsToXYZUVW(data_gp, bovy_times)
     logging.debug("Started orbit at {}".format(xyzuvw[0]))
     logging.debug("Finished orbit at {}".format(xyzuvw[-1]))
+    if age is not None:
+        return xyzuvw[-1]
     return xyzuvw
 
-def traceManyOrbitXYZUVW(xyzuvw_starts, times):
+def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, age=None):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -189,14 +193,16 @@ def traceManyOrbitXYZUVW(xyzuvw_starts, times):
         [pc, pc, pc, km/s, km/s, km/s] - the traced orbit with positions
         and velocities
     """
+    if age is not None:
+        times = np.array([0., age])
     times = np.array(times)
     ntimes = times.shape[0]
-
     nstars = xyzuvw_starts.shape[0]
-
+    logging.debug("Nstars: {}".format(nstars))
     xyzuvw_to = np.zeros((nstars, ntimes, 6))
-
     for st_ix in range(nstars):
         xyzuvw_to[st_ix] = traceOrbitXYZUVW(xyzuvw_starts[st_ix], times)
-
+    # if age is provided, only return the final position
+    if age is not None:
+        return xyzuvw_to[:,-1]
     return xyzuvw_to

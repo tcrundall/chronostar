@@ -89,8 +89,11 @@ def convertAnglesToCartesian(theta, phi, radius=1.0):
 
 def convertCartesianToAngles(x,y,z,return_dist=False, value=False):
     """Tested"""
-    #normalise values:
     dist = np.sqrt(x**2 + y**2 + z**2)
+    # little exception, just so the sun can be inserted if desired
+    if dist == 0.0:
+        z = 1e-10
+        dist = np.sqrt(x**2 + y**2 + z**2)
     phi = (np.arcsin(z/dist)*un.rad).to('deg')
     theta = np.mod((np.arctan2(y/dist,x/dist)*un.rad).to('deg'), 360*un.deg)
     if value:
@@ -266,7 +269,7 @@ def convertHelioXYZUVWToAstrometry(xyzuvw_helio):
     """
     x, y, z, u, v, w = xyzuvw_helio
     l, b, dist = convertCartesianToAngles(x,y,z,return_dist=True)
-    logging.debug("Distance is {} pc".format(dist))
+    logging.debug("l,b,Distance is {}, {}, {} pc".format(l, b, dist))
     a, d = convertGalacticToEquatorial(l, b)
     pi = 1./dist
     mu_a, mu_d, rv = convertHelioSpaceVelocityToPM(a, d, pi, u, v, w)

@@ -27,3 +27,19 @@ def testRotatedLSR():
 
     # Should be initialised on opposite side of galaxy (X = 16kpc)
     assert np.allclose(xyzuvws[0,0], 16000.)
+
+def testSingleTime():
+    """Test usage where we only provide the desired age, and not an array"""
+    logging.basicConfig(level=LOGGINGLEVEL, stream=sys.stdout)
+    xyzuvw_1 = [0.,0.,25.,0.,0.,0.]
+    xyzuvw_2 = [0.,0.,0.,0.,-10.,0.]
+    xyzuvws = np.vstack((xyzuvw_1, xyzuvw_2))
+    age = 10.
+    times = np.linspace(0., age, 2)
+    xyzuvws_both = torb.traceManyOrbitXYZUVW(xyzuvws, times)
+    xyzuvws_now = torb.traceManyOrbitXYZUVW(xyzuvws, age=age)
+    assert np.allclose(xyzuvws_both[:,1], xyzuvws_now)
+
+    xyzuvw_both = torb.traceOrbitXYZUVW(xyzuvws[0], times)
+    xyzuvw_now = torb.traceOrbitXYZUVW(xyzuvws[0], age=age)
+    assert np.allclose(xyzuvw_both[1], xyzuvw_now)
