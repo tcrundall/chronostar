@@ -213,7 +213,8 @@ def dataGatherer(res_dir=''):
     covs['origin_then'] = origins.generateCovMatrix()
     covs['fitted_then'] = best_group.generateCovMatrix()
     covs['fitted_now'] = tf.transform_cov(
-        covs['fitted_then'], torb.traceOrbitXYZUVW, args=(best_group.age,)
+        covs['fitted_then'], torb.traceOrbitXYZUVW, means['fitted_then'],
+        args=(best_group.age,)
     )
 
     plot_hexplot(star_pars, means, covs, iter_count=0, save_dir=res_dir)
