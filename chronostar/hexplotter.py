@@ -64,8 +64,8 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
 
     dim_label = 'XYZUVW'
     units = ['pc']*3 + ['km/s']*3
-    xyzuvw = star_pars['xyzuvw'][:, 0]
-    xyzuvw_cov = star_pars['xyzuvw_cov'][:, 0]
+    xyzuvw = star_pars['xyzuvw']
+    xyzuvw_cov = star_pars['xyzuvw_cov']
     ax.plot(xyzuvw[:, dim1], xyzuvw[:, dim2], 'b.')
     for mn, cov in zip(xyzuvw, xyzuvw_cov):
         ee.plot_cov_ellipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
