@@ -8,19 +8,19 @@ import chronostar.synthesiser as syn
 LOGGINGLEVEL = logging.DEBUG
 
 def testGroupGeneration():
-    logging.basicConfig(level=LOGGINGLEVEL, filename="test_synthesiser.log")
+    logging.basicConfig(level=LOGGINGLEVEL, filename="logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 50.]
-    myGroup = syn.SynthGroup(pars, sphere=True)
+    myGroup = syn.Group(pars, sphere=True)
     assert myGroup.age == pars[-2]
 
     scmat = myGroup.generateSphericalCovMatrix()
     assert np.max(np.linalg.eigvalsh(scmat)) == np.max(pars[6:8])**2
 
 def testStarGenerate():
-    logging.basicConfig(level=LOGGINGLEVEL, filename="test_synthesiser.log")
+    logging.basicConfig(level=LOGGINGLEVEL, filename="logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100000.]
     init_xyzuvw = syn.synthesise_xyzuvw(pars, sphere=True)
-    myGroup = syn.SynthGroup(pars, sphere=True)
+    myGroup = syn.Group(pars, sphere=True)
     fitted_cov = np.cov(init_xyzuvw.T)
     fitted_dx = mstats.gmean((
         fitted_cov[0,0], fitted_cov[1,1], fitted_cov[2,2]
@@ -32,13 +32,22 @@ def testStarGenerate():
             fitted_cov, myGroup.generateSphericalCovMatrix()
         )
 
+def testInternalPars():
+    log_dx = 0.
+    log_dv = 0.
+    internal_pars_sphere = np.array([0.,0.,0.,0.,0.,0.,log_dx,log_dv,0.])
+    myGroup = syn.Group(internal_pars_sphere, internal=True)
+    assert myGroup.dx == np.exp(log_dx)
+    assert myGroup.dv == np.exp(log_dv)
+    assert np.allclose(myGroup.generateSphericalCovMatrix(), np.eye(6,6))
+
 def testEllipticalGeneration():
     logging.basicConfig(level=LOGGINGLEVEL,
                         filename="logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 15., 5., 5., 0.0, 0.0, 0.0, 20.,
             100000.]
     init_xyzuvw = syn.synthesise_xyzuvw(pars, sphere=False)
-    myGroup = syn.SynthGroup(pars, sphere=False)
+    myGroup = syn.Group(pars, sphere=False)
     sphere_dx = mstats.gmean(pars[6:9])
     assert sphere_dx == myGroup.sphere_dx
 
@@ -56,7 +65,7 @@ def testEllipticalGeneration():
 
 
 def testSaveFiles():
-    logging.basicConfig(level=LOGGINGLEVEL, filename="test_synthesiser.log")
+    logging.basicConfig(level=LOGGINGLEVEL, filename="logs/test_synthesiser.log")
     xyzuvw_savefile = 'temp_xyzuvw.npy'
     group_savefile = 'temp_group.npy'
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100.]

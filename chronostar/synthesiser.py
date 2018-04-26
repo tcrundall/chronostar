@@ -10,35 +10,47 @@ from __future__ import print_function, division
 import logging
 import numpy as np
 
-class SynthGroup:
-    def __init__(self, pars, sphere=True):
+class Group:
+    def __init__(self, pars, sphere=True, internal=False):
         # If sphere flag is set, interpret pars one way
         # If not set, interpret pars another way
         # Simply supposed to be a neat way of packaging up a group's initial
         # conditions
         logging.debug("Input: {}".format(pars))
-        self.pars = pars
+        self.pars = np.copy(pars)
+
+        if sphere:
+            nstdevs = 2
+        else:
+            nstdevs = 4
+        if internal:
+            # convert logarithms into linear vals
+            self.pars[6:6+nstdevs] = np.exp(self.pars[6:6+nstdevs])
+
         self.is_sphere = sphere
         if sphere:
             self.mean = pars[:6]
-            self.dx = self.sphere_dx = pars[6]
-            self.dv = pars[7]
-            self.age = pars[8]
-            self.nstars = int(pars[9])
+            self.dx = self.sphere_dx = self.pars[6]
+            self.dv = self.pars[7]
+            self.age = self.pars[8]
         else:
             self.mean = pars[:6]
-            self.dx, self.dy, self.dz = pars[6:9]
-            self.dv = pars[9]
-            self.cxy, self.cxz, self.cyz = pars[10:13]
-            self.age = pars[13]
-            self.nstars = int(pars[14])
+            self.dx, self.dy, self.dz = self.pars[6:9]
+            self.dv = self.pars[9]
+            self.cxy, self.cxz, self.cyz = self.pars[10:13]
+            self.age = self.pars[13]
 
             self.sphere_dx = (self.dx * self.dy * self.dz)**(1./3.)
+        try:
+            self.nstars = int(self.pars[-1])
+        except:
+            logging.info("No star count provided")
 
     def __eq__(self, other):
         """Predominantly implemented for testing reasons"""
         if isinstance(other, self.__class__):
-            return self.pars == other.pars and self.is_sphere == other.is_sphere
+            return np.allclose(self.pars, other.pars) and\
+                   self.is_sphere == other.is_sphere
         else:
             return False
 
@@ -131,7 +143,7 @@ def synthesise_xyzuvw(pars, sphere=True, return_group=False,
     group : SynthGroup object
         An object that wraps initialisation parameters
     """
-    group = SynthGroup(pars, sphere=sphere)
+    group = Group(pars, sphere=sphere)
     logging.debug("Mean {}".format(group.mean))
     logging.debug("Cov\n{}".format(group.generateCovMatrix()))
     logging.debug("Number of stars {}".format(group.nstars))

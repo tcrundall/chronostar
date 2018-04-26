@@ -62,9 +62,9 @@ def saveDictAsFits(savefile, xyzuvw_dict):
         savefile = savefile + ".fits"
     hl = pyfits.HDUList()
     hl.append(pyfits.PrimaryHDU())
-    #hl.append(pyfits.TableHDU(xyzuvw_dict['table']))
     hl.append(pyfits.ImageHDU(xyzuvw_dict['xyzuvw']))
     hl.append(pyfits.ImageHDU(xyzuvw_dict['xyzuvw_cov']))
+    #hl.append(pyfits.TableHDU(xyzuvw_dict['table'])) # TODO: Get Mike to help with this step
     hl.writeto(savefile, clobber=True)
 
 

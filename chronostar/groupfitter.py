@@ -13,9 +13,9 @@ import transform as tf
 from _overlap import get_lnoverlaps
 
 try:
-    import astropy.io.fits as pyfits
+    from astropy.io import fits
 except ImportError:
-    import pyfits
+    import pyfits as fits
 
 # ----- UTILITY FUNCTIONS -----------
 
@@ -43,47 +43,35 @@ def generateCovFromInternalPars(pars):
 
 # ------- MAIN FUNCTIONS -----------
 
-def read_stars(tb_file):
-    """Read stars from traceback file into a dictionary.
-
-    The input is an error ellipse in 6D (X,Y,Z,U,V,W) of a list of stars at
-    a bucn of times in the past.
-
-    TODO: MODIFY THIS SO ONLY READING IN STARS AT t=now
+def loadXYZUVW(xyzuvw_file):
+    """Load mean and covariances of stars in XYZUVW space from fits file
 
     Parameters
     ----------
-    tb_file: string
-        input file with values to be wrapped as dictionary
+    xyzuvw_file : (String)
+        Ideally *.fits, the file name of the fits file with and hdulist:
+            [1] : xyzuvw
+            [2] : xyzuvw covariances
 
     Returns
     -------
-    star_dictionary : dict
-        stars: (nstars) high astropy table including columns as
-                    documented in the Traceback class.
-        times: (ntimes) numpy array, containing times that have
-                    been traced back, in Myr
-        xyzuvw: (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
-        xyzuvw_cov: (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
+    xyzuvw_dict : (dictionary)
+        xyzuvw : ([nstars, 6] float array)
+            the means of the stars
+        xyzuvw_cov : ([nstars, 6, 6] float array)
+            the covariance matrices of the stars
     """
-    if len(tb_file) == 0:
-        print("Input a filename...")
-        raise UserWarning
-
-    # Stars is an astropy.Table of stars
-    if tb_file[-3:] == 'pkl':
-        with open(tb_file, 'r') as fp:
-            (stars, times, xyzuvw, xyzuvw_cov) = pickle.load(fp)
-    elif (tb_file[-3:] == 'fit') or (tb_file[-4:] == 'fits'):
-        stars = pyfits.getdata(tb_file, 1)
-        times = pyfits.getdata(tb_file, 2)
-        xyzuvw = pyfits.getdata(tb_file, 3)
-        xyzuvw_cov = pyfits.getdata(tb_file, 4)
-    else:
-        print("Unknown File Type!")
-        raise UserWarning
-
-    return dict(stars=stars, times=times, xyzuvw=xyzuvw, xyzuvw_cov=xyzuvw_cov)
+    if (xyzuvw_file[-3:] != 'fit') and (xyzuvw_file[-4:] != 'fits'):
+        xyzuvw_file = xyzuvw_file + ".fits"
+    xyzuvw_now = fits.getdata(xyzuvw_file, 1) #hdulist[1].data
+    xyzuvw_cov_now = fits.getdata(xyzuvw_file, 2) #hdulist[2].data
+    xyzuvw_dict = {'xyzuvw':xyzuvw_now, 'xyzuvw_cov':xyzuvw_cov_now}
+    try:
+        stars_table = fits.getdata(xyzuvw_file, 3)
+        xyzuvw_dict['table'] = stars_table
+    except:
+        pass
+    return xyzuvw_dict
 
 
 def lnprior(pars, star_pars):
@@ -146,6 +134,7 @@ def lnlike(pars, star_pars, z=None, return_lnols=False):
         the logarithm of the likelihood of the fit
     """
     # convert pars into covariance matrix
+    group = Group(pars, internal=True)
     mean_then = pars[0:6]
     cov_then = generate_cov(pars)
     age = pars[8]
