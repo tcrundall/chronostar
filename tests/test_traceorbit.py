@@ -37,9 +37,9 @@ def testSingleTime():
     age = 10.
     times = np.linspace(0., age, 2)
     xyzuvws_both = torb.traceManyOrbitXYZUVW(xyzuvws, times)
-    xyzuvws_now = torb.traceManyOrbitXYZUVW(xyzuvws, age=age)
+    xyzuvws_now = torb.traceManyOrbitXYZUVW(xyzuvws, age, True)
     assert np.allclose(xyzuvws_both[:,1], xyzuvws_now)
 
     xyzuvw_both = torb.traceOrbitXYZUVW(xyzuvws[0], times)
-    xyzuvw_now = torb.traceOrbitXYZUVW(xyzuvws[0], age=age)
+    xyzuvw_now = torb.traceOrbitXYZUVW(xyzuvws[0], age, True)
     assert np.allclose(xyzuvw_both[1], xyzuvw_now)

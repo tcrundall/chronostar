@@ -11,6 +11,8 @@ import pickle
 
 import transform as tf
 from _overlap import get_lnoverlaps
+import traceorbit as torb
+import synthesiser as syn
 
 try:
     from astropy.io import fits
@@ -134,14 +136,14 @@ def lnlike(pars, star_pars, z=None, return_lnols=False):
         the logarithm of the likelihood of the fit
     """
     # convert pars into covariance matrix
-    group = Group(pars, internal=True)
-    mean_then = pars[0:6]
-    cov_then = generate_cov(pars)
-    age = pars[8]
+    g = syn.Group(pars, internal=True)
+    mean_then = g.mean
+    cov_then = g.generateCovMatrix()
+    age = g.age
 
-    mean_now = trace_forward(mean_then, age)
+    mean_now = torb.traceOrbitXYZUVW(g.mean, age=g.age)
     cov_now = tf.transform_cov(
-        cov_then, trace_forward, mean_then, dim=6, args=(age,)
+        cov_then, torb.traceOrbitXYZUVW, g.mean, dim=6, args=(g.age,)
     )
 
     star_covs = star_pars['xyzuvw_cov'][:,0]
