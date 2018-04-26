@@ -187,7 +187,7 @@ def plot_hexplot(star_pars, means, covs, iter_count, prec=None,
               bbox_inches='tight', format='pdf')
     f.clear()
 
-def dataGatherer(res_dir=''):
+def dataGatherer(res_dir='', save_dir=''):
     """
     Provided with a results directory, tries to find all she needs, then plots
 
@@ -220,4 +220,4 @@ def dataGatherer(res_dir=''):
                              )
         ])
 
-    plot_hexplot(star_pars, means, covs, iter_count=0, save_dir=res_dir)
+    plot_hexplot(star_pars, means, covs, iter_count=0, save_dir=save_dir)

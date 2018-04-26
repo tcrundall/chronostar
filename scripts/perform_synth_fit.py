@@ -124,7 +124,7 @@ try:
     logging.info("appending to previous attempt")
 except IOError:
     logging.basicConfig(
-        level=logging.DEBUG, filemode='w',
+        level=logging.INFO, filemode='w',
         filename='my_investigator_demo.log',
     )
     logging.info("Beginning fresh run:")
@@ -174,7 +174,7 @@ for prec in precs:
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL
         )
-        hp.dataGatherer()
+        #hp.dataGatherer(save_dir=prec)
 
     finally:
         os.chdir('..')
