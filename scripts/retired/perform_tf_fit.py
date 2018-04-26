@@ -26,6 +26,7 @@ from distutils.dir_util import mkpath
 import logging
 import numpy as np
 import os
+import pdb
 import pickle
 import sys
 from emcee.utils import MPIPool
@@ -38,8 +39,8 @@ perf_data_file = "perf_xyzuvw.npy"
 result_file = "result.npy"
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
-BURNIN_STEPS = 1000
-C_TOL = 0.2
+BURNIN_STEPS = 600
+C_TOL = 0.15
 
 print("In preamble")
 
@@ -66,12 +67,12 @@ except ValueError:
 # since this could be being executed anywhere, need to pass in package location
 sys.path.insert(0, package_path)
 try:
-    import chronostar.retired.synthesiser as syn
-    import chronostar.retired.tracingback as tb
-    import chronostar.retired.tfgroupfitter as tfgf
-    import chronostar.retired.error_ellipse as ee
+    import chronostar.synthesiser as syn
+    import chronostar.tracingback as tb
+    import chronostar.tfgroupfitter as tfgf
+    import chronostar.error_ellipse as ee
     import chronostar.transform as tf
-    from chronostar.retired import utils
+    from chronostar import utils
 except ImportError:
     #logging.info("Failed to import chronostar package")
     raise
@@ -105,7 +106,7 @@ group_pars_ex[14] = nstars
 
 # decrement position by approx vel*t so final result is
 # in similar location across ages
-group_pars_ex[0] += age * group_pars_ex[3]
+group_pars_ex[0] += age * group_pars_ex[3] # FIXME: SORT OUT SIGNAGE
 group_pars_ex[1] -= age * group_pars_ex[4]
 group_pars_ex[2] -= age * group_pars_ex[5]
 
@@ -209,7 +210,7 @@ for prec in precs:
 
         #then_cov_true
         covs['origin_then'] = np.array([
-            utils.generate_cov(utils.internalise_pars(group_pars_ex))
+            utils.generate_cov( utils.internalise_pars(group_pars_ex))
         ])
 
         then_cov_simple = tfgf.generate_cov(group_pars_in)
