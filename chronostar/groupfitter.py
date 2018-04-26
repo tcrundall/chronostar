@@ -194,20 +194,20 @@ def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
     return np.isclose(start_lnprob_mn, end_lnprob_mn, atol=tol*end_lnprob_std)
 
 def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
-             plot_it=False, pool=None, convergence_tol=0.1, init_pos=None):
+             plot_it=False, pool=None, convergence_tol=0.1, init_pos=None,
+             plot_dir='', save_dir=''):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
     ----------
-    tb_file : string
-        a '.pkl' or '.fits' file containing traceback orbits as a dictionary:
-            stars: (nstars) high astropy table including columns as
-                        documented in the Traceback class.
-            times: (ntimes) numpy array, containing times that have
-                        been traced back, in Myr
+    xyzuvw_dict, xyzuvw_file : (dict or string)
+        Can either pass in the dictionary directly, or a '.fits' filename from
+        which to load the dictionary:
             xyzuvw (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
             xyzuvw_cov (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
-    z
+            table: (nstars) high astropy table including columns as
+                        documented in the measurer class.
+    z : ([nstars] array {None})
         array of weights [0.0 - 1.0] for each star, describing how likely
         they are members of group to be fitted.
 
@@ -289,7 +289,7 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         if plot_it:
             plt.clf()
             plt.plot(sampler.lnprobability.T)
-            plt.savefig("burnin_lnprobT{}.png".format(cnt))
+            plt.savefig(plot_dir+"burnin_lnprobT{}.png".format(cnt))
 
         burnin_lnprob_res = np.hstack((
             burnin_lnprob_res, sampler.lnprobability
@@ -299,12 +299,12 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     logging.info("Burnt in, with convergence: {}\n"
           "Taking final burnin segment as sampling stage".format(converged))
     # save the chain for later inspection
-    np.save("final_chain.npy", sampler.chain)
-    np.save("final_lnprob.npy", lnprob)
+    np.save(save_dir+"final_chain.npy", sampler.chain)
+    np.save(save_dir+"final_lnprob.npy", sampler.lnprobability)
     if plot_it:
         plt.clf()
         plt.plot(burnin_lnprob_res.T)
-        plt.savefig("burnin_lnprobT.png")
+        plt.savefig(plot_dir+"burnin_lnprobT.png")
 
 #    logging.info("Sampling")
 #    pos, final_lnprob, rstate = sampler.run_mcmc(
@@ -316,7 +316,7 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     if plot_it:
         plt.clf()
         plt.plot(sampler.lnprobability.T)
-        plt.savefig("lnprobT.png")
+        plt.savefig(plot_dir+"lnprobT.png")
 
     # sampler.lnprobability has shape (NWALKERS, SAMPLE_STEPS)
     # yet np.argmax takes index of flattened array

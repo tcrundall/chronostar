@@ -99,7 +99,7 @@ def measureXYZUVW(xyzuvws, error_frac, savefile=''):
     #    astros_w_errs = convertArrayToTable(astros_w_errs, raw_errors)
 
     if savefile:
-        astrometry_table.write(savefile, format='ascii')
+        astrometry_table.write(savefile, format='ascii', overwrite=True)
 
     return astrometry_table
 
