@@ -65,7 +65,7 @@ def saveDictAsFits(savefile, xyzuvw_dict):
     hl.append(pyfits.ImageHDU(xyzuvw_dict['xyzuvw']))
     hl.append(pyfits.ImageHDU(xyzuvw_dict['xyzuvw_cov']))
     #hl.append(pyfits.TableHDU(xyzuvw_dict['table'])) # TODO: Get Mike to help with this step
-    hl.writeto(savefile, clobber=True)
+    hl.writeto(savefile, overwrite=True)
 
 
 def convertMeasurementsToCartesian(t=None, loadfile='', savefile=''):
