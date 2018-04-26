@@ -38,7 +38,6 @@ def plot_age_hist(ages, ax, init_conditions=None):
     """
     logging.info("In plot_age_hist")
     ngroups = ages.shape[0]
-    import pdb; pdb.set_trace()
     max_age = np.max(ages)
     bins = np.linspace(0,max_age,100)
 
@@ -89,21 +88,18 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
             ax=ax, color=COLORS[i], ec=COLORS[i],
             fill=False, alpha=0.3, hatch=HATCHES[i], ls='-.',
         )
-    min_means = np.min(np.array(means.values()).reshape(-1,6), axis=0)
-    max_means = np.max(np.array(means.values()).reshape(-1,6), axis=0)
-
-    xmin = min(min_means[dim1], np.min(xyzuvw[:,dim1]))
-    xmax = max(max_means[dim1], np.max(xyzuvw[:,dim1]))
-    ymin = min(min_means[dim2], np.min(xyzuvw[:,dim2]))
-    ymax = max(max_means[dim2], np.max(xyzuvw[:,dim2]))
-
-    buffer = 30
-
-    if dim1 == 0 or dim1 == 3:
-        ax.set_xlim(xmax+buffer, xmin-buffer)
-    else:
-        ax.set_xlim(xmin-buffer, xmax+buffer)
-    ax.set_ylim(ymin-buffer, ymax+buffer)
+#    min_means = np.min(np.array(means.values()).reshape(-1,6), axis=0)
+#    max_means = np.max(np.array(means.values()).reshape(-1,6), axis=0)
+#
+#    xmin = min(min_means[dim1], np.min(xyzuvw[:,dim1]))
+#    xmax = max(max_means[dim1], np.max(xyzuvw[:,dim1]))
+#    ymin = min(min_means[dim2], np.min(xyzuvw[:,dim2]))
+#    ymax = max(max_means[dim2], np.max(xyzuvw[:,dim2]))
+#
+#    buffer = 30
+#
+#    ax.set_xlim(xmin-buffer, xmax+buffer)
+#    ax.set_ylim(ymin-buffer, ymax+buffer)
 
     ax.set_xlabel("{} [{}]".format(dim_label[dim1], units[dim1]))
     ax.set_ylabel("{} [{}]".format(dim_label[dim2], units[dim2]))
@@ -112,7 +108,7 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
                  format(iter_count, dim_label[dim1], dim_label[dim2]))
 
 
-def get_age_samples(ngroups):
+def get_age_samples(ngroups, final_chain):
     """
     Uses the number of groups to explore (and hopefully find) final chains
 
@@ -129,13 +125,12 @@ def get_age_samples(ngroups):
         burnin_cnt = 0
         try:
             # tfgroupfitter stores in this format
-            final_chain = np.load("final_chain.npy")
-            age_samples.append(final_chain[:,:,-1].flatten())
+            age_samples.append(final_chain[0][:,:,-1].flatten())
         except IOError:
             return None
     return np.array(age_samples)
 
-def plot_hexplot(star_pars, means, covs, iter_count, prec=None,
+def plot_hexplot(star_pars, means, covs, chain, iter_count, prec=None,
                   save_dir=''):
     """
     Generates hex plot in the provided directory
@@ -179,7 +174,7 @@ def plot_hexplot(star_pars, means, covs, iter_count, prec=None,
     plot_fit(star_pars, means, covs, ngroups, iter_count, ax6, 2, 5)
 
     # PLOT THE HISTOGRAMS
-    age_samples = get_age_samples(ngroups)
+    age_samples = get_age_samples(ngroups, chain)
     if age_samples is not None:
         plot_age_hist(age_samples, ax3)
 
@@ -199,6 +194,7 @@ def dataGatherer(res_dir='', save_dir=''):
     star_pars = {}
 
     chain = np.load(res_dir+"final_chain.npy")
+    chain = np.array([chain])
     lnprob = np.load(res_dir+"final_lnprob.npy")
     origins = np.load(res_dir+"origins.npy").item()
     best_group = al.getBestSample(chain, lnprob)
@@ -220,4 +216,4 @@ def dataGatherer(res_dir='', save_dir=''):
                              )
         ])
 
-    plot_hexplot(star_pars, means, covs, iter_count=0, save_dir=save_dir)
+    plot_hexplot(star_pars, means, covs, chain, iter_count=0, save_dir=save_dir)
