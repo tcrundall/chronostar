@@ -16,7 +16,7 @@ from galpy.util import bovy_conversion
 import coordinate as cc
 
 
-def convertToBovyTime(times):
+def convertMyrToBovyTime(times):
     """
     Convert times provided in Myr into times in bovy internal units
 
@@ -138,27 +138,26 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, age=None):
     xyzuvw_tf : [ntimes, 6] array
         [pc, pc, pc, km/s, km/s, km/s] - the traced orbit with positions
         and velocities
-
-    TODO: allow for the input of a single age, instead of time array
     """
     # convert positions to kpc
     if age is not None:
         times = np.array([0., age])
     xyzuvw_start = np.copy(xyzuvw_start)
     xyzuvw_start[:3] *= 1e-3
-    bovy_times = convertToBovyTime(times)
+    bovy_times = convertMyrToBovyTime(times)
+
     logging.debug("Tracing up to {} Myr".format(times[-1]))
     logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
-
     logging.debug("Initial lsr start: {}".format(xyzuvw_start))
+
     xyzuvw_helio = cc.convertLSRToHelio(xyzuvw_start, kpc=True)
+
     logging.debug("Initial helio start: {}".format(xyzuvw_helio))
     logging.debug("Galpy vector: {}".format(xyzuvw_helio))
 
     l,b,dist = cc.convertCartesianToAngles(
         *xyzuvw_helio[:3], return_dist=True, value=True
     )
-    #l,b,dist = cc.convertHelioCentricTolbdist(xyzuvw_helio)
     vxvv = [l,b,dist,xyzuvw_helio[3],xyzuvw_helio[4],xyzuvw_helio[5]]
     logging.debug("vxvv: {}".format(vxvv))
     o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich')
@@ -166,11 +165,14 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, age=None):
     o.integrate(bovy_times,mp,method='odeint')
     data_gp = o.getOrbit()
     xyzuvw = convertGalpyCoordsToXYZUVW(data_gp, bovy_times)
+
     logging.debug("Started orbit at {}".format(xyzuvw[0]))
     logging.debug("Finished orbit at {}".format(xyzuvw[-1]))
+
     if age is not None:
         return xyzuvw[-1]
     return xyzuvw
+
 
 def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, age=None):
     """
@@ -198,7 +200,9 @@ def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, age=None):
     times = np.array(times)
     ntimes = times.shape[0]
     nstars = xyzuvw_starts.shape[0]
+
     logging.debug("Nstars: {}".format(nstars))
+
     xyzuvw_to = np.zeros((nstars, ntimes, 6))
     for st_ix in range(nstars):
         xyzuvw_to[st_ix] = traceOrbitXYZUVW(xyzuvw_starts[st_ix], times)
