@@ -28,10 +28,10 @@ def test_stationaryGroup():
     star_pars = cv.convertMeasurementsToCartesian(astro_table,
                                                   savefile=xyzuvw_conv_savefile)
 
-    best_fit, chain, lnprob = gf.fitGroup(xyzuvw_dict=star_pars, plot_it=True,
-                                          convergence_tol=0.4, burnin_steps=300,
-                                          plot_dir='temp_plots/',
-                                          save_dir='temp_data/')
+    best_fit, chain, lnprob = gf.fitGroup(
+        xyzuvw_dict=star_pars, plot_it=True, convergence_tol=0.4,
+        burnin_steps=1000, plot_dir='temp_plots/', save_dir='temp_data/'
+    )
     best_fit_group = syn.Group(best_fit, internal=True)
 
     assert np.allclose(best_fit_group.mean, group.mean, atol=0.5)
