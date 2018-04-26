@@ -7,12 +7,10 @@ import pdb
 
 from astropy.io import fits
 
-import error_ellipse as ee
-import synthesiser as syn
+import errorellipse as ee
 import analyser as al
 import traceorbit as torb
 import transform as tf
-
 
 COLORS = ['xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']*12
@@ -70,23 +68,22 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
     xyzuvw_cov = star_pars['xyzuvw_cov']
     ax.plot(xyzuvw[:, dim1], xyzuvw[:, dim2], 'b.')
     for mn, cov in zip(xyzuvw, xyzuvw_cov):
-        ee.plot_cov_ellipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
+        ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
                             mn[np.ix_([dim1,dim2])],
                             ax=ax, color='b', alpha=0.1)
     for i in range(ngroups):
         if origins_inc:
-            ee.plot_cov_ellipse(
+            ee.plotCovEllipse(
                 covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['origin_then'][i][np.ix_([dim1,dim2])],
                 ax=ax, color="xkcd:neon purple", alpha=0.3, ls='--', #hatch='|',
             )
-        ee.plot_cov_ellipse(
+        ee.plotCovEllipse(
             covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_then'][i][np.ix_([dim1,dim2])],
             ax=ax, color=COLORS[i], alpha=0.3, ls='-.', #hatch='/',
         )
-        pdb.set_trace()
-        ee.plot_cov_ellipse(
+        ee.plotCovEllipse(
             covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_now'][i][np.ix_([dim1,dim2])],
             ax=ax, color=COLORS[i], ec=COLORS[i],
@@ -211,15 +208,16 @@ def dataGatherer(res_dir=''):
 
     means['origin_then'] = np.array([origins.mean])
     means['fitted_then'] = np.array([best_group.mean])
-    means['fitted_now']  = np.array([torb.traceOrbitXYZUVW(best_group.mean, best_group.age)])
+    means['fitted_now']  =\
+        np.array([torb.traceOrbitXYZUVW(best_group.mean, best_group.age)])
 
     covs['origin_then'] = np.array([origins.generateCovMatrix()])
     covs['fitted_then'] = np.array([best_group.generateCovMatrix()])
-    covs['fitted_now']  = np.array([tf.transform_cov(
-        covs['fitted_then'], torb.traceOrbitXYZUVW, means['fitted_then'][0],
-        args=(best_group.age,True)
-    )])
-    pdb.set_trace()
+    covs['fitted_now']  =\
+        np.array([
+            tf.transform_cov(covs['fitted_then'][0], torb.traceOrbitXYZUVW,
+                             means['fitted_then'][0], args=(best_group.age,True)
+                             )
+        ])
 
     plot_hexplot(star_pars, means, covs, iter_count=0, save_dir=res_dir)
-

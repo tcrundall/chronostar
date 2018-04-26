@@ -1,7 +1,9 @@
 
 import logging
 import numpy as np
+
 import synthesiser as syn
+
 
 def getBestSample(chain, lnprob):
     """
@@ -27,3 +29,5 @@ def getBestSample(chain, lnprob):
 
     best_group = syn.Group(best_sample, sphere=sphere, internal=True)
     return best_group
+
+
