@@ -206,16 +206,16 @@ def dataGatherer(res_dir=''):
     star_pars['xyzuvw'] = fits.getdata(res_dir+"xyzuvw_now.fits", 1)
     star_pars['xyzuvw_cov'] = fits.getdata(res_dir+"xyzuvw_now.fits", 2)
 
-    means['origin_then'] = [origins.mean]
-    means['fitted_then'] = [best_group.mean]
-    means['fitted_now']  = [torb.traceOrbitXYZUVW(best_group.mean, best_group.age)]
+    means['origin_then'] = np.array([origins.mean])
+    means['fitted_then'] = np.array([best_group.mean])
+    means['fitted_now']  = np.array([torb.traceOrbitXYZUVW(best_group.mean, best_group.age)])
 
-    covs['origin_then'] = [origins.generateCovMatrix()]
-    covs['fitted_then'] = [best_group.generateCovMatrix()]
-    covs['fitted_now']  = [tf.transform_cov(
+    covs['origin_then'] = np.array([origins.generateCovMatrix()])
+    covs['fitted_then'] = np.array([best_group.generateCovMatrix()])
+    covs['fitted_now']  = np.array([tf.transform_cov(
         covs['fitted_then'], torb.traceOrbitXYZUVW, means['fitted_then'][0],
         args=(best_group.age,True)
-    )]
+    )])
 
     plot_hexplot(star_pars, means, covs, iter_count=0, save_dir=res_dir)
 
