@@ -42,6 +42,7 @@ class Group:
             self.age = self.pars[13]
 
             self.sphere_dx = (self.dx * self.dy * self.dz)**(1./3.)
+        import pdb; pdb.set_trace()
         try:
             self.nstars = int(self.pars[-1])
         except:

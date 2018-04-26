@@ -30,10 +30,8 @@ import pdb
 import sys
 from emcee.utils import MPIPool
 
-base_group_pars = [
-    100, -80, 40, -7, -17, -7, None, None, None, None,
-    0.0, 0.0, 0.0, None, None
-]
+base_sphere_pars = [100, -80, 40, -7, -17, -7, None, None, None, None]
+
 xyzuvw_perf_file = "perf_xyzuvw.npy"
 result_file = "result.npy"
 group_savefile = 'origins.npy'
@@ -103,7 +101,7 @@ print("Only one thread is master")
 
 
 # collect inputs
-group_pars = list(base_group_pars)
+group_pars = list(base_sphere_pars)
 group_pars[6] = dX
 group_pars[7] = dV
 group_pars[8] = age
