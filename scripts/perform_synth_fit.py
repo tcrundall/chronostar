@@ -10,6 +10,8 @@ or
 mpirun -np [nthreads] python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..]
     [path_to_chronostar]
 where nthreads is the number of threads to be passed into emcee run
+
+TODO: origins.npy needs to be in each directory for hexplotter
 """
 from __future__ import division, print_function
 
