@@ -115,6 +115,7 @@ group_pars[2] -= age * group_pars[5]
 
 try:
     xyzuvw_now_perf = np.load(xyzuvw_perf_file)
+    origin = np.load(group_savefile)
     logging.basicConfig(
         level=logging.INFO, filemode='a',
         filename='my_investigator_demo.log',
@@ -142,6 +143,13 @@ except IOError:
         syn.synthesise_xyzuvw(group_pars, sphere=True,
                               xyzuvw_savefile=xyzuvw_init_savefile,
                               return_group=True, group_savefile=group_savefile)
+    logging.info("Origin has values\n"
+                 "\tage:     {}\n"
+                 "\tsph_dX:  {}\n"
+                 "\tdV:      {}\n"
+                 "\tnstars:  {}".format(
+        origin.age, origin.sphere_dx, origin.dv, origin.nstars,
+    ))
     xyzuvw_now_perf =\
         torb.traceManyOrbitXYZUVW(xyzuvw_init, origin.age, single_age=True,
                                   savefile=xyzuvw_perf_file)
