@@ -57,3 +57,6 @@ def test_mpirun():
     assert np.allclose(best_fit_group.age, group.age, atol=0.5)
     assert np.allclose(best_fit_group.generateCovMatrix(),
                        group.generateCovMatrix(), atol=0.5)
+
+if __name__ == '__main__':
+    test_mpirun()
