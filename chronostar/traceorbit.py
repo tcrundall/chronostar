@@ -118,7 +118,7 @@ def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
         xyzuvw = xyzuvw[0]
     return xyzuvw
 
-def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=False):
+def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*

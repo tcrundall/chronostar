@@ -32,10 +32,10 @@ def test_mpirun():
     logging.info("This thread is the master!")
 
     save_dir = 'temp_data/'
-    group_savefile = save_dir + 'origins_mpi.npy'
-    xyzuvw_init_savefile = save_dir + 'xyzuvw_init_mpi.npy'
-    astro_savefile = save_dir + 'astro_table_mpi.txt'
-    xyzuvw_conv_savefile = save_dir + 'xyzuvw_conv_mpi.fits'
+    group_savefile = save_dir + 'origins.npy'
+    xyzuvw_init_savefile = save_dir + 'xyzuvw_init.npy'
+    astro_savefile = save_dir + 'astro_table.txt'
+    xyzuvw_conv_savefile = save_dir + 'xyzuvw_now.fits'
 
     pars = np.array([0., 0., 0., 0., 0., 0., 0., 0., 1e-8, 100])
     error_frac = 1.0
