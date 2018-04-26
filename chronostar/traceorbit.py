@@ -177,7 +177,7 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     return xyzuvw
 
 
-def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=False):
+def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=True):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -202,20 +202,19 @@ def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=False):
         If single_age is set, output is [nstars, 6] array
     """
     if single_age:
-        times = np.array([0., times])
-        ntimes = 2
+        ntimes = 1
     else:
         times = np.array(times)
         ntimes = times.shape[0]
 
     nstars = xyzuvw_starts.shape[0]
-
     logging.debug("Nstars: {}".format(nstars))
 
-    xyzuvw_to = np.zeros((nstars, ntimes, 6))
-    for st_ix in range(nstars):
-        xyzuvw_to[st_ix] = traceOrbitXYZUVW(xyzuvw_starts[st_ix], times)
-    # if age is provided, only return the final position
     if single_age:
-        return xyzuvw_to[:,-1]
+        xyzuvw_to = np.zeros((nstars, 6))
+    else:
+        xyzuvw_to = np.zeros((nstars, ntimes, 6))
+    for st_ix in range(nstars):
+        xyzuvw_to[st_ix] = traceOrbitXYZUVW(xyzuvw_starts[st_ix], times,
+                                            single_age=single_age)
     return xyzuvw_to

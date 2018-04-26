@@ -12,7 +12,7 @@ def testLSR():
     xyzuvw_lsr = [0.,0.,0.,0.,0.,0.]
     times = np.linspace(0,100,101)
 
-    xyzuvws = torb.traceOrbitXYZUVW(xyzuvw_lsr, times)
+    xyzuvws = torb.traceOrbitXYZUVW(xyzuvw_lsr, times, single_age=False)
     assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5])
 
 def testRotatedLSR():
@@ -20,7 +20,7 @@ def testRotatedLSR():
     rot_lsr_gp_coords = np.array([1., 0., 1., 0., 0., np.pi])
     xyzuvw_rot_lsr = torb.convertGalpyCoordsToXYZUVW(rot_lsr_gp_coords)
     times = np.linspace(0,100,101)
-    xyzuvws = torb.traceOrbitXYZUVW(xyzuvw_rot_lsr, times)
+    xyzuvws = torb.traceOrbitXYZUVW(xyzuvw_rot_lsr, times, single_age=False)
 
     # On a circular orbit, same radius as LSR, so shouldn't vary at all
     assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5])
@@ -36,10 +36,10 @@ def testSingleTime():
     xyzuvws = np.vstack((xyzuvw_1, xyzuvw_2))
     age = 10.
     times = np.linspace(0., age, 2)
-    xyzuvws_both = torb.traceManyOrbitXYZUVW(xyzuvws, times)
-    xyzuvws_now = torb.traceManyOrbitXYZUVW(xyzuvws, age, True)
+    xyzuvws_both = torb.traceManyOrbitXYZUVW(xyzuvws, times, single_age=False)
+    xyzuvws_now = torb.traceManyOrbitXYZUVW(xyzuvws, age, single_age=True)
     assert np.allclose(xyzuvws_both[:,1], xyzuvws_now)
 
-    xyzuvw_both = torb.traceOrbitXYZUVW(xyzuvws[0], times)
-    xyzuvw_now = torb.traceOrbitXYZUVW(xyzuvws[0], age, True)
+    xyzuvw_both = torb.traceOrbitXYZUVW(xyzuvws[0], times, single_age=False)
+    xyzuvw_now = torb.traceOrbitXYZUVW(xyzuvws[0], age, single_age=True)
     assert np.allclose(xyzuvw_both[1], xyzuvw_now)

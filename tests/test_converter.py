@@ -29,8 +29,8 @@ def test_converter():
         group_pars, sphere=True, xyzuvw_savefile=xyzuvw_init_savefile,
         group_savefile=group_savefile, return_group=True
     )
-    xyzuvw_now_true = to.traceManyOrbitXYZUVW(xyzuvw_init,
-                                              np.array([0., group.age]))[:, 1]
+    xyzuvw_now_true = to.traceManyOrbitXYZUVW(xyzuvw_init, group.age,
+                                              single_age=True)
 
     ms.measureXYZUVW(xyzuvw_now_true, 1.0, astro_savefile)
     cv.convertMeasurementsToCartesian(loadfile=astro_savefile,
