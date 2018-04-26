@@ -289,7 +289,7 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         if plot_it:
             plt.clf()
             plt.plot(sampler.lnprobability.T)
-            plt.savefig(plot_dir+"burnin_lnprobT{}.png".format(cnt))
+            plt.savefig(plot_dir+"burnin_lnprobT{:02}.png".format(cnt))
 
         burnin_lnprob_res = np.hstack((
             burnin_lnprob_res, sampler.lnprobability
