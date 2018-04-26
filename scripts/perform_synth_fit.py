@@ -104,10 +104,10 @@ print("Only one thread is master")
 
 # collect inputs
 group_pars = list(base_group_pars)
-group_pars[6:9] = [dX, dX, dX]
-group_pars[9] = dV
-group_pars[13] = age
-group_pars[14] = nstars
+group_pars[6] = dX
+group_pars[7] = dV
+group_pars[8] = age
+group_pars[9] = nstars
 
 # decrement position by approx vel*t so final result is
 # in similar location across ages
