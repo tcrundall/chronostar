@@ -106,7 +106,9 @@ def convertCartesianToAngles(x,y,z,return_dist=False, value=False):
 
 
 def convertEquatorialToGalactic(theta, phi, value=True):
-    """Tested"""
+    """
+    Convert equatorial (ra, dec) to galactic (longitude, latitude)
+    """
     logging.debug("Converting eq ({}, {}) to gc: ".format(theta, phi))
     try:
         assert theta.unit == 'deg'
@@ -126,6 +128,9 @@ def convertEquatorialToGalactic(theta, phi, value=True):
 
 
 def convertGalacticToEquatorial(theta, phi, value=True):
+    """
+    Convert galactic (longitude, latitude) to equatorial (ra, dec)
+    """
     logging.debug("Converting gc ({}, {}) to eq:".format(theta, phi))
     try:
         assert theta.unit == 'deg'

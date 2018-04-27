@@ -11,7 +11,7 @@ import logging
 import numpy as np
 
 class Group:
-    def __init__(self, pars, sphere=True, internal=False):
+    def __init__(self, pars, sphere=True, internal=False, starcount=True):
         # If sphere flag is set, interpret pars one way
         # If not set, interpret pars another way
         # Simply supposed to be a neat way of packaging up a group's initial
@@ -42,9 +42,10 @@ class Group:
             self.age = self.pars[13]
 
             self.sphere_dx = (self.dx * self.dy * self.dz)**(1./3.)
-        try:
+        if starcount:
             self.nstars = int(self.pars[-1])
-        except:
+        else:
+            self.nstars = None
             logging.info("No star count provided")
 
     def __eq__(self, other):

@@ -103,6 +103,7 @@ print("Only one thread is master")
 # Setting up perfect current xyzuvw values
 try:
     xyzuvw_now_perf = np.load(xyzuvw_perf_file)
+    origin = np.load(group_savefile)
     logging.basicConfig(
         level=logging.INFO, filemode='a',
         filename='my_investigator_demo.log',
@@ -135,8 +136,19 @@ except IOError:
     offset[1] -= age * offset[4]
     offset[2] -= age * offset[5]
 
+
     xyzuvw_init += offset
     xyzuvw_init[:,:3] += approx_final_pos
+
+    # fit an approximate Gaussian to initial distribution
+    mean = np.mean(xyzuvw_init, axis=0)
+    dx, dy, dz = np.std(xyzuvw_init[:,:3], axis=0)
+    dv = np.prod(np.std(xyzuvw_init[:,3:], axis=0))**(1./3.)
+    group_pars = np.hstack((mean, dx, dy, dz, dv, 0., 0., 0., age))
+    pdb.set_trace()
+    origin = syn.Group(group_pars, sphere=False, starcount=False)
+    np.save(group_savefile, origin)
+
     xyzuvw_now_perf =\
         torb.traceManyOrbitXYZUVW(xyzuvw_init, age, single_age=True,
                                   savefile=xyzuvw_perf_file)
@@ -151,7 +163,7 @@ for prec in precs:
     logging.info("Fitting to prec: {}".format(prec))
     mkpath(prec)
     os.chdir(prec)
-    #np.save(group_savefile, origin) # store in each directory, for hexplotter
+    np.save(group_savefile, origin) # store in each directory, for hexplotter
     try:
         res = np.load(result_file)
         logging.info("Precision [{}] already fitted for".format(prec))
