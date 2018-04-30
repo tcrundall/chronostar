@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pickle
 
 import transform as tf
-from _overlap import get_lnoverlaps
+from _overlap import new_get_lnoverlaps as get_lnoverlaps
 import traceorbit as torb
 import synthesiser as syn
 
@@ -18,6 +18,44 @@ try:
     from astropy.io import fits
 except ImportError:
     import pyfits as fits
+
+global N_FAILS
+global N_SUCCS
+
+def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns, nstars):
+    """
+    A pythonic implementation of overlap integral calculation
+
+    Paramters
+    ---------
+    g_cov : ([6,6] float array)
+        Covariance matrix of the group
+    g_mn : ([6] float array)
+        mean of the group
+    st_covs : ([nstars, 6, 6] float array)
+        covariance matrices of the stars
+    st_mns : ([nstars, 6], float array)
+        means of the stars
+    nstars : int
+        number of stars
+
+    Returns
+    -------
+    ln_ols : ([nstars] float array)
+        an array of the logarithm of the overlaps
+    """
+    lnols = []
+    for st_cov, st_mn in zip(st_covs, st_mns):
+        res = 0
+        #res += 6 * np.log(2*np.pi)
+        res -= 3 * np.log(2*np.pi)
+        res -= 0.5 * np.log(np.linalg.det(g_cov + st_cov))
+        stmg_mn = st_mn - g_mn
+        stpg_cov = st_cov + g_cov
+        logging.debug("ApB:\n{}".format(stpg_cov))
+        res -= 0.5 * np.dot(stmg_mn.T, np.dot(np.linalg.inv(stpg_cov), stmg_mn))
+        lnols.append(res)
+    return np.array(lnols)
 
 
 def loadXYZUVW(xyzuvw_file):
@@ -126,6 +164,7 @@ def lnlike(pars, star_pars, z=None, return_lnols=False):
     lnols = get_lnoverlaps(
         cov_now, mean_now, star_pars['xyzuvw_cov'], star_pars['xyzuvw'], nstars
     )
+    import pdb; pdb.set_trace()
     if return_lnols:
         return lnols
 
@@ -152,14 +191,14 @@ def lnprobFunc(pars, star_pars, z):
     logprob
         the logarithm of the posterior probability of the fit
     """
-    #global N_FAILS
-    #global N_SUCCS
+    global N_FAILS
+    global N_SUCCS
 
     lp = lnprior(pars, star_pars)
     if not np.isfinite(lp):
-        #N_FAILS += 1
+        N_FAILS += 1
         return -np.inf
-    #N_SUCCS += 1
+    N_SUCCS += 1
     return lp + lnlike(pars, star_pars, z)
 
 def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
@@ -195,7 +234,7 @@ def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
 
 def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
              plot_it=False, pool=None, convergence_tol=0.1, init_pos=None,
-             plot_dir='', save_dir=''):
+             plot_dir='', save_dir='', init_pars=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -230,6 +269,8 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     probability
         [nwalkers, nsteps] array of probabilities for each sample
     """
+    global N_FAILS
+    global N_SUCCS
     if xyzuvw_dict is None:
         star_pars = loadXYZUVW(xyzuvw_file)
     else:
@@ -243,11 +284,14 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         z = np.ones(star_pars['xyzuvw'].shape[0])
 
     # Initialise the fit
-    init_pars = [0,0,0,0,0,0,3.,2.,10.0]
+    if init_pars is None:
+        init_pars = [0,0,0,0,0,0,3.,2.,10.0]
 
     NPAR = len(init_pars)
     NWALKERS = 2 * NPAR
 
+    N_FAILS = 0
+    N_SUCCS = 0
     # Since emcee linearly interpolates between walkers to determine next step
     # by initialising each walker to the same age, the age never varies
 #    if fixed_age is not None:
@@ -295,6 +339,7 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
             burnin_lnprob_res, sampler.lnprobability
         ))
         cnt += 1
+        logging.info("Successful: {}, Failures: {}".format(N_SUCCS, N_FAILS))
 
     logging.info("Burnt in, with convergence: {}\n"
           "Taking final burnin segment as sampling stage".format(converged))

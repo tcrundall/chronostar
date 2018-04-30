@@ -6,8 +6,12 @@
     Appears to be equivalent within 7-8 sig figs
 """
 import numpy as np
-#from math import isclose
+import matplotlib.pyplot as plt
+import pdb
+import sys
+sys.path.insert(0, '../..')
 import chronostar
+import chronostar.groupfitter as gf
 from chronostar.retired.fit_group import compute_overlap as co
 
 def new_co(A_cov,a_mn,B_cov,b_mn):
@@ -33,7 +37,9 @@ def new_co(A_cov,a_mn,B_cov,b_mn):
     overlap *= 1.0/((2*np.pi)**3.0 * np.sqrt(AcpBc_det))
     return overlap
 
-star_params = chronostar.retired.fit_group.read_stars("results/bp_TGAS2_traceback_save.pkl")
+star_params = chronostar.retired.fit_group.read_stars(
+    "../../data/bp_TGAS2_traceback_save.pkl"
+)
 
 icov = star_params["xyzuvw_icov"]
 cov = star_params["xyzuvw_cov"]
@@ -43,21 +49,61 @@ det = star_params["xyzuvw_icov_det"]
 nstars = 407
 threshold = 1e-9
 
+co1_ols = []
+co2_ols = []
+
 for i in range(0,nstars):
     A_cov = cov[i,0]
     A_icov = icov[i,0]
     a_mn = mean[i,0]
     A_idet = det[i,0]
-    
+
     B_cov = cov[i,1]
     B_icov = icov[i,1]
     b_mn = mean[i,1]
     B_idet = det[i,1]
 
     mikes_ol = co(A_icov,a_mn,A_idet,B_icov,b_mn,B_idet)
+    co1_ols.append(mikes_ol)
     tims_ol = new_co(A_cov,a_mn,B_cov,b_mn)
+    co2_ols.append(tims_ol)
+co1_ols = np.array(co1_ols)
+co2_ols = np.array(co1_ols)
 
-assert(np.all( (mikes_ol - tims_ol)/mikes_ol < threshold)),\
-       "Not all {} star overlaps are consistent within {}".format(nstars,
-                                                                  threshold)
-print("___ check_maths.py passes all tests ___")
+assert np.allclose(co1_ols, co2_ols)
+assert(np.all( (mikes_ol - tims_ol)/mikes_ol < threshold)), \
+    "Not all {} star overlaps are consistent within {}".format(nstars,
+                                                               threshold)
+
+xyzuvw_file = "../data/fed_stars_20_xyzuvw.fits"
+xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
+
+star_means = xyzuvw_dict['xyzuvw']
+star_covs = xyzuvw_dict['xyzuvw_cov']
+
+
+co1_ols = []
+co2_ols = []
+
+for i in range(0,nstars):
+    A_cov = cov[i,0]
+    A_icov = icov[i,0]
+    a_mn = mean[i,0]
+    A_idet = det[i,0]
+
+    B_cov = cov[i,1]
+    B_icov = icov[i,1]
+    b_mn = mean[i,1]
+    B_idet = det[i,1]
+
+    mikes_ol = co(A_icov,a_mn,A_idet,B_icov,b_mn,B_idet)
+    co1_ols.append(mikes_ol)
+    tims_ol = new_co(A_cov,a_mn,B_cov,b_mn)
+    co2_ols.append(tims_ol)
+co1_ols = np.array(co1_ols)
+co2_ols = np.array(co1_ols)
+
+assert np.allclose(co1_ols, co2_ols)
+assert(np.all( (mikes_ol - tims_ol)/mikes_ol < threshold)), \
+    "Not all {} star overlaps are consistent within {}".format(nstars,
+                                                               threshold)

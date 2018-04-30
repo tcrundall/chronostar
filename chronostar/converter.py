@@ -36,9 +36,10 @@ def convertAstrErrsToCovs(err_arr):
     err_arr_cp = np.copy(err_arr)
     nstars = err_arr_cp.shape[0]
 
-    err_arr_cp[:, :2] = 5e-2
+    err_arr_cp[:, :2] = 1e1
     logging.info("Angular position error is: {}".format(err_arr_cp[0,0]))
     print("Angular position error is: {}".format(err_arr_cp[0,0]))
+    print("Changed!")
 
     astr_covs = np.zeros((nstars, 6, 6))
     for ix in range(nstars):
