@@ -19,9 +19,6 @@ try:
 except ImportError:
     import pyfits as fits
 
-global N_FAILS
-global N_SUCCS
-
 def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns, nstars):
     """
     A pythonic implementation of overlap integral calculation
@@ -193,14 +190,9 @@ def lnprobFunc(pars, star_pars, z):
     logprob
         the logarithm of the posterior probability of the fit
     """
-    global N_FAILS
-    global N_SUCCS
-
     lp = lnprior(pars, star_pars)
     if not np.isfinite(lp):
-        N_FAILS += 1
         return -np.inf
-    N_SUCCS += 1
     return lp + lnlike(pars, star_pars, z)
 
 def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
@@ -271,8 +263,6 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     probability
         [nwalkers, nsteps] array of probabilities for each sample
     """
-    global N_FAILS
-    global N_SUCCS
     if xyzuvw_dict is None:
         star_pars = loadXYZUVW(xyzuvw_file)
     else:
@@ -292,8 +282,6 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     NPAR = len(init_pars)
     NWALKERS = 2 * NPAR
 
-    N_FAILS = 0
-    N_SUCCS = 0
     # Since emcee linearly interpolates between walkers to determine next step
     # by initialising each walker to the same age, the age never varies
 #    if fixed_age is not None:
@@ -341,7 +329,6 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
             burnin_lnprob_res, sampler.lnprobability
         ))
         cnt += 1
-        logging.info("Successful: {}, Failures: {}".format(N_SUCCS, N_FAILS))
 
     logging.info("Burnt in, with convergence: {}\n"
           "Taking final burnin segment as sampling stage".format(converged))
@@ -358,8 +345,6 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
 #        pos, sampling_steps, rstate0=state,
 #    )
 #    print("Sampled")
-    #    print("Number of failed priors after sampling:\n{}".format(N_FAILS))
-    #    print("Number of succeeded priors after sampling:\n{}".format(N_SUCCS))
     if plot_it:
         plt.clf()
         plt.plot(sampler.lnprobability.T)
