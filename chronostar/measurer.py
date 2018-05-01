@@ -38,7 +38,30 @@ def convertArrayToTable(astros, errors):
             errors[:,5],
         ],
         names=('name', 'radeg','dedeg','plx','e_plx',
-               'pmra','e_pmra','pmde','e_pmde','rv','e_rv')
+               'pmra','e_pmra','pmde','e_pmde','rv','e_rv'),
+    )
+    return t
+
+def convertAstroArrayToTable(astros):
+    t = Table(
+        rows = astros,
+        #[
+        #    astros[:,0],
+        #    astros[:,1],
+        #    astros[:,2],
+        #    astros[:,3],
+        #    astros[:,4],
+        #    astros[:,5],
+        #    astros[:,6],
+        #    astros[:,7],
+        #    astros[:,8],
+        #    astros[:,9],
+        #    astros[:,10],
+        #],
+        names=('name', 'radeg','dedeg','plx','e_plx',
+               'pmra','e_pmra','pmde','e_pmde','rv','e_rv'),
+        dtype = ('S20',
+                'f8', 'f8', 'f8', 'f8', 'f8', 'f8', 'f8', 'f8', 'f8', 'f8'),
     )
     return t
 

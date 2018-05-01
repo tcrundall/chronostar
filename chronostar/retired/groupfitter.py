@@ -5,7 +5,7 @@ import numpy as np
 
 # not sure if this is right, needed to change to this so I could run
 # investigator
-from _overlap import get_lnoverlaps
+# from _overlap import get_lnoverlaps # removed....
 #from chronostar._overlap import get_lnoverlaps
 import emcee
 import matplotlib as mpl
