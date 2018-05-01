@@ -7,10 +7,12 @@ sys.path.insert(0, '..')
 
 import chronostar.retired.groupfitter as rgf
 import chronostar.measurer as ms
+import chronostar.converter as cv
 
 original_tb_file = "../data/bp_TGAS2_traceback_save.pkl"
 data_file = "../data/betaPic.csv"
-save_file = "../data/bp_astro.dat"
+astro_file = "../data/bp_astro.dat"
+xyzuvw_file = "../data/bp_xyzuvw.fits"
 
 with open(original_tb_file, 'r') as fp:
     table, _, _, _ = pickle.load(fp)
@@ -40,5 +42,11 @@ data_ordered = np.vstack((data_ordered, data_astro[:,1]))
 data_ordered = data_ordered.T
 
 t = ms.convertAstroArrayToTable(data_ordered)
+try:
+    t.write(astro_file, format='ascii', overwrite=False)
+except IOError:
+    print("{} already exists...".format(astro_file))
 
-t.write(save_file, format='ascii', overwrite=False)
+xyzuvw_dict =\
+    cv.convertMeasurementsToCartesian(loadfile=astro_file,
+                                      savefile=xyzuvw_file)
