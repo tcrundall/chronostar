@@ -51,7 +51,7 @@ xyzuvw_file = '../data/twa_core_xyzuvw.fits'
 #data_file = "../data/twa_core_astro.dat"
 
 BURNIN_STEPS = 1000
-C_TOL = 0.10
+C_TOL = 0.15
 
 logging.basicConfig(
     level=logging.INFO, filemode='a',
