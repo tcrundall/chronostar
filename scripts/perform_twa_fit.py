@@ -50,7 +50,7 @@ xyzuvw_file = '../data/twa_core_xyzuvw.fits'
 #prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 #data_file = "../data/twa_core_astro.dat"
 
-BURNIN_STEPS = 1000
+BURNIN_STEPS = 100
 C_TOL = 0.15
 
 logging.basicConfig(
@@ -77,7 +77,7 @@ if using_mpi:
         # Wait for instructions from the master process.
         pool.wait()
         sys.exit(0)
-print("Only one thread is master")
+logging.info("Only one thread is master")
 
 # Performing fit for each precision
 logging.info("Fitting")
@@ -95,6 +95,7 @@ init_pars = np.hstack((approx_mean, np.log(approx_dx), np.log(approx_dv), 1.0))
 best_fit, chain, lnprob = gf.fitGroup(
     xyzuvw_file=xyzuvw_file, burnin_steps=BURNIN_STEPS, plot_it=True,
     pool=pool, convergence_tol=C_TOL, save_dir=results_dir, init_pars=init_pars,
+    plot_dir=results_dir
 )
 
 if using_mpi:

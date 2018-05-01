@@ -167,7 +167,6 @@ def lnlike(pars, star_pars, z=None, return_lnols=False):
     lnols = get_lnoverlaps(
         cov_now, mean_now, star_pars['xyzuvw_cov'], star_pars['xyzuvw'], nstars
     )
-    import pdb; pdb.set_trace()
     if return_lnols:
         return lnols
 
