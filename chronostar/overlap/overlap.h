@@ -26,7 +26,7 @@ double new_get_lnoverlap(
   );
 
 
-void new_get_lnoverlaps(
+void get_lnoverlaps(
   double* gr_cov, int gr_dim1, int gr_dim2,
   double* gr_mn, int gr_mn_dim,
   double* st_covs, int st_dim1, int st_dim2, int st_dim3,

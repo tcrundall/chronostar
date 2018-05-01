@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pickle
 
 import transform as tf
-from _overlap import new_get_lnoverlaps as get_lnoverlaps
+from _overlap import get_lnoverlaps
 import traceorbit as torb
 import synthesiser as syn
 

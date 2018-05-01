@@ -485,6 +485,7 @@ void get_overlaps(double* gr_icov, int gr_dim1, int gr_dim2,
 }
 
 /* New main function, speed not yet tested
+ * mostly here for debugging reasons
  * --parameters--
  *  group_icov     (6*6 npyArray) the group's inverse covariance matrix
  *  group_mn       (1*6 npyArray) which is the group's mean kinematic info
@@ -501,7 +502,6 @@ void get_overlaps(double* gr_icov, int gr_dim1, int gr_dim2,
  *          this will save time on the reallocation and deallocation
  *
  *      look up how to find inverse
- *      look up how to access math.pi
  */
 double new_get_lnoverlap(
   double* gr_cov, int gr_dim1, int gr_dim2,
@@ -620,7 +620,7 @@ double new_get_lnoverlap(
  *      look up how to find inverse
  *      look up how to access math.pi
  */
-void new_get_lnoverlaps(
+void get_lnoverlaps(
   double* gr_cov, int gr_dim1, int gr_dim2,
   double* gr_mn, int gr_mn_dim,
   double* st_covs, int st_dim1, int st_dim2, int st_dim3,

@@ -12,9 +12,7 @@ sys.path.insert(0, '..')
 
 import chronostar.groupfitter as gf
 from chronostar.groupfitter import slowGetLogOverlaps as p_lno
-from chronostar._overlap import new_get_lnoverlaps as c_lno
-from chronostar.retired.fit_group import compute_overlap as co
-from chronostar.retired.fit_group import read_stars
+from chronostar._overlap import get_lnoverlaps as c_lno
 
 
 def co2(A, a, B, b):
@@ -35,6 +33,7 @@ def co2(A, a, B, b):
     overlap *= 1.0 / ((2 * np.pi) ** 3.0 * np.sqrt(ApB_det) )
 
     return overlap
+
 
 def co1(A_cov, a, B_cov, b):
     """
@@ -70,6 +69,7 @@ def co1(A_cov, a, B_cov, b):
                              np.dot(a - c, np.dot(A, a - c))))
     overlap *= np.sqrt(B_det * A_det / ApB_det) / (2 * np.pi) ** 3.0
     return overlap
+
 
 def test_pythonFuncs():
     xyzuvw_file = "../data/fed_stars_20_xyzuvw.fits"
@@ -109,6 +109,7 @@ def test_pythonFuncs():
     assert np.allclose(co1s, co2s)
     assert np.allclose(co2s, co3s)
     assert np.allclose(co1s, co3s)
+
 
 def test_swigImplementation():
     """
