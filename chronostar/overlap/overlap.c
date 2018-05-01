@@ -499,6 +499,123 @@ void get_overlaps(double* gr_icov, int gr_dim1, int gr_dim2,
  *
  * todo: instead of calling internal function actually use cblas functions
  *          this will save time on the reallocation and deallocation
+ *
+ *      look up how to find inverse
+ *      look up how to access math.pi
+ */
+double new_get_lnoverlap(
+  double* gr_cov, int gr_dim1, int gr_dim2,
+  double* gr_mn, int gr_mn_dim,
+  double* st_cov, int st_dim1, int st_dim2,
+  double* st_mn, int st_mn_dim
+  )
+{
+  //printf("Inside new_get_lnoverlaps function\n");
+  printf("-----------------------------------------------------------\n");
+  printf("new_get_lnoverlap(): In c implemntation of Tim's derivation\n");
+  printf("-----------------------------------------------------------\n");
+  //printf("Inputs are:\n");
+  //printf("  A\n");
+  //print_mat(gr_cov, gr_dim1, gr_dim2);
+  //printf("  a\n");
+  //print_vec(gr_mn, gr_mn_dim);
+  //printf("  B\n");
+  //print_mat(st_cov, st_dim1, st_dim2);
+  //printf("  b\n");
+  //print_vec(st_mn, st_mn_dim);
+
+  // ALLOCATE MEMORY
+  int star_count = 0;
+  int MAT_DIM = gr_dim1; //Typically set to 6
+  int i, j, signum;
+  double d_temp, result, ln_det_BpA;
+  FILE* fout = stdout;
+  gsl_permutation *p1;
+
+  gsl_matrix *BpA      = gsl_matrix_alloc(MAT_DIM, MAT_DIM); //(B+A)
+  //gsl_matrix *BpAi     = gsl_matrix_alloc(MAT_DIM, MAT_DIM); //(B+A)^-1
+  gsl_vector *bma      = gsl_vector_alloc(MAT_DIM); //will hold b - a
+  gsl_vector *v_temp   = gsl_vector_alloc(MAT_DIM);
+
+  p1 = gsl_permutation_alloc(BpA->size1);
+
+  printf("Memory allocated\n");
+  // INITIALISE STAR MATRICES
+  for (i=0; i<MAT_DIM; i++)
+    for (j=0; j<MAT_DIM; j++)
+      //perform B+A as part of the initialisation
+      gsl_matrix_set(
+        BpA,i,j,
+        st_cov[i*MAT_DIM+j] +
+        gr_cov[i*MAT_DIM+j]
+      );
+      printf("Printing BpA\n");
+      print_matrix(fout, BpA);
+
+  for (i=0; i<MAT_DIM; i++) {
+    gsl_vector_set(
+      bma, i,
+      st_mn[i] -
+      gr_mn[i]
+    );
+  }
+  printf("Printing bma\n");
+  print_vec(bma->data, 6);
+  printf("Matrices initialised\n\n");
+
+  result = 6*log(2*M_PI);
+  printf("Added 6log(2pi):\n%6.2f\n", result);
+
+  // Get inverse of BpA, this line is wrong, fix when have internet
+  gsl_linalg_LU_decomp(BpA, p1, &signum);
+  ln_det_BpA = log(fabs(gsl_linalg_LU_det(BpA, signum)));
+  printf("Log of det(ApB): %6.2f\n", ln_det_BpA);
+  result += ln_det_BpA;
+
+  printf("result so far:\n%6.2f\n",result);
+  //
+  gsl_vector_set_zero(v_temp);
+  gsl_linalg_LU_solve(BpA, p1, bma, v_temp); //v_temp holds (B+A)^-1 (b-a)
+  gsl_blas_ddot(v_temp, bma, &d_temp); //d_temp holds (b-a)^T (B+A)-1 (b-a)
+  printf("Printing bma_BpAi_bma\n");
+  printf("%6.2f\n\n", d_temp);
+
+  result += d_temp;
+  printf("result after bma_BpAi_bma:\n%6.2f\n",result);
+
+  result *= -0.5;
+  printf("Everything calculated\n");
+  printf("Final result:\n%6.8f\n", result);
+  //
+
+  // DEALLOCATE THE MEMORY
+  gsl_matrix_free(BpA);
+  //gsl_matrix_free(BpAi);
+  gsl_vector_free(bma);
+  gsl_vector_free(v_temp);
+
+  gsl_permutation_free(p1);
+
+  return result;
+  //printf("At end of new_get_lnoverlaps function\n");
+}
+
+
+/* New main function, speed not yet tested
+ * --parameters--
+ *  group_icov     (6*6 npyArray) the group's inverse covariance matrix
+ *  group_mn       (1*6 npyArray) which is the group's mean kinematic info
+ *  group_icov_det (flt)          the determinent of the group_icov
+ *  Bs             (nstars*6*6)   an array of each star's icov matrix
+ *  bs:            (nstars*6)     an array of each star's mean kinematic info
+ *  B_dets:        (nstars)       an array of the determinent of each icov
+ *  nstars:        (int)          number of stars, used to determine the size
+ *                          of npyArray which will return calculated overlaps)
+ *
+ * returns: (nstars) array of calculated overlaps of every star with 1 group
+ *
+ * todo: instead of calling internal function actually use cblas functions
+ *          this will save time on the reallocation and deallocation
  * 
  *      look up how to find inverse
  *      look up how to access math.pi
@@ -554,7 +671,6 @@ void new_get_lnoverlaps(
     //printf("Matrices initialised\n\n");
 
     result = 6*log(2*M_PI);
-    // To Do! put 6ln(2 pi) in here ^^
 
     // Get inverse of BpA, this line is wrong, fix when have internet
     gsl_linalg_LU_decomp(BpA, p1, &signum);

@@ -8,21 +8,47 @@ import chronostar.groupfitter as gf
 from chronostar.groupfitter import slowGetLogOverlaps as sclno
 import chronostar._overlap as ol
 
-#def clno(A, a, B, b):
-#    """
-#    Equivalent to co2, but with logarithms
-#    """
-#    ApB = (A + B)
-#    ApB_det = np.linalg.det(ApB)
-#
-#    ApB_i = np.linalg.inv(ApB)
-#    amb = a - b
-#
+def clno(A, a, B, b):
+    """
+    Equivalent to co2, but with logarithms
+    """
+    logging.debug("---------------------------------------------------")
+    logging.debug("clno(): In python implmentation of Tim's derivation")
+    logging.debug("---------------------------------------------------")
+    #logging.debug("Inputs are:")
+    #logging.debug("  A:\n{}".format(A))
+    #logging.debug("  a:\n{}".format(a))
+    #logging.debug("  B:\n{}".format(B))
+    #logging.debug("  b:\n{}".format(b))
+    ApB = (A + B)
+    logging.debug("ApB: \n{}".format(ApB))
+    ApB_det = np.linalg.det(ApB)
+
+    ApB_i = np.linalg.inv(ApB)
+    amb = a - b
+
+    result = 6 * np.log(2*np.pi)
+    logging.debug("Added 6log(2pi): {}".format(result))
+    lndet = np.log(ApB_det)
+    logging.debug("Log of det(ApB): {}".format(lndet))
+    result += np.log(ApB_det)
+    logging.debug("result so far: {}".format(result))
+    exponent = (np.dot(amb, np.dot(ApB_i, amb)))
+    logging.debug("matrix exponent is: {}".format(exponent))
+    result += exponent
+    logging.debug("result so far: {}".format(result))
+    result *= -0.5
+
 #    lnoverlap = -0.5 * (np.dot(amb, np.dot(ApB_i, amb)))
 #    lnoverlap -= 3 * np.log(2 * np.pi)
 #    lnoverlap -= 0.5 * np.log(ApB_det)
-#
-#    return lnoverlap
+
+    #logging.debug("Final result is: {}".format(lnoverlap))
+
+    logging.debug("---------------------------------------------------")
+    logging.debug("Final result is: {}".format(result))
+    logging.debug("---------------------------------------------------")
+    return result
 
 
 def co2(A, a, B, b):
@@ -151,22 +177,29 @@ if __name__ == '__main__':
     if DEBUG_UNDERFLOW:
         scov = star_covs[0]
         smn = star_means[0]
-        py_lnol = sclno(gcov, gmn, np.array([scov]), np.array([smn]), 1)
-        gcovi = np.linalg.inv(gcov)
-        scovi = np.linalg.inv(scov)
-        gcovi_det = np.linalg.det(gcovi)
-        scovi_det = np.linalg.det(scovi)
-        c_ol1 = ol.get_overlap(gcovi, gmn, gcovi_det,
-                                scovi, smn, scovi_det)
-        c_ol2 = ol.get_overlaps(gcovi, gmn, gcovi_det,
-                                np.array([scovi]), np.array([smn]),
-                                np.array([scovi_det]),
-                                1)
+        #py_lnol = sclno(gcov, gmn, np.array([scov]), np.array([smn]), 1)
+        py_lnol = clno(gcov, gmn, scov, smn)
+#        gcovi = np.linalg.inv(gcov)
+#        scovi = np.linalg.inv(scov)
+#        gcovi_det = np.linalg.det(gcovi)
+#        scovi_det = np.linalg.det(scovi)
+#        c_ol1 = ol.get_overlap(gcovi, gmn, gcovi_det,
+#                                scovi, smn, scovi_det)
+#        c_ol2 = ol.get_overlaps(gcovi, gmn, gcovi_det,
+#                                np.array([scovi]), np.array([smn]),
+#                                np.array([scovi_det]),
+#                                1)
 #        c_ol2 = ol.get_overlap2(gcovi.tolist(), gmn.tolist(), gcovi_det,
 #                                scovi.tolist(), smn.tolist(), scovi_det)
-
-        c_lnol = ol.new_get_lnoverlaps(gcov, gmn,
-                                   np.array([scov]),
-                                   np.array([smn]), 1)
+#        logging.info("Inputs (from python to c) are:")
+#        logging.debug("  A:\n{}".format(gcov))
+#        logging.debug("  a:\n{}".format(gmn))
+#        logging.debug("  B:\n{}".format(gcov))
+#        logging.debug("  b:\n{}".format(smn))
+        c_lnol1 = ol.new_get_lnoverlap(gcov, gmn,
+                                       scov, smn)
+#        c_lnol2 = ol.new_get_lnoverlaps(gcov, gmn,
+#                                   np.array([scov]),
+#                                   np.array([smn]), 1)
 
 

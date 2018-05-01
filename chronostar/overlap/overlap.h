@@ -18,6 +18,14 @@ void get_overlaps(double* gr_icov, int gr_dim1, int gr_dim2,
                   double* st_icov_dets, int st_icov_dets_dim,
                   double* rangevec, int n);
 
+double new_get_lnoverlap(
+  double* gr_cov, int gr_dim1, int gr_dim2,
+  double* gr_mn, int gr_mn_dim,
+  double* st_cov, int st_dim1, int st_dim2,
+  double* st_mn, int st_mn_dim
+  );
+
+
 void new_get_lnoverlaps(
   double* gr_cov, int gr_dim1, int gr_dim2,
   double* gr_mn, int gr_mn_dim,

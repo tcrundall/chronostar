@@ -28,6 +28,7 @@
       {(double* gr_icov, int gr_dim1, int gr_dim2),
        (double* gr_cov,  int gr_dim1, int gr_dim2),
        (double* st_icov, int st_dim1, int st_dim2),
+       (double* st_cov, int st_dim1, int st_dim2),
        (double* st_mns, int st_mn_dim1, int st_mn_dim2)}
 
 %apply (double* IN_ARRAY1, int DIM1) \
