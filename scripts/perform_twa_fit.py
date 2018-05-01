@@ -50,8 +50,8 @@ xyzuvw_file = '../data/twa_core_xyzuvw.fits'
 #prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 #data_file = "../data/twa_core_astro.dat"
 
-BURNIN_STEPS = 500
-C_TOL = 0.15
+BURNIN_STEPS = 1000
+C_TOL = 0.10
 
 logging.basicConfig(
     level=logging.INFO, filemode='a',
