@@ -12,7 +12,7 @@ import chronostar.converter as cv
 original_tb_file = "../data/bp_TGAS2_traceback_save.pkl"
 data_file = "../data/betaPic.csv"
 astro_file = "../data/bp_astro.dat"
-xyzuvw_file = "../data/bp_xyzuvw.fits"
+xyzuvw_file = "../data/bp_old_xyzuvw.fits"
 
 with open(original_tb_file, 'r') as fp:
     table, _, _, _ = pickle.load(fp)
