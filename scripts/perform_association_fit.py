@@ -61,7 +61,6 @@ SAMPLING_STEPS = 10000
 C_TOL = 0.15
 
 mkpath(results_dir)
-logging.info("Directory made (or existed): {}".format(results_dir))
 logging.basicConfig(
     level=logging.INFO, filemode='a',
     filename=results_dir+'my_investigator_demo.log',
