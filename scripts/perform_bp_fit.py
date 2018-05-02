@@ -39,7 +39,8 @@ results_dir = "../results/bp_old/"
 result_file = "result.npy"
 xyzuvw_file = '../data/bp_xyzuvw.fits'
 
-BURNIN_STEPS = 1000
+BURNIN_STEPS = 10
+SAMPLING_STEPS = 100
 C_TOL = 0.15
 
 mkpath(results_dir)
@@ -80,11 +81,11 @@ xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
 approx_mean = np.mean(xyzuvw_dict['xyzuvw'], axis=0)
 approx_dx   = np.prod(np.std(xyzuvw_dict['xyzuvw'][:,:3], axis=0))**(1./3.)
 approx_dv   = np.prod(np.std(xyzuvw_dict['xyzuvw'][:,3:], axis=0))**(1./3.)
-#init_pars = np.hstack((approx_mean, np.log(approx_dx), np.log(approx_dv), 1.0))
+init_pars = np.hstack((approx_mean, np.log(approx_dx), np.log(approx_dv), 1.0))
 best_fit, chain, lnprob = gf.fitGroup(
     xyzuvw_file=xyzuvw_file, burnin_steps=BURNIN_STEPS, plot_it=True,
     pool=pool, convergence_tol=C_TOL, save_dir=results_dir, #init_pars=init_pars,
-    plot_dir=results_dir
+    plot_dir=results_dir, sampling_steps=SAMPLING_STEPS,
 )
 
 if using_mpi:

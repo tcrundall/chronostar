@@ -228,7 +228,7 @@ def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
 
 def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
              plot_it=False, pool=None, convergence_tol=0.1, init_pos=None,
-             plot_dir='', save_dir='', init_pars=None):
+             plot_dir='', save_dir='', init_pars=None, sampling_steps=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -330,20 +330,27 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         ))
         cnt += 1
 
-    logging.info("Burnt in, with convergence: {}\n"
-          "Taking final burnin segment as sampling stage".format(converged))
-    # save the chain for later inspection
-    np.save(save_dir+"final_chain.npy", sampler.chain)
-    np.save(save_dir+"final_lnprob.npy", sampler.lnprobability)
+    logging.info("Burnt in, with convergence: {}".format(converged))
     if plot_it:
         plt.clf()
         plt.plot(burnin_lnprob_res.T)
         plt.savefig(plot_dir+"burnin_lnprobT.png")
 
-#    logging.info("Sampling")
-#    pos, final_lnprob, rstate = sampler.run_mcmc(
-#        pos, sampling_steps, rstate0=state,
-#    )
+    if not sampling_steps:
+        logging.info("Taking final burnin segment as sampling stage"\
+                     .format(converged))
+    else:
+        logging.info("Entering sampling stage for {} steps".format(
+            sampling_steps
+        ))
+        sampler.reset()
+        pos, lnprob, state = sampler.run_mcmc(pos, sampling_steps, state)
+        logging.info("Sampling done")
+
+    # save the chain for later inspection
+    np.save(save_dir+"final_chain.npy", sampler.chain)
+    np.save(save_dir+"final_lnprob.npy", sampler.lnprobability)
+
 #    print("Sampled")
     if plot_it:
         plt.clf()

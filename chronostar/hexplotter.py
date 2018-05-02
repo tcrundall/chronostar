@@ -185,7 +185,7 @@ def plot_hexplot(star_pars, means, covs, chain, iter_count, prec=None,
               bbox_inches='tight', format='pdf')
     f.clear()
 
-def dataGatherer(res_dir='', save_dir=''):
+def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file=''):
     """
     Provided with a results directory, tries to find all she needs, then plots
 
@@ -196,21 +196,33 @@ def dataGatherer(res_dir='', save_dir=''):
     means = {}
     star_pars = {}
 
-    chain = np.load(res_dir+"final_chain.npy")
+    chain_file = res_dir + "final_chain.npy"
+    lnprob_file = res_dir + "final_lnprob.npy"
+    origin_file = res_dir + "origins.npy"
+    if not xyzuvw_file:
+        logging.info("No xyzuvw filename provided. Must be a synth fit yes?")
+        xyzuvw_file = res_dir + "xyzuvw_now.fits"
+
+
+    chain = np.load(chain_file)
     chain = np.array([chain])
-    lnprob = np.load(res_dir+"final_lnprob.npy")
-    origins = np.load(res_dir+"origins.npy").item()
+    lnprob = np.load(lnprob_file)
     best_group = al.getBestSample(chain, lnprob)
 
-    star_pars['xyzuvw'] = fits.getdata(res_dir+"xyzuvw_now.fits", 1)
-    star_pars['xyzuvw_cov'] = fits.getdata(res_dir+"xyzuvw_now.fits", 2)
+    star_pars['xyzuvw'] = fits.getdata(xyzuvw_file, 1)
+    star_pars['xyzuvw_cov'] = fits.getdata(xyzuvw_file, 2)
 
-    means['origin_then'] = np.array([origins.mean])
+    try:
+        origins = np.load(origin_file).item()
+        means['origin_then'] = np.array([origins.mean])
+        covs['origin_then'] = np.array([origins.generateCovMatrix()])
+    except IOError:
+        logging.info("No origins file: {}".format(origin_file))
+
     means['fitted_then'] = np.array([best_group.mean])
     means['fitted_now']  =\
         np.array([torb.traceOrbitXYZUVW(best_group.mean, best_group.age)])
 
-    covs['origin_then'] = np.array([origins.generateCovMatrix()])
     covs['fitted_then'] = np.array([best_group.generateCovMatrix()])
     covs['fitted_now']  =\
         np.array([
