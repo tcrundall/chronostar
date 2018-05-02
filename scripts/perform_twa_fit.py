@@ -43,13 +43,13 @@ BURNIN_STEPS = 1000
 SAMPLING_STEPS = 10000
 C_TOL = 0.15
 
+mkpath(results_dir)
 logging.basicConfig(
     level=logging.INFO, filemode='a',
     filename=results_dir+'my_investigator_demo.log',
 )
 logging.info("In preamble")
 
-mkpath(results_dir)
 # Initialize the MPI-based pool used for parallelization.
 using_mpi = True
 mpi_msg = ""    # can't use loggings yet, unclear if appending or rewriting
