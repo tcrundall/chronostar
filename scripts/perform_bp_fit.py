@@ -71,17 +71,16 @@ if using_mpi:
 logging.info("Only one thread is master")
 
 # Performing fit for each precision
-logging.info("Fitting")
 #os.chdir(results_dir)
 #np.save(group_savefile, origin) # store in each directory, for hexplotter
 
 logging.info("applying fit")
 # apply traceforward fitting (with lnprob, corner plots as side effects)
-xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
-approx_mean = np.mean(xyzuvw_dict['xyzuvw'], axis=0)
-approx_dx   = np.prod(np.std(xyzuvw_dict['xyzuvw'][:,:3], axis=0))**(1./3.)
-approx_dv   = np.prod(np.std(xyzuvw_dict['xyzuvw'][:,3:], axis=0))**(1./3.)
-init_pars = np.hstack((approx_mean, np.log(approx_dx), np.log(approx_dv), 1.0))
+#xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
+#approx_mean = np.mean(xyzuvw_dict['xyzuvw'], axis=0)
+#approx_dx   = np.prod(np.std(xyzuvw_dict['xyzuvw'][:,:3], axis=0))**(1./3.)
+#approx_dv   = np.prod(np.std(xyzuvw_dict['xyzuvw'][:,3:], axis=0))**(1./3.)
+#init_pars = np.hstack((approx_mean, np.log(approx_dx), np.log(approx_dv), 1.0))
 best_fit, chain, lnprob = gf.fitGroup(
     xyzuvw_file=xyzuvw_file, burnin_steps=BURNIN_STEPS, plot_it=True,
     pool=pool, convergence_tol=C_TOL, save_dir=results_dir, #init_pars=init_pars,
