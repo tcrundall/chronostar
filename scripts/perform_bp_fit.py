@@ -39,8 +39,8 @@ results_dir = "../results/bp_old/"
 result_file = "result.npy"
 xyzuvw_file = '../data/bp_xyzuvw.fits'
 
-BURNIN_STEPS = 10
-SAMPLING_STEPS = 100
+BURNIN_STEPS = 1000
+SAMPLING_STEPS = 10000
 C_TOL = 0.15
 
 mkpath(results_dir)

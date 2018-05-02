@@ -51,6 +51,7 @@ xyzuvw_file = '../data/twa_core_xyzuvw.fits'
 #data_file = "../data/twa_core_astro.dat"
 
 BURNIN_STEPS = 1000
+SAMPLING_STEPS = 10000
 C_TOL = 0.15
 
 logging.basicConfig(
@@ -95,7 +96,7 @@ init_pars = np.hstack((approx_mean, np.log(approx_dx), np.log(approx_dv), 1.0))
 best_fit, chain, lnprob = gf.fitGroup(
     xyzuvw_file=xyzuvw_file, burnin_steps=BURNIN_STEPS, plot_it=True,
     pool=pool, convergence_tol=C_TOL, save_dir=results_dir, init_pars=init_pars,
-    plot_dir=results_dir
+    plot_dir=results_dir, sampling_steps=SAMPLING_STEPS
 )
 
 if using_mpi:
