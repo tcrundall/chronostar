@@ -46,7 +46,7 @@ except:
 
 try:
     ass_name = sys.argv[1]
-except ValueError:
+except IndexError:
     print("Usage: nohup mpirun -np 19 python [ass_name]")
     raise
 
