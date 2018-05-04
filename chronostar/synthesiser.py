@@ -3,6 +3,8 @@ synthesiser
 
 From a parametrised gaussian distribution, generate the starting
 XYZUVW values for a given number of stars
+
+TODO: accommodate multiple groups
 """
 
 from __future__ import print_function, division
