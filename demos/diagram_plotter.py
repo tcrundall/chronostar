@@ -14,10 +14,17 @@ import chronostar.synthesiser as syn
 import chronostar.errorellipse as ee
 import chronostar.expectmax as em
 
+#group_pars = np.array([
+#    [0, 0, 0, 50, -10, 0, 10, 25, 0, 100],
+#    [0, 0, 0, -20, 35, 0, 10, 15, 0, 60],
+#    [0, 0, 0, -25, -50, 0, 10, 25, 0, 40],
+#    [0, 0, 0, 25, -50, 0, 10, 25, 0, 40],
+#])
 group_pars = np.array([
-    [0, 0, 0, 50, -10, 0, 10, 25, 0, 100],
-    [0, 0, 0, -20, 35, 0, 10, 15, 0, 60],
-    [0, 0, 0, -25, -50, 0, 10, 25, 0, 40],
+    [0, 0, 0, 50, -10, 0, 10, 15, 0, 100],
+    [0, 0, 0, 25, -5, 0, 10, 5, 0, 60],
+    [0, 0, 0, -25, 50, 0, 10, 25, 0, 40],
+    [0, 0, 0, 25, -50, 0, 10, 25, 0, 40],
 ])
 ngroups = group_pars.shape[0]
 nstars = np.sum(group_pars[:,-1])
@@ -42,15 +49,22 @@ for i in range(ngroups):
 u_mn, v_mn = np.mean(xyzuvw, axis=0)[3:5]
 plt.plot(u_mn, v_mn, '+', label="UV mean")
 
-init_comps = em.get_initial_group_pars(ngroups, xyzuvw, refl=True)
-comp_groups = ngroups * [None]
+offset_opts = [True, False]
+for offset in offset_opts:
 
-for i in range(ngroups):
-    comp_groups[i] = syn.Group(init_comps[i], internal=True, starcount=False)
-    ee.plotCovEllipse(comp_groups[i].generateCovMatrix()[3:5, 3:5],
-                      comp_groups[i].mean[3:5], with_line=True)
-plt.legend(loc='best')
-plt.xlabel('U [km/s]')
-plt.ylabel('V [km/s]')
-plt.savefig("demo_diagram.png")
+    init_comps = em.get_initial_group_pars(ngroups, xyzuvw, offset=offset)
+    comp_groups = ngroups * [None]
+
+    if offset:
+        color = 'r'
+    else:
+        color = 'b'
+
+    for i in range(ngroups):
+        comp_groups[i] = syn.Group(init_comps[i], internal=True, starcount=False)
+        ee.plotCovEllipse(comp_groups[i].generateCovMatrix()[3:5, 3:5],
+                          comp_groups[i].mean[3:5], with_line=True, color=color)
+    plt.xlabel('U [km/s]')
+    plt.ylabel('V [km/s]')
+plt.savefig("diagram_off.pdf")
 

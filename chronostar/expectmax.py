@@ -263,7 +263,7 @@ def maximise(infile, ngroups, z=None, init_conditions=None, burnin_steps=500,
     return best_fits, chains, lnprobs
 
 
-def get_points_on_circle(npoints, v_dist=20):
+def get_points_on_circle(npoints, v_dist=20, offset=False):
     """
     Little tool to found coordinates of equidistant points around a circle
 
@@ -273,27 +273,34 @@ def get_points_on_circle(npoints, v_dist=20):
     """
     us = np.zeros(npoints)
     vs = np.zeros(npoints)
+    if offset:
+        init_angle = np.pi / npoints
+    else:
+        init_angle = 0.
 
     for i in range(npoints):
-        us[i] = v_dist * np.cos(2 * np.pi * i / npoints)
-        vs[i] = v_dist * np.sin(2 * np.pi * i / npoints)
+        us[i] = v_dist * np.cos(init_angle + 2 * np.pi * i / npoints)
+        vs[i] = v_dist * np.sin(init_angle + 2 * np.pi * i / npoints)
 
     return np.vstack((us, vs)).T
 
 
-def get_initial_group_pars(ngroups, xyzuvw, refl=False):
+def get_initial_group_pars(ngroups, xyzuvw, offset=False):
     """
     Generate the parameter list with which walkers will be initialised
     TODO: CENTRE THIS BY MEAN U AND V OF STARS
+
+    Parameters
+    ----------
+    offset : (boolean {False})
+        If set, the gorups are initialised in the complementary angular positions
 
     :param ngroups:
     :return:
     """
     mid_point = np.mean(xyzuvw, axis=0)[3:5]
     group_pars_base = list([0, 0, 0, None, None, 0, np.log(50), np.log(5), 3])
-    pts = get_points_on_circle(npoints=ngroups, v_dist=110)
-    if refl:
-        pts[:,0] = -pts[:,0]
+    pts = get_points_on_circle(npoints=ngroups, v_dist=110, offset=offset)
 
     all_init_group_pars = np.array(
         ngroups * group_pars_base

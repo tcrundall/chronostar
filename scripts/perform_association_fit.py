@@ -53,7 +53,6 @@ except IndexError:
     raise
 
 results_dir = "../results/" + ass_name + "/"
-result_file = "result.npy"
 xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
 
 BURNIN_STEPS = 1000
