@@ -14,18 +14,20 @@ import chronostar.synthesiser as syn
 import chronostar.errorellipse as ee
 import chronostar.expectmax as em
 
-#group_pars = np.array([
-#    [0, 0, 0, 50, -10, 0, 10, 25, 0, 100],
-#    [0, 0, 0, -20, 35, 0, 10, 15, 0, 60],
-#    [0, 0, 0, -25, -50, 0, 10, 25, 0, 40],
-#    [0, 0, 0, 25, -50, 0, 10, 25, 0, 40],
-#])
+star_colours = ['xkcd:orange', 'xkcd:cyan',
+             'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']
 group_pars = np.array([
-    [0, 0, 0, 50, -10, 0, 10, 15, 0, 100],
-    [0, 0, 0, 25, -5, 0, 10, 5, 0, 60],
-    [0, 0, 0, -25, 50, 0, 10, 25, 0, 40],
+    [0, 0, 0, 50, -10, 0, 10, 25, 0, 100],
+    [0, 0, 0, -20, 35, 0, 10, 15, 0, 60],
+    [0, 0, 0, -25, -50, 0, 10, 25, 0, 40],
     [0, 0, 0, 25, -50, 0, 10, 25, 0, 40],
 ])
+#group_pars = np.array([
+#    [0, 0, 0, 50, -10, 0, 10, 15, 0, 100],
+#    [0, 0, 0, 25, -5, 0, 10, 5, 0, 60],
+#    [0, 0, 0, -25, 50, 0, 10, 25, 0, 40],
+#    [0, 0, 0, 25, -50, 0, 10, 25, 0, 40],
+#])
 ngroups = group_pars.shape[0]
 nstars = np.sum(group_pars[:,-1])
 
@@ -45,7 +47,7 @@ plt.clf()
 for i in range(ngroups):
     plt.plot(xyzuvw[dividers[i]:dividers[i+1],3],
              xyzuvw[dividers[i]:dividers[i+1],4], '.',
-             label="group {}".format(i))
+             label="group {}".format(i), color=star_colours[i])
 u_mn, v_mn = np.mean(xyzuvw, axis=0)[3:5]
 plt.plot(u_mn, v_mn, '+', label="UV mean")
 
