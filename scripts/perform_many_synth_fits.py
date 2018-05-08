@@ -52,20 +52,10 @@ precs_string = ' '.join(precs)
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 def perform_synth_fit_wrapper(scenario):
-    # note that we leave off "prec" in path name
-    # this is because the xyzuvw perfect stellar data is shared
-    # across the prec scenarios
-#    path_name = SAVE_DIR + "{}_{}_{}_{}/".format(
-#        *scenario
-#    )
-#    mkpath(path_name)
-#    os.chdir(path_name)
-
-    #os.system("mpirun -np 5 python trial_perform_synth_fit.py {} {} {} {} "\
-    #    .format(*scenario) + precs_string)
-    os.system("python trial_perform_synth_fit.py {} {} {} {} " \
-              .format(*scenario) + precs_string)
-    #os.chdir(THIS_DIR)
+    os.system("mpirun -np 5 python _perform_synth_fit.py {} {} {} {} "\
+        .format(*scenario) + precs_string)
+    #os.system("python _perform_synth_fit.py {} {} {} {} " \
+    #          .format(*scenario) + precs_string)
     logging.info("Completed: {}".format(scenario))
 
 if __name__ == '__main__':
