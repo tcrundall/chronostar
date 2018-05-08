@@ -354,12 +354,15 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
 
 #    print("Sampled")
     if plot_it:
+        logging.info("Plotting final lnprob")
         plt.clf()
         plt.plot(sampler.lnprobability.T)
         plt.savefig(plot_dir+"lnprobT.png")
+        logging.info("Plotting corner")
         plt.clf()
         corner.corner(sampler.flatchain)
         plt.savefig(plot_dir+"corner.pdf")
+        logging.info("Plotting done")
 
     # sampler.lnprobability has shape (NWALKERS, SAMPLE_STEPS)
     # yet np.argmax takes index of flattened array
