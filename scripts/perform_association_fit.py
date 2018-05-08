@@ -4,12 +4,15 @@ This script demos the use of tfgroupfitter. It determines the most likely
 origin point of a set of stars assuming a (separate) spherical distribution in
 position and velocity space.
 
-Call with:
-python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..] [path_to_chronostar]
-or
-mpirun -np [nthreads] python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..]
-    [path_to_chronostar]
-where nthreads is the number of threads to be passed into emcee run
+It requires the xyzuvw data to be stored in the relative path:
+../data/[association-name]_xyzuvw.fits
+Results will be stored in:
+../results/[association-name]/
+
+cd to scripts/ and Call with:
+    nohup mpirun -np [nthreads] python perform_association_fit.py [ass_name] &
+or if no mpi installed simply:
+    python perform_association_fit.py [ass_name]
 """
 from __future__ import division, print_function
 
