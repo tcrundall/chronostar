@@ -52,9 +52,9 @@ precs_string = ' '.join(precs)
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 def perform_synth_fit_wrapper(scenario):
-    os.system("mpirun -np 5 python _perform_synth_fit.py {} {} {} {} "\
+    os.system("mpirun -np 5 python perform_synth_fit.py {} {} {} {} "\
         .format(*scenario) + precs_string)
-    #os.system("python _perform_synth_fit.py {} {} {} {} " \
+    #os.system("python perform_synth_fit.py {} {} {} {} " \
     #          .format(*scenario) + precs_string)
     logging.info("Completed: {}".format(scenario))
 

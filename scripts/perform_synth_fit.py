@@ -66,8 +66,9 @@ logging.basicConfig(
     level=logging.INFO, filemode='a',
     filename=rdir + 'trial_synth_fit_log.log'
 )
+
 xyzuvw_perf_file     = "perf_xyzuvw.npy"
-result_file          = "result.npy"
+#result_file          = "result.npy" #not using this.... (?)
 group_savefile       = 'origins.npy'
 xyzuvw_init_savefile = 'xyzuvw_init.npy'
 astro_savefile       = 'astro_table.txt'
@@ -91,6 +92,11 @@ if using_mpi:
         pool.wait()
         sys.exit(0)
 print("Only one thread is master")
+
+logging.info("Performing fit with")
+logging.info("{} burnin steps".format(BURNIN_STEPS))
+logging.info("{} sampling steps".format(SAMPLING_STEPS))
+logging.info("{} tolerance".format(C_TOL))
 
 # Destination: (inspired by LCC)
 mean_now = np.array([50., -100., 0., -10., -20., -5.])
@@ -142,9 +148,8 @@ for prec in precs:
     pdir = rdir + prec + '/'
     mkpath(pdir)
     # os.chdir(prec)
-    np.save(pdir+group_savefile, origin) # store in each directory, for hexplotter
     try:
-        res = np.load(pdir+result_file)
+        dummy = np.load(pdir+group_savefile)
         logging.info("Precision [{}] already fitted for".format(prec))
     except IOError:
         # convert XYZUVW data into astrometry
@@ -161,7 +166,9 @@ for prec in precs:
             pool=pool, convergence_tol=C_TOL, plot_dir=pdir,
             sampling_steps=SAMPLING_STEPS, save_dir=pdir,
         )
-        #hp.dataGatherer(save_dir=prec)
+        # store in each directory, for hexplotter
+        # also used as a flag to confirm this prec already fitted for
+        np.save(pdir+group_savefile, origin) 
 
 if using_mpi:
     pool.close()
