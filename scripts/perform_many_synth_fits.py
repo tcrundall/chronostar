@@ -40,10 +40,10 @@ sizes = [25, 50, 100, 200] #nstars
 precs = ['perf', 'half', 'gaia', 'double']
 
 """
-ages = [1, 2]
+ages = [30]
 spreads = [5]
 v_disps = [2]
-sizes   = [25]
+sizes   = [25, 100]
 precs = ['perf', 'gaia']
 #"""
 
