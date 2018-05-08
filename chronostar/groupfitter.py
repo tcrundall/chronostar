@@ -4,6 +4,7 @@ import numpy as np
 
 # not sure if this is right, needed to change to this so I could run
 # investigator
+import corner
 import emcee
 import logging
 import matplotlib.pyplot as plt
@@ -356,6 +357,9 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         plt.clf()
         plt.plot(sampler.lnprobability.T)
         plt.savefig(plot_dir+"lnprobT.png")
+        plt.clf()
+        corner.corner(sampler.flatchain)
+        plt.savefig(plot_dir+"corner.pdf")
 
     # sampler.lnprobability has shape (NWALKERS, SAMPLE_STEPS)
     # yet np.argmax takes index of flattened array
