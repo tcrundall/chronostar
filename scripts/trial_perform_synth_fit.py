@@ -5,10 +5,10 @@ origin point of a set of stars assuming a (separate) spherical distribution in
 position and velocity space.
 
 Call with:
-python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..] [path_to_chronostar]
+    python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..]
 or
-mpirun -np [nthreads] python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..]
-    [path_to_chronostar]
+    mpirun -np [nthreads] python perform_synth_fit.py [age] [dX] [dV] [nstars]
+    [prec..]
 where nthreads is the number of threads to be passed into emcee run
 """
 from __future__ import division, print_function
@@ -39,7 +39,8 @@ import chronostar.groupfitter as gf
 
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
-BURNIN_STEPS = 10
+BURNIN_STEPS = 1000
+SAMPLING_STEPS = 5000
 C_TOL = 0.15
 
 print("In preamble")
@@ -153,6 +154,7 @@ for prec in precs:
         best_fit, chain, lnprob = gf.fitGroup(
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL, plot_dir=pdir,
+            sampling_steps=SAMPLING_STEPS,
         )
         #hp.dataGatherer(save_dir=prec)
 
