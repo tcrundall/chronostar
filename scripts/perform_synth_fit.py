@@ -38,14 +38,15 @@ import chronostar.measurer as ms
 import chronostar.groupfitter as gf
 
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
-"""
+
 BURNIN_STEPS = 1000
 SAMPLING_STEPS = 5000
-C_TOL = 0.15
+C_TOL = 0.25
 """
 BURNIN_STEPS = 10
 SAMPLING_STEPS = 50
 C_TOL = 1.5
+"""
 
 print("In preamble")
 try:
