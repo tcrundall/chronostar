@@ -1,14 +1,14 @@
 #! /usr/bin/env python -W ignore
 """
 This script demos the use of tfgroupfitter. It determines the most likely
-origin point of a set of stars assuming a (separate) spherical distribution in
-position and velocity space.
+origin point of a set of stars assuming a (separate) spherical distribution
+in position and velocity space.
 
 Call with:
     python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..]
 or
-    mpirun -np [nthreads] python perform_synth_fit.py [age] [dX] [dV] [nstars]
-    [prec..]
+    mpirun -np [nthreads] python perform_synth_fit.py [age] [dX] [dV]
+    [nstars] [prec..]
 where nthreads is the number of threads to be passed into emcee run
 """
 from __future__ import division, print_function
@@ -160,7 +160,8 @@ for prec in precs:
         )
         logging.info("Generated [{}] traceback file".format(prec))
 
-        # apply traceforward fitting (with lnprob, corner plots as side effects)
+        # apply traceforward fitting (with lnprob, corner plots as side
+        # effects)
         best_fit, chain, lnprob = gf.fitGroup(
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL, plot_dir=pdir,

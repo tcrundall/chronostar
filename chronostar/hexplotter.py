@@ -84,6 +84,10 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
             with_line=True,
             ax=ax, color=COLORS[i], alpha=0.3, ls='-.', #hatch='/',
         )
+        # I plot a marker in the middle for scenarios where the volume
+        # collapses to a point
+        ax.plot(means['fitted_then'][i][dim1], means['fitted_then'][i][dim2],
+                 color=COLORS[i], marker='x')
         ee.plotCovEllipse(
             covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_now'][i][np.ix_([dim1,dim2])],
@@ -134,7 +138,7 @@ def get_age_samples(ngroups, final_chain):
     return np.array(age_samples)
 
 def plot_hexplot(star_pars, means, covs, chain, iter_count, prec=None,
-                  save_dir=''):
+                  save_dir='', file_stem='hexplot', title=''):
     """
     Generates hex plot in the provided directory
 
@@ -164,10 +168,7 @@ def plot_hexplot(star_pars, means, covs, chain, iter_count, prec=None,
     plt.clf()
     f, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
     f.set_size_inches(30, 20)
-#    f.suptitle(
-#        "Iteration {}, precision {}".\
-#               format(iter_count, prec)
-#    )
+    f.suptitle(title)
 
     # PLOT THE OVAL PLOTS
     plot_fit(star_pars, means, covs, ngroups, iter_count, ax1, 0, 1)
@@ -181,11 +182,12 @@ def plot_hexplot(star_pars, means, covs, chain, iter_count, prec=None,
     if age_samples is not None:
         plot_age_hist(age_samples, ax3)
 
-    f.savefig(save_dir+"hexplot{:02}.pdf".format(iter_count),
+    f.savefig(save_dir+file_stem+"{:02}.pdf".format(iter_count),
               bbox_inches='tight', format='pdf')
     f.clear()
 
-def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file=''):
+def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
+                 title='', file_stem='hexplot'):
     """
     Provided with a results directory, tries to find all she needs, then plots
 
@@ -231,4 +233,5 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file=''):
                              )
         ])
 
-    plot_hexplot(star_pars, means, covs, chain, iter_count=0, save_dir=save_dir)
+    plot_hexplot(star_pars, means, covs, chain, iter_count=0, save_dir=save_dir,
+                 file_stem=file_stem, title=title)

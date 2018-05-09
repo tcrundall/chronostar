@@ -53,6 +53,7 @@ def plotCovEllipse(cov, pos, nstd=2, ax=None, with_line=False, **kwargs):
     if ax is None:
         ax = plt.gca()
 
+    # largest eigenvalue is first
     vals, vecs = eigsorted(cov)
     theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
 
@@ -67,17 +68,20 @@ def plotCovEllipse(cov, pos, nstd=2, ax=None, with_line=False, **kwargs):
 
     ax.add_patch(ellip)
 
-    # brute forcing axes limits so they contain ellipse patch
-    # maybe a cleaner way of doing this, but I couldn't work it out
-    max_range = 0.5 * max(width,height)
-
-    lx = pos[0] - max_range
-    ux = pos[0] + max_range
-    ly = pos[1] - max_range
-    uy = pos[1] + max_range
-
     # THEN just fucking plot an invisible line across the ellipse.
     if with_line:
+        # brute forcing axes limits so they contain ellipse patch
+        # maybe a cleaner way of doing this, but I couldn't work it out
+        x_extent = 0.5*(abs(width*np.cos(np.radians(theta))) +
+                        abs(height*np.sin(np.radians(theta))))
+        y_extent = 0.5*(abs(width*np.sin(np.radians(theta))) +
+                        abs(height*np.cos(np.radians(theta))))
+
+        lx = pos[0] - x_extent
+        ux = pos[0] + x_extent
+        ly = pos[1] - y_extent
+        uy = pos[1] + y_extent
+        import pdb; pdb.set_trace()
         ax.plot((lx, ux), (ly, uy), alpha=0.)
 
     return ellip
