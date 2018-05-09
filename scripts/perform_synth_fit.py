@@ -113,6 +113,7 @@ logging.info("Performing fit with")
 logging.info("{} burnin steps".format(BURNIN_STEPS))
 logging.info("{} sampling steps".format(SAMPLING_STEPS))
 logging.info("{} tolerance".format(C_TOL))
+logging.info("In the directory: {}".format(rdir))
 
 # Destination: (inspired by LCC)
 mean_now = np.array([50., -100., 0., -10., -20., -5.])
