@@ -95,16 +95,19 @@ def lognormal(x, mu=1.05, sig=0.105):
     expon = - (np.log(x)-mu)**2 / (2*sig**2)
     return coeff * np.exp(expon)
 
+def calcAlpha(dX, dV, nstars):
+    return ( (dV*u.km/u.s)**2 * dX*u.pc /
+              (const.G * 5 * nstars * const.M_sun) ).decompose().value
 
 def lnAlphaPrior(pars, star_pars):
     """
     A very approximate, gentle prior preferring super-virial distributions
     """
-    dX = pars[6]
-    dV = pars[7]
+    dX = np.exp(pars[6])
+    dV = np.exp(pars[7])
     nstars = star_pars['xyzuvw'].shape[0]
-    alpha = dV**2 * dX / ( const.G * 5 * nstars * const.M_sun )
-    return np.log(lognormal(alpha)**0.1)
+    alpha = calcAlpha(dX, dV, nstars)
+    return np.log(lognormal(alpha)**0.1).value
 
 
 def lnprior(pars, star_pars):
