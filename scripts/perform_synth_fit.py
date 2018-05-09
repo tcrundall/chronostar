@@ -108,6 +108,7 @@ if using_mpi:
         pool.wait()
         sys.exit(0)
 print("Only one thread is master")
+print("Master should be working in the directory:\n{}".format(rdir))
 
 logging.info("Performing fit with")
 logging.info("{} burnin steps".format(BURNIN_STEPS))
