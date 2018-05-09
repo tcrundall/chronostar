@@ -90,14 +90,19 @@ def loadXYZUVW(xyzuvw_file):
     return xyzuvw_dict
 
 
-def lognormal(x, mu=1.05, sig=0.105):
-    coeff = 1. / (x * sig * np.sqrt(2*np.pi))
-    expon = - (np.log(x)-mu)**2 / (2*sig**2)
-    return coeff * np.exp(expon)
+#def lognormal(x, mu=1.05, sig=0.105):
+#    coeff = 1. / (x * sig * np.sqrt(2*np.pi))
+#    expon = - (np.log(x)-mu)**2 / (2*sig**2)
+#    return coeff * np.exp(expon)
 
 def calcAlpha(dX, dV, nstars):
     return ( (dV*u.km/u.s)**2 * dX*u.pc /
               (const.G * 5 * nstars * const.M_sun) ).decompose().value
+
+def lnlognormal(x, mu=1.05, sig=0.105):
+    return (-np.log(x*sig*np.sqrt(2*np.pi)) -
+            (np.log(x) - mu)**2 / (2*sig**2))
+
 
 def lnAlphaPrior(pars, star_pars):
     """
@@ -107,7 +112,7 @@ def lnAlphaPrior(pars, star_pars):
     dV = np.exp(pars[7])
     nstars = star_pars['xyzuvw'].shape[0]
     alpha = calcAlpha(dX, dV, nstars)
-    return np.log(lognormal(alpha)**0.1).value
+    return lnlognormal(alpha) * 0.1
 
 
 def lnprior(pars, star_pars):
