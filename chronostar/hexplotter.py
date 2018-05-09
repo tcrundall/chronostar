@@ -83,16 +83,16 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
                 with_line=True,
                 ax=ax, color="xkcd:neon purple", alpha=0.3, ls='--', #hatch='|',
             )
+        # I plot a marker in the middle for scenarios where the volume
+        # collapses to a point
+        ax.plot(means['fitted_then'][i][dim1], means['fitted_then'][i][dim2],
+                color=COLORS[i], marker='x', alpha=0.2)
         ee.plotCovEllipse(
             covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_then'][i][np.ix_([dim1,dim2])],
             with_line=True,
             ax=ax, color=COLORS[i], alpha=0.3, ls='-.', #hatch='/',
         )
-        # I plot a marker in the middle for scenarios where the volume
-        # collapses to a point
-        ax.plot(means['fitted_then'][i][dim1], means['fitted_then'][i][dim2],
-                 color=COLORS[i], marker='x')
         ee.plotCovEllipse(
             covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_now'][i][np.ix_([dim1,dim2])],
