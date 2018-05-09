@@ -54,8 +54,10 @@ try:
     nstars = int(sys.argv[4])
     precs = sys.argv[5:]
 except ValueError:
-    print("Usage: ./perform_synth_fit.py [age] [dX] [dV] [nstars] [prec1]"
-          " [prec2] ... ")
+    print("--------------------- INCORRECT USAGE --------------------------")
+    print("nohup mpirun -np 19 python perform_synth_fit.py [age] [dX]"
+          " [dV]\n     [nstars] [prec1] [prec2] ... &")
+    print("----------------------------------------------------------------")
     raise
 
 # Setting up file system
