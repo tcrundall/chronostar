@@ -40,7 +40,11 @@ def plot_age_hist(ages, ax, init_conditions=None):
     ngroups = ages.shape[0]
     max_age = np.max(ages)
     min_age = np.min(ages)
-    bins = np.linspace(min_age,max_age,100)
+    age_range = max_age - min_age
+    # have one bin per 10kyr. Lets me plot many (or one) age histograms
+    # on same axes, neatly
+    nbins = int(age_range/0.01)
+    bins = np.linspace(min_age,max_age,nbins)
 
     for i in range(ngroups):
         ax.hist(ages[i], bins=bins, label="Group {}".format(i),
