@@ -138,7 +138,7 @@ def get_age_samples(ngroups, final_chain):
     return np.array(age_samples)
 
 def plot_hexplot(star_pars, means, covs, chain, iter_count, prec=None,
-                  save_dir='', file_stem='hexplot', title=''):
+                  save_dir='', file_stem='', title=''):
     """
     Generates hex plot in the provided directory
 
@@ -182,12 +182,12 @@ def plot_hexplot(star_pars, means, covs, chain, iter_count, prec=None,
     if age_samples is not None:
         plot_age_hist(age_samples, ax3)
 
-    f.savefig(save_dir+file_stem+"{:02}.pdf".format(iter_count),
+    f.savefig(save_dir+"hexplot_"+file_stem+"{:02}.pdf".format(iter_count),
               bbox_inches='tight', format='pdf')
     f.clear()
 
 def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
-                 title='', file_stem='hexplot'):
+                 title='', file_stem=''):
     """
     Provided with a results directory, tries to find all she needs, then plots
 
