@@ -39,20 +39,28 @@ v_disps = [1, 2, 5, 10] #km/s
 sizes = [25, 50, 100, 200] #nstars
 precs = ['perf', 'half', 'gaia', 'double']
 
-"""
 ages = [30]
 spreads = [5]
 v_disps = [2]
 sizes   = [25, 100]
 precs = ['perf', 'gaia']
-#"""
+"""
+# DIFFERENT SERVERS GET DIFFERENT AGE,
+# Mash: 5
+# Malice: 15
+# Motley : 30, 50
+ages = [5]
+spreads = [1, 5] #pc
+v_disps = [2, 10] #km/s
+sizes = [25, 100] #nstars
+precs = ['perf', 'half', 'gaia']
 
 #precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
 precs_string = ' '.join(precs)
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 def perform_synth_fit_wrapper(scenario):
-    os.system("mpirun -np 5 python perform_synth_fit.py {} {} {} {} "\
+    os.system("mpirun -np 10 python perform_synth_fit.py {} {} {} {} "\
         .format(*scenario) + precs_string)
     #os.system("python perform_synth_fit.py {} {} {} {} " \
     #          .format(*scenario) + precs_string)
@@ -60,7 +68,11 @@ def perform_synth_fit_wrapper(scenario):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='w',
-                        filename="perform_many_synth_fits.log")
+                        filename="mash_perform_many_synth_fits.log")
+    logging.info("Mash is performing many fits:\nages: {}\nspreads: {}\n"
+                 "v_disps: {}\nsizes: {}\nprecs: {}\n".format(ages, spreads,
+                                                              v_disps, sizes,
+                                                              precs))
     # read in system arguments
     if len(sys.argv) > 1:
         ncpus = int(sys.argv[1])
