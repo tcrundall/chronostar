@@ -136,15 +136,15 @@ def lnprior(pars, star_pars):
     TODO: Incorporate star determinants
     """
     # fetch maximum allowed age
-    max_age = 200
+    max_age = 500
 
     means = pars[0:6]
     stds = np.exp(pars[6:8])
     age = pars[8]
 
-    if np.min(means) < -1000 or np.max(means) > 1000:
+    if np.min(means) < -100000 or np.max(means) > 100000:
         return -np.inf
-    if np.min(stds) <= 0.0 or np.max(stds) > 1000.0:
+    if np.min(stds) <= 0.0 or np.max(stds) > 10000.0:
         return -np.inf
     if age < 0.0 or age > max_age:
         return -np.inf
