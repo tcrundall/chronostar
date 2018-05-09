@@ -39,7 +39,8 @@ def plot_age_hist(ages, ax, init_conditions=None):
     logging.info("In plot_age_hist")
     ngroups = ages.shape[0]
     max_age = np.max(ages)
-    bins = np.linspace(0,max_age,100)
+    min_age = np.min(ages)
+    bins = np.linspace(min_age,max_age,100)
 
     for i in range(ngroups):
         ax.hist(ages[i], bins=bins, label="Group {}".format(i),
@@ -95,18 +96,6 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
             ax=ax, color=COLORS[i], ec=COLORS[i],
             fill=False, alpha=0.3, hatch=HATCHES[i], ls='-.',
         )
-#    min_means = np.min(np.array(means.values()).reshape(-1,6), axis=0)
-#    max_means = np.max(np.array(means.values()).reshape(-1,6), axis=0)
-#
-#    xmin = min(min_means[dim1], np.min(xyzuvw[:,dim1]))
-#    xmax = max(max_means[dim1], np.max(xyzuvw[:,dim1]))
-#    ymin = min(min_means[dim2], np.min(xyzuvw[:,dim2]))
-#    ymax = max(max_means[dim2], np.max(xyzuvw[:,dim2]))
-#
-#    buffer = 30
-#
-#    ax.set_xlim(xmin-buffer, xmax+buffer)
-#    ax.set_ylim(ymin-buffer, ymax+buffer)
 
     ax.set_xlabel("{} [{}]".format(dim_label[dim1], units[dim1]))
     ax.set_ylabel("{} [{}]".format(dim_label[dim2], units[dim2]))
