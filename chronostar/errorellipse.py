@@ -81,7 +81,6 @@ def plotCovEllipse(cov, pos, nstd=2, ax=None, with_line=False, **kwargs):
         ux = pos[0] + x_extent
         ly = pos[1] - y_extent
         uy = pos[1] + y_extent
-        import pdb; pdb.set_trace()
         ax.plot((lx, ux), (ly, uy), alpha=0.)
 
     return ellip
