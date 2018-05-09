@@ -14,9 +14,10 @@ except ImportError:
     pass
 
 from distutils.dir_util import mkpath
-import numpy as np
 import logging
+import numpy as np
 import os
+import platform
 import sys
 sys.path.insert(0, '..')
 import chronostar.hexplotter as hp
@@ -30,8 +31,15 @@ except (IndexError, ValueError):
           "[prec1] [prec2] ... ")
     raise
 
-rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
-                                                  int(dV), int(nstars))
+# Setting up file system
+rdir = "/data/mash/tcrun/synth_fit/{}_{}_{}_{}/".format(int(age),
+                                                        int(dX),
+                                                        int(dV),
+                                                        int(nstars))
+if not os.path.isdir(rdir):
+    # no access to Tim's RSAA data server, must be working local
+    rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
+                                                      int(dV), int(nstars))
 
 logging.basicConfig(level=logging.INFO, filename='hexplotting.log')
 print("In preamble")

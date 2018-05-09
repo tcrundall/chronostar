@@ -14,10 +14,13 @@ except ImportError:
     pass
 
 import corner
-import numpy as np
 import logging
+import numpy as np
+import os
 import sys
-sys.path.insert(0, '..')
+sys.path.insert(0, '..') # even though not explicitly importing anything from
+                         # chronostar, still need this to read in instances of
+                         # chronostar.Synthesiser.Group
 
 try:
     age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
@@ -28,8 +31,13 @@ except (IndexError, ValueError):
           "[prec1] [prec2] ... ")
     raise
 
-rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
-                                                  int(dV), int(nstars))
+# Setting up file system
+rdir = "/data/mash/tcrun/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
+                                                        int(dV), int(nstars))
+if not os.path.isdir(rdir):
+    # no access to Tim's RSAA data server, must be working local
+    rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
+                                                      int(dV), int(nstars))
 
 logging.basicConfig(level=logging.INFO, filename='cornerplotting.log')
 print("In preamble")

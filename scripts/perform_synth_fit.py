@@ -26,6 +26,7 @@ from distutils.dir_util import mkpath
 import logging
 import numpy as np
 import pdb
+import platform
 import sys
 from emcee.utils import MPIPool
 
@@ -61,9 +62,22 @@ except ValueError:
     raise
 
 # Setting up file system
-rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
-                                                  int(dV), int(nstars))
-mkpath(rdir)
+if platform.system() == 'Linux': # then we are on a RSAA server
+    rdir = "/data/mash/tcrun/synth_fit/{}_{}_{}_{}/".format(int(age),
+                                                            int(dX),
+                                                            int(dV),
+                                                            int(nstars))
+else: #platform.system() == 'Darwin' # cause no one uses windows....
+    rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
+                                                      int(dV), int(nstars))
+try:
+    mkpath(rdir)
+except:
+    # I guess you're not Tim Crundall... or on an RSAA server
+    rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
+                                                      int(dV), int(nstars))
+    mkpath(rdir)
+
 logging.basicConfig(
     level=logging.INFO, filemode='a',
     filename=rdir + 'trial_synth_fit_log.log'
