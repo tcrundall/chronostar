@@ -4,11 +4,11 @@ import numpy as np
 
 # not sure if this is right, needed to change to this so I could run
 # investigator
-import corner
+import astropy.constants as const
+import astropy.units as u
 import emcee
 import logging
 import matplotlib.pyplot as plt
-import pickle
 
 import transform as tf
 from _overlap import get_lnoverlaps
@@ -90,6 +90,23 @@ def loadXYZUVW(xyzuvw_file):
     return xyzuvw_dict
 
 
+def lognormal(x, mu=1.05, sig=0.105):
+    coeff = 1. / (x * sig * np.sqrt(2*np.pi))
+    expon = - (np.log(x)-mu)**2 / (2*sig**2)
+    return coeff * np.exp(expon)
+
+
+def lnAlphaPrior(pars, star_pars):
+    """
+    A very approximate, gentle prior preferring super-virial distributions
+    """
+    dX = pars[6]
+    dV = pars[7]
+    nstars = star_pars['xyzuvw'].shape[0]
+    alpha = dV**2 * dX / ( const.G * 5 * nstars * const.M_sun )
+    return np.log(lognormal(alpha)**0.1)
+
+
 def lnprior(pars, star_pars):
     """Computes the prior of the group models constraining parameter space
 
@@ -123,7 +140,8 @@ def lnprior(pars, star_pars):
         return -np.inf
     if age < 0.0 or age > max_age:
         return -np.inf
-    return 0.0
+
+    return lnAlphaPrior(pars, star_pars)
 
 
 def lnlike(pars, star_pars, z=None, return_lnols=False):
@@ -220,7 +238,7 @@ def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
         slice_size = int(round(0.5*lnprob.shape[1]))
 
     start_lnprob_mn = np.mean(lnprob[:,:slice_size])
-    start_lnprob_std = np.std(lnprob[:,:slice_size])
+    #start_lnprob_std = np.std(lnprob[:,:slice_size])
 
     end_lnprob_mn = np.mean(lnprob[:, -slice_size:])
     end_lnprob_std = np.std(lnprob[:, -slice_size:])
@@ -237,8 +255,10 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     xyzuvw_dict, xyzuvw_file : (dict or string)
         Can either pass in the dictionary directly, or a '.fits' filename from
         which to load the dictionary:
-            xyzuvw (nstars,ntimes,6) numpy array, XYZ in pc and UVW in km/s
-            xyzuvw_cov (nstars,ntimes,6,6) numpy array, covariance of xyzuvw
+            xyzuvw : (nstars,ntimes,6) np array
+                XYZ in pc and UVW in km/s
+            xyzuvw_cov : (nstars,ntimes,6,6) np array
+                covariance of xyzuvw
             table: (nstars) high astropy table including columns as
                         documented in the measurer class.
     z : ([nstars] array {None})
@@ -358,10 +378,10 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         plt.clf()
         plt.plot(sampler.lnprobability.T)
         plt.savefig(plot_dir+"lnprobT.png")
-        logging.info("Plotting corner")
-        plt.clf()
-        corner.corner(sampler.flatchain)
-        plt.savefig(plot_dir+"corner.pdf")
+#        logging.info("Plotting corner")
+#        plt.clf()
+#        corner.corner(sampler.flatchain)
+#        plt.savefig(plot_dir+"corner.pdf")
         logging.info("Plotting done")
 
     # sampler.lnprobability has shape (NWALKERS, SAMPLE_STEPS)

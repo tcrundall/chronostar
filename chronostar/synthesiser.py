@@ -61,6 +61,10 @@ class Group:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def getInternalSphericalPars(self):
+        return np.hstack((self.mean, np.log(self.sphere_dx), np.log(self.dv),
+                          self.age))
+
     def getSphericalPars(self):
         return np.hstack((self.mean, self.sphere_dx, self.dv, self.age))
 
