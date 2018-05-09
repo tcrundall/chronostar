@@ -49,13 +49,17 @@ logging.info("\n"
 # location
 
 for prec in precs:
-    pdir = rdir + prec + '/'
-    title = "age {} Myr; dX {} pc; dV {} km/s, nstars {}, prec: {}".format(
-        age, dX, dV, nstars, prec
-    )
-    plot_file_stem = "{}_{}_{}_{}_{}".format(
-        int(age), int(dX), int(dV), nstars, prec
-    )
-    logging.info("Plotting for prec: {}".format(prec))
-    hp.dataGatherer(res_dir=pdir, save_dir=pdir,
-                    title=title, file_stem=plot_file_stem)
+    try:
+        pdir = rdir + prec + '/'
+        title = "age {} Myr; dX {} pc; dV {} km/s, nstars {}, prec: {}".format(
+            age, dX, dV, nstars, prec
+        )
+        plot_file_stem = "{}_{}_{}_{}_{}".format(
+            int(age), int(dX), int(dV), nstars, prec
+        )
+        logging.info("Plotting for prec: {}".format(prec))
+        hp.dataGatherer(res_dir=pdir, save_dir=pdir,
+                        title=title, file_stem=plot_file_stem)
+    except IOError:
+        logging.info("Couldn't find all the things I needed for prec {}".\
+                     format(prec))
