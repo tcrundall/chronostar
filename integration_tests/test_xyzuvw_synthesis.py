@@ -34,10 +34,10 @@ precs = ['perf', 'half', 'gaia', 'double', 'triple', 'quad', 'quint']
 prec_val = {'perf':1e-5, 'half':0.5, 'gaia':1.0, 'double':2.0,
             'triple':3.0, 'quad':4.0, 'quint':5.0}
 
-age = 10
+age = 30
 dX = 10
 dV = 2
-nstars = 30
+nstars = 20
 
 mean_now = np.array([0., -300., 0., -10., -20., -5.])
 mean_then = torb.traceOrbitXYZUVW(mean_now, -age)
@@ -89,6 +89,7 @@ perf_star_pars = cv.convertMeasurementsToCartesian(
 
 for prec in precs:
     if prec != 'perf':
+        print("Generating data for prec {}".format(prec))
         plt.clf()
         plt.plot(perf_star_pars['xyzuvw'][:,0], perf_star_pars['xyzuvw'][:,1],
                  '.', label='perf now' )
