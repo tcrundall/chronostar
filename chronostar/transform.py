@@ -88,6 +88,11 @@ def transform_cov(cov, trans_func, loc, dim=6, args=None):
         around which we are calculting the jacobian
     dim: (integer {6})
         The dimensionality of the coordinate frames
+    args:
+        extra args to be passed to trans_func. E.g. for traceOrbitXYZUVW
+        args = (age,) [for traceforward]
+            or
+        args = (-age,) [for traceback]
 
     Returns
     -------

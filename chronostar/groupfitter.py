@@ -77,14 +77,16 @@ def loadXYZUVW(xyzuvw_file):
     if (xyzuvw_file[-3:] != 'fit') and (xyzuvw_file[-4:] != 'fits'):
         xyzuvw_file = xyzuvw_file + ".fits"
     # TODO Ask Mike re storing fits files as float64 (instead of '>f8')
-    xyzuvw_now = fits.getdata(xyzuvw_file, 1).astype('float64') #hdulist[1].data
-    xyzuvw_cov_now = fits.getdata(xyzuvw_file, 2).astype('float64') #hdulist[2].data
+    xyzuvw_now = fits.getdata(xyzuvw_file, 1).\
+        astype('float64') #hdulist[1].data
+    xyzuvw_cov_now = fits.getdata(xyzuvw_file, 2)\
+        .astype('float64') #hdulist[2].data
     xyzuvw_dict = {'xyzuvw':xyzuvw_now, 'xyzuvw_cov':xyzuvw_cov_now}
     try:
         stars_table = fits.getdata(xyzuvw_file, 3)
         xyzuvw_dict['table'] = stars_table
     except:
-        pass
+        logging.info("No table in fits file")
     logging.info("Floats stored in format {}".\
                  format(xyzuvw_dict['xyzuvw'].dtype))
     return xyzuvw_dict
