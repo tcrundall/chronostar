@@ -33,6 +33,12 @@ GERROR = {
     'e_RV' :1.2,  #e_RV [km/s]
     'e_pm' :1.2, #e_pm [mas/yr]
 }
+# MIDDLING STARS
+GERROR = {
+    'e_Plx':0.1, #e_Plx [mas]
+    'e_RV' :0.6,  #e_RV [km/s]
+    'e_pm' :0.2, #e_pm [mas/yr]
+}
 
 def convertArrayToTable(astros, errors):
     """Utility function to generate table"""
