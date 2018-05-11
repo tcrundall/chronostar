@@ -180,10 +180,11 @@ for prec in precs:
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL, plot_dir=pdir,
             sampling_steps=SAMPLING_STEPS, save_dir=pdir,
+            init_pars=origin.getInternalSphericalPars()
         )
         # store in each directory, for hexplotter
         # also used as a flag to confirm this prec already fitted for
-        np.save(pdir+group_savefile, origin) 
+        np.save(pdir+group_savefile, origin.g)
 
 if using_mpi:
     pool.close()
