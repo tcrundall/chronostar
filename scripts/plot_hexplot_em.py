@@ -43,14 +43,14 @@ logging.info("Input arguments: {}".format(sys.argv[1:]))
 more_iters = True
 iter_cnt = 0
 while more_iters:
-    #try:
-    logging.info("Plotting for iter {}".format(iter_cnt))
-    idir = rdir + 'iter{}/'.format(iter_cnt)
-    hp.dataGathererEM(ngroups=ngroups, iter_count=iter_cnt,
-                      save_dir=idir, res_dir=idir,
-                      file_stem="{}_".format(dir_name.strip('/'),
-                                                  iter_cnt)
-                      )
-    iter_cnt += 1
-    #except IOError:
-        #more_iters = False
+    try:
+        logging.info("Plotting for iter {}".format(iter_cnt))
+        idir = rdir + 'iter{}/'.format(iter_cnt)
+        hp.dataGathererEM(ngroups=ngroups, iter_count=iter_cnt,
+                          save_dir=idir, res_dir=idir,
+                          file_stem="{}_".format(dir_name.strip('/'),
+                                                      iter_cnt)
+                          )
+        iter_cnt += 1
+    except IOError:
+        more_iters = False
