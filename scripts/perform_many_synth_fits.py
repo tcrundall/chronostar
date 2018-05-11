@@ -49,7 +49,7 @@ precs = ['perf', 'gaia']
 # Mash: 5
 # Malice: 15
 # Motley : 30, 50
-ages = [50]
+ages = [15]
 spreads = [1, 5] #pc
 v_disps = [2, 10] #km/s
 sizes = [25, 100] #nstars
@@ -61,7 +61,7 @@ prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 def perform_synth_fit_wrapper(scenario):
     logging.info("Fitting: {}".format(scenario))
-    os.system("mpirun -np 10 python perform_synth_fit.py {} {} {} {} "\
+    os.system("mpirun -np 4 python perform_synth_fit.py {} {} {} {} "\
         .format(*scenario) + precs_string)
     #os.system("python perform_synth_fit.py {} {} {} {} " \
     #          .format(*scenario) + precs_string)
@@ -69,8 +69,8 @@ def perform_synth_fit_wrapper(scenario):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='w',
-                        filename="motley2_perform_many_synth_fits.log")
-    logging.info("Motley2 is performing many fits:\nages: {}\nspreads: {}\n"
+                        filename="malice_perform_many_synth_fits.log")
+    logging.info("malice is performing many fits:\nages: {}\nspreads: {}\n"
                  "v_disps: {}\nsizes: {}\nprecs: {}\n".format(ages, spreads,
                                                               v_disps, sizes,
                                                               precs))
