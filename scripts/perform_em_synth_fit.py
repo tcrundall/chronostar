@@ -25,6 +25,7 @@ try:
     rdir = "/data/mash/tcrun/em_fit/" + dir_name
     if rdir[-1] != '/':
         rdir += '/'
+    path_msg = "Storing data on mash data server"
     mkpath(rdir)
 except (IOError, DistutilsFileError):
     path_msg = ("I'm guessing you're not Tim Crundall..."
