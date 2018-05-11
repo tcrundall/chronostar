@@ -8,7 +8,8 @@ import chronostar.synthesiser as syn
 LOGGINGLEVEL = logging.DEBUG
 
 def testGroupGeneration():
-    logging.basicConfig(level=LOGGINGLEVEL, filename="logs/test_synthesiser.log")
+    logging.basicConfig(level=LOGGINGLEVEL,
+                        filename="logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 50.]
     myGroup = syn.Group(pars, sphere=True)
     assert myGroup.age == pars[-2]
@@ -17,9 +18,10 @@ def testGroupGeneration():
     assert np.max(np.linalg.eigvalsh(scmat)) == np.max(pars[6:8])**2
 
 def testStarGenerate():
-    logging.basicConfig(level=LOGGINGLEVEL, filename="logs/test_synthesiser.log")
+    logging.basicConfig(level=LOGGINGLEVEL,
+                        filename="logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100000.]
-    init_xyzuvw = syn.synthesise_xyzuvw(pars, sphere=True)
+    init_xyzuvw = syn.synthesiseXYZUVW(pars, sphere=True)
     myGroup = syn.Group(pars, sphere=True)
     fitted_cov = np.cov(init_xyzuvw.T)
     fitted_dx = mstats.gmean((
@@ -46,7 +48,7 @@ def testEllipticalGeneration():
                         filename="logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 15., 5., 5., 0.0, 0.0, 0.0, 20.,
             100000.]
-    init_xyzuvw = syn.synthesise_xyzuvw(pars, sphere=False)
+    init_xyzuvw = syn.synthesiseXYZUVW(pars, sphere=False)
     myGroup = syn.Group(pars, sphere=False)
     sphere_dx = mstats.gmean(pars[6:9])
     assert sphere_dx == myGroup.sphere_dx
@@ -65,11 +67,12 @@ def testEllipticalGeneration():
 
 
 def testSaveFiles():
-    logging.basicConfig(level=LOGGINGLEVEL, filename="logs/test_synthesiser.log")
+    logging.basicConfig(level=LOGGINGLEVEL,
+                        filename="logs/test_synthesiser.log")
     xyzuvw_savefile = 'temp_xyzuvw.npy'
     group_savefile = 'temp_group.npy'
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100.]
-    xyzuvw_init, group = syn.synthesise_xyzuvw(
+    xyzuvw_init, group = syn.synthesiseXYZUVW(
         pars, return_group=True, xyzuvw_savefile=xyzuvw_savefile,
         group_savefile=group_savefile
     )
@@ -78,4 +81,28 @@ def testSaveFiles():
 
     group_saved = np.load(group_savefile).item()
     assert group == group_saved
+
+
+def testManyGroups():
+    origins = np.array([
+       #  X    Y    Z    U    V    W   dX  dY    dZ  dVCxyCxzCyz age nstars
+       [25., 0., 11., -5., 0., -2., 10., 5., 3., 50.],
+       [-21., -60., 4., 3., 10., -1., 7., 3., 7., 30.],
+       [-10., 20., 0., 1., -4., 15., 10., 2., 10., 40.],
+       [-80., 80., -80., 5., -5., 5., 20., 5., 13., 80.],
+    ])
+    ngroups = origins.shape[0]
+
+    # construct the index boundaries
+    ranges = [0]
+    for i in range(ngroups):
+        ranges.append(int(ranges[i] + origins[i,-1]))
+
+    init_xyzuvw, groups = syn.synthesiseManyXYZUVW(origins, sphere=True,
+                                                   return_groups=True)
+    # check means of first lot of stars
+    for i in range(ngroups):
+        assert np.allclose(origins[i,:6],
+                           init_xyzuvw[ranges[i]:ranges[i+1]].mean(axis=0),
+                           atol=5.)
 

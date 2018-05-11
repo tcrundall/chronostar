@@ -44,10 +44,10 @@ mean_then = torb.traceOrbitXYZUVW(mean_now, -age)
 group_pars = np.hstack((mean_then, dX, dV, age, nstars))
 
 xyzuvw_init, origin = \
-    syn.synthesise_xyzuvw(group_pars, sphere=True,
-                          xyzuvw_savefile=rdir + xyzuvw_init_savefile,
-                          return_group=True,
-                          group_savefile=rdir + group_savefile)
+    syn.synthesiseXYZUVW(group_pars, sphere=True,
+                         xyzuvw_savefile=rdir + xyzuvw_init_savefile,
+                         return_group=True,
+                         group_savefile=rdir + group_savefile)
 
 # Sanity check, test stars traceback to approximately origin
 print("Mean of init stars close to initialisation? {}".format(

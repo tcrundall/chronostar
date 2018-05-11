@@ -142,10 +142,10 @@ except IOError:
     # synthesise perfect XYZUVW data
     logging.info("Synthesising data")
     xyzuvw_init, origin =\
-        syn.synthesise_xyzuvw(group_pars, sphere=True,
-                              xyzuvw_savefile=rdir+xyzuvw_init_savefile,
-                              return_group=True,
-                              group_savefile=rdir+group_savefile)
+        syn.synthesiseXYZUVW(group_pars, sphere=True,
+                             xyzuvw_savefile=rdir+xyzuvw_init_savefile,
+                             return_group=True,
+                             group_savefile=rdir+group_savefile)
     logging.info("Origin has values\n"
                  "\tage:     {}\n"
                  "\tsph_dX:  {}\n"

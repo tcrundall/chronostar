@@ -38,7 +38,7 @@ dividers = [0]
 
 for i in range(ngroups):
     groups[i] = syn.Group(group_pars[i])
-    xyzuvw = np.vstack((xyzuvw, syn.synthesise_xyzuvw(
+    xyzuvw = np.vstack((xyzuvw, syn.synthesiseXYZUVW(
         group_pars[i]
     )))
     dividers.append(dividers[-1] + group_pars[i,-1])

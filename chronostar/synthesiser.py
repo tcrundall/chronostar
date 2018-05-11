@@ -114,8 +114,8 @@ class Group:
         else:
             return self.generateEllipticalCovMatrix()
 
-def synthesise_xyzuvw(pars, sphere=True, return_group=False,
-                      xyzuvw_savefile='', group_savefile='', internal=False):
+def synthesiseXYZUVW(pars, sphere=True, return_group=False,
+                     xyzuvw_savefile='', group_savefile='', internal=False):
     """
     Generate a bunch of stars in situ based off a Guassian parametrisation
 
@@ -170,4 +170,61 @@ def synthesise_xyzuvw(pars, sphere=True, return_group=False,
         return init_xyzuvw, group
     else:
         return init_xyzuvw
+
+def synthesiseManyXYZUVW(many_pars, sphere=True, return_groups=False,
+                         xyzuvw_savefile='', groups_savefile='',
+                         internal=False):
+    """
+    Generate a bunch of stars in situ based off a Guassian parametrisation
+
+    Parameters
+    ----------
+    pars : [10] or [15] float array
+        10 parameters : [X,Y,Z,U,V,W,dX,dV,age,nstars]
+            Covariance matrix describes a spherical distribution in pos
+            and vel space
+        15 parameters : [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars]
+            Covariance matrix descirbes a spherical distribution in velocity
+            space and freely orientable, triaxial ellipsoid in position space
+    sphere : boolean {True}
+        Set flag True if providing pars in 9 parameter form,
+        Set flag False if providing pars in 14 parameter form,
+    return_group : boolean {False}
+        Set flag if want to return the group object (for tracking input
+        parameters)
+    xyzuvw_savefile : String {''}
+        Provide a string to numpy.save the init_xyzuvw array
+    group_savefile : Stirng {''}
+        Provide a string to numpy.save the group object; note you need to
+        np.load(group_savefile).item() in order to retrieve it.
+    internal : Boolean {False}
+        Set if parameters are provided in emcee internalised form
+
+    Returns
+    -------
+    xyzuvw_init : [nstars,6] float array
+        Initial distribution of stars in XYZUVW coordinates in corotating, RH
+        (X,U positive towards galactic anti-centre) cartesian coordinates
+        centred on local standard fo rest.
+
+    (if flag return_group is set)
+    group : SynthGroup object
+        An object that wraps initialisation parameters
+    """
+    many_pars_cp = np.copy(many_pars)
+
+    groups = []
+    all_init_xyzuvw = np.zeros((0,6))
+
+    for pars in many_pars_cp:
+        init_xyzuvw, group = synthesiseXYZUVW(pars, sphere=sphere,
+                                              return_group=True)
+        groups.append(group)
+        all_init_xyzuvw = np.vstack((all_init_xyzuvw, init_xyzuvw))
+
+    if return_groups:
+        return all_init_xyzuvw, groups
+    else:
+        return all_init_xyzuvw
+
 

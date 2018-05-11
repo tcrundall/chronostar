@@ -51,7 +51,8 @@ def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns, nstars):
         stmg_mn = st_mn - g_mn
         stpg_cov = st_cov + g_cov
         logging.debug("ApB:\n{}".format(stpg_cov))
-        res -= 0.5 * np.dot(stmg_mn.T, np.dot(np.linalg.inv(stpg_cov), stmg_mn))
+        res -= 0.5 * np.dot(stmg_mn.T,
+                            np.dot(np.linalg.inv(stpg_cov), stmg_mn))
         lnols.append(res)
     return np.array(lnols)
 
@@ -157,10 +158,11 @@ def lnprior(pars, star_pars):
 def lnlike(pars, star_pars, z=None, return_lnols=False):
     """Computes the log-likelihood for a fit to a group.
 
-    The emcee parameters encode the modelled origin point of the stars. Using
-    the parameters, a mean and covariance in 6D space are constructed as well as
-    an age. The kinematics are then projected forward to the current age and
-    compared with the current stars' XYZUVW values (and uncertainties)
+    The emcee parameters encode the modelled origin point of the stars.
+    Using the parameters, a mean and covariance in 6D space are constructed
+    as well as an age. The kinematics are then projected forward to the
+    current age and compared with the current stars' XYZUVW values (and
+    uncertainties)
 
     Parameters
     ----------
@@ -191,7 +193,8 @@ def lnlike(pars, star_pars, z=None, return_lnols=False):
 
     nstars = star_pars['xyzuvw'].shape[0]
     lnols = get_lnoverlaps(
-        cov_now, mean_now, star_pars['xyzuvw_cov'], star_pars['xyzuvw'], nstars
+        cov_now, mean_now, star_pars['xyzuvw_cov'], star_pars['xyzuvw'],
+        nstars
     )
     if return_lnols:
         return lnols
@@ -232,8 +235,8 @@ def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
     lnprob : [nwalkers, nsteps] array
 
     tol : float
-        The number of standard deviations the final mean lnprob should be within
-        of the initial mean lnprob
+        The number of standard deviations the final mean lnprob should be
+        within of the initial mean lnprob
 
     slice_size : int
         Number of steps at each end to use for mean lnprob calcultions
@@ -253,7 +256,8 @@ def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
     end_lnprob_mn = np.mean(lnprob[:, -slice_size:])
     end_lnprob_std = np.std(lnprob[:, -slice_size:])
 
-    return np.isclose(start_lnprob_mn, end_lnprob_mn, atol=tol*end_lnprob_std)
+    return np.isclose(start_lnprob_mn, end_lnprob_mn,
+                      atol=tol*end_lnprob_std)
 
 def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
              plot_it=False, pool=None, convergence_tol=0.1, init_pos=None,
@@ -263,8 +267,8 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     Parameters
     ----------
     xyzuvw_dict, xyzuvw_file : (dict or string)
-        Can either pass in the dictionary directly, or a '.fits' filename from
-        which to load the dictionary:
+        Can either pass in the dictionary directly, or a '.fits' filename
+        from which to load the dictionary:
             xyzuvw : (nstars,ntimes,6) np array
                 XYZ in pc and UVW in km/s
             xyzuvw_cov : (nstars,ntimes,6,6) np array
@@ -285,8 +289,8 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     Returns
     -------
     best_sample
-        The parameters of the group model which yielded the highest posterior
-        probability
+        The parameters of the group model which yielded the highest
+        posterior probability
 
     chain
         [nwalkers, nsteps, npars] array of all samples
@@ -313,8 +317,9 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     NPAR = len(init_pars)
     NWALKERS = 2 * NPAR
 
-    # Since emcee linearly interpolates between walkers to determine next step
-    # by initialising each walker to the same age, the age never varies
+    # Since emcee linearly interpolates between walkers to determine next
+    # step by initialising each walker to the same age, the age never
+    # varies
 #    if fixed_age is not None:
 #        init_pars[-1] = fixed_age
 #        INIT_SDEV[-1] = 0.0
@@ -323,11 +328,12 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     sampler = emcee.EnsembleSampler(
         NWALKERS, NPAR, lnprobFunc, args=[star_pars, z], pool=pool,
     )
-    # initialise walkers, note that INIT_SDEV is carefully chosen such that
+    # initialise walkers, note that INIT_SDEV is carefully chosen such thata
     # all generated positions are permitted by lnprior
     if init_pos is None:
         pos = [
-            init_pars + (np.random.random(size=len(INIT_SDEV)) - 0.5) * INIT_SDEV
+            init_pars + (np.random.random(size=len(INIT_SDEV)) - 0.5)\
+            * INIT_SDEV
             for _ in range(NWALKERS)
         ]
     else:
@@ -343,7 +349,8 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         logging.info("Burning in cnt: {}".format(cnt))
         sampler.reset()
         pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
-        converged = burninConvergence(sampler.lnprobability, tol=convergence_tol)
+        converged = burninConvergence(sampler.lnprobability,
+                                      tol=convergence_tol)
 
         # Help out the struggling walkers
         best_ix = np.argmax(lnprob)

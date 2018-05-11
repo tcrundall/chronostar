@@ -25,7 +25,7 @@ def test_converter():
     xyzuvw_conv_savefile = save_dir + 'xyzuvw_conv.fits'
 
     group_pars = [0., 0., 0., 0., 0., 0., 1., 1., AGE, 100]
-    xyzuvw_init, group = syn.synthesise_xyzuvw(
+    xyzuvw_init, group = syn.synthesiseXYZUVW(
         group_pars, sphere=True, xyzuvw_savefile=xyzuvw_init_savefile,
         group_savefile=group_savefile, return_group=True
     )

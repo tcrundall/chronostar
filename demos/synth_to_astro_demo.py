@@ -26,7 +26,7 @@ astro_savefile = save_dir + 'astro_table.txt'
 
 
 group_pars = [0., 0., 0., 0., 0., 0., 1., 1., 0.5, 20]
-xyzuvw_init, group = syn.synthesise_xyzuvw(
+xyzuvw_init, group = syn.synthesiseXYZUVW(
     group_pars, sphere=True, xyzuvw_savefile=xyzuvw_init_savefile,
     group_savefile=group_savefile, return_group=True
 )

@@ -40,7 +40,7 @@ def test_mpirun():
 
     pars = np.array([0., 0., 0., 0., 0., 0., 0., 0., 1e-8, 100])
     error_frac = 1.0
-    xyzuvw_init, group = syn.synthesise_xyzuvw(
+    xyzuvw_init, group = syn.synthesiseXYZUVW(
         pars, return_group=True, internal=True, group_savefile=group_savefile,
         xyzuvw_savefile=xyzuvw_init_savefile
     )

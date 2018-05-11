@@ -67,18 +67,20 @@ def calc_errors(chain, perc=34):
     # return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
     #                 zip(*np.percentile(flat_chain, [16,50,84], axis=0))))
     return np.array(map(lambda v: (v[1], v[2], v[0]),
-                        zip(*np.percentile(flat_chain, [50-perc, 50, 50+perc], axis=0))))
+                        zip(*np.percentile(flat_chain,
+                                           [50-perc, 50, 50+perc],
+                                           axis=0))))
 
 
 def check_convergence(old_best_fits, new_chains,
                       perc=25):
-    """Check if the last maximisation step yielded is consistent fit to new fit
+    """Check if the last maximisation step yielded is consistent to new fit
 
     TODO: incorporate Z into this convergence checking. e.g.
     np.allclose(z_prev, z, rtol=1e-2)
 
-    Convergence is achieved if previous key values fall within +/-"perc" of the
-    new fits.
+    Convergence is achieved if previous key values fall within +/-"perc" of
+    the new fits.
 
     Parameters
     ----------
@@ -184,10 +186,10 @@ def expectation(star_pars, groups):
     Returns
     -------
     z : [nstars, ngroups] array
-        An array designating each star's probability of being a member to each
-        group. It is populated by floats in the range (0.0, 1.0) such that
-        each row sums to 1.0, each column sums to the expected size of each
-        group, and the entire array sums to the number of stars.
+        An array designating each star's probability of being a member to
+        each group. It is populated by floats in the range (0.0, 1.0) such
+        that each row sums to 1.0, each column sums to the expected size of
+        each group, and the entire array sums to the number of stars.
     """
     ngroups = groups.shape[0]
     nstars = len(star_pars['xyzuvw'])
@@ -201,9 +203,9 @@ def expectation(star_pars, groups):
     return z
 
 
-def maximise(infile, ngroups, z=None, init_conditions=None, burnin_steps=500,
-             sampling_steps=1000):
-    """Given membership probabilities, maximise the parameters of each group model
+def maximise(infile, ngroups, z=None, init_conditions=None,
+             burnin_steps=500, sampling_steps=1000):
+    """Given membership probabilities, maximise the parameters of each model
 
     Parameters
     ----------
@@ -214,14 +216,14 @@ def maximise(infile, ngroups, z=None, init_conditions=None, burnin_steps=500,
         Number of groups to be fitted to the traceback orbits
 
     z : [nstars, ngroups] array
-        An array designating each star's probability of being a member to each
-        group. It is populated by floats in the range (0.0, 1.0) such that
-        each row sums to 1.0, each column sums to the expected size of each
-        group, and the entire array sums to the number of stars.
+        An array designating each star's probability of being a member to
+        each group. It is populated by floats in the range (0.0, 1.0) such
+        that each row sums to 1.0, each column sums to the expected size of
+        each group, and the entire array sums to the number of stars.
 
     init_conditions : [ngroups, npars] array
-        The initial conditions for the groups, encoded in the 'internal' manner
-        (that is, 1/dX, 1/dY etc. and no star count)
+        The initial conditions for the groups, encoded in the 'internal'
+        manner (that is, 1/dX, 1/dY etc. and no star count)
 
     burnin_steps : int
         number of steps during burnin phase
@@ -293,13 +295,15 @@ def get_initial_group_pars(ngroups, xyzuvw, offset=False):
     Parameters
     ----------
     offset : (boolean {False})
-        If set, the gorups are initialised in the complementary angular positions
+        If set, the gorups are initialised in the complementary angular
+        positions
 
     :param ngroups:
     :return:
     """
     mid_point = np.mean(xyzuvw, axis=0)[3:5]
-    group_pars_base = list([0, 0, 0, None, None, 0, np.log(50), np.log(5), 3])
+    group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
+                            np.log(5), 3])
     pts = get_points_on_circle(npoints=ngroups, v_dist=110, offset=offset)
 
     all_init_group_pars = np.array(
@@ -329,7 +333,8 @@ def calc_mns_covs(new_gps, ngroups, origins=None):
             all_origin_mn_now[i] = tb.trace_forward(all_origin_mn_then[i],
                                                     origins[i][-2])
             all_origin_cov_now[i] = tf.transform_cov(
-                all_origin_cov_then[i], tb.trace_forward, all_origin_mn_then[i],
+                all_origin_cov_then[i], tb.trace_forward,
+                all_origin_mn_then[i],
                 dim=6, args=(origins[i][-2],)
             )
         all_fitted_mn_then[i] = new_gps[i][:6]
@@ -413,7 +418,8 @@ def plot_all(star_pars, means, covs, ngroups, iter_count):
 
     logging.info("Iteration {}: XY plot plotted".format(iter_count))
 
-def fit_multi_groups(star_pars, ngroups, res_dir='', init_z=None, origins=None):
+def fit_multi_groups(star_pars, ngroups, res_dir='', init_z=None,
+                     origins=None):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -456,9 +462,9 @@ def fit_multi_groups(star_pars, ngroups, res_dir='', init_z=None, origins=None):
                 mkpath(pathname)
                 os.chdir(pathname)
             best_fit, samples, lnprob = tfgf.fit_group(
-                "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=500, #burnin was 500
+                "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=500,
                 plot_it=True,
-                init_pars=old_gps[i], convergence_tol=5., #tight=True, #tol was 5. tight dprecated
+                init_pars=old_gps[i], convergence_tol=5.,
                 init_pos=all_init_pos[i])
             logging.info("Finished fit")
             new_gps[i] = best_fit
@@ -485,7 +491,7 @@ def fit_multi_groups(star_pars, ngroups, res_dir='', init_z=None, origins=None):
     logging.info("CONVERGENCE COMPLETE")
 
     np.save("final_gps.npy", new_gps)
-    np.save("prev_gps.npy", old_old_gps) # old groups is overwritten by new grps
+    np.save("prev_gps.npy", old_old_gps) # old grps overwritten by new grps
     np.save("memberships.npy", z)
 
     # PERFORM FINAL EXPLORATION OF PARAMETER SPACE
@@ -510,7 +516,7 @@ def fit_multi_groups(star_pars, ngroups, res_dir='', init_z=None, origins=None):
         best_fit, samples, lnprob = tfgf.fit_group(
             "../../perf_tb_file.pkl", z=final_z[:, i], burnin_steps=2000,
             plot_it=True,
-            init_pars=old_gps[i], convergence_tol=20., #tight=True, tight deprecated. if providing init_pos. tight isn't used
+            init_pars=old_gps[i], convergence_tol=20.,
             init_pos=all_init_pos[i])
         logging.info("Finished fit")
         final_gps[i] = best_fit
@@ -539,11 +545,11 @@ if __name__ == "__main__":
     )
 
     origins = np.array([
-       #  X    Y    Z    U    V    W   dX  dY    dZ  dVCxyCxzCyz age nstars
-       [25., 0., 11., -5., 0., -2., 10., 10., 10., 5., 0., 0., 0., 3., 50.],
-       [-21., -60., 4., 3., 10., -1., 7., 7., 7., 3., 0., 0., 0., 7., 30.],
-#       [-10., 20., 0., 1., -4., 15., 10., 10., 10., 2., 0., 0., 0., 10., 40.],
-#       [-80., 80., -80., 5., -5., 5., 20., 20., 20., 5., 0., 0., 0., 13., 80.],
+   #  X    Y    Z    U    V    W   dX  dY    dZ  dVCxyCxzCyz age nstars
+     [25., 0., 11., -5., 0., -2., 10., 10., 10., 5., 0., 0., 0., 3., 50.],
+     [-21., -60., 4., 3., 10., -1., 7., 7., 7., 3., 0., 0., 0., 7., 30.],
+#   [-10., 20., 0., 1., -4., 15., 10., 10., 10., 2., 0., 0., 0., 10., 40.],
+#   [-80., 80., -80., 5., -5., 5., 20., 20., 20., 5., 0., 0., 0., 13., 80.],
 
     ])
     ERROR = 1.0
