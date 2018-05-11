@@ -261,7 +261,7 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
     age = 3.
     group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
                             np.log(5), 3])
-    pts = getPointsOnCircle(npoints=ngroups, v_dist=110, offset=offset)
+    pts = getPointsOnCircle(npoints=ngroups, v_dist=10, offset=offset)
 
     for i in range(ngroups):
         mean[3:5] = mean[3:5] + pts[i]
