@@ -333,13 +333,19 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     while not converged:
         # for iter_count in range(10):
         idir = rdir+"iter{}/".format(iter_count)
-        logging.info("Iteration {}".format(iter_count))
+        logging.info("--------------------------------------------------\n"
+                     "--------------    Iteration {}    ----------------\n"
+                     "--------------------------------------------------".
+                     format(iter_count))
 
         mkpath(idir)
         #os.chdir("iter{}".format(iter_count))
 
         # EXPECTATION
         z = expectation(star_pars, old_groups, z)
+        logging.info("Membership distribution:\n{}".format(
+            z.sum(axis=0)
+        ))
         np.save(idir+"membership.npy", z)
 
         # MAXIMISE
@@ -350,7 +356,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         all_lnprob = []
 
         for i in range(ngroups):
-            logging.info("Fitting group {}".format(i))
+            logging.info("........................................")
+            logging.info("          Fitting group {}".format(i))
+            logging.info("........................................")
             gdir = idir + "group{}/".format(i)
             mkpath(gdir)
 
