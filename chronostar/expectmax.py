@@ -333,9 +333,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     while not converged:
         # for iter_count in range(10):
         idir = rdir+"iter{}/".format(iter_count)
-        logging.info("--------------------------------------------------\n"
-                     "--------------    Iteration {}    ----------------\n"
-                     "--------------------------------------------------".
+        logging.info("\n--------------------------------------------------"
+                     "\n--------------    Iteration {}    ----------------"
+                     "\n--------------------------------------------------".
                      format(iter_count))
 
         mkpath(idir)
@@ -346,7 +346,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)
         ))
-        if (min(z.sum(axis=0)) < 0.01 * z.sum):
+        if (min(z.sum(axis=0)) < (0.01 * z.sum)):
             logging.info("!!! WARNING, GROUP {} HAS LESS THAN 1% OF STARS".\
                          format(np.argmin(z.sum(axis=0))))
         np.save(idir+"membership.npy", z)
