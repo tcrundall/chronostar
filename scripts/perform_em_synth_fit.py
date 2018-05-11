@@ -74,8 +74,8 @@ xyzuvw_conv_savefile = 'xyzuvw_now.fits'
 mean_now = np.array([50., -100., -0., -10., -20., -5.])
 extra_pars = np.array([
     #dX, dV, age, nstars
-    [10., 3., 10., 20.],
-    [10., 5.,  7., 100.],
+    [10., 5., 20., 20.],
+    [1., 5.,  5., 100.],
 ])
 logging.info("Mean (now):\n{}".format(mean_now))
 logging.info("Extra pars:\n{}".format(extra_pars))
