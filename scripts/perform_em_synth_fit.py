@@ -11,12 +11,32 @@ from distutils.errors import DistutilsFileError
 import logging
 import numpy as np
 import sys
+from emcee.utils import MPIPool
 sys.path.insert(0, '..')
 import chronostar.synthesiser as syn
 import chronostar.traceorbit as torb
 import chronostar.converter as cv
 import chronostar.measurer as ms
 import chronostar.expectmax as em
+
+# Initialize the MPI-based pool used for parallelization.
+using_mpi = True
+try:
+    pool = MPIPool()
+    logging.info("Successfully initialised mpi pool")
+except:
+    #print("MPI doesn't seem to be installed... maybe install it?")
+    logging.info("MPI doesn't seem to be installed... maybe install it?")
+    using_mpi = False
+    pool=None
+
+if using_mpi:
+    if not pool.is_master():
+        print("One thread is going to sleep")
+        # Wait for instructions from the master process.
+        pool.wait()
+        sys.exit(0)
+print("Only one thread is master")
 
 
 dir_name = sys.argv[1]
@@ -33,6 +53,8 @@ except (IOError, DistutilsFileError):
     if rdir[-1] != '/':
         rdir += '/'
     mkpath(rdir)
+
+print("Master should be working in the directory:\n{}".format(rdir))
 #os.chdir(res_dir)
 
 logging.basicConfig(
@@ -88,4 +110,4 @@ astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
 star_pars = cv.convertMeasurementsToCartesian(
     astro_table, savefile=rdir+xyzuvw_conv_savefile,
 )
-em.fitManyGroups(star_pars, ngroups, rdir=rdir)
+em.fitManyGroups(star_pars, ngroups, rdir=rdir, pool=pool)

@@ -157,10 +157,6 @@ except IOError:
         torb.traceManyOrbitXYZUVW(xyzuvw_init, origin.age, single_age=True,
                                   savefile=rdir+xyzuvw_perf_file)
 
-if not using_mpi:
-    logging.info("MPI available! - call this with e.g. mpirun -np 19"
-                 " python perform_synth_fit.py")
-
 for prec in precs:
     logging.info("Fitting to prec: {}".format(prec))
     pdir = rdir + prec + '/'

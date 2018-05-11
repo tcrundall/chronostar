@@ -489,9 +489,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         membership probabilities
     """
     # setting up some constants
-    BURNIN_STEPS = 10
-    SAMPLING_STEPS = 50
-    C_TOL = 50 # 0.5
+    BURNIN_STEPS = 1000
+    SAMPLING_STEPS = 5000
+    C_TOL = 0.5
 
     # INITIALISE GROUPS
     init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'])
@@ -557,8 +557,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         converged = checkConvergence(old_best_fits=old_groups,
                                      new_chains=all_samples,
-                                     perc=45, # COMMENT OUT THIS LINE
-                                               # FOR LEGIT FITS!
+                                     #perc=45, # COMMENT OUT THIS LINE
+                                     #          # FOR LEGIT FITS!
                                      )
         logging.info("Convergence status: {}".format(converged))
         old_old_groups = old_groups
