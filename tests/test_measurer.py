@@ -20,5 +20,4 @@ def test_measureXYZUVW():
     ])
     astro_table = ms.measureXYZUVW(xyzuvws, 1.0)
     measured_vals, errors = ms.convertTableToArray(astro_table)
-    import pdb; pdb.set_trace()
     assert np.allclose(ref_errors, np.std(measured_vals, axis=0), rtol=2e-1)
