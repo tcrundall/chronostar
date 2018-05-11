@@ -19,6 +19,26 @@ import chronostar.converter as cv
 import chronostar.measurer as ms
 import chronostar.expectmax as em
 
+dir_name = sys.argv[1]
+
+try:
+    rdir = "/data/mash/tcrun/em_fit/" + dir_name
+    if rdir[-1] != '/':
+        rdir += '/'
+    mkpath(rdir)
+except (IOError, DistutilsFileError):
+    path_msg = ("I'm guessing you're not Tim Crundall..."
+                "or not on an RSAA server")
+    rdir = "../results/em_fit/" + dir_name
+    if rdir[-1] != '/':
+        rdir += '/'
+    mkpath(rdir)
+
+logging.basicConfig(
+    level=logging.INFO, filemode='w',
+    filename=rdir + 'em.log',
+)
+
 # Initialize the MPI-based pool used for parallelization.
 using_mpi = True
 try:
@@ -38,29 +58,10 @@ if using_mpi:
         sys.exit(0)
 print("Only one thread is master")
 
-
-dir_name = sys.argv[1]
-
-try:
-    rdir = "/data/mash/tcrun/em_fit/" + dir_name
-    if rdir[-1] != '/':
-        rdir += '/'
-    mkpath(rdir)
-except (IOError, DistutilsFileError):
-    print("I'm guessing you're not Tim Crundall..."
-          "or not on an RSAA server")
-    rdir = "../results/em_fit/" + dir_name
-    if rdir[-1] != '/':
-        rdir += '/'
-    mkpath(rdir)
+logging.info(path_msg)
 
 print("Master should be working in the directory:\n{}".format(rdir))
 #os.chdir(res_dir)
-
-logging.basicConfig(
-    level=logging.INFO, filemode='w',
-    filename=rdir + 'em.log',
-)
 
 # Setting up standard filenames
 xyzuvw_perf_file     = 'perf_xyzuvw.npy'
