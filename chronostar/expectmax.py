@@ -346,6 +346,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)
         ))
+        if (min(z.sum(axis=0)) < 0.01 * z.sum):
+            logging.info("!!! WARNING, GROUP {} HAS LESS THAN 1% OF STARS".\
+                         format(np.argmin(z.sum(axis=0))))
         np.save(idir+"membership.npy", z)
 
         # MAXIMISE
