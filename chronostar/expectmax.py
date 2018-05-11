@@ -199,7 +199,7 @@ def expectation(star_pars, groups, old_z=None):
         weight = max(old_z[:,i].sum(), nstars/(2. * (ngroups+1)))
         group_pars = group.getInternalSphericalPars()
         lnols[:, i] =\
-            weight + gf.lnlike(group_pars, star_pars, return_lnols=True)
+            np.log(weight) + gf.lnlike(group_pars, star_pars, return_lnols=True)
         # calc_lnoverlaps(group_pars, star_pars, nstars)
     z = np.zeros((nstars, ngroups))
     for i in range(nstars):
