@@ -199,7 +199,7 @@ def expectation(star_pars, groups, old_z=None):
         weight = max(old_z[:,i].sum(), nstars/(2. * (ngroups+1)))
         group_pars = group.getInternalSphericalPars()
         lnols[:, i] =\
-            weight*gf.lnlike(group_pars, star_pars, return_lnols=True)
+            weight + gf.lnlike(group_pars, star_pars, return_lnols=True)
         # calc_lnoverlaps(group_pars, star_pars, nstars)
     z = np.zeros((nstars, ngroups))
     for i in range(nstars):
@@ -207,68 +207,6 @@ def expectation(star_pars, groups, old_z=None):
     if np.isnan(z).any():
         import pdb; pdb.set_trace()
     return z
-
-
-def maximise(infile, ngroups, z=None, init_conditions=None,
-             burnin_steps=500, sampling_steps=1000):
-    """Given membership probabilities, maximise the parameters of each model
-
-    Parameters
-    ----------
-    infile : str
-        Name of the traceback file being fitted to
-
-    ngroups : int
-        Number of groups to be fitted to the traceback orbits
-
-    z : [nstars, ngroups] array
-        An array designating each star's probability of being a member to
-        each group. It is populated by floats in the range (0.0, 1.0) such
-        that each row sums to 1.0, each column sums to the expected size of
-        each group, and the entire array sums to the number of stars.
-
-    init_conditions : [ngroups, npars] array
-        The initial conditions for the groups, encoded in the 'internal'
-        manner (that is, 1/dX, 1/dY etc. and no star count)
-
-    burnin_steps : int
-        number of steps during burnin phase
-
-    sampling_steps : int
-        number of steps during sampling phase
-
-    Returns
-    -------
-    best_fits : [ngroups, npars] array
-        The best fitting parameters for each group
-    chains : [ngroups, nwalkers, nsteps, npars] array
-        The final chain for each group's fit
-    lnprobs : [ngroups, nwalkers, nsteps] array
-        The sampler.probability array for each group's fit
-
-    TODO: Have some means to enforce fixed ages
-    """
-    NPARS = 14
-    best_fits = np.zeros((ngroups, NPARS))
-    chains = None
-    lnprobs = None
-
-    for i in range(ngroups):
-        best_fit, chain, lnprob = tfgf.fit_group(
-            infile, z=ix_snd(z, i), init_pars=ix_fst(init_conditions, i),
-            burnin_steps=burnin_steps, plot_it=True
-        )
-        best_fits[i] = best_fit
-        if chains is None:
-            dims = np.append(ngroups, chain.shape)
-            chains = np.zeros(dims)
-        if lnprobs is None:
-            dims = np.append(ngroups, lnprob.shape)
-            lnprobs = np.zeros(dims)
-
-        chains[i] = chain
-        lnprobs[i] = lnprob
-    return best_fits, chains, lnprobs
 
 
 def getPointsOnCircle(npoints, v_dist=20, offset=False):
@@ -333,122 +271,6 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
 
     return groups
 
-def calcMnsCovs(new_groups, ngroups, origins=None):
-    """
-    Used for plotting... extracts means and covs form list of best fits
-
-    Paramters
-    ---------
-        new_groups : [ngroups, npars] list
-            best fits from the final run
-        ngroups : int
-            number of groups
-        origins : [ngroups] synthesiser.Group object list {None}
-            list of the Group objects corresponding to the intiialisation
-            of the stars. (only applicable for a synthetic run)
-    """
-    all_origin_mn_then = [None] * ngroups
-    all_origin_cov_then = [None] * ngroups
-    all_origin_mn_now = [None] * ngroups
-    all_origin_cov_now = [None] * ngroups
-    all_fitted_mn_then = [None] * ngroups
-    all_fitted_cov_then = [None] * ngroups
-    all_fitted_mn_now = [None] * ngroups
-    all_fitted_cov_now = [None] * ngroups
-
-    for i in range(ngroups):
-        if origins:
-            all_origin_mn_then[i] = origins[i][:6]
-            all_origin_cov_then[i] = utils.generate_cov(
-                utils.internalise_pars(origins[i])
-            )
-            all_origin_mn_now[i] = tb.trace_forward(all_origin_mn_then[i],
-                                                    origins[i][-2])
-            all_origin_cov_now[i] = tf.transform_cov(
-                all_origin_cov_then[i], tb.trace_forward,
-                all_origin_mn_then[i],
-                dim=6, args=(origins[i][-2],)
-            )
-        all_fitted_mn_then[i] = new_groups[i][:6]
-        all_fitted_cov_then[i] = tfgf.generate_cov(new_groups[i])
-        all_fitted_mn_now[i] = tb.trace_forward(all_fitted_mn_then[i],
-                                                new_groups[i][-1])
-        all_fitted_cov_now[i] = tf.transform_cov(
-            all_fitted_cov_then[i], tb.trace_forward, all_fitted_mn_then[i],
-            dim=6, args=(new_groups[i][-1],)
-        )
-
-    if origins:
-        all_origin_mn_then  = np.array(all_origin_mn_then )
-        all_origin_cov_then = np.array(all_origin_cov_then)
-        all_origin_mn_now   = np.array(all_origin_mn_now  )
-        all_origin_cov_now  = np.array(all_origin_cov_now )
-    all_fitted_mn_then  = np.array(all_fitted_mn_then )
-    all_fitted_cov_then = np.array(all_fitted_cov_then)
-    all_fitted_mn_now   = np.array(all_fitted_mn_now  )
-    all_fitted_cov_now  = np.array(all_fitted_cov_now )
-
-    all_means = {
-        'fitted_then' : all_fitted_mn_then,
-        'fitted_now'  : all_fitted_mn_now ,
-    }
-
-    all_covs = {
-        'fitted_then' : all_fitted_cov_then,
-        'fitted_now'  : all_fitted_cov_now ,
-    }
-
-    if origins:
-        all_means['origin_then'] = all_origin_mn_then
-        all_means['origin_now']  = all_origin_mn_now
-        all_covs['origin_then']  = all_origin_cov_then
-        all_covs['origin_now']   = all_origin_cov_now
-
-    np.save("means.npy", all_means)
-    np.save("covs.npy", all_covs)
-
-    return all_means, all_covs
-
-
-def plotAll(star_pars, means, covs, ngroups, iter_count):
-    plt.clf()
-    xyzuvw = star_pars['xyzuvw'][:, 0]
-    xyzuvw_cov = star_pars['xyzuvw_cov'][:, 0]
-    plt.plot(xyzuvw[:, 0], xyzuvw[:, 1], 'b.')
-    for mn, cov in zip(xyzuvw, xyzuvw_cov):
-        ee.plot_cov_ellipse(cov[:2, :2], mn[:2], color='b',
-                            alpha=0.3)
-    for i in range(ngroups):
-        ee.plot_cov_ellipse(covs['origin_then'][i][:2, :2],
-                            means['origin_then'][i][:2], color='orange',
-                            alpha=0.3, hatch='|', ls='--')
-        #ee.plot_cov_ellipse(covs['origin_now'][i][:2, :2],
-        #                    means['origin_now'][i][:2], color='xkcd:gold',
-        #                    alpha=0.1, hatch='|', ls='--')
-        ee.plot_cov_ellipse(covs['fitted_then'][i][:2, :2],
-                            means['fitted_then'][i][:2],
-                            color='xkcd:neon purple',
-                            alpha=0.3, hatch='/', ls='-.')
-        ee.plot_cov_ellipse(covs['fitted_now'][i][:2, :2],
-                            means['fitted_now'][i][:2],
-                            color='b',
-                            alpha=0.1, hatch='.')
-    min_means = np.min(np.array(means.values()).reshape(-1,6), axis=0)
-    max_means = np.max(np.array(means.values()).reshape(-1,6), axis=0)
-
-    xmin = min(min_means[0], np.min(xyzuvw[:,0]))
-    xmax = max(max_means[0], np.max(xyzuvw[:,0]))
-    ymin = min(min_means[1], np.min(xyzuvw[:,1]))
-    ymax = max(max_means[1], np.max(xyzuvw[:,1]))
-
-    buffer = 20
-    plt.xlim(xmax+buffer, xmin-buffer)
-    plt.ylim(ymin-buffer, ymax+buffer)
-
-    plt.title("Iteration: {}".format(iter_count))
-    plt.savefig("XY_plot.pdf", bbox_inches='tight', format='pdf')
-
-    logging.info("Iteration {}: XY plot plotted".format(iter_count))
 
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None):
