@@ -101,8 +101,10 @@ def checkConvergence(old_best_fits, new_chains,
 
     for old_best_fit, new_chain in zip(old_best_fits, new_chains):
         errors = calcErrors(new_chain, perc=perc)
-        upper_contained = old_best_fit < errors[:, 1]
-        lower_contained = old_best_fit > errors[:, 2]
+        upper_contained =\
+            old_best_fit.getInternalSphericalPars() < errors[:, 1]
+        lower_contained =\
+            old_best_fit.getInternalSphericalPars() > errors[:, 2]
 
         each_converged.append(
             np.all(upper_contained) and np.all(lower_contained))
