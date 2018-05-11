@@ -315,9 +315,9 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
     """
     groups = []
 
-    mid_point = np.mean(xyzuvw, axis=0)[3:5]
-    meanXYZ = np.array([0.,0.,0.])
-    meanW = 0.
+    mean = np.mean(xyzuvw, axis=0)[:6]
+#    meanXYZ = np.array([0.,0.,0.])
+#    meanW = 0.
     dx = 50.
     dv = 5.
     age = 3.
@@ -326,8 +326,8 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
     pts = getPointsOnCircle(npoints=ngroups, v_dist=110, offset=offset)
 
     for i in range(ngroups):
-        meanUV = mid_point + pts[i]
-        group_pars = np.hstack((meanXYZ, meanUV, meanW, dx, dv, age))
+        mean[3:5] = mean[3:5] + pts[i]
+        group_pars = np.hstack((mean, dx, dv, age))
         group = syn.Group(group_pars, sphere=True, starcount=False)
         groups.append(group)
 
