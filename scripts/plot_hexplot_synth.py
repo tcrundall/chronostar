@@ -41,7 +41,7 @@ if not os.path.isdir(rdir):
     rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
                                                       int(dV), int(nstars))
 
-logging.basicConfig(level=logging.INFO, filename='hexplotting.log')
+logging.basicConfig(level=logging.INFO, filename=rdir+'hexplotting.log')
 print("In preamble")
 logging.info("Input arguments: {}".format(sys.argv[1:]))
 logging.info("\n"

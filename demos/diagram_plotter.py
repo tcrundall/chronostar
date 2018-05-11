@@ -54,7 +54,7 @@ plt.plot(u_mn, v_mn, '+', label="UV mean")
 offset_opts = [True, False]
 for offset in offset_opts:
 
-    init_comps = em.get_initial_group_pars(ngroups, xyzuvw, offset=offset)
+    init_comps = em.getInitialGroups(ngroups, xyzuvw, offset=offset)
     comp_groups = ngroups * [None]
 
     if offset:

@@ -16,7 +16,7 @@ import os
 import pickle
 import random
 
-import chronostar.retired.synthesiser as syn
+import chronostar.synthesiser as syn
 
 try:
     import matplotlib as mpl
@@ -27,12 +27,8 @@ except ImportError:
     print("Warning: matplotlib not imported")
     pass
 
-import chronostar.retired.tfgroupfitter as tfgf
-from chronostar.retired import utils
 import chronostar.transform as tf
-import chronostar.retired.tracingback as tb
-import chronostar.retired.error_ellipse as ee
-import chronostar.retired.hexplotter as hp
+import groupfitter as gf
 
 def ix_fst(array, ix):
     if array is None:
@@ -48,7 +44,7 @@ def ix_snd(array, ix):
         return array[:, ix]
 
 
-def calc_errors(chain, perc=34):
+def calcErrors(chain, perc=34):
     """
     Given a set of aligned (converted?) samples, calculate the median and
     errors of each parameter
@@ -72,8 +68,8 @@ def calc_errors(chain, perc=34):
                                            axis=0))))
 
 
-def check_convergence(old_best_fits, new_chains,
-                      perc=25):
+def checkConvergence(old_best_fits, new_chains,
+                     perc=25):
     """Check if the last maximisation step yielded is consistent to new fit
 
     TODO: incorporate Z into this convergence checking. e.g.
@@ -104,7 +100,7 @@ def check_convergence(old_best_fits, new_chains,
     each_converged = []
 
     for old_best_fit, new_chain in zip(old_best_fits, new_chains):
-        errors = calc_errors(new_chain, perc=perc)
+        errors = calcErrors(new_chain, perc=perc)
         upper_contained = old_best_fit < errors[:, 1]
         lower_contained = old_best_fit > errors[:, 2]
 
@@ -114,7 +110,7 @@ def check_convergence(old_best_fits, new_chains,
     return np.all(each_converged)
 
 
-def calc_lnoverlaps(group_pars, star_pars, nstars):
+def calcLnoverlaps(group_pars, star_pars, nstars):
     """Find the lnoverlaps given the parameters of a group
 
     Parameters
@@ -142,7 +138,7 @@ def calc_lnoverlaps(group_pars, star_pars, nstars):
     return lnols
 
 
-def calc_membership_probs(star_lnols):
+def calcMembershipProbs(star_lnols):
     """Calculate probabilities of membership for a single star from overlaps
 
     Parameters
@@ -164,7 +160,7 @@ def calc_membership_probs(star_lnols):
     return star_memb_probs
 
 
-def expectation(star_pars, groups):
+def expectation(star_pars, groups, old_z=None):
     """Calculate membership probabilities given fits to each group
     TODO: incorporate group sizes into the weighting
 
@@ -180,7 +176,7 @@ def expectation(star_pars, groups):
         xyzuvw_cov : [nstars, ntimes, 6, 6] array
             covariance of xyzuvw
 
-    groups : [ngroups, npars] array
+    groups : [ngroups] syn.Group object list
         a fit for each group (in internal form)
 
     Returns
@@ -191,15 +187,25 @@ def expectation(star_pars, groups):
         that each row sums to 1.0, each column sums to the expected size of
         each group, and the entire array sums to the number of stars.
     """
-    ngroups = groups.shape[0]
+    ngroups = len(groups)
     nstars = len(star_pars['xyzuvw'])
+
+    # if no z provided, assume perfectly equal membership
+    if old_z is None:
+        old_z = np.ones((nstars, ngroups))/ngroups
+
     lnols = np.zeros((nstars, ngroups))
-    for i, group_pars in enumerate(groups):
-        lnols[:, i] = tfgf.lnlike(group_pars, star_pars, return_lnols=True)
+    for i, group in enumerate(groups):
+        weight = max(old_z[:,i].sum(), nstars/(2. * (ngroups+1)))
+        group_pars = group.getInternalSphericalPars()
+        lnols[:, i] =\
+            weight*gf.lnlike(group_pars, star_pars, return_lnols=True)
         # calc_lnoverlaps(group_pars, star_pars, nstars)
     z = np.zeros((nstars, ngroups))
     for i in range(nstars):
-        z[i] = calc_membership_probs(lnols[i])
+        z[i] = calcMembershipProbs(lnols[i])
+    if np.isnan(z).any():
+        import pdb; pdb.set_trace()
     return z
 
 
@@ -265,7 +271,7 @@ def maximise(infile, ngroups, z=None, init_conditions=None,
     return best_fits, chains, lnprobs
 
 
-def get_points_on_circle(npoints, v_dist=20, offset=False):
+def getPointsOnCircle(npoints, v_dist=20, offset=False):
     """
     Little tool to found coordinates of equidistant points around a circle
 
@@ -287,34 +293,60 @@ def get_points_on_circle(npoints, v_dist=20, offset=False):
     return np.vstack((us, vs)).T
 
 
-def get_initial_group_pars(ngroups, xyzuvw, offset=False):
+def getInitialGroups(ngroups, xyzuvw, offset=False):
     """
     Generate the parameter list with which walkers will be initialised
     TODO: CENTRE THIS BY MEAN U AND V OF STARS
 
     Parameters
     ----------
+    ngroups: int
+        number of groups
+    xyzuvw: [nstars, 6] array
+        the mean measurement of stars
     offset : (boolean {False})
         If set, the gorups are initialised in the complementary angular
         positions
 
-    :param ngroups:
-    :return:
+    Returns
+    -------
+    groups: [ngroups] synthesiser.Group object list
+        the parameters with which to initialise each group's emcee run
     """
+    groups = []
+
     mid_point = np.mean(xyzuvw, axis=0)[3:5]
+    meanXYZ = np.array([0.,0.,0.])
+    meanW = 0.
+    dx = 50.
+    dv = 5.
+    age = 3.
     group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
                             np.log(5), 3])
-    pts = get_points_on_circle(npoints=ngroups, v_dist=110, offset=offset)
+    pts = getPointsOnCircle(npoints=ngroups, v_dist=110, offset=offset)
 
-    all_init_group_pars = np.array(
-        ngroups * group_pars_base
-    ).reshape(-1, len(group_pars_base))
+    for i in range(ngroups):
+        meanUV = mid_point + pts[i]
+        group_pars = np.hstack((meanXYZ, meanUV, meanW, dx, dv, age))
+        group = syn.Group(group_pars, sphere=True, starcount=False)
+        groups.append(group)
 
-    for init_group_pars, pt in zip(all_init_group_pars, pts):
-        init_group_pars[3:5] = pt + mid_point
-    return np.array(all_init_group_pars, dtype=np.float64)
+    return groups
 
-def calc_mns_covs(new_gps, ngroups, origins=None):
+def calcMnsCovs(new_groups, ngroups, origins=None):
+    """
+    Used for plotting... extracts means and covs form list of best fits
+
+    Paramters
+    ---------
+        new_groups : [ngroups, npars] list
+            best fits from the final run
+        ngroups : int
+            number of groups
+        origins : [ngroups] synthesiser.Group object list {None}
+            list of the Group objects corresponding to the intiialisation
+            of the stars. (only applicable for a synthetic run)
+    """
     all_origin_mn_then = [None] * ngroups
     all_origin_cov_then = [None] * ngroups
     all_origin_mn_now = [None] * ngroups
@@ -337,13 +369,13 @@ def calc_mns_covs(new_gps, ngroups, origins=None):
                 all_origin_mn_then[i],
                 dim=6, args=(origins[i][-2],)
             )
-        all_fitted_mn_then[i] = new_gps[i][:6]
-        all_fitted_cov_then[i] = tfgf.generate_cov(new_gps[i])
+        all_fitted_mn_then[i] = new_groups[i][:6]
+        all_fitted_cov_then[i] = tfgf.generate_cov(new_groups[i])
         all_fitted_mn_now[i] = tb.trace_forward(all_fitted_mn_then[i],
-                                                new_gps[i][-1])
+                                                new_groups[i][-1])
         all_fitted_cov_now[i] = tf.transform_cov(
             all_fitted_cov_then[i], tb.trace_forward, all_fitted_mn_then[i],
-            dim=6, args=(new_gps[i][-1],)
+            dim=6, args=(new_groups[i][-1],)
         )
 
     if origins:
@@ -378,7 +410,7 @@ def calc_mns_covs(new_gps, ngroups, origins=None):
     return all_means, all_covs
 
 
-def plot_all(star_pars, means, covs, ngroups, iter_count):
+def plotAll(star_pars, means, covs, ngroups, iter_count):
     plt.clf()
     xyzuvw = star_pars['xyzuvw'][:, 0]
     xyzuvw_cov = star_pars['xyzuvw_cov'][:, 0]
@@ -418,119 +450,171 @@ def plot_all(star_pars, means, covs, ngroups, iter_count):
 
     logging.info("Iteration {}: XY plot plotted".format(iter_count))
 
-def fit_multi_groups(star_pars, ngroups, res_dir='', init_z=None,
-                     origins=None):
+def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
+                  origins=None, pool=None):
     """
     Entry point: Fit multiple Gaussians to data set
 
-    :param star_pars:
-    :param ngroups:
-    :return:
+    Parameters
+    ----------
+    star_pars: dict
+        'xyzuvw': [nstars, 6] numpy array
+            the xyzuvw mean values of each star, calculated from astrometry
+        'xyzuvw_cov': [nstars, 6, 6] numpy array
+            the xyzuvw covarince values of each star, calculated from
+            astrometry
+        'table': Astropy table (sometimes None)
+            The astrometry from which xyzuvw values are calculated. Can
+            optionally include more information, like star names etc.
+    ngroups: int
+        the number of groups to be fitted to the data
+    rdir: String {''}
+        The directory in which all the data will be stored and accessed
+        from
+    init_z: [nstars, ngroups] array {None} [UNIMPLEMENTED]
+        If some members are already known, the initialsiation process
+        could use this.
+    origins: [ngroups] synthetic Group
+    pool: MPIPool object {None}
+        the pool of threads to be passed into emcee
+
+    Return
+    ------
+    final_groups: [ngroups, npars] array
+        the best fit for each group
+    final_med_errs: [ngroups, npars, 3] array
+        the median, -34 perc, +34 perc values of each parameter from
+        each final sampling chain
+    z: [nstars, ngroups] array
+        membership probabilities
     """
-    if res_dir:
-        os.chdir(res_dir)
+    # setting up some constants
+    BURNIN_STEPS = 10
+    SAMPLING_STEPS = 50
+    C_TOL = 50 # 0.5
 
     # INITIALISE GROUPS
-    old_gps = get_initial_group_pars(ngroups)
+    init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'])
+
+    np.save(rdir + "init_groups.npy", init_groups)
+
 
     all_init_pos = ngroups * [None]
     iter_count = 0
     converged = False
+
+    # having z = None triggers an equal weighting of groups in
+    # expectation step
+    z = None
+    old_groups = init_groups
+
     while not converged:
         # for iter_count in range(10):
+        idir = rdir+"iter{}/".format(iter_count)
         logging.info("Iteration {}".format(iter_count))
-        mkpath("iter{}".format(iter_count))
-        os.chdir("iter{}".format(iter_count))
+
+        mkpath(idir)
+        #os.chdir("iter{}".format(iter_count))
 
         # EXPECTATION
-        z = expectation(star_pars, old_gps)
-        np.save("membership.npy", z)
+        z = expectation(star_pars, old_groups, z)
+        np.save(idir+"membership.npy", z)
 
         # MAXIMISE
-        new_gps = np.zeros(old_gps.shape)
+        #new_groups = np.zeros(old_groups.shape)
+        new_groups = []
 
         all_samples = []
         all_lnprob = []
 
         for i in range(ngroups):
             logging.info("Fitting group {}".format(i))
-            try:
-                mkpath("group{}".format(i))
-                os.chdir("group{}".format(i))
-            except:
-                pathname = random.shuffle("apskjfa")
-                mkpath(pathname)
-                os.chdir(pathname)
-            best_fit, samples, lnprob = tfgf.fit_group(
-                "../../perf_tb_file.pkl", z=z[:, i], burnin_steps=500,
-                plot_it=True,
-                init_pars=old_gps[i], convergence_tol=5.,
-                init_pos=all_init_pos[i])
+            gdir = idir + "group{}/".format(i)
+            mkpath(gdir)
+
+            best_fit, chain, lnprob = gf.fitGroup(
+                xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS,
+                plot_it=True, pool=pool, convergence_tol=C_TOL,
+                plot_dir=gdir, save_dir=gdir, z=z[:, i],
+                init_pos=all_init_pos[i],
+                init_pars=old_groups[i].getInternalSphericalPars(),
+            )
             logging.info("Finished fit")
-            new_gps[i] = best_fit
-            np.save('final_chain.npy', samples)
-            np.save('final_lnprob.npy', lnprob)
-            all_samples.append(samples)
+            new_group = syn.Group(best_fit, sphere=True, internal=False,
+                                  starcount=False)
+            new_groups.append(new_group)
+            np.save(gdir + "best_group_fit.npy", new_group)
+            np.save(gdir+'final_chain.npy', chain)
+            np.save(gdir+'final_lnprob.npy', lnprob)
+            all_samples.append(chain)
             all_lnprob.append(lnprob)
-            all_init_pos[i] = samples[:, -1, :]
-            os.chdir("..")
+            all_init_pos[i] = chain[:, -1, :]
 
         # ----- PLOTTING --------- #
-        means, covs = calc_mns_covs(new_gps, ngroups, origins=origins)
+        # means, covs = calcMnsCovs(new_groups, ngroups, origins=origins)
         #plot_all(star_pars, means, covs, ngroups, iter_count)
-        hp.plot_hexplot(star_pars, means, covs, iter_count)
+        # hp.plot_hexplot(star_pars, means, covs, iter_count)
 
-        converged = check_convergence(old_best_fits=old_gps,
-                                      new_chains=all_samples)
+        converged = checkConvergence(old_best_fits=old_groups,
+                                     new_chains=all_samples,
+                                     perc=45, # COMMENT OUT THIS LINE
+                                               # FOR LEGIT FITS!
+                                     )
         logging.info("Convergence status: {}".format(converged))
-        old_old_gps = old_gps
-        old_gps = new_gps
+        old_old_groups = old_groups
+        old_groups = new_groups
 
-        os.chdir("..")
         iter_count += 1
+
     logging.info("CONVERGENCE COMPLETE")
 
-    np.save("final_gps.npy", new_gps)
-    np.save("prev_gps.npy", old_old_gps) # old grps overwritten by new grps
-    np.save("memberships.npy", z)
+    np.save(rdir+"final_groups.npy", new_groups)
+    np.save(rdir+"prev_groups.npy", old_old_groups) # old grps overwritten by new grps
+    np.save(rdir+"memberships.npy", z)
 
     # PERFORM FINAL EXPLORATION OF PARAMETER SPACE
-    mkpath("final")
-    os.chidr("final")
-    final_z = expectation(star_pars, new_gps)
-    np.save("final_membership.npy", final_z)
-    final_gps = [None] * ngroups
+    final_dir = rdir+"final/"
+    mkpath(final_dir)
+
+    final_z = expectation(star_pars, new_groups, z)
+    np.save(final_dir+"final_membership.npy", final_z)
+    final_best_fits = [None] * ngroups
     final_med_errs = [None] * ngroups
 
     for i in range(ngroups):
         logging.info("Characterising group {}".format(i))
-        try:
-            mkpath("group{}".format(i))
-            os.chdir("group{}".format(i))
-        except:
-            pathname = random.shuffle("apskjfa")
-            mkpath(pathname)
-            os.chdir(pathname)
+        final_gdir = final_dir + "group{}/".format(i)
+        mkpath(final_gdir)
+
+        best_fit, chain, lnprob = gf.fitGroup(
+            xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS,
+            plot_it=True, pool=pool, convergence_tol=C_TOL,
+            plot_dir=final_gdir, save_dir=final_gdir, z=z[:, i],
+            init_pos=all_init_pos[i], sampling_steps=SAMPLING_STEPS,
+            # init_pars=old_groups[i],
+        )
         # run with extremely large convergence tolerance to ensure it only
         # runs once
-        best_fit, samples, lnprob = tfgf.fit_group(
-            "../../perf_tb_file.pkl", z=final_z[:, i], burnin_steps=2000,
-            plot_it=True,
-            init_pars=old_gps[i], convergence_tol=20.,
-            init_pos=all_init_pos[i])
         logging.info("Finished fit")
-        final_gps[i] = best_fit
-        final_med_errs[i] = calc_errors(samples)
-        np.save('final_chain.npy', samples)
-        np.save('final_lnprob.npy', lnprob)
+        final_best_fits[i] = best_fit
+        final_med_errs[i] = calcErrors(chain)
+        np.save(final_gdir + 'final_chain.npy', chain)
+        np.save(final_gdir + 'final_lnprob.npy', lnprob)
 
-        all_init_pos[i] = samples[:, -1, :]
-        os.chdir("..")
-    np.save('final_med_errs.npy', final_med_errs)
+        all_init_pos[i] = chain[:, -1, :]
+
+    final_groups = [syn.Group(final_best_fit, sphere=True, internal=True,
+                              starcount=False)
+                    for final_best_fit in final_best_fits]
+    np.save(final_dir+'final_groups.npy', final_groups)
+    np.save(final_dir+'final_med_errs.npy', final_med_errs)
+
     logging.info("FINISHED CHARACTERISATION")
-    logging.info("Origin:\n{}".format(origins))
-    logging.info("Best fits:\n{}".format(new_gps))
+    #logging.info("Origin:\n{}".format(origins))
+    logging.info("Best fits:\n{}".format(new_groups))
     logging.info("Memberships: \n{}".format(z))
+
+    return final_best_fits, final_med_errs, z
 
 
 if __name__ == "__main__":
@@ -573,5 +657,5 @@ if __name__ == "__main__":
     tb.traceback(synth_table, np.array([0, 1]), savefile=TB_FILE)
     star_pars = tfgf.read_stars(TB_FILE)
 
-    fit_multi_groups(star_pars, ngroups)
+    fitManyGroups(star_pars, ngroups)
 

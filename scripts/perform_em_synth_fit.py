@@ -7,39 +7,42 @@ except ImportError:
     pass
 
 from distutils.dir_util import mkpath
+from distutils.errors import DistutilsFileError
 import logging
 import numpy as np
-import os
-import platform
-import pickle
 import sys
 sys.path.insert(0, '..')
-
 import chronostar.synthesiser as syn
 import chronostar.traceorbit as torb
 import chronostar.converter as cv
 import chronostar.measurer as ms
-import chronostar.groupfitter as gf
+import chronostar.expectmax as em
+
 
 dir_name = sys.argv[1]
 
 try:
     rdir = "/data/mash/tcrun/em_fit/" + dir_name
+    if rdir[-1] != '/':
+        rdir += '/'
     mkpath(rdir)
-except IOError:
-    print("I'm guessing you're not Tim Crundall... nor on an RSAA server")
+except (IOError, DistutilsFileError):
+    print("I'm guessing you're not Tim Crundall..."
+          "or not on an RSAA server")
     rdir = "../results/em_fit/" + dir_name
+    if rdir[-1] != '/':
+        rdir += '/'
     mkpath(rdir)
 #os.chdir(res_dir)
 
 logging.basicConfig(
-    level=logging.DEBUG, filemode='w',
-    filename='em.log',
+    level=logging.INFO, filemode='w',
+    filename=rdir + 'em.log',
 )
 
 # Setting up standard filenames
-xyzuvw_perf_file     = "perf_xyzuvw.npy"
-#group_savefile       = 'origins.npy'
+xyzuvw_perf_file     = 'perf_xyzuvw.npy'
+groups_savefile      = 'origins.npy'
 xyzuvw_init_savefile = 'xyzuvw_init.npy'
 astro_savefile       = 'astro_table.txt'
 xyzuvw_conv_savefile = 'xyzuvw_now.fits'
@@ -50,37 +53,39 @@ extra_pars = np.array([
     [10., 3., 10., 20.],
     [10., 5.,  7., 100.],
 ])
+logging.info("Mean (now):\n{}".format(mean_now))
+logging.info("Extra pars:\n{}".format(extra_pars))
 
-#origins = np.array([
-#   #  X    Y    Z    U    V    W   dX  dY    dZ  dVCxyCxzCyz age nstars
-#   [25., 0., 11., -5., 0., -2., 10., 10., 10., 5., 0., 0., 0., 3., 50.],
-#   [-21., -60., 4., 3., 10., -1., 7., 7., 7., 3., 0., 0., 0., 7., 30.],
-##  [-10., 20., 0., 1., -4., 15., 10., 10., 10., 2., 0., 0., 0., 10., 40.],
-##  [-80., 80., -80., 5., -5., 5., 20., 20., 20., 5., 0., 0., 0., 13., 80.],
-#])
 ERROR = 1.0
 ngroups = extra_pars.shape[0]
 
-logging.info("Mean (now):\n{}".format(mean_now))
-logging.info("Extra pars:\n{}".format(extra_pars))
-#np.save("origins.npy", origins)
-groups = []
+all_group_pars = np.zeros((0,10))
+
+all_xyzuvw_init = np.zeros((0,6))
+all_xyzuvw_now_perf = np.zeros((0,6))
+
+origins = []
 
 for i in range(ngroups):
-    group_pars = np.hstack(mean_now, extra_pars[i])
-    perf_xyzuvws, group = syn.generate_current_pos(group_pars, sphere=True,
-                                                   )
-    groups.append(group)
+    mean_then = torb.traceOrbitXYZUVW(mean_now, -extra_pars[i,-2],
+                                      single_age=True)
+    group_pars = np.hstack((mean_then, extra_pars[i]))
+    xyzuvw_init, group =\
+        syn.synthesiseXYZUVW(group_pars, sphere=True, return_group=True)
+    all_xyzuvw_init = np.vstack((all_xyzuvw_init, xyzuvw_init))
 
-np.save("perf_xyzuvw.npy", perf_xyzuvws)
-sky_coord_now = syn.measure_stars(perf_xyzuvws)
+    xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init, group.age,
+                                                single_age=True)
+    all_xyzuvw_now_perf =\
+        np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
+    origins.append(group)
 
-synth_table = syn.generate_table_with_error(
-    sky_coord_now, ERROR
+np.save(rdir+groups_savefile, origins)
+np.save(rdir+xyzuvw_perf_file, all_xyzuvw_now_perf)
+astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
+                               savefile=rdir+astro_savefile)
+
+star_pars = cv.convertMeasurementsToCartesian(
+    astro_table, savefile=rdir+xyzuvw_conv_savefile,
 )
-
-pickle.dump(synth_table, open(astro_savefile, 'w'))
-tb.traceback(synth_table, np.array([0, 1]), savefile=TB_FILE)
-star_pars = tfgf.read_stars(TB_FILE)
-
-tfem.fit_multi_groups(star_pars, ngroups)
+em.fitManyGroups(star_pars, ngroups, rdir=rdir)

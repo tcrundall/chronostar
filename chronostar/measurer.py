@@ -16,29 +16,29 @@ import pickle
 import coordinate as cc
 
 # BRIGHT STARS
-#GERROR = {
-#    'e_Plx':0.04, #e_Plx [mas]
-#    'e_RV' :0.3,  #e_RV [km/s]
-#    'e_pm' :0.06, #e_pm [mas/yr]
-#}
+GERROR = {
+    'e_Plx':0.04, #e_Plx [mas]
+    'e_RV' :0.3,  #e_RV [km/s]
+    'e_pm' :0.06, #e_pm [mas/yr]
+}
 # 2017 'observational error'
-GERROR = {
-    'e_Plx':0.5, #e_Plx [mas]
-    'e_RV' :1.,  #e_RV [km/s]
-    'e_pm' :10., #e_pm [mas/yr]
-}
-# FAINT STARS
-GERROR = {
-    'e_Plx':0.7, #e_Plx [mas]
-    'e_RV' :1.2,  #e_RV [km/s]
-    'e_pm' :1.2, #e_pm [mas/yr]
-}
-# MIDDLING STARS
-GERROR = {
-    'e_Plx':0.1, #e_Plx [mas]
-    'e_RV' :0.6,  #e_RV [km/s]
-    'e_pm' :0.2, #e_pm [mas/yr]
-}
+#GERROR = {
+#    'e_Plx':0.5, #e_Plx [mas]
+#    'e_RV' :1.,  #e_RV [km/s]
+#    'e_pm' :10., #e_pm [mas/yr]
+#}
+## FAINT STARS
+#GERROR = {
+#    'e_Plx':0.7, #e_Plx [mas]
+#    'e_RV' :1.2,  #e_RV [km/s]
+#    'e_pm' :1.2, #e_pm [mas/yr]
+#}
+## MIDDLING STARS
+#GERROR = {
+#    'e_Plx':0.1, #e_Plx [mas]
+#    'e_RV' :0.6,  #e_RV [km/s]
+#    'e_pm' :0.2, #e_pm [mas/yr]
+#}
 
 def convertArrayToTable(astros, errors):
     """Utility function to generate table"""

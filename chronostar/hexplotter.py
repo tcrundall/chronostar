@@ -11,12 +11,15 @@ import errorellipse as ee
 import analyser as al
 import traceorbit as torb
 import transform as tf
+import synthesiser as syn
 
 COLORS = ['xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']*12
 #COLORS = ['xkcd:cyan'] * 60
-color_codes = ['0xF97306','0x00FFFF', '0xFFDF22',   '0x7F5F00','0xFE01B1',    '0xBC13FE',]
-color_names = ['orange',  'cyan',     'sun yellow', 'shit',    'bright pink', 'neon purple',]
+color_codes = ['0xF97306','0x00FFFF', '0xFFDF22',   '0x7F5F00',
+                    '0xFE01B1',    '0xBC13FE',]
+color_names = ['orange',  'cyan',     'sun yellow', 'shit',
+                    'bright pink', 'neon purple',]
 
 HATCHES = ['|', '/',  '+', '.', '*'] * 10
 
@@ -56,10 +59,12 @@ def plot_age_hist(ages, ax, init_conditions=None):
 #    if init_conditions is not None:
 #        init_age = init_conditions[13]
 #        ax.axvline(
-#            init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r', ls='--'
+#            init_age, ax.get_ylim()[0], ax.get_ylim()[1], color='r',
+#            ls='--'
 #        )
 
-def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
+def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
+             dim2=1):
     try:
         means['origin_then']
         origins_inc = True
@@ -77,15 +82,18 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0, dim2=1):
                             ax=ax, color='b', alpha=0.1)
     for i in range(ngroups):
         if origins_inc:
+            #import pdb; pdb.set_trace()
             ee.plotCovEllipse(
                 covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['origin_then'][i][np.ix_([dim1,dim2])],
                 with_line=True,
-                ax=ax, color="xkcd:neon purple", alpha=0.3, ls='--', #hatch='|',
+                ax=ax, color="xkcd:neon purple", alpha=0.3, ls='--',
+                #hatch='|',
             )
         # I plot a marker in the middle for scenarios where the volume
         # collapses to a point
-        ax.plot(means['fitted_then'][i][dim1], means['fitted_then'][i][dim2],
+        ax.plot(means['fitted_then'][i][dim1],
+                means['fitted_then'][i][dim2],
                 color=COLORS[i], marker='x', alpha=0.2)
         ee.plotCovEllipse(
             covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
@@ -120,12 +128,12 @@ def get_age_samples(ngroups, final_chain):
     """
     logging.info("In get_age_samples")
     age_samples = []
-    for group in range(ngroups):
+    for group_ix in range(ngroups):
         # extract final burnin chain through trial and error XD
         burnin_cnt = 0
         try:
             # tfgroupfitter stores in this format
-            age_samples.append(final_chain[0][:,:,-1].flatten())
+            age_samples.append(final_chain[group_ix][:,:,-1].flatten())
         except IOError:
             return None
     return np.array(age_samples)
@@ -152,6 +160,7 @@ def plot_hexplot(star_pars, means, covs, chain, iter_count, prec=None,
         'fitted_then'
         'origin_now'  - optional (currently not in use)
         'origin_then' - optional
+    chain:
     iter_count : integer
     """
     logging.info("In plot_hexplot, iter {}".format(iter_count))
@@ -182,7 +191,8 @@ def plot_hexplot(star_pars, means, covs, chain, iter_count, prec=None,
 def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
                  title='', file_stem=''):
     """
-    Provided with a results directory, tries to find all she needs, then plots
+    Provided with a results directory, tries to find all she needs, then
+    plots
 
     Parameters
     ----------
@@ -195,7 +205,7 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
     lnprob_file = res_dir + "final_lnprob.npy"
     origin_file = res_dir + "origins.npy"
     if not xyzuvw_file:
-        logging.info("No xyzuvw filename provided. Must be a synth fit yes?")
+        logging.info("No xyzuvw filename provided. Must be synth fit yes?")
         xyzuvw_file = res_dir + "xyzuvw_now.fits"
 
 
@@ -222,9 +232,85 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
     covs['fitted_now']  =\
         np.array([
             tf.transform_cov(covs['fitted_then'][0], torb.traceOrbitXYZUVW,
-                             means['fitted_then'][0], args=(best_group.age,True)
+                             means['fitted_then'][0],
+                             args=(best_group.age,True)
                              )
         ])
 
-    plot_hexplot(star_pars, means, covs, chain, iter_count=0, save_dir=save_dir,
-                 file_stem=file_stem, title=title)
+    plot_hexplot(star_pars, means, covs, chain, iter_count=0,
+                 save_dir=save_dir, file_stem=file_stem, title=title)
+
+
+def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
+                   xyzuvw_file='', title='', file_stem=''):
+    """
+    Provided with a results directory, tries to find all she needs, then
+    plots
+
+    Parameters
+    ----------
+    ngroups: int
+        number of groups
+    """
+    covs = {}
+    means = {}
+    star_pars = {}
+
+    best_group_savefile = "best_group_fit.npy"
+
+    chain_file = "final_chain.npy"
+   # lnprob_file =  "final_lnprob.npy"
+   # origin_file = res_dir + "origins.npy"
+    if not xyzuvw_file:
+        logging.info("No xyzuvw filename provided. Must be synth fit yes?")
+        xyzuvw_file = res_dir + "../xyzuvw_now.fits"
+    star_pars['xyzuvw'] = fits.getdata(xyzuvw_file, 1)
+    star_pars['xyzuvw_cov'] = fits.getdata(xyzuvw_file, 2)
+
+    origins = np.load(res_dir + '../origins.npy')
+
+    fitted_then_mns = []
+    fitted_then_covs = []
+    fitted_now_mns = []
+    fitted_now_covs = []
+    origin_then_mns = []
+    origin_then_covs = []
+    all_chains = []
+    for group_ix in range(ngroups):
+        gdir = res_dir + "group{}/".format(group_ix)
+
+        chain = np.load(gdir + chain_file)
+        all_chains.append(chain)
+
+        best_group = np.load(gdir + best_group_savefile).item()
+        fitted_then_mns.append(best_group.mean)
+        fitted_then_covs.append(best_group.generateCovMatrix())
+
+        fitted_now_mn = torb.traceOrbitXYZUVW(fitted_then_mns[group_ix],
+                                              best_group.age,
+                                              single_age=True)
+        fitted_now_cov =\
+            tf.transform_cov(fitted_then_covs[group_ix],
+                             torb.traceOrbitXYZUVW,
+                             fitted_then_mns[group_ix],
+                             args=(best_group.age,))
+        fitted_now_mns.append(fitted_now_mn)
+        fitted_now_covs.append(fitted_now_cov)
+
+        origin_then_mns.append(origins[group_ix].mean)
+        origin_then_covs.append(origins[group_ix].generateCovMatrix())
+
+
+    means = {
+       'origin_then':origin_then_mns,
+       'fitted_then':fitted_then_mns,
+       'fitted_now':fitted_now_mns,
+     }
+    covs = {
+        'origin_then':np.array(origin_then_covs),
+        'fitted_then':np.array(fitted_then_covs),
+        'fitted_now':np.array(fitted_now_covs),
+    }
+
+    plot_hexplot(star_pars, means, covs, all_chains, iter_count=iter_count,
+                 save_dir=save_dir, file_stem=file_stem, title=title)
