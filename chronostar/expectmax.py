@@ -540,7 +540,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                 init_pars=old_groups[i].getInternalSphericalPars(),
             )
             logging.info("Finished fit")
-            new_group = syn.Group(best_fit, sphere=True, internal=False,
+            new_group = syn.Group(best_fit, sphere=True, internal=True,
                                   starcount=False)
             new_groups.append(new_group)
             np.save(gdir + "best_group_fit.npy", new_group)
@@ -615,47 +615,4 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     logging.info("Memberships: \n{}".format(z))
 
     return final_best_fits, final_med_errs, z
-
-
-if __name__ == "__main__":
-    # TODO: ammend calc_lnols such that group sizes impact membership probs
-
-    if len(sys.argv) > 1:
-        sys.path.insert(0, sys.argv[1])
-
-    logging.basicConfig(
-        level=logging.DEBUG, filemode='w',
-        filename='em.log',
-    )
-
-    origins = np.array([
-   #  X    Y    Z    U    V    W   dX  dY    dZ  dVCxyCxzCyz age nstars
-     [25., 0., 11., -5., 0., -2., 10., 10., 10., 5., 0., 0., 0., 3., 50.],
-     [-21., -60., 4., 3., 10., -1., 7., 7., 7., 3., 0., 0., 0., 7., 30.],
-#   [-10., 20., 0., 1., -4., 15., 10., 10., 10., 2., 0., 0., 0., 10., 40.],
-#   [-80., 80., -80., 5., -5., 5., 20., 20., 20., 5., 0., 0., 0., 13., 80.],
-
-    ])
-    ERROR = 1.0
-
-    ngroups = origins.shape[0]
-    TB_FILE = "perf_tb_file.pkl"
-    astr_file = "perf_astr_data.pkl"
-
-    logging.info("Origin:\n{}".format(origins))
-    np.save("origins.npy", origins)
-    perf_xyzuvws, _ = syn.generate_current_pos(ngroups, origins)
-
-    np.save("perf_xyzuvw.npy", perf_xyzuvws)
-    sky_coord_now = syn.measure_stars(perf_xyzuvws)
-
-    synth_table = syn.generate_table_with_error(
-        sky_coord_now, ERROR
-    )
-
-    pickle.dump(synth_table, open(astr_file, 'w'))
-    tb.traceback(synth_table, np.array([0, 1]), savefile=TB_FILE)
-    star_pars = tfgf.read_stars(TB_FILE)
-
-    fitManyGroups(star_pars, ngroups)
 
