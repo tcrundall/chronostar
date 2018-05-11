@@ -175,11 +175,11 @@ def synthesiseManyXYZUVW(many_pars, sphere=True, return_groups=False,
                          xyzuvw_savefile='', groups_savefile='',
                          internal=False):
     """
-    Generate a bunch of stars in situ based off a Guassian parametrisation
+    Generate a bunch of stars in situ from many Guassian parametrisations
 
     Parameters
     ----------
-    pars : [10] or [15] float array
+    many_pars : [ngroups, 10] or [ngroups, 15] float array
         10 parameters : [X,Y,Z,U,V,W,dX,dV,age,nstars]
             Covariance matrix describes a spherical distribution in pos
             and vel space
@@ -189,12 +189,12 @@ def synthesiseManyXYZUVW(many_pars, sphere=True, return_groups=False,
     sphere : boolean {True}
         Set flag True if providing pars in 9 parameter form,
         Set flag False if providing pars in 14 parameter form,
-    return_group : boolean {False}
+    return_groups : boolean {False}
         Set flag if want to return the group object (for tracking input
         parameters)
     xyzuvw_savefile : String {''}
         Provide a string to numpy.save the init_xyzuvw array
-    group_savefile : Stirng {''}
+    groups_savefile : Stirng {''}
         Provide a string to numpy.save the group object; note you need to
         np.load(group_savefile).item() in order to retrieve it.
     internal : Boolean {False}
@@ -206,10 +206,11 @@ def synthesiseManyXYZUVW(many_pars, sphere=True, return_groups=False,
         Initial distribution of stars in XYZUVW coordinates in corotating, RH
         (X,U positive towards galactic anti-centre) cartesian coordinates
         centred on local standard fo rest.
+        Nstars is the sum of all group pars' nstars
 
     (if flag return_group is set)
-    group : SynthGroup object
-        An object that wraps initialisation parameters
+    groups : [ngroups] Group object
+        Objects that wrap initialisation parameters
     """
     many_pars_cp = np.copy(many_pars)
 
@@ -221,7 +222,10 @@ def synthesiseManyXYZUVW(many_pars, sphere=True, return_groups=False,
                                               return_group=True)
         groups.append(group)
         all_init_xyzuvw = np.vstack((all_init_xyzuvw, init_xyzuvw))
-
+    if xyzuvw_savefile:
+        np.save(xyzuvw_savefile, all_init_xyzuvw)
+    if groups_savefile:
+        np.save(groups_savefile, groups)
     if return_groups:
         return all_init_xyzuvw, groups
     else:
