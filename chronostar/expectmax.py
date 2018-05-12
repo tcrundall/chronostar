@@ -406,7 +406,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             all_init_pos = [None] * ngroups
             all_init_pars, sub_groups =\
                 decomposeGroup(old_groups[np.argmax(z.sum(axis=0))])
-        np.save(idir+"init_subgroups.npy", sub_groups)
+            np.save(idir+"init_subgroups.npy", sub_groups)
         np.save(idir+"membership.npy", z)
 
         # MAXIMISE
