@@ -201,9 +201,9 @@ def expectation(star_pars, groups, old_z=None):
         weight = old_z[:,i].sum()
         threshold = nstars/(2. * (ngroups+1))
         if weight < threshold:
-            logging.info("!!! GROUP {} HAS LESS THAN {} STARS".format(
-                weight, threshold
-            ))
+            logging.info("!!! GROUP {} HAS LESS THAN {} STARS, weight: {}".\
+                format(i, threshold, weight)
+        )
         group_pars = group.getInternalSphericalPars()
         lnols[:, i] =\
             np.log(weight) + gf.lnlike(group_pars, star_pars, return_lnols=True)

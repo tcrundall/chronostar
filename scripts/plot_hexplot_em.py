@@ -36,7 +36,7 @@ if not os.path.isdir(rdir):
     # no access to Tim's RSAA data server, must be working local
     rdir = "../results/em_fit/{}/".format(dir_name.strip('/'))
 
-logging.basicConfig(level=logging.INFO, filename=rdir+'em_hexplotting.log')
+logging.basicConfig(level=logging.INFO, filename=rdir+'hexplotting_em.log')
 print("In preamble")
 logging.info("Input arguments: {}".format(sys.argv[1:]))
 
