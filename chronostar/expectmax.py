@@ -165,7 +165,6 @@ def calcMembershipProbs(star_lnols):
 
 def expectation(star_pars, groups, old_z=None):
     """Calculate membership probabilities given fits to each group
-    TODO: incorporate group sizes into the weighting
 
     Parameters
     ----------
@@ -310,7 +309,7 @@ def decomposeGroup(group):
     ages = [young_age, old_age]
     for age in ages:
         mean_then = torb.traceOrbitXYZUVW(mean_now, -age, single_age=True)
-        group_pars_int = np.hstack(mean_then, internal_pars[6:8], age)
+        group_pars_int = np.hstack((mean_then, internal_pars[6:8], age))
         sub_groups.append(syn.Group(group_pars_int, sphere=True,
                                     internal=True, starcount=False))
     all_init_pars = [sg.getInternalSphericalPars() for sg in sub_groups]
@@ -391,6 +390,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         # EXPECTATION
         z = expectation(star_pars, old_groups, z)
+        if iter_count == 1:
+            z[:,0] = 0.01
+            z[:,1] = 0.99
 
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)
@@ -407,6 +409,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             all_init_pos = [None] * ngroups
             all_init_pars, sub_groups =\
                 decomposeGroup(old_groups[np.argmax(z.sum(axis=0))])
+            z = expectation(star_pars, sub_groups)
             np.save(idir+"init_subgroups.npy", sub_groups)
         np.save(idir+"membership.npy", z)
 
