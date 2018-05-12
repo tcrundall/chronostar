@@ -213,7 +213,8 @@ def expectation(star_pars, groups, old_z=None):
     for i in range(nstars):
         z[i] = calcMembershipProbs(lnols[i])
     if np.isnan(z).any():
-        import pdb; pdb.set_trace()
+        logging.info("!!!!!! AT LEAST ONE MEMBERSHIP IS 'NAN' !!!!!!")
+        #import pdb; pdb.set_trace()
     return z
 
 
@@ -428,7 +429,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                 plot_it=True, pool=pool, convergence_tol=C_TOL,
                 plot_dir=gdir, save_dir=gdir, z=z[:, i],
                 init_pos=all_init_pos[i],
-                init_pars=all_init_pars,
+                init_pars=all_init_pars[i],
             )
             logging.info("Finished fit")
             new_group = syn.Group(best_fit, sphere=True, internal=True,
