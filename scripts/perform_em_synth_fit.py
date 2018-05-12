@@ -115,3 +115,6 @@ star_pars = cv.convertMeasurementsToCartesian(
     astro_table, savefile=rdir+xyzuvw_conv_savefile,
 )
 em.fitManyGroups(star_pars, ngroups, rdir=rdir, pool=pool)
+
+if using_mpi:
+    pool.close()
