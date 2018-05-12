@@ -394,10 +394,12 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)
         ))
-        if (min(z.sum(axis=0)) < 5):
-            logging.info("!!! WARNING, GROUP {} HAS LESS THAN 5 STARS".\
+        if (min(z.sum(axis=0)) < 10):
+            logging.info("!!! WARNING, GROUP {} HAS LESS THAN 10 STARS".\
                          format(np.argmin(z.sum(axis=0))))
-            logging.info("Intervening...")
+            logging.info("+++++++++++++++++++++++++++++++++++++++++++")
+            logging.info("++++            Intervening            ++++")
+            logging.info("+++++++++++++++++++++++++++++++++++++++++++")
             all_init_pos = [None] * ngroups
             all_init_pars, sub_groups =\
                 decomposeGroup(old_groups[np.argmax(z.sum(axis=0))])
