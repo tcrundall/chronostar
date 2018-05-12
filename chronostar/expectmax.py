@@ -400,6 +400,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             logging.info("+++++++++++++++++++++++++++++++++++++++++++")
             logging.info("++++            Intervening            ++++")
             logging.info("+++++++++++++++++++++++++++++++++++++++++++")
+            logging.info("Decomposing group {}...".format(
+                np.argmax(z.sum(axis=0)))
+            )
             all_init_pos = [None] * ngroups
             all_init_pars, sub_groups =\
                 decomposeGroup(old_groups[np.argmax(z.sum(axis=0))])
