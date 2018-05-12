@@ -17,6 +17,7 @@ import pickle
 import random
 
 import chronostar.synthesiser as syn
+import chronostar.traceorbit as torb
 
 try:
     import matplotlib as mpl
@@ -278,6 +279,43 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
 
     return groups
 
+def decomposeGroup(group):
+    """
+    Takes a group object and splits it into two components offset by age.
+
+    Parameters
+    ----------
+    group: synthesiser.Group instance
+        the group which is to be decomposed
+
+    Returns
+    -------
+    all_init_pars: [2, npars] array
+        the intenralised parameters with which the walkers will be
+        initiallised
+    sub_groups: [2] list of Group instances
+        the group objects of the resulting decomposition
+    """
+    internal_pars = group.getInternalSphericalPars()
+    mean_now = torb.traceOrbitXYZUVW(group.mean, group.age, single_age=True)
+    ngroups = 2
+    AGE_OFFSET = 4
+
+    sub_groups = []
+
+    young_age = max(0., group.age - AGE_OFFSET)
+    old_age = group.age + AGE_OFFSET
+
+    ages = [young_age, old_age]
+    for age in ages:
+        mean_then = torb.traceOrbitXYZUVW(mean_now, -age, single_age=True)
+        group_pars_int = np.hstack(mean_then, internal_pars[6:8], age)
+        sub_groups.append(syn.Group(group_pars_int, sphere=True,
+                                    internal=True, starcount=False))
+    all_init_pars = [sg.getInternalSphericalPars() for sg in sub_groups]
+
+    return all_init_pars, sub_groups
+
 
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None):
@@ -336,6 +374,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     # expectation step
     z = None
     old_groups = init_groups
+    all_init_pars = [init_group.getInternalSphericalPars() for init_group
+                     in init_groups]
 
     while not converged:
         # for iter_count in range(10):
@@ -350,12 +390,18 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         # EXPECTATION
         z = expectation(star_pars, old_groups, z)
+
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)
         ))
-        if (min(z.sum(axis=0)) < (0.01 * z.sum())):
-            logging.info("!!! WARNING, GROUP {} HAS LESS THAN 1% OF STARS".\
+        if (min(z.sum(axis=0)) < 5):
+            logging.info("!!! WARNING, GROUP {} HAS LESS THAN 5 STARS".\
                          format(np.argmin(z.sum(axis=0))))
+            logging.info("Intervening...")
+            all_init_pos = [None] * ngroups
+            all_init_pars, sub_groups =\
+                decomposeGroup(old_groups[np.argmax(z.sum(axis=0))])
+        np.save(idir+"init_subgroups.npy", sub_groups)
         np.save(idir+"membership.npy", z)
 
         # MAXIMISE
@@ -377,7 +423,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                 plot_it=True, pool=pool, convergence_tol=C_TOL,
                 plot_dir=gdir, save_dir=gdir, z=z[:, i],
                 init_pos=all_init_pos[i],
-                init_pars=old_groups[i].getInternalSphericalPars(),
+                init_pars=all_init_pars,
             )
             logging.info("Finished fit")
             new_group = syn.Group(best_fit, sphere=True, internal=True,
@@ -389,11 +435,6 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             all_samples.append(chain)
             all_lnprob.append(lnprob)
             all_init_pos[i] = chain[:, -1, :]
-
-        # ----- PLOTTING --------- #
-        # means, covs = calcMnsCovs(new_groups, ngroups, origins=origins)
-        #plot_all(star_pars, means, covs, ngroups, iter_count)
-        # hp.plot_hexplot(star_pars, means, covs, iter_count)
 
         converged = checkConvergence(old_best_fits=old_groups,
                                      new_chains=all_samples,

@@ -242,7 +242,7 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
 
 
 def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
-                   xyzuvw_file='', title='', file_stem=''):
+                   xyzuvw_file='', title='', file_stem='', groups_file=''):
     """
     Provided with a results directory, tries to find all she needs, then
     plots
@@ -256,7 +256,8 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
     means = {}
     star_pars = {}
 
-    best_group_savefile = "best_group_fit.npy"
+    if not groups_file:
+        groups_file = "best_group_fit.npy"
 
     chain_file = "final_chain.npy"
    # lnprob_file =  "final_lnprob.npy"
@@ -282,7 +283,7 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
         chain = np.load(gdir + chain_file)
         all_chains.append(chain)
 
-        best_group = np.load(gdir + best_group_savefile).item()
+        best_group = np.load(gdir + groups_file).item()
         fitted_then_mns.append(best_group.mean)
         fitted_then_covs.append(best_group.generateCovMatrix())
 
