@@ -43,7 +43,7 @@ INIT_WITH_TRUE_ORIGIN = True
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 BURNIN_STEPS = 500
-SAMPLING_STEPS = 5000
+SAMPLING_STEPS = 2000
 C_TOL = 0.25
 """
 BURNIN_STEPS = 10
@@ -191,7 +191,7 @@ for prec in precs:
         )
         # store in each directory, for hexplotter
         # also used as a flag to confirm this prec already fitted for
-        np.save(pdir+group_savefile, origin.g)
+        np.save(pdir+group_savefile, origin)
 
 if using_mpi:
     pool.close()
