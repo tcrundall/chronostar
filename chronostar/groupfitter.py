@@ -361,6 +361,10 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     # initialise walkers, note that INIT_SDEV is carefully chosen such thata
     # all generated positions are permitted by lnprior
     if init_pos is None:
+        logging.info("Initialising walkers around the parameters:\n{}".\
+                     format(init_pars))
+        logging.info("With standard deviation:\n{}".\
+                     format(INIT_SDEV) )
         pos = np.array([
             init_pars + (np.random.random(size=len(INIT_SDEV)) - 0.5)\
             * INIT_SDEV
@@ -370,6 +374,8 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         pos[:,-1] = abs(pos[:,-1])
     else:
         pos = np.array(init_pos)
+        logging.info("Using provided positions which have mean:\n".\
+                     format(np.mean(pos, axis=0)))
 
     # Perform burnin
     state = None
