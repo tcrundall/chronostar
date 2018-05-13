@@ -69,8 +69,8 @@ def perform_synth_fit_wrapper(scenario):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='w',
-                        filename="malice_perform_many_synth_fits.log")
-    logging.info("malice is performing many fits:\nages: {}\nspreads: {}\n"
+                        filename="mash_perform_many_synth_fits.log")
+    logging.info("mash is performing many fits:\nages: {}\nspreads: {}\n"
                  "v_disps: {}\nsizes: {}\nprecs: {}\n".format(ages, spreads,
                                                               v_disps, sizes,
                                                               precs))
