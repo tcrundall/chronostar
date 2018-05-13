@@ -331,13 +331,15 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     # initialise walkers, note that INIT_SDEV is carefully chosen such thata
     # all generated positions are permitted by lnprior
     if init_pos is None:
-        pos = [
+        pos = np.array([
             init_pars + (np.random.random(size=len(INIT_SDEV)) - 0.5)\
             * INIT_SDEV
             for _ in range(NWALKERS)
-        ]
+        ])
+        # force ages to be positive
+        pos[:,-1] = abs(pos[:,-1])
     else:
-        pos = init_pos
+        pos = np.array(init_pos)
 
     # Perform burnin
     state = None

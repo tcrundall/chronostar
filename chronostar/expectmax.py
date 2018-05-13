@@ -303,7 +303,7 @@ def decomposeGroup(group):
 
     sub_groups = []
 
-    young_age = max(0., group.age - AGE_OFFSET)
+    young_age = max(1e-5, group.age - AGE_OFFSET)
     old_age = group.age + AGE_OFFSET
 
     ages = [young_age, old_age]
@@ -318,7 +318,7 @@ def decomposeGroup(group):
 
 
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
-                  origins=None, pool=None):
+                  origins=None, pool=None, init_with_origin=False):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -360,19 +360,29 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
 
+    nstars = star_pars['xyzuvw'].shape[0]
     # INITIALISE GROUPS
-    init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'])
+    if not init_with_origin:
+        init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'])
+        # having z = None triggers an equal weighting of groups in
+        # expectation step
+        z = None
+    else:
+        init_groups = origins
+        z = np.zeros((nstars, ngroups))
+        cnt = 0
+        for i in range(ngroups):
+            z[cnt:cnt+origins[i].nstars, i] = 1.0
+            cnt += origins[i].nstars
+        logging.info("Initialising fit with origins and membership\n{}".\
+            format(z))
 
     np.save(rdir + "init_groups.npy", init_groups)
-
 
     all_init_pos = ngroups * [None]
     iter_count = 0
     converged = False
 
-    # having z = None triggers an equal weighting of groups in
-    # expectation step
-    z = None
     old_groups = init_groups
     all_init_pars = [init_group.getInternalSphericalPars() for init_group
                      in init_groups]
@@ -386,13 +396,12 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                      format(iter_count))
 
         mkpath(idir)
-        #os.chdir("iter{}".format(iter_count))
 
         # EXPECTATION
         z = expectation(star_pars, old_groups, z)
-        if iter_count == 1:
-            z[:,0] = 0.01
-            z[:,1] = 0.99
+        #if iter_count == 1: # had this to force a decomposition
+        #    z[:,0] = 0.01
+        #    z[:,1] = 0.99
 
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)

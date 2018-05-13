@@ -62,7 +62,6 @@ print("Only one thread is master")
 logging.info(path_msg)
 
 print("Master should be working in the directory:\n{}".format(rdir))
-#os.chdir(res_dir)
 
 # Setting up standard filenames
 xyzuvw_perf_file     = 'perf_xyzuvw.npy'
@@ -76,8 +75,8 @@ extra_pars = np.array([
     #dX, dV, age, nstars
     #[10., 5., 20.,  20.],
     #[ 1., 5.,  5., 100.],
-    [ 2., 5., 10.,  20.],
-    [10., 5.,  7., 100.],
+    [ 2., 5., 10.,  50.],
+    [100., 50.,  1e-5, 1000.],
 ])
 logging.info("Mean (now):\n{}".format(mean_now))
 logging.info("Extra pars:\n{}".format(extra_pars))
@@ -92,7 +91,9 @@ all_xyzuvw_now_perf = np.zeros((0,6))
 
 origins = []
 
+logging.info("---------- Generating synthetic data...")
 for i in range(ngroups):
+    logging.info(" generating from group {}".format(i))
     mean_then = torb.traceOrbitXYZUVW(mean_now, -extra_pars[i,-2],
                                       single_age=True)
     group_pars = np.hstack((mean_then, extra_pars[i]))
@@ -105,7 +106,9 @@ for i in range(ngroups):
     all_xyzuvw_now_perf =\
         np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
     origins.append(group)
+    logging.info(" done")
 
+logging.info("Saving synthetic data...")
 np.save(rdir+groups_savefile, origins)
 np.save(rdir+xyzuvw_perf_file, all_xyzuvw_now_perf)
 astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
@@ -114,7 +117,10 @@ astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
 star_pars = cv.convertMeasurementsToCartesian(
     astro_table, savefile=rdir+xyzuvw_conv_savefile,
 )
-em.fitManyGroups(star_pars, ngroups, rdir=rdir, pool=pool)
+em.fitManyGroups(star_pars, ngroups, origins=origins,
+                 rdir=rdir, pool=pool,
+                 #init_with_origin=True
+                 )
 
 if using_mpi:
     pool.close()
