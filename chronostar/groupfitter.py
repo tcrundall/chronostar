@@ -155,7 +155,7 @@ def lnprior(pars, star_pars):
     return lnAlphaPrior(pars, star_pars)
 
 
-def lnlike(pars, star_pars, z=None, return_lnols=False):
+def lnlike(pars, star_pars, z, return_lnols=False):
     """Computes the log-likelihood for a fit to a group.
 
     The emcee parameters encode the modelled origin point of the stars.
@@ -170,7 +170,7 @@ def lnlike(pars, star_pars, z=None, return_lnols=False):
         Parameters describing the group model being fitted
     star_pars
         traceback data being fitted to
-    (retired) z
+    z
         array of weights [0.0 - 1.0] for each star, describing how likely
         they are members of group to be fitted.
 
@@ -209,8 +209,8 @@ def lnprobFunc(pars, star_pars, z):
     ----------
     pars
         Parameters describing the group model being fitted
-        0,1,2,3,4,5, 6, 7,  8
-        X,Y,Z,U,V,W,dX,dV,age
+        0,1,2,3,4,5,   6,   7,  8
+        X,Y,Z,U,V,W,lndX,lndV,age
     star_pars
         traceback data being fitted to
     (retired) z
