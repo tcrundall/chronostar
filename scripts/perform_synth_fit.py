@@ -43,7 +43,7 @@ INIT_WITH_TRUE_ORIGIN = True
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 BURNIN_STEPS = 500
-SAMPLING_STEPS = 2000
+SAMPLING_STEPS = 5000
 C_TOL = 0.25
 """
 BURNIN_STEPS = 10
