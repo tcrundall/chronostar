@@ -260,7 +260,7 @@ def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
                       atol=tol*end_lnprob_std)
 
 def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
-             plot_it=False, pool=None, convergence_tol=0.1, init_pos=None,
+             plot_it=False, pool=None, convergence_tol=0.25, init_pos=None,
              plot_dir='', save_dir='', init_pars=None, sampling_steps=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
@@ -270,7 +270,7 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         Can either pass in the dictionary directly, or a '.fits' filename
         from which to load the dictionary:
             xyzuvw : (nstars,ntimes,6) np array
-                XYZ in pc and UVW in km/s
+                mean XYZ in pc and UVW in km/s for stars
             xyzuvw_cov : (nstars,ntimes,6,6) np array
                 covariance of xyzuvw
             table: (nstars) high astropy table including columns as
@@ -280,11 +280,41 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         they are members of group to be fitted.
 
     burnin_steps : int {1000}
+        Number of steps per each burnin iteration
 
     plot_it : bool {False}
+        Whether to generate plots of the lnprob in 'plot_dir'
 
     pool : MPIPool object {None}
         pool of threads to execute walker steps concurrently
+
+    convergence_tol : float {0.25}
+        How many standard devaitions an lnprob chain is allowed to vary
+        from its mean over the course of a burnin stage to be considered
+        "converged". Default value allows the median of the final 20 steps
+        to differ by 0.25 of its standard devations from the median of the
+        first 20 steps.
+
+    init_pos : [ngroups, npars] array
+        The precise locations at which to initiate the walkers. Generally
+        the saved locations from a previous, yet similar run.
+
+    plot_dir : str {''}
+        The directory in which to save plots
+
+    save_dir : str {''}
+        The directory in which to store results and/or byproducts of fit
+
+    init_pars : [npars] array
+        the position in parameter space about which walkers should be
+        initialised. The standard deviation about each parameter is
+        hardcoded as INIT_SDEV
+
+    sampling_steps : int {None}
+        If this is set, after convergence, a sampling stage will be
+        entered. Only do this if a very fine map of the parameter
+        distributions is required, since the burnin stage already
+        characterises a converged solution for "burnin_steps".
 
     Returns
     -------

@@ -38,6 +38,8 @@ import chronostar.converter as cv
 import chronostar.measurer as ms
 import chronostar.groupfitter as gf
 
+INIT_WITH_TRUE_ORIGIN = True
+
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 BURNIN_STEPS = 1000
@@ -174,13 +176,18 @@ for prec in precs:
         )
         logging.info("Generated [{}] traceback file".format(prec))
 
+        if INIT_WITH_TRUE_ORIGIN:
+            init_pars = origin.getInternalSphericalPars()
+        else:
+            init_pars = None
+
         # apply traceforward fitting (with lnprob, corner plots as side
         # effects)
         best_fit, chain, lnprob = gf.fitGroup(
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL, plot_dir=pdir,
             sampling_steps=SAMPLING_STEPS, save_dir=pdir,
-            init_pars=origin.getInternalSphericalPars()
+            init_pars=init_pars
         )
         # store in each directory, for hexplotter
         # also used as a flag to confirm this prec already fitted for

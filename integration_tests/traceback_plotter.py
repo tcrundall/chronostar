@@ -31,19 +31,21 @@ def r_from_xyz(xyzs):
     return np.sqrt(np.sum(xyzs ** 2, axis=1))
 
 
-def plotSeparation(xyzuvw_dict, times, return_dists=False, true_age=0):
+def plotSeparation(xyzuvw_dict, times, return_dists=False, prec='', true_age=0):
     """
 
     Parameters
     ----------
     times: [ntimes] array
-        times need to be negative cause we're tracing *back*
+        times need to be positive, cause it's negafied internally
     """
+    times = np.copy(times)
     # for each timestep, get mean of association and distance from mean
     tb = torb.traceManyOrbitXYZUVW(xyzuvw_dict['xyzuvw'], times=times,
                                    single_age=False, savefile='tb_{}.npy'. \
                                    format(int(true_age)))
     nstars = xyzuvw_dict['xyzuvw'].shape[0]
+    ntimes = times.shape[0]
     dists = np.zeros((nstars, ntimes))
     stds = np.zeros(ntimes)
     for tix in range(ntimes):
@@ -75,4 +77,4 @@ if __name__ == '__main__':
         true_age = group.age
         ntimes = int(2 * true_age + 1)
         times = -np.linspace(0, 2 * true_age, ntimes)
-        plotSeparation(xyzuvw_dict, times, true_age=true_age)
+        plotSeparation(xyzuvw_dict, times, true_age=true_age, prec=prec)

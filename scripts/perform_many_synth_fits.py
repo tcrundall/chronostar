@@ -49,7 +49,7 @@ precs = ['perf', 'gaia']
 # Mash: 5
 # Malice: 15
 # Motley : 30, 50
-ages = [15]
+ages = [5, 15, 30, 50]
 spreads = [1, 5] #pc
 v_disps = [2, 10] #km/s
 sizes = [25, 100] #nstars
@@ -61,7 +61,7 @@ prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 def perform_synth_fit_wrapper(scenario):
     logging.info("Fitting: {}".format(scenario))
-    os.system("mpirun -np 4 python perform_synth_fit.py {} {} {} {} "\
+    os.system("mpirun -np 7 python perform_synth_fit.py {} {} {} {} "\
         .format(*scenario) + precs_string)
     #os.system("python perform_synth_fit.py {} {} {} {} " \
     #          .format(*scenario) + precs_string)

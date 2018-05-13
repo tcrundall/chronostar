@@ -21,6 +21,11 @@ GERROR = {
     'e_RV' :0.3,  #e_RV [km/s]
     'e_pm' :0.06, #e_pm [mas/yr]
 }
+#GERROR = {
+#    'e_Plx':0.04, #e_Plx [mas]
+#    'e_RV' :0.6,  #e_RV [km/s]
+#    'e_pm' :0.06, #e_pm [mas/yr]
+#}
 # 2017 'observational error'
 #GERROR = {
 #    'e_Plx':0.5, #e_Plx [mas]
