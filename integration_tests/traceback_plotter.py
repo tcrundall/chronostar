@@ -31,7 +31,7 @@ def r_from_xyz(xyzs):
     return np.sqrt(np.sum(xyzs ** 2, axis=1))
 
 
-def plotSeparation(xyzuvw_dict, times, return_dists=False):
+def plotSeparation(xyzuvw_dict, times, return_dists=False, true_age=0):
     """
 
     Parameters
@@ -75,4 +75,4 @@ if __name__ == '__main__':
         true_age = group.age
         ntimes = int(2 * true_age + 1)
         times = -np.linspace(0, 2 * true_age, ntimes)
-        plotSeparation(xyzuvw_dict, times)
+        plotSeparation(xyzuvw_dict, times, true_age=true_age)
