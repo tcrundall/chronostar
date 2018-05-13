@@ -354,6 +354,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         each final sampling chain
     z: [nstars, ngroups] array
         membership probabilities
+
+    TODO: Generalise interventions for more than 2 groups
     """
     # setting up some constants
     BURNIN_STEPS = 1000
