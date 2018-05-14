@@ -41,23 +41,22 @@ if not os.path.isdir(rdir):
     rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
                                                       int(dV), int(nstars))
 
-logging.basicConfig(level=logging.INFO, filename=rdir+'hexplotting.log')
-print("In preamble")
-logging.info("Input arguments: {}".format(sys.argv[1:]))
-logging.info("\n"
-             "\tage:     {}\n"
-             "\tdX:      {}\n"
-             "\tdV:      {}\n"
-             "\tnstars:  {}\n"
-             "\tprecs:   {}".format(
-    age, dX, dV, nstars, precs,
-))
+try:
+    logging.basicConfig(level=logging.INFO, filename=rdir+'hexplotting.log')
+    logging.info("Input arguments: {}".format(sys.argv[1:]))
+    logging.info("\n"
+                 "\tage:     {}\n"
+                 "\tdX:      {}\n"
+                 "\tdV:      {}\n"
+                 "\tnstars:  {}\n"
+                 "\tprecs:   {}".format(
+        age, dX, dV, nstars, precs,
+    ))
 
-# since this could be being executed anywhere, need to pass in package
-# location
+    # since this could be being executed anywhere, need to pass in package
+    # location
 
-for prec in precs:
-    try:
+    for prec in precs:
         pdir = rdir + prec + '/'
         title = "age {} Myr; dX {} pc; dV {} km/s, nstars {}, prec: {}".format(
             age, dX, dV, nstars, prec
@@ -65,9 +64,15 @@ for prec in precs:
         plot_file_stem = "{}_{}_{}_{}_{}".format(
             int(age), int(dX), int(dV), nstars, prec
         )
-        logging.info("Plotting for prec: {}".format(prec))
-        hp.dataGatherer(res_dir=pdir, save_dir=pdir,
-                        title=title, file_stem=plot_file_stem)
-    except IOError:
-        logging.info("Couldn't find all the things I needed for prec {}".\
-                     format(prec))
+        try:
+            logging.info("Plotting for prec: {}".format(prec))
+            hp.dataGatherer(res_dir=pdir, save_dir=pdir,
+                            title=title, file_stem=plot_file_stem)
+        except:
+            logging.info("Couldn't find all the things I needed for prec {}".\
+                         format(prec))
+            print("Couldn't find all the things I needed for {}".\
+                         format(plot_file_stem))
+except IOError:
+    # Need to configure a default log file for this to be used with logging
+    print("Directory {} doesn't exist".format(rdir))
