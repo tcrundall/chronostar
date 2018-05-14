@@ -171,6 +171,11 @@ for prec in precs:
         # convert XYZUVW data into astrometry
         astro_table = ms.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
                                        savefile=pdir+astro_savefile)
+        logging.info("-- Generated astrometry table with errors:")
+        logging.info("Parallax:        {:4} mas".format(ms.GERROR['e_Plx']))
+        logging.info("Radial velocity: {:4} km/s".format(ms.GERROR['e_RV']))
+        logging.info("Proper motion:   {:4} mas/yr".\
+                     format(ms.GERROR['e_pm']))
         star_pars = cv.convertMeasurementsToCartesian(
             astro_table, savefile=pdir+xyzuvw_conv_savefile
         )
