@@ -127,7 +127,7 @@ group_pars = np.hstack((mean_then, dX, dV, age, nstars))
 
 try:
     xyzuvw_now_perf = np.load(rdir+xyzuvw_perf_file)
-    origin = np.load(rdir+group_savefile)
+    origin = np.load(rdir+group_savefile).item()
     logging.info("appending to previous attempt")
 except IOError:
     logging.info("Beginning fresh run:")

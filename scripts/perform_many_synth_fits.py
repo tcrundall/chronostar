@@ -45,6 +45,7 @@ v_disps = [2]
 sizes   = [25, 100]
 precs = ['perf', 'gaia']
 """
+"""
 # DIFFERENT SERVERS GET DIFFERENT AGE,
 # Mash: 5
 # Malice: 15
@@ -54,6 +55,14 @@ spreads = [1, 5] #pc
 v_disps = [2, 10] #km/s
 sizes = [25, 100] #nstars
 precs = ['perf', 'half', 'gaia']
+"""
+# EVEN PARAMETERS INITED
+ages = [5, 15, 30, 50]
+spreads = [2, 10] #pc
+v_disps = [1, 5] #km/s
+sizes = [50, 200] #nstars
+precs = ['perf', 'half', 'gaia']
+
 
 #precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
 precs_string = ' '.join(precs)
@@ -69,8 +78,8 @@ def perform_synth_fit_wrapper(scenario):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='w',
-                        filename="mash_perform_many_synth_fits.log")
-    logging.info("mash is performing many fits:\nages: {}\nspreads: {}\n"
+                        filename="motley_perform_many_synth_fits.log")
+    logging.info("motley is performing many fits:\nages: {}\nspreads: {}\n"
                  "v_disps: {}\nsizes: {}\nprecs: {}\n".format(ages, spreads,
                                                               v_disps, sizes,
                                                               precs))
