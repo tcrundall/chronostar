@@ -2,8 +2,8 @@
 traceorbit.py
 
 A module aimed at projecting an orbit forward or backward through time.
-Operates in a co-rotating, RH cartesian coordinate system centred on the local
-standard of rest.
+Operates in a co-rotating, RH cartesian coordinate system centred on the
+local standard of rest.
 """
 
 import logging
@@ -44,16 +44,19 @@ def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
     XYZUVW = 0, 0, 25pc, 11.1 km/s, 12.24 km/s, 7.25 km/s
     Galpy coordinates are [R, vR, vT, z, vz, phi]
     By default, positions are scaled by LSR distance from galactic centre,
-    ro=8kpc, and velocities scaled by the LSR circular velocity, vo = 220km/s.
-    Time is scaled such that after 1 time unit has passed, the LSR has travelled
-    1 radian about the galactic centre. The values are returned in a [ntimes, 6]
+    ro=8kpc, and velocities scaled by the LSR circular velocity,
+    vo = 220km/s. Time is scaled such that after 1 time unit has passed,
+    the LSR hastravelled 1 radian about the galactic centre. The values are
+    returned in a [ntimes, 6]
+
     array:
         R : galactic radial distance /ro
         vR : galactic radial velocity /vo
         vT : circular velocity /vo
         z  : vertical distance from plane / ro
         vz : vertical velocity / vo
-        phi : angle about the galaxy (anticlockwise from LSR's location at t=0)
+        phi : angle about the galaxy (anticlockwise from LSR's location at
+             t=0)
     For example, the LSR at t=0.0 and t=1.0 as values:
     [1., 0., 1., 0., 0., 0.]
     [1., 0., 1., 0., 0., 1.]
@@ -68,16 +71,19 @@ def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
         vT : circular velocity /vo
         z  : vertical distance from plane / ro
         vz : vertical velocity / vo
-        phi : angle about the galaxy (anticlockwise from LSR's location at t=0)
+        phi : angle about the galaxy (anticlockwise from LSR's location
+              at t=0)
     ts : [ntimes] float array [galpy time units]
-        times used to generate orbit. Ensure the units are in galpy time units
+        times used to generate orbit. Ensure the units are in galpy time
+        units
     ro : float
         a conversion factor that takes units from galpy units to
         physical units. If left as default, output will be in kpc
     vo : float
         a conversion factor that takes units form galpy units to
         physical units. If left as default, output will be in km/s
-        This is also the circular velocity of a circular orbit with X,Y equal to that of the sun.
+        This is also the circular velocity of a circular orbit with X,Y
+        equal to that of the sun.
     rc : boolean
         whether to calculate XYZUVW in a right handed coordinate system
         (X, U positive towards galactic centre)
@@ -85,7 +91,8 @@ def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
     Returns
     -------
     xyzuvw : [ntimes, 6] float array
-        [pc, pc, pc, km/s, km/s, km/s] - traced orbit in chronostar coordinates
+        [pc, pc, pc, km/s, km/s, km/s] - traced orbit in chronostar
+        coordinates
     """
     if ts is not None:
         phi_lsr = ts
@@ -98,8 +105,8 @@ def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
 
     # Can convert to XYZUVW coordinate frame. See thesis for derivation
     # Need to scale values back into physical units with ro and vo.
-    # 1. in X and V are the LSR R and vT respectively (which are unitary due to
-    # the normalisation of units inside galpy
+    # 1. in X and V are the LSR R and vT respectively (which are unitary
+    # due to the normalisation of units inside galpy
     X = 1000 * ro * (1. - R * np.cos(phi))
     Y = 1000 * ro * R * np.sin(phi)
     Z = 1000 * ro * z
@@ -148,13 +155,11 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     xyzuvw_start = np.copy(xyzuvw_start)
     xyzuvw_start[:3] *= 1e-3
     bovy_times = convertMyrToBovyTime(times)
-
     logging.debug("Tracing up to {} Myr".format(times[-1]))
     logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
     logging.debug("Initial lsr start: {}".format(xyzuvw_start))
 
     xyzuvw_helio = cc.convertLSRToHelio(xyzuvw_start, kpc=True)
-
     logging.debug("Initial helio start: {}".format(xyzuvw_helio))
     logging.debug("Galpy vector: {}".format(xyzuvw_helio))
 
