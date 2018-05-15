@@ -27,10 +27,10 @@ spreads = [1, 2, 5, 10] #pc
 v_disps = [1, 2, 5, 10] #km/s
 sizes = [25, 50, 100, 200] #nstars
 precs = ['perf', 'half', 'gaia', 'double']
-ages = [5, 30]
-spreads = [5]
-v_disps = [2]
-sizes   = [25, 100]
+ages = [15, 30]
+spreads = [2]
+v_disps = [1]
+sizes   = [50, 200]
 precs = ['perf', 'gaia', 'double']
 """
 """
@@ -57,12 +57,13 @@ prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 def plotTheThing(scenario):
     for prec in precs:
-        os.system("python plot_hexplot_synth.py {} {} {} {} ".\
+        os.system("python plot_corner_synth.py {} {} {} {} ".\
             format(*scenario) + precs_string)
+    logging.info("Completed: {} {} {} {}".format(*scenario))
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='w',
-                        filename="hexplot_many.log")
+                        filename="corner_many.log")
     logging.info("mash is performing many fits:\nages: {}\nspreads: {}\n"
                  "v_disps: {}\nsizes: {}\nprecs: {}\n".format(ages, spreads,
                                                               v_disps, sizes,
