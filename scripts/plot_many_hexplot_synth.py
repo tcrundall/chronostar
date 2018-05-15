@@ -22,6 +22,7 @@ import pdb
 
 """
 sys.path.insert(0, '..')
+"""
 ages = [5, 15, 30, 50]  #Myr
 spreads = [1, 2, 5, 10] #pc
 v_disps = [1, 2, 5, 10] #km/s
@@ -32,7 +33,6 @@ spreads = [5]
 v_disps = [2]
 sizes   = [25, 100]
 precs = ['perf', 'gaia', 'double']
-"""
 """
 # DIFFERENT SERVERS GET DIFFERENT AGE,
 # Mash: 5

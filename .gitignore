@@ -7,6 +7,7 @@ logs/*
 *.fits
 *.pkl
 *.npy
+*.txt
 
 # Temp files
 data/synth_log.txt
@@ -31,6 +32,7 @@ logs/*.txt
 *.png
 *.jpg
 *.avi
+*.pdf
 
 # Videos
 *.mp4
