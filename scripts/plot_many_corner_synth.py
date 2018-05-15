@@ -33,11 +33,7 @@ v_disps = [1]
 sizes   = [50, 200]
 precs = ['perf', 'gaia', 'double']
 """
-"""
-# DIFFERENT SERVERS GET DIFFERENT AGE,
-# Mash: 5
-# Malice: 15
-# Motley : 30, 50
+# ODD PARAMETERS
 ages = [5, 15, 30, 50]
 spreads = [1, 5] #pc
 v_disps = [2, 10] #km/s
@@ -50,16 +46,18 @@ spreads = [2, 10] #pc
 v_disps = [1, 5] #km/s
 sizes = [50, 200] #nstars
 precs = ['perf', 'half', 'gaia']
+"""
 
 #precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
 precs_string = ' '.join(precs)
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 def plotTheThing(scenario):
+    logging.info("Plotting: {} {} {} {}".format(*scenario))
     for prec in precs:
         os.system("python plot_corner_synth.py {} {} {} {} ".\
             format(*scenario) + precs_string)
-    logging.info("Completed: {} {} {} {}".format(*scenario))
+    logging.info("-- Completed: {} {} {} {}".format(*scenario))
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='w',
