@@ -37,6 +37,7 @@ import chronostar.traceorbit as torb
 import chronostar.converter as cv
 import chronostar.measurer as ms
 import chronostar.groupfitter as gf
+import chronostar.coordinate as cc
 
 INIT_WITH_TRUE_ORIGIN = True
 
@@ -120,6 +121,11 @@ logging.info("In the directory: {}".format(rdir))
 
 # Destination: (inspired by LCC)
 mean_now = np.array([50., -100., 0., -10., -20., -5.])
+# !!!!!!! ^^^^^ IS WRONG!!!!!!!!
+# ^^^^^^ IS LCC IN HELIOCENTRIC COORDINATES. IN LSR COORDINATES IT IS:
+mean_now_lsr = cc.convertHelioToLSR(np.array([50., -100., 0.,
+                                              -10., -20., -5.]))
+# !!!!! WHICH EQUALS [50., -100., 25., 1.1, -7.76, 2.25], much smaller vels
 # Calculate appropriate starting point
 mean_then = torb.traceOrbitXYZUVW(mean_now, -age)
 # gather inputs
