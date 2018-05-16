@@ -292,13 +292,240 @@ plt.hist(np.hstack((o_norm_res[:,:,:,:,:,-1].flatten(),
 plt.xlabel("Normalised residual (age)")
 plt.savefig("all-ages-hist.pdf")
 
+# ------------------------------------------------------------
+# ----  PLOTTING *ALL* NORMED RESIDUALS V PARS  --------------
+# ------------------------------------------------------------
+
+fig, axs = plt.subplots(nrows=3, ncols=2)
+
+# PLOTTING ALL RESIDUALS AS FUNCTION OF TRUE AGE
+ax = axs[0,0]
+age_fit_means = []
+age_fit_stds = []
+
+for i, age in enumerate(ages):
+    age_norm_resids = np.hstack((o_norm_res[i,:,:,:,:,-1].flatten(),
+                             e_norm_res[i,:,:,:,:,-1].flatten()))
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+plt.clf()
+plt.errorbar(ages, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(ages, np.zeros(len(ages)), color='b', ls=':')
+plt.xlabel("True age")
+plt.ylabel("Normalised offset in age")
+plt.savefig("age-norm-residuals-age.pdf")
+
+# PLOTTING ALL RESIDUALS AS FUNCTION OF STAR COUNT
+ax = axs[0,1]
+age_fit_means = []
+age_fit_stds = []
+sizes = []
+
+for i, size in enumerate(zip(o_sizes, e_sizes)):
+    age_norm_resids = o_norm_res[:,:,:,:,i,-1]
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+    sizes.append(size[0])
+
+    age_norm_resids = e_norm_res[:,:,:,:,i,-1]
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+    sizes.append(size[1])
+
+plt.clf()
+plt.errorbar(sizes, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(sizes, np.zeros(len(sizes)), color='b', ls=':')
+plt.xlabel("Star count")
+plt.ylabel("Normalised offset in age")
+plt.savefig("age-norm-residuals-size.pdf")
+
+# PLOTTING ALL RESIDUALS AS FUNCTION OF PRECISION
+ax = axs[2,0]
+age_fit_means = []
+age_fit_stds = []
+vals = []
+
+for i, prec in enumerate(precs):
+    vals.append(prec_val[prec])
+    age_norm_resids = np.hstack((o_norm_res[:,:,:,:,i,-1].flatten(),
+                            e_norm_res[:,:,:,:,i,-1].flatten()))
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+plt.clf()
+plt.errorbar(vals, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(vals, np.zeros(len(vals)), color='b', ls=':')
+plt.xlabel("Fraction of Gaia error")
+plt.ylabel("Normalised offset in age")
+plt.savefig("age-norm-residuals-prec.pdf")
+
+
+# PLOTTING ALL RESIDUALS AS FUNCTION OF DX
+ax = axs[1,0]
+age_fit_means = []
+age_fit_stds = []
+spreads = []
+
+for i, spread in enumerate(zip(o_spreads, e_spreads)):
+    age_norm_resids = o_norm_res[:,i,:,:,:,-1]
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+    spreads.append(spread[0])
+
+    age_norm_resids = e_norm_res[:,i,:,:,:,-1]
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+    spreads.append(spread[1])
+
+plt.clf()
+plt.errorbar(spreads, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(spreads, np.zeros(len(spreads)), color='b', ls=':')
+plt.xlabel("Spread [pc]")
+plt.ylabel("Normalised offset in age")
+plt.savefig("age-norm-residuals-spread.pdf")
+
+# PLOTTING ALL RESIDUALS AS FUNCTION OF DV
+ax = axs[1,1]
+age_fit_means = []
+age_fit_stds = []
+v_disps = []
+
+for i, v_disp in enumerate(zip(o_v_disps, e_v_disps)):
+    age_norm_resids = o_norm_res[:,:,i,:,:,-1]
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+    v_disps.append(o_v_disps[i])
+
+    age_norm_resids = e_norm_res[:,:,i,:,:,-1]
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+    v_disps.append(e_v_disps[i])
+
+plt.clf()
+plt.errorbar(v_disps, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(v_disps, np.zeros(len(v_disps)), color='b', ls=':')
+plt.xlabel("Velocity dispersion [km/s]")
+plt.ylabel("Normalised offset in age")
+plt.savefig("age-norm-residuals-v-disp.pdf")
+
+# ------------------------------------------------------------
+# ----  PLOTTING LOW-DV NORMED RESIDUALS V PARS  -------------
+# ------------------------------------------------------------
+
+# PLOTTING ALL RESIDUALS AS FUNCTION OF TRUE AGE
+age_fit_means = []
+age_fit_stds = []
+
+for i, age in enumerate(ages):
+    age_norm_resids = np.hstack((o_norm_res[i,:,0,:,:,-1].flatten(),
+                             e_norm_res[i,:,0,:,:,-1].flatten()))
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+plt.clf()
+plt.errorbar(ages, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(ages, np.zeros(len(ages)), color='b', ls=':')
+plt.xlabel("True age")
+plt.ylabel("Normalised offset in age")
+plt.savefig("age-norm-residuals-age-low-dv.pdf")
+
+# PLOTTING ALL RESIDUALS AS FUNCTION OF STAR COUNT
+age_fit_means = []
+age_fit_stds = []
+sizes = []
+
+for i, size in enumerate(zip(o_sizes, e_sizes)):
+    age_norm_resids = o_norm_res[:,:,0,:,i,-1]
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+    sizes.append(size[0])
+
+    age_norm_resids = e_norm_res[:,:,0,:,i,-1]
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+    sizes.append(size[1])
+
+plt.clf()
+plt.errorbar(sizes, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(sizes, np.zeros(len(sizes)), color='b', ls=':')
+plt.xlabel("Star count")
+plt.ylabel("Normalised offset in age")
+plt.savefig("age-norm-residuals-size-low-dv.pdf")
+
+# PLOTTING ALL RESIDUALS AS FUNCTION OF PRECISION
+age_fit_means = []
+age_fit_stds = []
+vals = []
+
+for i, prec in enumerate(precs):
+    vals.append(prec_val[prec])
+    age_norm_resids = np.hstack((o_norm_res[:,:,0,:,i,-1].flatten(),
+                            e_norm_res[:,:,0,:,i,-1].flatten()))
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+plt.clf()
+plt.errorbar(vals, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(vals, np.zeros(len(vals)), color='b', ls=':')
+plt.xlabel("Fraction of Gaia error")
+plt.ylabel("Normalised offset in age")
+plt.savefig("age-norm-residuals-prec-low-dv.pdf")
+
+
+# PLOTTING ALL RESIDUALS AS FUNCTION OF DX
+age_fit_means = []
+age_fit_stds = []
+spreads = []
+
+for i, spread in enumerate(zip(o_spreads, e_spreads)):
+    age_norm_resids = o_norm_res[:,i,0,:,:,-1]
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+    spreads.append(spread[0])
+
+    age_norm_resids = e_norm_res[:,i,0,:,:,-1]
+    age_fit_means.append(np.mean(age_norm_resids))
+    age_fit_stds.append(np.std(age_norm_resids))
+    spreads.append(spread[1])
+
+plt.clf()
+plt.errorbar(spreads, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(spreads, np.zeros(len(spreads)), color='b', ls=':')
+plt.xlabel("Spread [pc]")
+plt.ylabel("Normalised offset in age")
+plt.savefig("age-norm-residuals-spread-low-dv.pdf")
+
+# PLOTTING ALL RESIDUALS AS FUNCTION OF DV
+age_fit_means = []
+age_fit_stds = []
+v_disps = []
+
+# for i, v_disp in enumerate(zip(o_v_disps, e_v_disps)):
+#    age_norm_resids = o_norm_res[:,:,i,:,:,-1]
+#    age_fit_means.append(np.mean(age_norm_resids))
+#    age_fit_stds.append(np.std(age_norm_resids))
+#    v_disps.append(o_v_disps[i])
+#
+#    age_norm_resids = e_norm_res[:,:,i,:,:,-1]
+#    age_fit_means.append(np.mean(age_norm_resids))
+#    age_fit_stds.append(np.std(age_norm_resids))
+#    v_disps.append(e_v_disps[i])
+#
+#plt.clf()
+#plt.errorbar(v_disps, age_fit_means, yerr=age_fit_stds, fmt='b.')
+#plt.plot(v_disps, np.zeros(len(v_disps)), color='b', ls=':')
+#plt.xlabel("Velocity dispersion [km/s]")
+#plt.ylabel("Normalised offset in age")
+#plt.savefig("age-norm-residuals-v-disp.pdf")
+
+# ------------------------------------------------------------
+# --------   PLOTTING RAW RESIDUALS V PARS  ------------------
+# ------------------------------------------------------------
+
 # PLOTTING RAW RESIDUALS AS FUNCTION OF TRUE AGE
 age_fit_means = []
 age_fit_stds = []
 
 for i, age in enumerate(ages):
-    age_resids = np.hstack((o_norm_res[i,:,0,:,:,-1].flatten(),
-                             e_norm_res[i,:,0,:,:,-1].flatten()))
+    age_resids = np.hstack((o_res[i,:,0,:,:,-1].flatten(),
+                             e_res[i,:,0,:,:,-1].flatten()))
     age_fit_means.append(np.mean(age_resids))
     age_fit_stds.append(np.std(age_resids))
 plt.clf()
@@ -314,12 +541,12 @@ age_fit_stds = []
 sizes = []
 
 for i, size in enumerate(zip(o_sizes, e_sizes)):
-    age_resids = o_norm_res[:,:,0,:,i,-1]
+    age_resids = o_res[:,:,0,:,i,-1]
     age_fit_means.append(np.mean(age_resids))
     age_fit_stds.append(np.std(age_resids))
     sizes.append(size[0])
 
-    age_resids = e_norm_res[:,:,0,:,i,-1]
+    age_resids = e_res[:,:,0,:,i,-1]
     age_fit_means.append(np.mean(age_resids))
     age_fit_stds.append(np.std(age_resids))
     sizes.append(size[1])
@@ -338,8 +565,8 @@ vals = []
 
 for i, prec in enumerate(precs):
     vals.append(prec_val[prec])
-    age_resids = np.hstack((o_norm_res[:,:,0,:,i,-1].flatten(),
-                            e_norm_res[:,:,0,:,i,-1].flatten()))
+    age_resids = np.hstack((o_res[:,:,0,:,i,-1].flatten(),
+                            e_res[:,:,0,:,i,-1].flatten()))
     age_fit_means.append(np.mean(age_resids))
     age_fit_stds.append(np.std(age_resids))
 plt.clf()
@@ -348,6 +575,139 @@ plt.plot(vals, np.zeros(len(vals)), color='b', ls=':')
 plt.xlabel("Fraction of Gaia error")
 plt.ylabel("Offset in age [Myr]")
 plt.savefig("age-residuals-prec.pdf")
+
+
+# PLOTTING RAW RESIDUALS AS FUNCTION OF DX
+age_fit_means = []
+age_fit_stds = []
+spreads = []
+
+for i, spread in enumerate(zip(o_spreads, e_spreads)):
+    age_resids = o_res[:,i,0,:,:,-1]
+    age_fit_means.append(np.mean(age_resids))
+    age_fit_stds.append(np.std(age_resids))
+    spreads.append(spread[0])
+
+    age_resids = e_res[:,i,0,:,:,-1]
+    age_fit_means.append(np.mean(age_resids))
+    age_fit_stds.append(np.std(age_resids))
+    spreads.append(spread[1])
+
+plt.clf()
+plt.errorbar(spreads, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(spreads, np.zeros(len(spreads)), color='b', ls=':')
+plt.xlabel("Spread [pc]")
+plt.ylabel("Offset in age [Myr]")
+plt.savefig("age-residuals-spread.pdf")
+
+# PLOTTING RAW RESIDUALS AS FUNCTION OF DV
+age_fit_means = []
+age_fit_stds = []
+v_disps = []
+
+#for i, v_disp in enumerate(zip(o_v_disps, e_v_disps)):
+age_resids = o_res[:,:,0,:,:,-1]
+age_fit_means.append(np.mean(age_resids))
+age_fit_stds.append(np.std(age_resids))
+v_disps.append(o_v_disps[0])
+
+age_resids = e_res[:,:,0,:,:,-1]
+age_fit_means.append(np.mean(age_resids))
+age_fit_stds.append(np.std(age_resids))
+v_disps.append(e_v_disps[0])
+
+plt.clf()
+plt.errorbar(v_disps, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(v_disps, np.zeros(len(v_disps)), color='b', ls=':')
+plt.xlabel("Velocity dispersion [km/s]")
+plt.ylabel("Offset in age [Myr]")
+plt.savefig("age-residuals-v-disp.pdf")
+
+# ------------------------------------------------------------
+# --------   REMOVING DX=10 FROM ALL FITS  -------------------
+# ------------------------------------------------------------
+
+# PLOTTING RAW RESIDUALS AS FUNCTION OF TRUE AGE
+age_fit_means = []
+age_fit_stds = []
+
+for i, age in enumerate(ages):
+    age_resids = np.hstack((o_res[i,:,0,:,:,-1].flatten(),
+                             e_res[i,0,0,:,:,-1].flatten()))
+    age_fit_means.append(np.mean(age_resids))
+    age_fit_stds.append(np.std(age_resids))
+plt.clf()
+plt.errorbar(ages, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(ages, np.zeros(len(ages)), color='b', ls=':')
+plt.xlabel("True age [Myr]")
+plt.ylabel("Offset in age [Myr]")
+plt.savefig("age-residuals-age-low-dx.pdf")
+
+# PLOTTING RAW RESIDUALS AS FUNCTION OF STAR COUNT
+age_fit_means = []
+age_fit_stds = []
+sizes = []
+
+for i, size in enumerate(zip(o_sizes, e_sizes)):
+    age_resids = o_res[:,:,0,:,i,-1]
+    age_fit_means.append(np.mean(age_resids))
+    age_fit_stds.append(np.std(age_resids))
+    sizes.append(size[0])
+
+    age_resids = e_res[:,0,0,:,i,-1]
+    age_fit_means.append(np.mean(age_resids))
+    age_fit_stds.append(np.std(age_resids))
+    sizes.append(size[1])
+
+plt.clf()
+plt.errorbar(sizes, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(sizes, np.zeros(len(sizes)), color='b', ls=':')
+plt.xlabel("Star count")
+plt.ylabel("Offset in age [Myr]")
+plt.savefig("age-residuals-size-low-dx.pdf")
+
+# PLOTTING RAW RESIDUALS AS FUNCTION OF PRECISION
+age_fit_means = []
+age_fit_stds = []
+vals = []
+
+for i, prec in enumerate(precs):
+    vals.append(prec_val[prec])
+    age_resids = np.hstack((o_res[:,:,0,:,i,-1].flatten(),
+                            e_res[:,0,0,:,i,-1].flatten()))
+    age_fit_means.append(np.mean(age_resids))
+    age_fit_stds.append(np.std(age_resids))
+plt.clf()
+plt.errorbar(vals, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(vals, np.zeros(len(vals)), color='b', ls=':')
+plt.xlabel("Fraction of Gaia error")
+plt.ylabel("Offset in age [Myr]")
+plt.savefig("age-residuals-prec-low-dx.pdf")
+
+
+# PLOTTING RAW RESIDUALS AS FUNCTION OF DV
+age_fit_means = []
+age_fit_stds = []
+v_disps = []
+
+#for i, v_disp in enumerate(zip(o_v_disps, e_v_disps)):
+age_resids = o_res[:,:,0,:,:,-1]
+age_fit_means.append(np.mean(age_resids))
+age_fit_stds.append(np.std(age_resids))
+v_disps.append(o_v_disps[0])
+
+age_resids = e_res[:,0,0,:,:,-1]
+age_fit_means.append(np.mean(age_resids))
+age_fit_stds.append(np.std(age_resids))
+v_disps.append(e_v_disps[0])
+
+plt.clf()
+plt.errorbar(v_disps, age_fit_means, yerr=age_fit_stds, fmt='b.')
+plt.plot(v_disps, np.zeros(len(v_disps)), color='b', ls=':')
+plt.xlabel("Velocity dispersion [km/s]")
+plt.ylabel("Offset in age [Myr]")
+plt.savefig("age-residuals-v-disp-low-dx.pdf")
+
 
 # FOR ALL LOW DV PLOT 2D HISTOGRAMS OF DX AND DV, CUT BY EACH PARAMETER
 plt.clf()
