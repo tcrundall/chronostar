@@ -321,12 +321,9 @@ def convertLSRToHelio(xyzuvw_lsr, kpc=False):
 def convertHelioToLSR(xyzuvw_helio, kpc=False):
     """Assumes position is in pc unless stated otherwise"""
     XYZUVWSOLARNOW = np.array([0., 0., 25., 11.1, 12.24, 7.25])
+    XYZUVWSOLARNOW_KPC = np.array([0., 0., 0.025, 11.1, 12.24, 7.25])
     if kpc:
-        xyzuvw_lsr = np.copy(xyzuvw_helio)
-        xyzuvw_lsr[:3] *= 1e3
-        res = (xyzuvw_helio + XYZUVWSOLARNOW)
-        res[:3] *= 1e-3
-        return res
+        return xyzuvw_helio + XYZUVWSOLARNOW_KPC
 
     return xyzuvw_helio + XYZUVWSOLARNOW
 
