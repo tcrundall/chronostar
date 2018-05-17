@@ -99,6 +99,10 @@ def loadXYZUVW(xyzuvw_file):
 #    return coeff * np.exp(expon)
 
 def calcAlpha(dX, dV, nstars):
+    """
+    Assuming 20% efficiency, average star mass of 0.5 M_sun, and we only
+    have identified half the initial stars by mass.
+    """
     return ( (dV*u.km/u.s)**2 * dX*u.pc /
               (const.G * 5 * nstars * const.M_sun) ).decompose().value
 

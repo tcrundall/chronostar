@@ -175,122 +175,122 @@ e_great_ixs = np.where(abs(e_norm_res).max(axis=-1) < 5)
 #plt.hist2d(e_norm_res[e_great_ixs][:,-1].flatten(),
 #           e_norm_res[e_great_ixs][:,5].flatten(), bins=5)
 
-# PLOT ALL RESIDUALS CUT BY EACH PARAMETER
-plt.clf()
-plt.hist(np.hstack((o_norm_res[0:2,:,:,:,:,-1].flatten(),
-                    e_norm_res[0:2,:,:,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-age-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[2:,:,:,:,:,-1].flatten(),
-                    e_norm_res[2:,:,:,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-age-high.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,0,:,:,:,-1].flatten(),
-                    e_norm_res[:,0,:,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-dx-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,1,:,:,:,-1].flatten(),
-                    e_norm_res[:,1,:,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-dx-high.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,0,:,:,-1].flatten(),
-                    e_norm_res[:,:,0,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-dv-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,1,:,:,-1].flatten(),
-                    e_norm_res[:,:,1,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-dv-high.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,:,0,:,-1].flatten(),
-                    e_norm_res[:,:,:,0,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-count-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,:,1,:,-1].flatten(),
-                    e_norm_res[:,:,:,1,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-count-high.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,:,:,1,-1].flatten(),
-                    e_norm_res[:,:,:,:,1,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-prec-half.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,:,:,2,-1].flatten(),
-                    e_norm_res[:,:,:,:,2,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-prec-gaia.pdf")
-
-
-# REMOVE HIGH DV AND PLOT ALL RESIDUALS CUT BY EACH PARAMETER
-plt.clf()
-plt.hist(np.hstack((o_norm_res[0:2,:,0,:,:,-1].flatten(),
-                    e_norm_res[0:2,:,0,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-age-low-dv-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[2:,:,0,:,:,-1].flatten(),
-                    e_norm_res[2:,:,0,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-age-high-dv-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,0,0,:,:,-1].flatten(),
-                    e_norm_res[:,0,0,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-dx-low-dv-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,1,0,:,:,-1].flatten(),
-                    e_norm_res[:,1,0,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-dx-high-dv-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,0,0,:,-1].flatten(),
-                    e_norm_res[:,:,0,0,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-count-low-dv-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,0,1,:,-1].flatten(),
-                    e_norm_res[:,:,0,1,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-count-high-dv-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,0,:,1,-1].flatten(),
-                    e_norm_res[:,:,0,:,1,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-prec-half-dv-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,0,:,2,-1].flatten(),
-                    e_norm_res[:,:,0,:,2,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("ages-hist-prec-gaia-dv-low.pdf")
-
-plt.clf()
-plt.hist(np.hstack((o_norm_res[:,:,:,:,:,-1].flatten(),
-                    e_norm_res[:,:,:,:,:,-1].flatten())), bins=6)
-plt.xlabel("Normalised residual (age)")
-plt.savefig("all-ages-hist.pdf")
+# # PLOT ALL RESIDUALS CUT BY EACH PARAMETER
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[0:2,:,:,:,:,-1].flatten(),
+#                     e_norm_res[0:2,:,:,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-age-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[2:,:,:,:,:,-1].flatten(),
+#                     e_norm_res[2:,:,:,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-age-high.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,0,:,:,:,-1].flatten(),
+#                     e_norm_res[:,0,:,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-dx-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,1,:,:,:,-1].flatten(),
+#                     e_norm_res[:,1,:,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-dx-high.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,0,:,:,-1].flatten(),
+#                     e_norm_res[:,:,0,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-dv-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,1,:,:,-1].flatten(),
+#                     e_norm_res[:,:,1,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-dv-high.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,:,0,:,-1].flatten(),
+#                     e_norm_res[:,:,:,0,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-count-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,:,1,:,-1].flatten(),
+#                     e_norm_res[:,:,:,1,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-count-high.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,:,:,1,-1].flatten(),
+#                     e_norm_res[:,:,:,:,1,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-prec-half.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,:,:,2,-1].flatten(),
+#                     e_norm_res[:,:,:,:,2,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-prec-gaia.pdf")
+#
+#
+# # REMOVE HIGH DV AND PLOT ALL RESIDUALS CUT BY EACH PARAMETER
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[0:2,:,0,:,:,-1].flatten(),
+#                     e_norm_res[0:2,:,0,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-age-low-dv-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[2:,:,0,:,:,-1].flatten(),
+#                     e_norm_res[2:,:,0,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-age-high-dv-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,0,0,:,:,-1].flatten(),
+#                     e_norm_res[:,0,0,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-dx-low-dv-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,1,0,:,:,-1].flatten(),
+#                     e_norm_res[:,1,0,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-dx-high-dv-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,0,0,:,-1].flatten(),
+#                     e_norm_res[:,:,0,0,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-count-low-dv-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,0,1,:,-1].flatten(),
+#                     e_norm_res[:,:,0,1,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-count-high-dv-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,0,:,1,-1].flatten(),
+#                     e_norm_res[:,:,0,:,1,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-prec-half-dv-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,0,:,2,-1].flatten(),
+#                     e_norm_res[:,:,0,:,2,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("ages-hist-prec-gaia-dv-low.pdf")
+#
+# plt.clf()
+# plt.hist(np.hstack((o_norm_res[:,:,:,:,:,-1].flatten(),
+#                     e_norm_res[:,:,:,:,:,-1].flatten())), bins=6)
+# plt.xlabel("Normalised residual (age)")
+# plt.savefig("all-ages-hist.pdf")
 
 # ------------------------------------------------------------
 # ----  PLOTTING *ALL* NORMED RESIDUALS V PARS  --------------
