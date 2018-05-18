@@ -224,5 +224,6 @@ def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=True,
         xyzuvw_to[st_ix] = traceOrbitXYZUVW(xyzuvw_starts[st_ix], times,
                                             single_age=single_age)
     #TODO: test this
-    np.save(savefile, xyzuvw_to)
+    if savefile:
+        np.save(savefile, xyzuvw_to)
     return xyzuvw_to

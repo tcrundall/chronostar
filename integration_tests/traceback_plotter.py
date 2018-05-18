@@ -31,9 +31,9 @@ def r_from_xyz(xyzs):
     return np.sqrt(np.sum(xyzs ** 2, axis=1))
 
 
-def plotSeparation(xyzuvw_dict, times, return_dists=False, prec='', true_age=0):
+def plotSeparation(xyzuvws, times, return_dists=False, prec='', true_age=None,
+                   tb_save_file = ''):
     """
-
     Parameters
     ----------
     times: [ntimes] array
@@ -41,10 +41,9 @@ def plotSeparation(xyzuvw_dict, times, return_dists=False, prec='', true_age=0):
     """
     times = np.copy(times)
     # for each timestep, get mean of association and distance from mean
-    tb = torb.traceManyOrbitXYZUVW(xyzuvw_dict['xyzuvw'], times=times,
-                                   single_age=False, savefile='tb_{}.npy'. \
-                                   format(int(true_age)))
-    nstars = xyzuvw_dict['xyzuvw'].shape[0]
+    tb = torb.traceManyOrbitXYZUVW(xyzuvws, times=times,
+                                   single_age=False, savefile=tb_save_file)
+    nstars = xyzuvws.shape[0]
     ntimes = times.shape[0]
     dists = np.zeros((nstars, ntimes))
     stds = np.zeros(ntimes)
@@ -54,7 +53,10 @@ def plotSeparation(xyzuvw_dict, times, return_dists=False, prec='', true_age=0):
     plt.clf()
     plt.plot(-times, dists.T, '#888888')
     plt.plot(-times, np.median(dists.T, axis=1), 'r')
-    plt.savefig(prec + "_sep_from_mean.png")
+    plt.xlabel("Traceback age [Myr]")
+    plt.ylabel("Distance from association centre [pc]")
+
+    plt.savefig(prec + "_sep_from_mean.pdf")
     if return_dists:
         return dists
 
@@ -76,5 +78,5 @@ if __name__ == '__main__':
         group = np.load(origin_file).item()
         true_age = group.age
         ntimes = int(2 * true_age + 1)
-        times = -np.linspace(0, 2 * true_age, ntimes)
-        plotSeparation(xyzuvw_dict, times, true_age=true_age, prec=prec)
+        times = -np.linspace(0, int(2*true_age), ntimes)
+        plotSeparation(xyzuvw_dict['xyzuvw'], times, true_age=true_age, prec=prec)
