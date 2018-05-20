@@ -48,11 +48,25 @@ def convertAstrErrsToCovs(err_arr):
 
 
 def transformAstrCovsToCartesian(astr_covs, astr_arr):
+    """
+    Converts a covariance matrix from astrometric coords to LSR XYZUVW
+    Parameters
+    ----------
+    astr_covs: ([nstars, 6, 6] array)
+        values in the diagaonal are the squared errors of
+        (ra, dec, plx, pm_ra, pm_dec, rv), with the offdiagonals the product
+        of the correlation (valued between -1 and 1) and the two
+        intersecting coordinates.
+    astr_arr: ([nstars, 6] array)
+        the measured (mean) astrometric values
+        (ra, dec, plx, pm_ra, pm-dec, rv)
+    """
     nstars = astr_arr.shape[0]
     xyzuvw_covs = np.zeros((nstars, 6, 6))
     for ix in range(nstars):
         xyzuvw_covs[ix] = tf.transform_cov(
-            astr_covs[ix], cc.convertAstrometryToLSRXYZUVW, astr_arr[ix], dim=6
+            astr_covs[ix], cc.convertAstrometryToLSRXYZUVW, astr_arr[ix],
+            dim=6
         )
     return xyzuvw_covs
 
@@ -65,11 +79,13 @@ def saveDictAsFits(savefile, xyzuvw_dict):
     hl.append(pyfits.PrimaryHDU())
     hl.append(pyfits.ImageHDU(xyzuvw_dict['xyzuvw']))
     hl.append(pyfits.ImageHDU(xyzuvw_dict['xyzuvw_cov']))
-    #hl.append(pyfits.TableHDU(xyzuvw_dict['table'])) # TODO: Get Mike to help with this step
+    # TODO: Get Mike to help with this step
+    #hl.append(pyfits.TableHDU(xyzuvw_dict['table'])) #
     hl.writeto(savefile, overwrite=True)
 
 
-def convertMeasurementsToCartesian(t=None, loadfile='', savefile=''):
+def convertMeasurementsToCartesian(t=None, loadfile='', astr_dict=None,
+                                   savefile=''):
     """
     Parameters
     ----------
@@ -100,12 +116,30 @@ def convertMeasurementsToCartesian(t=None, loadfile='', savefile=''):
         xyzuvw_cov : [nstars, 6, 6] array
             covariance of positions and velocities of each star
     """
-    if t is None:
-        t = Table.read(loadfile, format='ascii')
+    while True:
+        if t:
+            t = Table.read(loadfile, format='ascii')
+            nstars = len(t)
+            astr_arr, err_arr = ms.convertTableToArray(t)
+            astr_covs = convertAstrErrsToCovs(err_arr)
+            break
+        if loadfile:
+            t = Table.read(loadfile, format='ascii')
+            nstars = len(t)
+            astr_arr, err_arr = ms.convertTableToArray(t)
+            astr_covs = convertAstrErrsToCovs(err_arr)
+            break
+        if astr_dict:
+            astr_arr = astr_dict['astr_mns']
+            astr_covs = astr_dict['astr_covs']
+            nstars = astr_arr.shape[0]
+            break
+        raise StandardError
 
-    nstars = len(t)
-    astr_arr, err_arr = ms.convertTableToArray(t)
-    astr_covs = convertAstrErrsToCovs(err_arr)
+
+#    nstars = len(t)
+#    astr_arr, err_arr = ms.convertTableToArray(t)
+#    astr_covs = convertAstrErrsToCovs(err_arr)
 
     xyzuvw = cc.convertManyAstrometryToLSRXYZUVW(astr_arr, mas=True)
     xyzuvw_cov = transformAstrCovsToCartesian(astr_covs, astr_arr)

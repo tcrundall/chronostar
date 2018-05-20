@@ -12,34 +12,73 @@ import integration_tests.traceback_plotter as tp
 import chronostar.groupfitter as gf
 import chronostar.measurer as ms
 import chronostar.converter as cv
+import chronostar.transform as tf
 
-rdir = '../results/synth_fit/50_2_1_50/'
+rdir = '../results/em_fit/field_blind/'
 sdir = 'temp_data/'
-xyzuvw_now_file = rdir + 'gaia/xyzuvw_now.fits'
+
 origin_file = rdir + 'origins.npy'
 perf_xyzuvw_file = rdir + 'perf_xyzuvw.npy'
+memberships_file = rdir + 'memberships.npy'
+final_groups_file = rdir + 'final_groups.npy'
+xyzuvw_file = rdir + 'xyzuvw_now.fits'
 
-origin = np.load(origin_file).item()
+origins = np.load(origin_file)
 perf_xyzuvw_now = np.load(perf_xyzuvw_file)
+z_final = np.load(memberships_file)
+final_groups = np.load(final_groups_file)
+xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
 
-maxtime = 2*origin.age
-ntimes = maxtime + 1
-times = np.linspace(0, np.int(-maxtime), ntimes)
-#xyzuvw_dict = gf.loadXYZUVW(xyzuvw_now_file)
 
+ass_cov_now = tf.transform_cov(final_groups[0].generateCovMatrix(),
+                               torb.traceOrbitXYZUVW,
+                               final_groups[0].mean,
+                               args=(final_groups[0].age,))
+ass_mn_now = torb.traceOrbitXYZUVW(final_groups[0].mean,
+                                   final_groups[0].age)
+simple_cov_now = np.copy(ass_cov_now)
+simple_cov_now[3:6,:3] = 0
+simple_cov_now[:3,3:6] = 0
+
+members_mask = np.arange(50)
+field_mask = np.arange(50,1050)
+nstars = z_final.shape[0]
 precs = ['perf', 'half', 'gaia', 'double']
 prec_val = {'perf':1e-5, 'half':0.5, 'gaia':1.0, 'double':2.0}
 
-for prec in precs:
-    astro_table = ms.measureXYZUVW(perf_xyzuvw_now, prec_val[prec])
-    xyzuvw_dict = cv.convertMeasurementsToCartesian(astro_table)
-    # for each star, sample its possible phase properties... 10 times?
-    tp.plotSeparation(xyzuvw_dict['xyzuvw'], times, prec=prec)
+prec = 'gaia'
 
-    mc_xyzuvws = np.zeros((0,6))
-    nsamples = 10
-    for (mn, cov) in zip(xyzuvw_dict['xyzuvw'], xyzuvw_dict['xyzuvw_cov']):
-        samples = np.random.multivariate_normal(mn, cov, size=nsamples)
-        mc_xyzuvws = np.vstack((mc_xyzuvws, samples))
+# astro_table = ms.measureXYZUVW(perf_xyzuvw_now, prec_val[prec])
+# xyzuvw_dict = cv.convertMeasurementsToCartesian(astro_table)
 
-    tp.plotSeparation(mc_xyzuvws, times, prec=prec + '_emcee')
+simple_lnols = gf.get_lnoverlaps(simple_cov_now, ass_mn_now,
+                                 xyzuvw_dict['xyzuvw_cov'],
+                                 xyzuvw_dict['xyzuvw'], nstars)
+
+# only lose 5% of true members
+candidate_member_mask = np.where(simple_lnols >
+                                np.percentile(simple_lnols[:50], 5))
+
+maxtime = 2*origins[0].age
+assert maxtime > 1
+ntimes = maxtime + 1
+times = np.linspace(0, np.int(-maxtime), ntimes)
+#xyzuvw_dict = gf.loadXYZUVW(xyzuvw_now_file)
+#
+# precs = ['perf', 'half', 'gaia', 'double']
+# prec_val = {'perf':1e-5, 'half':0.5, 'gaia':1.0, 'double':2.0}
+#
+# for prec in precs:
+#astro_table = ms.measureXYZUVW(perf_xyzuvw_now, prec_val[prec])
+#xyzuvw_dict = cv.convertMeasurementsToCartesian(astro_table)
+# for each star, sample its possible phase properties... 10 times?
+tp.plotSeparation(xyzuvw_dict['xyzuvw'][candidate_member_mask],
+                  times, prec=prec + '_em')
+
+mc_xyzuvws = np.zeros((0,6))
+nsamples = 10
+for (mn, cov) in zip(xyzuvw_dict['xyzuvw'], xyzuvw_dict['xyzuvw_cov']):
+    samples = np.random.multivariate_normal(mn, cov, size=nsamples)
+    mc_xyzuvws = np.vstack((mc_xyzuvws, samples))
+
+tp.plotSeparation(mc_xyzuvws, times, prec=prec + '_emcee_em')
