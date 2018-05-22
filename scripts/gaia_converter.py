@@ -126,10 +126,13 @@ def convertManyRecToArray(data):
 
 
 if __name__ == '__main__':
-    gaia_astr_file = '../data/all_rvs_w_ok_plx.fits'
+    rdir = '/data/mash/tcrun/'
+    gaia_astr_file = rdir + 'all_rvs_w_ok_plx.fits'
 
     hdul = fits.open(gaia_astr_file, memmap=True)
     means, covs = convertManyRecToArray(hdul[1].data)
     astr_dict = {'astr_mns': means, 'astr_covs':covs}
     xyzuvw_dict = cv.convertMeasurementsToCartesian(
-        astr_dict=astr_dict, savefile='../data/gaia_dr2_ok_plx_xyzuvw.fits')
+        astr_dict=astr_dict,
+        savefile=rdir+'gaia_dr2_ok_plx_xyzuvw.fits')
+
