@@ -5,6 +5,7 @@ and correlations, converting them into XYZUVW mean and covariance
 matrix.
 """
 from astropy.io import fits
+import logging
 import numpy as np
 import sys
 sys.path.insert(0, '..')
@@ -80,8 +81,10 @@ def convertManyRecToArray(data):
         means: [nstars, 6] array
         covs: [nstars, 6] array
     """
+    logging.info("In convertManyRecToArray")
     nstars = data.shape[0]
     print("nstars: {}".format(nstars))
+    logging.info("nstars: {}".format(nstars))
     means = np.zeros((nstars,6))
 
     means[:,0] = data['ra']
@@ -124,12 +127,27 @@ def convertManyRecToArray(data):
 
     return means, covs
 
+def convertGaiaToXYZUVWDict():
+    """Doesn't work... too much memory I think"""
+    gaia_astr_file = '../data/all_rvs_w_ok_plx.fits'
+    logging.info("Converting: {}".format(gaia_astr_file))
+    hdul = fits.open(gaia_astr_file)#, memmap=True)
+    logging.info("Loaded hdul")
+    means, covs = convertManyRecToArray(hdul[1].data[:1000])
+    logging.info("Converted many recs")
+    astr_dict = {'astr_mns': means, 'astr_covs': covs}
+    cv.convertMeasurementsToCartesian(
+        astr_dict=astr_dict, savefile='../data/gaia_dr2_ok_plx_xyzuvw.fits.gz')
+    logging.info("Converted and saved dictionary")
 
 if __name__ == '__main__':
+    """Convert astrometry to XYZUVW"""
+    logging.basicConfig(level=logging.INFO, filename='log_gaia_converter.log')
     gaia_astr_file = '../data/all_rvs_w_ok_plx.fits'
 
     hdul = fits.open(gaia_astr_file, memmap=True)
-    means, covs = convertManyRecToArray(hdul[1].data)
-    astr_dict = {'astr_mns': means, 'astr_covs':covs}
-    xyzuvw_dict = cv.convertMeasurementsToCartesian(
-        astr_dict=astr_dict, savefile='../data/gaia_dr2_ok_plx_xyzuvw.fits')
+
+#    means, covs = convertManyRecToArray(hdul[1].data)
+#    astr_dict = {'astr_mns': means, 'astr_covs':covs}
+#    xyzuvw_dict = cv.convertMeasurementsToCartesian(
+        #astr_dict=astr_dict, savefile='../data/1526-xyzuvw.fits.gz')
