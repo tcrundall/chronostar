@@ -383,8 +383,11 @@ def convertManyAstrometryToLSRXYZUVW(astr_arr, mas=True):
     mas : Boolean {True}
         set if input parallax and proper motions are in mas
     """
+    logging.info("converting to LSRXYZUVW")
     xyzuvws = np.zeros(astr_arr.shape)
     for i, astr in enumerate(astr_arr):
+        if (i % 1000 == 0):
+            logging.info("{} of {} done".format(i, xyzuvws.shape[0]))
         xyzuvws[i] = convertAstrometryToLSRXYZUVW(astr, mas=mas)
     return xyzuvws
 

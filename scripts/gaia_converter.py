@@ -11,6 +11,7 @@ import sys
 sys.path.insert(0, '..')
 
 import chronostar.converter as cv
+import chronostar.coordinate as cc
 
 def test():
     print("Sup")
@@ -138,19 +139,45 @@ def convertGaiaToXYZUVWDict(server=False):
     logging.info("Converting: {}".format(gaia_astr_file))
     hdul = fits.open(gaia_astr_file)#, memmap=True)
     logging.info("Loaded hdul")
-    means, covs = convertManyRecToArray(hdul[1].data[:1000])
+    means, covs = convertManyRecToArray(hdul[1].data[:100])
     logging.info("Converted many recs")
     astr_dict = {'astr_mns': means, 'astr_covs': covs}
     cv.convertMeasurementsToCartesian(
         astr_dict=astr_dict, savefile=rdir+'gaia_dr2_ok_plx_xyzuvw.fits.gz')
     logging.info("Converted and saved dictionary")
+    return means, covs
+
+def convertGaiaMeansToXYZUVW(server=False):
+    if server:
+        rdir = '/data/mash/tcrun/'
+    else:
+        rdir = '../data/'
+    gaia_astr_file = rdir+'all_rvs_w_ok_plx.fits'
+    hdul = fits.open(gaia_astr_file)#, memmap=True)
+    nstars = hdul[1].data.shape[0]
+    means = np.zeros((nstars,6))
+    means[:,0] = hdul[1].data['ra']
+    means[:,1] = hdul[1].data['dec']
+    means[:,2] = hdul[1].data['parallax']
+    means[:,3] = hdul[1].data['pmra']
+    means[:,4] = hdul[1].data['pmdec']
+    means[:,5] = hdul[1].data['radial_velocity']
+
+    xyzuvw_mns = cc.convertManyAstrometryToLSRXYZUVW(means, mas=True)
+    np.save(rdir + "gaia_dr2_mean_xyzuvw.npy")
+
 
 if __name__ == '__main__':
     """Convert astrometry to XYZUVW"""
-    logging.basicConfig(level=logging.INFO, filename='log_gaia_converter.log')
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout,
+                        filemode='w')
     gaia_astr_file = '../data/all_rvs_w_ok_plx.fits'
 
     hdul = fits.open(gaia_astr_file, memmap=True)
+
+    convertGaiaMeansToXYZUVW()
+
+
 
 #    means, covs = convertManyRecToArray(hdul[1].data)
 #    astr_dict = {'astr_mns': means, 'astr_covs':covs}
