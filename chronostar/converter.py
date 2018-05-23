@@ -118,7 +118,6 @@ def convertMeasurementsToCartesian(t=None, loadfile='', astr_dict=None,
     """
     while True:
         if t:
-            t = Table.read(loadfile, format='ascii')
             nstars = len(t)
             astr_arr, err_arr = ms.convertTableToArray(t)
             astr_covs = convertAstrErrsToCovs(err_arr)
