@@ -13,6 +13,8 @@ import pdb
 import sys
 sys.path.insert(0, '..')
 
+master_pdir = "../plots/residuals/"
+
 def calc_best_fit(flat_samples):
     """
     Given a set of aligned (converted?) samples, calculate the median and
@@ -180,61 +182,61 @@ e_great_ixs = np.where(abs(e_norm_res).max(axis=-1) < 5)
 # plt.hist(np.hstack((o_norm_res[0:2,:,:,:,:,-1].flatten(),
 #                     e_norm_res[0:2,:,:,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-age-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-age-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[2:,:,:,:,:,-1].flatten(),
 #                     e_norm_res[2:,:,:,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-age-high.pdf")
+# plt.savefig(master_pdir + "ages-hist-age-high.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,0,:,:,:,-1].flatten(),
 #                     e_norm_res[:,0,:,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-dx-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-dx-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,1,:,:,:,-1].flatten(),
 #                     e_norm_res[:,1,:,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-dx-high.pdf")
+# plt.savefig(master_pdir + "ages-hist-dx-high.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,0,:,:,-1].flatten(),
 #                     e_norm_res[:,:,0,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-dv-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-dv-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,1,:,:,-1].flatten(),
 #                     e_norm_res[:,:,1,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-dv-high.pdf")
+# plt.savefig(master_pdir + "ages-hist-dv-high.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,:,0,:,-1].flatten(),
 #                     e_norm_res[:,:,:,0,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-count-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-count-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,:,1,:,-1].flatten(),
 #                     e_norm_res[:,:,:,1,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-count-high.pdf")
+# plt.savefig(master_pdir + "ages-hist-count-high.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,:,:,1,-1].flatten(),
 #                     e_norm_res[:,:,:,:,1,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-prec-half.pdf")
+# plt.savefig(master_pdir + "ages-hist-prec-half.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,:,:,2,-1].flatten(),
 #                     e_norm_res[:,:,:,:,2,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-prec-gaia.pdf")
+# plt.savefig(master_pdir + "ages-hist-prec-gaia.pdf")
 #
 #
 # # REMOVE HIGH DV AND PLOT ALL RESIDUALS CUT BY EACH PARAMETER
@@ -242,55 +244,63 @@ e_great_ixs = np.where(abs(e_norm_res).max(axis=-1) < 5)
 # plt.hist(np.hstack((o_norm_res[0:2,:,0,:,:,-1].flatten(),
 #                     e_norm_res[0:2,:,0,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-age-low-dv-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-age-low-dv-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[2:,:,0,:,:,-1].flatten(),
 #                     e_norm_res[2:,:,0,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-age-high-dv-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-age-high-dv-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,0,0,:,:,-1].flatten(),
 #                     e_norm_res[:,0,0,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-dx-low-dv-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-dx-low-dv-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,1,0,:,:,-1].flatten(),
 #                     e_norm_res[:,1,0,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-dx-high-dv-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-dx-high-dv-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,0,0,:,-1].flatten(),
 #                     e_norm_res[:,:,0,0,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-count-low-dv-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-count-low-dv-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,0,1,:,-1].flatten(),
 #                     e_norm_res[:,:,0,1,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-count-high-dv-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-count-high-dv-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,0,:,1,-1].flatten(),
 #                     e_norm_res[:,:,0,:,1,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-prec-half-dv-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-prec-half-dv-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,0,:,2,-1].flatten(),
 #                     e_norm_res[:,:,0,:,2,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("ages-hist-prec-gaia-dv-low.pdf")
+# plt.savefig(master_pdir + "ages-hist-prec-gaia-dv-low.pdf")
 #
 # plt.clf()
 # plt.hist(np.hstack((o_norm_res[:,:,:,:,:,-1].flatten(),
 #                     e_norm_res[:,:,:,:,:,-1].flatten())), bins=6)
 # plt.xlabel("Normalised residual (age)")
-# plt.savefig("all-ages-hist.pdf")
+# plt.savefig(master_pdir + "all-ages-hist.pdf")
+
+plt.clf()
+all_low_dv_raw_resids = np.hstack((o_res[:,:,0,:,:,-1].flatten(),
+                                   e_res[:,:,0,:,:,-1].flatten()))
+plt.hist(all_low_dv_raw_resids)
+plt.xlabel("Raw age offset [Myr]")
+plt.ylabel("Number of simulations")
+plt.savefig(master_pdir + "all-raw-age-res-low-dv.pdf")
 
 # ------------------------------------------------------------
 # ----  PLOTTING *ALL* NORMED RESIDUALS V PARS  --------------
@@ -404,7 +414,7 @@ ax.set_ylabel("Normalised offset in age")
 axs[2,1].remove()
 
 fig.tight_layout()
-plt.savefig("normed-age-res-all.pdf")
+plt.savefig(master_pdir + "normed-age-res-all.pdf")
 
 # ------------------------------------------------------------
 # ----  PLOTTING LOW DV NORMED RESIDUALS V PARS  -------------
@@ -521,11 +531,13 @@ ax.set_ylabel("Normalised offset in age")
 axs[2,1].remove()
 
 fig.tight_layout()
-plt.savefig("normed-age-res-low-dv.pdf")
+plt.savefig(master_pdir + "normed-age-res-low-dv.pdf")
 
 # ------------------------------------------------------------
 # -------  PLOTTING LOW DV RAW RESIDUALS V PARS  -------------
 # ------------------------------------------------------------
+
+
 
 plt.clf()
 fig, axs = plt.subplots(nrows=3, ncols=2, figsize=(7,7), sharey=True)
@@ -635,7 +647,7 @@ ax.set_ylabel("Raw offset in age [Myr]")
 axs[2,1].remove()
 
 fig.tight_layout()
-plt.savefig("raw-age-res-low-dv.pdf")
+plt.savefig(master_pdir + "raw-age-res-low-dv.pdf")
 
 
 # ------------------------------------------------------------
@@ -755,7 +767,7 @@ ax.set_ylabel("Raw offset in age [Myr]")
 axs[2,1].remove()
 
 fig.tight_layout()
-plt.savefig("raw-age-res-low-dv-low-dx.pdf")
+plt.savefig(master_pdir + "raw-age-res-low-dv-low-dx.pdf")
 
 # # ------------------------------------------------------------
 # # ----  PLOTTING LOW-DV NORMED RESIDUALS V PARS  -------------
@@ -775,7 +787,7 @@ plt.savefig("raw-age-res-low-dv-low-dx.pdf")
 # plt.plot(ages, np.zeros(len(ages)), color='b', ls=':')
 # plt.xlabel("True age")
 # plt.ylabel("Normalised offset in age")
-# plt.savefig("age-norm-residuals-age-low-dv.pdf")
+# plt.savefig(master_pdir + "age-norm-residuals-age-low-dv.pdf")
 #
 # # PLOTTING ALL RESIDUALS AS FUNCTION OF STAR COUNT
 # age_fit_means = []
@@ -798,7 +810,7 @@ plt.savefig("raw-age-res-low-dv-low-dx.pdf")
 # plt.plot(sizes, np.zeros(len(sizes)), color='b', ls=':')
 # plt.xlabel("Star count")
 # plt.ylabel("Normalised offset in age")
-# plt.savefig("age-norm-residuals-size-low-dv.pdf")
+# plt.savefig(master_pdir + "age-norm-residuals-size-low-dv.pdf")
 #
 # # PLOTTING ALL RESIDUALS AS FUNCTION OF PRECISION
 # age_fit_means = []
@@ -816,7 +828,7 @@ plt.savefig("raw-age-res-low-dv-low-dx.pdf")
 # plt.plot(vals, np.zeros(len(vals)), color='b', ls=':')
 # plt.xlabel("Fraction of Gaia error")
 # plt.ylabel("Normalised offset in age")
-# plt.savefig("age-norm-residuals-prec-low-dv.pdf")
+# plt.savefig(master_pdir + "age-norm-residuals-prec-low-dv.pdf")
 #
 #
 # # PLOTTING ALL RESIDUALS AS FUNCTION OF DX
@@ -840,7 +852,7 @@ plt.savefig("raw-age-res-low-dv-low-dx.pdf")
 # plt.plot(spreads, np.zeros(len(spreads)), color='b', ls=':')
 # plt.xlabel("Spread [pc]")
 # plt.ylabel("Normalised offset in age")
-# plt.savefig("age-norm-residuals-spread-low-dv.pdf")
+# plt.savefig(master_pdir + "age-norm-residuals-spread-low-dv.pdf")
 #
 # # PLOTTING ALL RESIDUALS AS FUNCTION OF DV
 # age_fit_means = []
@@ -863,7 +875,7 @@ plt.savefig("raw-age-res-low-dv-low-dx.pdf")
 # # plt.plot(v_disps, np.zeros(len(v_disps)), color='b', ls=':')
 # # plt.xlabel("Velocity dispersion [km/s]")
 # # plt.ylabel("Normalised offset in age")
-# # plt.savefig("age-norm-residuals-v-disp.pdf")
+# # plt.savefig(master_pdir + "age-norm-residuals-v-disp.pdf")
 
 
 # ------------------------------------------------------------
@@ -884,7 +896,7 @@ plt.errorbar(ages, age_fit_means, yerr=age_fit_stds, fmt='b.')
 plt.plot(ages, np.zeros(len(ages)), color='b', ls=':')
 plt.xlabel("True age [Myr]")
 plt.ylabel("Offset in age [Myr]")
-plt.savefig("age-residuals-age.pdf")
+plt.savefig(master_pdir + "age-residuals-age.pdf")
 
 # PLOTTING RAW RESIDUALS AS FUNCTION OF STAR COUNT
 age_fit_means = []
@@ -907,7 +919,7 @@ plt.errorbar(sizes, age_fit_means, yerr=age_fit_stds, fmt='b.')
 plt.plot(sizes, np.zeros(len(sizes)), color='b', ls=':')
 plt.xlabel("Star count")
 plt.ylabel("Offset in age [Myr]")
-plt.savefig("age-residuals-size.pdf")
+plt.savefig(master_pdir + "age-residuals-size.pdf")
 
 # PLOTTING RAW RESIDUALS AS FUNCTION OF PRECISION
 age_fit_means = []
@@ -925,7 +937,7 @@ plt.errorbar(vals, age_fit_means, yerr=age_fit_stds, fmt='b.')
 plt.plot(vals, np.zeros(len(vals)), color='b', ls=':')
 plt.xlabel("Fraction of Gaia error")
 plt.ylabel("Offset in age [Myr]")
-plt.savefig("age-residuals-prec.pdf")
+plt.savefig(master_pdir + "age-residuals-prec.pdf")
 
 
 # PLOTTING RAW RESIDUALS AS FUNCTION OF DX
@@ -949,7 +961,7 @@ plt.errorbar(spreads, age_fit_means, yerr=age_fit_stds, fmt='b.')
 plt.plot(spreads, np.zeros(len(spreads)), color='b', ls=':')
 plt.xlabel("Spread [pc]")
 plt.ylabel("Offset in age [Myr]")
-plt.savefig("age-residuals-spread.pdf")
+plt.savefig(master_pdir + "age-residuals-spread.pdf")
 
 # PLOTTING RAW RESIDUALS AS FUNCTION OF DV
 age_fit_means = []
@@ -972,7 +984,7 @@ plt.errorbar(v_disps, age_fit_means, yerr=age_fit_stds, fmt='b.')
 plt.plot(v_disps, np.zeros(len(v_disps)), color='b', ls=':')
 plt.xlabel("Velocity dispersion [km/s]")
 plt.ylabel("Offset in age [Myr]")
-plt.savefig("age-residuals-v-disp.pdf")
+plt.savefig(master_pdir + "age-residuals-v-disp.pdf")
 
 # ------------------------------------------------------------
 # --------   REMOVING DX=10 FROM ALL FITS  -------------------
@@ -992,7 +1004,7 @@ plt.errorbar(ages, age_fit_means, yerr=age_fit_stds, fmt='b.')
 plt.plot(ages, np.zeros(len(ages)), color='b', ls=':')
 plt.xlabel("True age [Myr]")
 plt.ylabel("Offset in age [Myr]")
-plt.savefig("age-residuals-age-low-dx.pdf")
+plt.savefig(master_pdir + "age-residuals-age-low-dx.pdf")
 
 # PLOTTING RAW RESIDUALS AS FUNCTION OF STAR COUNT
 age_fit_means = []
@@ -1015,7 +1027,7 @@ plt.errorbar(sizes, age_fit_means, yerr=age_fit_stds, fmt='b.')
 plt.plot(sizes, np.zeros(len(sizes)), color='b', ls=':')
 plt.xlabel("Star count")
 plt.ylabel("Offset in age [Myr]")
-plt.savefig("age-residuals-size-low-dx.pdf")
+plt.savefig(master_pdir + "age-residuals-size-low-dx.pdf")
 
 # PLOTTING RAW RESIDUALS AS FUNCTION OF PRECISION
 age_fit_means = []
@@ -1033,7 +1045,7 @@ plt.errorbar(vals, age_fit_means, yerr=age_fit_stds, fmt='b.')
 plt.plot(vals, np.zeros(len(vals)), color='b', ls=':')
 plt.xlabel("Fraction of Gaia error")
 plt.ylabel("Offset in age [Myr]")
-plt.savefig("age-residuals-prec-low-dx.pdf")
+plt.savefig(master_pdir + "age-residuals-prec-low-dx.pdf")
 
 
 # PLOTTING RAW RESIDUALS AS FUNCTION OF DV
@@ -1057,7 +1069,7 @@ plt.errorbar(v_disps, age_fit_means, yerr=age_fit_stds, fmt='b.')
 plt.plot(v_disps, np.zeros(len(v_disps)), color='b', ls=':')
 plt.xlabel("Velocity dispersion [km/s]")
 plt.ylabel("Offset in age [Myr]")
-plt.savefig("age-residuals-v-disp-low-dx.pdf")
+plt.savefig(master_pdir + "age-residuals-v-disp-low-dx.pdf")
 
 
 # FOR ALL LOW DV PLOT 2D HISTOGRAMS OF DX AND DV, CUT BY EACH PARAMETER
@@ -1069,7 +1081,7 @@ plt.hist2d(np.hstack((e_norm_res[:2,:,0,:,:,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-age-low.pdf")
+plt.savefig(master_pdir + "dx-dv-age-low.pdf")
 
 plt.clf()
 plt.hist2d(np.hstack((e_norm_res[2:,:,0,:,:,6].flatten(),
@@ -1079,7 +1091,7 @@ plt.hist2d(np.hstack((e_norm_res[2:,:,0,:,:,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-age-high.pdf")
+plt.savefig(master_pdir + "dx-dv-age-high.pdf")
 
 plt.clf()
 plt.hist2d(np.hstack((e_norm_res[:,0,0,:,:,6].flatten(),
@@ -1089,7 +1101,7 @@ plt.hist2d(np.hstack((e_norm_res[:,0,0,:,:,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-dx-low.pdf")
+plt.savefig(master_pdir + "dx-dv-dx-low.pdf")
 
 plt.clf()
 plt.hist2d(np.hstack((e_norm_res[:,1,0,:,:,6].flatten(),
@@ -1099,7 +1111,7 @@ plt.hist2d(np.hstack((e_norm_res[:,1,0,:,:,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-dx-high.pdf")
+plt.savefig(master_pdir + "dx-dv-dx-high.pdf")
 
 plt.clf()
 plt.hist2d(o_norm_res[:,:,0,:,:,6].flatten(),
@@ -1107,7 +1119,7 @@ plt.hist2d(o_norm_res[:,:,0,:,:,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-dv-low.pdf")
+plt.savefig(master_pdir + "dx-dv-dv-low.pdf")
 
 plt.clf()
 plt.hist2d(e_norm_res[:,:,0,:,:,6].flatten(),
@@ -1115,7 +1127,7 @@ plt.hist2d(e_norm_res[:,:,0,:,:,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-dv-high.pdf")
+plt.savefig(master_pdir + "dx-dv-dv-high.pdf")
 
 
 plt.clf()
@@ -1126,7 +1138,7 @@ plt.hist2d(np.hstack((e_norm_res[:,:,0,0,:,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-count-low.pdf")
+plt.savefig(master_pdir + "dx-dv-count-low.pdf")
 
 plt.clf()
 plt.hist2d(np.hstack((e_norm_res[:,:,0,1,:,6].flatten(),
@@ -1136,7 +1148,7 @@ plt.hist2d(np.hstack((e_norm_res[:,:,0,1,:,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-count-high.pdf")
+plt.savefig(master_pdir + "dx-dv-count-high.pdf")
 
 plt.clf()
 plt.hist2d(np.hstack((e_norm_res[:,:,0,:,0,6].flatten(),
@@ -1146,7 +1158,7 @@ plt.hist2d(np.hstack((e_norm_res[:,:,0,:,0,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-prec-perf.pdf")
+plt.savefig(master_pdir + "dx-dv-prec-perf.pdf")
 
 plt.clf()
 plt.hist2d(np.hstack((e_norm_res[:,:,0,:,1,6].flatten(),
@@ -1156,7 +1168,7 @@ plt.hist2d(np.hstack((e_norm_res[:,:,0,:,1,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-prec-half.pdf")
+plt.savefig(master_pdir + "dx-dv-prec-half.pdf")
 
 plt.clf()
 plt.hist2d(np.hstack((e_norm_res[:,:,0,:,2,6].flatten(),
@@ -1166,7 +1178,7 @@ plt.hist2d(np.hstack((e_norm_res[:,:,0,:,2,6].flatten(),
            bins=5)
 plt.xlabel("Normalised Residual in dX")
 plt.ylabel("Normalised Residual in dV")
-plt.savefig("dx-dv-prec-gaia.pdf")
+plt.savefig(master_pdir + "dx-dv-prec-gaia.pdf")
 
 # MAIN CONTRIBUTORS TO DX OFFSET:
 # - count (higher is better)
@@ -1176,7 +1188,7 @@ plt.savefig("dx-dv-prec-gaia.pdf")
 plt.clf()
 plt.hist(e_norm_res[:,:,0,1,:2,6].flatten(), bins=4)
 plt.xlabel("Normalised Residual in dX")
-plt.savefig("best-dx.pdf")
+plt.savefig(master_pdir + "best-dx.pdf")
 
 # MAIN CONTRIBUTORS TO DV OFFSET:
 # - count (higher is better)
@@ -1187,5 +1199,5 @@ plt.hist(np.hstack((o_norm_res[:,0,0,1,:,7].flatten(),
                     e_norm_res[:,0,0,1,:,7].flatten())),
          bins=4)
 plt.xlabel("Normalised Residual in dV")
-plt.savefig("best-dv.pdf")
+plt.savefig(master_pdir + "best-dv.pdf")
 
