@@ -60,7 +60,7 @@ xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
 
 BURNIN_STEPS = 1000
 SAMPLING_STEPS = 10000
-C_TOL = 0.15
+C_TOL = 0.25
 
 mkpath(results_dir)
 logging.basicConfig(
