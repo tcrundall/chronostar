@@ -65,7 +65,7 @@ C_TOL = 0.15
 mkpath(results_dir)
 logging.basicConfig(
     level=logging.INFO, filemode='a',
-    filename=results_dir+'my_investigator_demo.log',
+    filename=results_dir+'ass_fit.log',
 )
 logging.info("In preamble")
 
