@@ -43,7 +43,7 @@ labels = ['X [pc]', 'Y [pc]', 'Z [pc]',
           'ln(dX)', 'ln(dV)', 'age [Myr]']
 
 logging.info("Plotting...")
-group = np.load(rdir + 'best_fit.npy').item() #!!! CHECK IF THIS IS RIGHT
+#group = np.load(rdir + 'best_fit.npy').item() #!!! CHECK IF THIS IS RIGHT
 #group_pars = group.getInternalSphericalPars()
 chain = np.load(rdir + 'final_chain.npy')
 flat = chain.reshape(-1,9)
