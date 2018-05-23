@@ -164,18 +164,18 @@ def convertGaiaMeansToXYZUVW(server=False):
     means[:,5] = hdul[1].data['radial_velocity']
 
     xyzuvw_mns = cc.convertManyAstrometryToLSRXYZUVW(means, mas=True)
-    np.save(rdir + "gaia_dr2_mean_xyzuvw.npy")
+    np.save(rdir + "gaia_dr2_mean_xyzuvw.npy", xyzuvw_mns)
 
 
 if __name__ == '__main__':
     """Convert astrometry to XYZUVW"""
     logging.basicConfig(level=logging.INFO, stream=sys.stdout,
                         filemode='w')
-    gaia_astr_file = '../data/all_rvs_w_ok_plx.fits'
+   # gaia_astr_file = '../data/all_rvs_w_ok_plx.fits'
 
-    hdul = fits.open(gaia_astr_file, memmap=True)
+   # hdul = fits.open(gaia_astr_file, memmap=True)
 
-    convertGaiaMeansToXYZUVW()
+    convertGaiaMeansToXYZUVW(True)
 
 
 
