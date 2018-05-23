@@ -57,6 +57,7 @@ except IndexError:
 
 results_dir = "../results/" + ass_name + "/"
 xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
+best_fit_file = results_dir + "best_fit.npy"
 
 BURNIN_STEPS = 1000
 SAMPLING_STEPS = 10000
@@ -91,6 +92,7 @@ best_fit, chain, lnprob = gf.fitGroup(
     pool=pool, convergence_tol=C_TOL, save_dir=results_dir, #init_pars=init_pars,
     plot_dir=results_dir, sampling_steps=SAMPLING_STEPS,
 )
+np.save(best_fit_file, best_fit)
 
 if using_mpi:
     pool.close()
