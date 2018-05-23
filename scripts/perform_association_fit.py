@@ -58,9 +58,11 @@ except IndexError:
 results_dir = "../results/" + ass_name + "/"
 xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
 best_fit_file = results_dir + "best_fit.npy"
+init_members_file = results_dir + "init_z.npy"
 
 BURNIN_STEPS = 1000
-SAMPLING_STEPS = 10000
+#SAMPLING_STEPS = 10000
+SAMPLING_STEPS = None
 C_TOL = 0.25
 
 mkpath(results_dir)
@@ -79,6 +81,14 @@ if using_mpi:
         sys.exit(0)
 logging.info("Only one thread is master")
 
+logging.info("Attempting to load prior memberships")
+try:
+    z = np.load(init_members_file)
+    logging.info("Prior memberships successfully loaded")
+except IOError:
+    z = None
+    logging.info("'init_z.npy' not found")
+
 # can optionally initialise fit around approximate coords
 #xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
 #approx_mean = np.mean(xyzuvw_dict['xyzuvw'], axis=0)
@@ -90,7 +100,7 @@ logging.info("applying fit")
 best_fit, chain, lnprob = gf.fitGroup(
     xyzuvw_file=xyzuvw_file, burnin_steps=BURNIN_STEPS, plot_it=True,
     pool=pool, convergence_tol=C_TOL, save_dir=results_dir, #init_pars=init_pars,
-    plot_dir=results_dir, sampling_steps=SAMPLING_STEPS,
+    plot_dir=results_dir, sampling_steps=SAMPLING_STEPS, z=z,
 )
 np.save(best_fit_file, best_fit)
 
