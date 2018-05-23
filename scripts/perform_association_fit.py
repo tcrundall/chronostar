@@ -61,8 +61,8 @@ best_fit_file = results_dir + "best_fit.npy"
 init_members_file = results_dir + "init_z.npy"
 
 BURNIN_STEPS = 1000
-#SAMPLING_STEPS = 10000
-SAMPLING_STEPS = None
+SAMPLING_STEPS = 10000
+#SAMPLING_STEPS = None
 C_TOL = 0.25
 
 mkpath(results_dir)

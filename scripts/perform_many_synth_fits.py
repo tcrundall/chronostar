@@ -56,12 +56,22 @@ v_disps = [2, 10] #km/s
 sizes = [25, 100] #nstars
 precs = ['perf', 'half', 'gaia']
 """
+
 # EVEN PARAMETERS INITED
+"""
 ages = [5, 15, 30, 50]
 spreads = [2, 10] #pc
 v_disps = [1, 5] #km/s
 sizes = [50, 200] #nstars
-precs = ['perf', 'half', 'gaia']
+#precs = ['perf', 'half', 'gaia']
+precs = ['double']
+"""
+ages = [6, 11]
+spreads = [2] #pc
+v_disps = [1] #km/s
+sizes = [50] #nstars
+#precs = ['perf', 'half', 'gaia']
+precs = ['half']
 
 
 #precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
