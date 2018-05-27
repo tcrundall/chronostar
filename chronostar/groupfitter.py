@@ -84,6 +84,11 @@ def loadXYZUVW(xyzuvw_file):
         .astype('float64') #hdulist[2].data
     xyzuvw_dict = {'xyzuvw':xyzuvw_now, 'xyzuvw_cov':xyzuvw_cov_now}
     try:
+        times = fits.getdata(xyzuvw_file, 3)
+        xyzuvw_dict['times'] = times
+    except:
+        logging.info("No times in fits file")
+    try:
         stars_table = fits.getdata(xyzuvw_file, 3)
         xyzuvw_dict['table'] = stars_table
     except:
@@ -231,6 +236,122 @@ def lnprobFunc(pars, star_pars, z):
         return -np.inf
     return lp + lnlike(pars, star_pars, z)
 
+
+def interp_cov(target_time, star_pars):
+    """Calculates the xyzuvw vector and covariance matrix by interpolation
+
+    Parameters
+    ---------
+    target_time
+        The desired time to be fitted to (should be positive)
+    star_pars
+        Dictionary with
+
+            xyzuvw
+                [nstars, nts, 6] array with the phase values for each star
+                at each traceback time
+            xyzuvw_cov
+                [nstars, nts, 6, 6] array with the covariance matrix of the
+                phase values for each star at each traceback time
+            times
+                [nts] array with a linearly spaced times spanning 0 to some
+                maximum time
+
+    Returns
+    -------
+    interp_covs
+        [nstars, 6, 6] array with covariance matrix of the phase values
+        for each star at interpolated time
+    interp_mns
+        [nstars, 6] array with phase values for each star at interpolated
+        time
+    """
+    times = abs(star_pars['times'])
+    ix = np.interp(target_time, times, np.arange(len(times)))
+    ## check if interpolation is necessary
+    # if np.isclose(target_time, times, atol=1e-5).any():
+    #    ix0 = int(round(ix))
+    #    interp_mns = star_pars['xyzuvw'][:, ix0]
+    #    interp_covs = star_pars['xyzuvw_cov'][:, ix0]
+    #    return interp_covs, interp_mns
+
+    ix0 = np.int(ix)
+    frac = ix - ix0
+    interp_covs = star_pars['xyzuvw_cov'][:, ix0] * (1 - frac) + \
+                  star_pars['xyzuvw_cov'][:, ix0 + 1] * frac
+
+    interp_mns = star_pars['xyzuvw'][:, ix0] * (1 - frac) + \
+                 star_pars['xyzuvw'][:, ix0 + 1] * frac
+
+    return interp_covs, interp_mns
+
+
+def lnlikeTraceback(pars, star_pars, z, return_lnols=False):
+    """
+    Similar to lnlike, but for the (retired) traceback implementation.
+
+    Parameters
+    ----------
+    pars
+        Parameters describing the group model being fitted
+    star_pars
+        traceback data being fitted to
+    z
+        array of weights [0.0 - 1.0] for each star, describing how likely
+        they are members of group to be fitted.
+
+    Returns
+    -------
+    lnlike
+        the logarithm of the likelihood of the fit
+    """
+    # convert pars into covariance matrix
+    g = syn.Group(pars, internal=True)
+    mean_then = g.mean
+    cov_then = g.generateCovMatrix()
+    age = g.age
+
+    # Interpolate star means and covs to the groups age
+    interp_covs, interp_mns = interp_cov(age, star_pars)
+
+    nstars = star_pars['xyzuvw'].shape[0]
+    lnols = get_lnoverlaps(
+        cov_then, mean_then, interp_covs, interp_mns,
+        nstars
+    )
+    if return_lnols:
+        return lnols
+
+    return np.sum(lnols * z)
+
+
+def lnprobTracebackFunc(pars, star_pars, z):
+    """
+    Similar to lnprobFunc, but for the (retired) traceback implementation
+
+    Parameters
+    ----------
+    pars
+        Parameters describing the group model being fitted
+        0,1,2,3,4,5,   6,   7,  8
+        X,Y,Z,U,V,W,lndX,lndV,age
+    star_pars
+        traceback data being fitted to
+    (retired) z
+        array of weights [0.0 - 1.0] for each star, describing how likely
+        they are members of group to be fitted.
+
+    Returns
+    -------
+    logprob
+        the logarithm of the posterior probability of the fit
+    """
+    lp = lnprior(pars, star_pars)
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + lnlikeTraceback(pars, star_pars, z)
+
+
 def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
     """Checks early lnprob vals with final lnprob vals for convergence
 
@@ -265,7 +386,8 @@ def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
 
 def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
              plot_it=False, pool=None, convergence_tol=0.25, init_pos=None,
-             plot_dir='', save_dir='', init_pars=None, sampling_steps=None):
+             plot_dir='', save_dir='', init_pars=None, sampling_steps=None,
+             traceback=False):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -320,6 +442,10 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         distributions is required, since the burnin stage already
         characterises a converged solution for "burnin_steps".
 
+    traceback : bool {False}
+        Set this as true to run with the (retired) traceback
+        implementation.
+
     Returns
     -------
     best_sample
@@ -358,9 +484,14 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
 #        init_pars[-1] = fixed_age
 #        INIT_SDEV[-1] = 0.0
 
+    if traceback:
+        lnprob_function = lnprobTracebackFunc
+    else:
+        lnprob_function = lnprobFunc
+
     # Whole emcee shebang
     sampler = emcee.EnsembleSampler(
-        NWALKERS, NPAR, lnprobFunc, args=[star_pars, z], pool=pool,
+        NWALKERS, NPAR, lnprob_function, args=[star_pars, z], pool=pool,
     )
     # initialise walkers, note that INIT_SDEV is carefully chosen such thata
     # all generated positions are permitted by lnprior
@@ -449,3 +580,5 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     best_sample = sampler.flatchain[final_best_ix]
 
     return best_sample, sampler.chain, sampler.lnprobability
+
+

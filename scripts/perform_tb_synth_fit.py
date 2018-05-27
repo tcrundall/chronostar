@@ -1,13 +1,14 @@
 #! /usr/bin/env python -W ignore
 """
-This script demos the use of tfgroupfitter. It determines the most likely
-origin point of a set of stars assuming a (separate) spherical distribution
-in position and velocity space.
+This script demos the use of groupfitter, using the traceback
+implementation. It determines the most likely origin point of a set of
+stars assuming a (separate) spherical distribution in position and
+velocity space.
 
 Call with:
-    python perform_synth_fit.py [age] [dX] [dV] [nstars] [prec..]
+    python perform_tb_synth_fit.py [age] [dX] [dV] [nstars] [prec..]
 or
-    mpirun -np [nthreads] python perform_synth_fit.py [age] [dX] [dV]
+    mpirun -np [nthreads] python perform_tb_synth_fit.py [age] [dX] [dV]
     [nstars] [prec..]
 where nthreads is the number of threads to be passed into emcee run
 """
@@ -43,7 +44,6 @@ INIT_WITH_TRUE_ORIGIN = True
 
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
-"""
 BURNIN_STEPS = 500
 SAMPLING_STEPS = 5000
 C_TOL = 0.25
@@ -51,6 +51,7 @@ C_TOL = 0.25
 BURNIN_STEPS = 10
 SAMPLING_STEPS = 50
 C_TOL = 1.5
+"""
 
 print("In preamble")
 try:
@@ -58,26 +59,26 @@ try:
     nstars = int(sys.argv[4])
     precs = sys.argv[5:]
 except ValueError:
-    print("--------------------- INCORRECT USAGE --------------------------")
+    print("--------------------- INCORRECT USAGE -----------------------")
     print("nohup mpirun -np 19 python perform_synth_fit.py [age] [dX]"
           " [dV]\n     [nstars] [prec1] [prec2] ... &")
-    print("----------------------------------------------------------------")
+    print("-------------------------------------------------------------")
     raise
 
 # Setting up file system
 if platform.system() == 'Linux': # then we are on a RSAA server
-    rdir = "/data/mash/tcrun/synth_fit/{}_{}_{}_{}/".format(int(age),
+    rdir = "/data/mash/tcrun/tb_synth_fit/{}_{}_{}_{}/".format(int(age),
                                                             int(dX),
                                                             int(dV),
                                                             int(nstars))
 else: #platform.system() == 'Darwin' # cause no one uses windows....
-    rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
+    rdir = "../results/tb_synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
                                                       int(dV), int(nstars))
 try:
     mkpath(rdir)
 except:
     # I guess you're not Tim Crundall... or on an RSAA server
-    rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
+    rdir = "../results/tb_synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
                                                       int(dV), int(nstars))
     mkpath(rdir)
 
@@ -91,7 +92,7 @@ xyzuvw_perf_file     = "perf_xyzuvw.npy"
 group_savefile       = 'origins.npy'
 xyzuvw_init_savefile = 'xyzuvw_init.npy'
 astro_savefile       = 'astro_table.txt'
-xyzuvw_conv_savefile = 'xyzuvw_now.fits'
+xyzuvw_tb_savefile = 'xyzuvw_tb.fits'
 
 # Initialize the MPI-based pool used for parallelization.
 using_mpi = True
@@ -178,13 +179,19 @@ for prec in precs:
         astro_table = ms.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
                                        savefile=pdir+astro_savefile)
         # logging.info("-- Generated astrometry table with errors:")
-        # logging.info("Parallax:        {:4} mas".format(ms.GERROR['e_Plx']))
-        # logging.info("Radial velocity: {:4} km/s".format(ms.GERROR['e_RV']))
-        # logging.info("Proper motion:   {:4} mas/yr".\
+        # logging.info("Parallax:       {:4} mas".format(ms.GERROR['e_Plx']))
+        # logging.info("Radial velocity:{:4} km/s".format(ms.GERROR['e_RV']))
+        # logging.info("Proper motion:  {:4} mas/yr".\
         #              format(ms.GERROR['e_pm']))
         star_pars = cv.convertMeasurementsToCartesian(
-            astro_table, savefile=pdir+xyzuvw_conv_savefile
+            astro_table, #savefile=pdir+xyzuvw_conv_savefile
         )
+        max_age = int(origin.age) * 2
+        ntimes = max_age + 1
+        times = np.linspace(0, -max_age, ntimes)
+        star_pars_all =\
+            torb.generateTracebackFile(star_pars, times,
+                                       savefile=pdir+xyzuvw_tb_savefile)
         logging.info("Generated [{}] traceback file".format(prec))
 
         if INIT_WITH_TRUE_ORIGIN:
@@ -195,10 +202,10 @@ for prec in precs:
         # apply traceforward fitting (with lnprob, corner plots as side
         # effects)
         best_fit, chain, lnprob = gf.fitGroup(
-            xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
+            xyzuvw_dict=star_pars_all, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL, plot_dir=pdir,
             sampling_steps=SAMPLING_STEPS, save_dir=pdir,
-            init_pars=init_pars
+            init_pars=init_pars, traceback=True,
         )
         # store in each directory, for hexplotter
         # also used as a flag to confirm this prec already fitted for

@@ -90,9 +90,8 @@ def convertAnglesToCartesian(theta, phi, radius=1.0):
 def convertCartesianToAngles(x,y,z,return_dist=False, value=False):
     """Tested"""
     dist = np.sqrt(x**2 + y**2 + z**2)
-    # little exception, just so the sun can be inserted if desired
     if dist == 0.0:
-        z = 1e-10
+        z += 1e-10 #HACK allowing sun (who has dist=0) to be inserted
         dist = np.sqrt(x**2 + y**2 + z**2)
     phi = (np.arcsin(z/dist)*un.rad).to('deg')
     theta = np.mod((np.arctan2(y/dist,x/dist)*un.rad).to('deg'), 360*un.deg)

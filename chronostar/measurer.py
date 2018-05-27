@@ -10,6 +10,7 @@ appropriate errors.
 from __future__ import print_function, division
 
 from astropy.table import Table
+import logging
 import numpy as np
 import pickle
 
@@ -21,6 +22,15 @@ GERROR = {
     'e_RV' :0.3,  #e_RV [km/s]
     'e_pm' :0.06, #e_pm [mas/yr]
 }
+
+# BASED ON MEDIAN ERRORS OF ALL GAIA STARS WITH RVS
+# AND <20% PARALLAX ERROR
+GERROR = {
+    'e_Plx':0.035, #e_Plx [mas]
+    'e_RV' :1.0,  #e_RV [km/s]
+    'e_pm' :0.05, #e_pm [mas/yr]
+}
+
 #GERROR = {
 #    'e_Plx':0.04, #e_Plx [mas]
 #    'e_RV' :0.6,  #e_RV [km/s]
@@ -148,6 +158,13 @@ def measureXYZUVW(xyzuvws, error_frac, savefile=''):
     astrometry_table = convertArrayToTable(astros_w_errs, raw_errors)
     #if as_table:
     #    astros_w_errs = convertArrayToTable(astros_w_errs, raw_errors)
+    logging.info("-- Generated astrometry table with errors:")
+    logging.info("Parallax:       {:4} mas".\
+                 format(error_frac * GERROR['e_Plx']))
+    logging.info("Radial velocity:{:4} km/s".\
+                 format(error_frac * GERROR['e_RV']))
+    logging.info("Proper motion:  {:4} mas/yr".\
+                 format(error_frac * GERROR['e_pm']))
 
 
     if savefile:
