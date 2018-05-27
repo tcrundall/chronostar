@@ -237,6 +237,43 @@ def lnprobFunc(pars, star_pars, z):
     return lp + lnlike(pars, star_pars, z)
 
 
+def lnpriorTraceback(pars, star_pars):
+    """Computes the prior of the group models constraining parameter space
+
+    Parameters
+    ----------
+    pars
+        Parameters describing the group model being fitted
+    star_pars
+        traceback data being fitted to
+    (retired) z
+        array of weights [0.0 - 1.0] for each star, describing how likely
+        they are members of group to be fitted.
+
+    Returns
+    -------
+    lnprior
+        The logarithm of the prior on the model parameters
+
+    TODO: Incorporate star determinants
+    """
+    # fetch maximum allowed age
+    max_age = abs(star_pars['times'][-1])
+
+    means = pars[0:6]
+    stds = np.exp(pars[6:8])
+    age = pars[8]
+
+    if np.min(means) < -100000 or np.max(means) > 100000:
+        return -np.inf
+    if np.min(stds) <= 0.0 or np.max(stds) > 10000.0:
+        return -np.inf
+    if age < 0.0 or age >= max_age:
+        return -np.inf
+
+    return lnAlphaPrior(pars, star_pars)
+
+
 def interp_cov(target_time, star_pars):
     """Calculates the xyzuvw vector and covariance matrix by interpolation
 
@@ -346,7 +383,7 @@ def lnprobTracebackFunc(pars, star_pars, z):
     logprob
         the logarithm of the posterior probability of the fit
     """
-    lp = lnprior(pars, star_pars)
+    lp = lnpriorTraceback(pars, star_pars)
     if not np.isfinite(lp):
         return -np.inf
     return lp + lnlikeTraceback(pars, star_pars, z)
