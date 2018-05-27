@@ -58,13 +58,12 @@ precs = ['perf', 'half', 'gaia']
 """
 
 # EVEN PARAMETERS INITED
-"""
 ages = [5, 15, 30, 50]
 spreads = [2, 10] #pc
 v_disps = [1, 5] #km/s
 sizes = [50, 200] #nstars
-#precs = ['perf', 'half', 'gaia']
-precs = ['double']
+precs = ['perf', 'half', 'gaia', 'double']
+#precs = ['double']
 """
 ages = [6, 11]
 spreads = [2] #pc
@@ -72,6 +71,7 @@ v_disps = [1] #km/s
 sizes = [10] #nstars
 #precs = ['perf', 'half', 'gaia']
 precs = ['half', 'gaia']
+"""
 
 
 #precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
@@ -88,8 +88,8 @@ def perform_synth_fit_wrapper(scenario):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='w',
-                        filename="mash_perform_many_tb_synth_fits.log")
-    logging.info("mash is performing many fits:\nages: {}\nspreads: {}\n"
+                        filename="motley_perform_many_tb_synth_fits.log")
+    logging.info("motley is performing many fits:\nages: {}\nspreads: {}\n"
                  "v_disps: {}\nsizes: {}\nprecs: {}\n".format(ages, spreads,
                                                               v_disps, sizes,
                                                               precs))
