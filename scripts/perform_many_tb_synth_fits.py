@@ -57,6 +57,14 @@ sizes = [25, 100] #nstars
 precs = ['perf', 'half', 'gaia']
 """
 
+# ODD PARAMETERS INITED
+ages = [5, 15, 30, 50]
+spreads = [1, 5] #pc
+v_disps = [2, 10] #km/s
+sizes = [25, 100] #nstars
+precs = ['perf', 'half', 'gaia', 'double']
+#precs = ['double']
+"""
 # EVEN PARAMETERS INITED
 ages = [5, 15, 30, 50]
 spreads = [2, 10] #pc
@@ -64,6 +72,7 @@ v_disps = [1, 5] #km/s
 sizes = [50, 200] #nstars
 precs = ['perf', 'half', 'gaia', 'double']
 #precs = ['double']
+"""
 """
 ages = [6, 11]
 spreads = [2] #pc
