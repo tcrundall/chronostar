@@ -16,12 +16,12 @@ import pickle
 
 import coordinate as cc
 
-# BRIGHT STARS
-GERROR = {
-    'e_Plx':0.04, #e_Plx [mas]
-    'e_RV' :0.3,  #e_RV [km/s]
-    'e_pm' :0.06, #e_pm [mas/yr]
-}
+## BRIGHT STARS
+#GERROR = {
+#    'e_Plx':0.04, #e_Plx [mas]
+#    'e_RV' :0.3,  #e_RV [km/s]
+#    'e_pm' :0.06, #e_pm [mas/yr]
+#}
 
 # BASED ON MEDIAN ERRORS OF ALL GAIA STARS WITH RVS
 # AND <20% PARALLAX ERROR

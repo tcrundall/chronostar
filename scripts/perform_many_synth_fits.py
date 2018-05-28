@@ -56,22 +56,21 @@ v_disps = [2, 10] #km/s
 sizes = [25, 100] #nstars
 precs = ['perf', 'half', 'gaia']
 """
-"""
 # EVEN PARAMETERS INITED
-ages = [5, 15, 30, 50]
+ages = [50] # malice will do age = 50
 spreads = [2, 10] #pc
 v_disps = [1, 5] #km/s
 sizes = [50, 200] #nstars
-#precs = ['perf', 'half', 'gaia']
-precs = ['double']
+precs = ['perf', 'half', 'gaia', 'double']
 """
 # ODD PARAMETERS INITED
 ages = [5, 15, 30, 50]
 spreads = [1, 5] #pc
 v_disps = [2, 10] #km/s
 sizes = [25, 100] #nstars
-#precs = ['perf', 'half', 'gaia']
-precs = ['double']
+precs = ['perf', 'half', 'gaia', 'double']
+#precs = ['double']
+"""
 """
 ages = [6, 11]
 spreads = [2] #pc
@@ -87,7 +86,7 @@ prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
 def perform_synth_fit_wrapper(scenario):
     logging.info("Fitting: {}".format(scenario))
-    os.system("mpirun -np 7 python perform_synth_fit.py {} {} {} {} "\
+    os.system("mpirun -np 4 python perform_synth_fit.py {} {} {} {} "\
         .format(*scenario) + precs_string)
     #os.system("python perform_synth_fit.py {} {} {} {} " \
     #          .format(*scenario) + precs_string)
@@ -95,8 +94,8 @@ def perform_synth_fit_wrapper(scenario):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='w',
-                        filename="motley_perform_many_synth_fits.log")
-    logging.info("motley is performing many fits:\nages: {}\nspreads: {}\n"
+                        filename="malice_perform_many_synth_fits.log")
+    logging.info("malice is performing even fits:\nages: {}\nspreads: {}\n"
                  "v_disps: {}\nsizes: {}\nprecs: {}\n".format(ages, spreads,
                                                               v_disps, sizes,
                                                               precs))

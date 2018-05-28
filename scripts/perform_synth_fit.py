@@ -43,7 +43,6 @@ INIT_WITH_TRUE_ORIGIN = True
 
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
 
-"""
 BURNIN_STEPS = 500
 SAMPLING_STEPS = 5000
 C_TOL = 0.25
@@ -51,6 +50,7 @@ C_TOL = 0.25
 BURNIN_STEPS = 10
 SAMPLING_STEPS = 50
 C_TOL = 1.5
+"""
 
 print("In preamble")
 try:
@@ -119,15 +119,17 @@ logging.info("{} sampling steps".format(SAMPLING_STEPS))
 logging.info("{} tolerance".format(C_TOL))
 logging.info("In the directory: {}".format(rdir))
 
-# Destination: (inspired by LCC)
-mean_now = np.array([50., -100., 0., -10., -20., -5.])
-# !!!!!!! ^^^^^ IS WRONG!!!!!!!!
-# ^^^^^^ IS LCC IN HELIOCENTRIC COORDINATES. IN LSR COORDINATES IT IS:
-mean_now_lsr = cc.convertHelioToLSR(np.array([50., -100., 0.,
-                                              -10., -20., -5.]))
+## Destination: (inspired by LCC)
+#mean_now = np.array([50., -100., 0., -10., -20., -5.])
+## !!!!!!! ^^^^^ IS WRONG!!!!!!!!
+## ^^^^^^ IS LCC IN HELIOCENTRIC COORDINATES. IN LSR COORDINATES IT IS:
+#mean_now_lsr = cc.convertHelioToLSR(np.array([50., -100., 0.,
+#                                              -10., -20., -5.]))
 # !!!!! WHICH EQUALS [50., -100., 25., 1.1, -7.76, 2.25], much smaller vels
+mean_now_lsr = np.array([50., -100., 25., 1.1, -7.76, 2.25])
+
 # Calculate appropriate starting point
-mean_then = torb.traceOrbitXYZUVW(mean_now, -age)
+mean_then = torb.traceOrbitXYZUVW(mean_now_lsr, -age)
 # gather inputs
 group_pars = np.hstack((mean_then, dX, dV, age, nstars))
 
