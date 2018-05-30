@@ -28,11 +28,11 @@ spreads = [1, 2, 5, 10] #pc
 v_disps = [1, 2, 5, 10] #km/s
 sizes = [25, 50, 100, 200] #nstars
 precs = ['perf', 'half', 'gaia', 'double']
-ages = [5, 30]
-spreads = [5]
-v_disps = [2]
-sizes   = [25, 100]
-precs = ['perf', 'gaia', 'double']
+# ages = [5, 30]
+# spreads = [5]
+# v_disps = [2]
+# sizes   = [25, 100]
+# precs = ['perf', 'gaia', 'double']
 """
 # DIFFERENT SERVERS GET DIFFERENT AGE,
 # Mash: 5
@@ -44,12 +44,12 @@ v_disps = [2, 10] #km/s
 sizes = [25, 100] #nstars
 precs = ['perf', 'half', 'gaia']
 """
-# EVEN PARAMETERS
-ages = [5, 15, 30, 50]
-spreads = [2, 10] #pc
-v_disps = [1, 5] #km/s
-sizes = [50, 200] #nstars
-precs = ['perf', 'half', 'gaia']
+# # EVEN PARAMETERS
+# ages = [5, 15, 30, 50]
+# spreads = [2, 10] #pc
+# v_disps = [1, 5] #km/s
+# sizes = [50, 200] #nstars
+# precs = ['perf', 'half', 'gaia']
 
 #precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
 precs_string = ' '.join(precs)

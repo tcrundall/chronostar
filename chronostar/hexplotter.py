@@ -13,7 +13,7 @@ import traceorbit as torb
 import transform as tf
 import synthesiser as syn
 
-COLORS = ['xkcd:orange', 'xkcd:cyan',
+COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']*12
 #COLORS = ['xkcd:cyan'] * 60
 color_codes = ['0xF97306','0x00FFFF', '0xFFDF22',   '0x7F5F00',
@@ -87,7 +87,7 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
                 covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['origin_then'][i][np.ix_([dim1,dim2])],
                 with_line=True,
-                ax=ax, color="xkcd:neon purple", alpha=0.3, ls='--',
+                ax=ax, color="xkcd:grey", alpha=0.3, ls='--',
                 #hatch='|',
             )
         # I plot a marker in the middle for scenarios where the volume
@@ -239,7 +239,38 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
 
     plot_hexplot(star_pars, means, covs, chain, iter_count=0,
                  save_dir=save_dir, file_stem=file_stem, title=title)
+    plotXYandZW(star_pars, means, covs, chain, iter_count=0,
+                 save_dir=save_dir, file_stem=file_stem, title=title)
 
+def plotXYandZW(star_pars, means, covs, chain, iter_count, prec=None,
+                  save_dir='', file_stem='', title=''):
+    logging.info("In plotXY., iter {}".format(iter_count))
+    ngroups = covs['fitted_then'].shape[0]
+
+    # INITIALISE PLOT
+    plt.clf()
+    f, ax1 = plt.subplots(1, 1)
+    f, ((ax1), (ax2)) = plt.subplots(2, 1)
+    f.set_size_inches(10, 20)
+    f.suptitle(title)
+    f.set_tight_layout(tight=True)
+
+    # PLOT THE OVAL PLOTS
+    plot_fit(star_pars, means, covs, ngroups, iter_count, ax1, 0, 1)
+    plot_fit(star_pars, means, covs, ngroups, iter_count, ax2, 2, 5)
+#    plot_fit(star_pars, means, covs, ngroups, iter_count, ax4, 0, 3)
+#    plot_fit(star_pars, means, covs, ngroups, iter_count, ax5, 1, 4)
+#    plot_fit(star_pars, means, covs, ngroups, iter_count, ax6, 2, 5)
+
+#    # PLOT THE HISTOGRAMS
+#    age_samples = get_age_samples(ngroups, chain)
+#    if age_samples is not None:
+#        plot_age_hist(age_samples, ax3)
+
+    f.savefig(
+        save_dir + "duoplot_" + file_stem + "{:02}.pdf".format(iter_count),
+        bbox_inches='tight', format='pdf')
+    f.clear()
 
 def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
                    xyzuvw_file='', title='', file_stem='', groups_file=''):
