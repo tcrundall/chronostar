@@ -90,11 +90,14 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
                 ax=ax, color="xkcd:grey", alpha=0.3, ls='--',
                 #hatch='|',
             )
+            ax.plot(means['origin_then'][i][dim1],
+                    means['origin_then'][i][dim2],
+                    color="xkcd:grey", marker='x', alpha=1)
         # I plot a marker in the middle for scenarios where the volume
         # collapses to a point
         ax.plot(means['fitted_then'][i][dim1],
                 means['fitted_then'][i][dim2],
-                color=COLORS[i], marker='x', alpha=0.2)
+                color=COLORS[i], marker='x', alpha=1)
         ee.plotCovEllipse(
             covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_then'][i][np.ix_([dim1,dim2])],
@@ -251,8 +254,8 @@ def plotXYandZW(star_pars, means, covs, chain, iter_count, prec=None,
     plt.clf()
     f, ax1 = plt.subplots(1, 1)
     f, ((ax1), (ax2)) = plt.subplots(2, 1)
-    f.set_size_inches(10, 20)
-    f.suptitle(title)
+    f.set_size_inches(5, 10)
+    #f.suptitle(title)
     f.set_tight_layout(tight=True)
 
     # PLOT THE OVAL PLOTS
