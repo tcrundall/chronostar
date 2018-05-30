@@ -73,11 +73,15 @@ if __name__ == '__main__':
     else:
         ncpus = 1
     logging.info("ncpus: {}".format(ncpus))
-    scenarios = product(ages, spreads, v_disps, sizes)
+    odd_scenarios  = product(ages, spreads[::2], v_disps[1::2], sizes[::2])
+    even_scenarios = product(ages, spreads[1::2], v_disps[::2], sizes[1::2])
+
     if ncpus > 1:
         p = Pool(ncpus)
-        p.map(plotTheThing, scenarios)
+        p.map(plotTheThing, odd_scenarios)
+        p.map(plotTheThing, even_scenarios)
     else:
-        map(plotTheThing, scenarios)
-        
+        map(plotTheThing, odd_scenarios)
+        map(plotTheThing, even_scenarios)
+
 
