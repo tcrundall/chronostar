@@ -34,9 +34,10 @@ def r_from_xyz(xyzs):
 res_dir = '../results/measured/'
 
 scenarios = [
+    '5_5_2_25',
     '15_5_2_25',
     '30_5_2_25',
-    '5_5_2_25',
+    '50_5_2_25',
 ]
 
 precs = ['perf', 'half', 'gaia', 'doub', 'trip']
@@ -46,14 +47,15 @@ astro_tables = []
 fits_files = []
 for scen in scenarios:
     for prec in precs:
-        fits_file = res_dir+ "xyzuvw_now_" + scen + "_" + prec + ".fits"
+        fits_file = res_dir + "xyzuvw_now_" + scen + "_" + prec + ".fits"
 
         fits_files.append(fits_file)
         try:
             with open(fits_file, 'r') as fp:
                 pass
         except IOError:
-            xyzuvw_file = res_dir + scen + "_xyzuvw_init.npy"
+            #xyzuvw_file = res_dir + scen + "_xyzuvw_init.npy"
+            xyzuvw_file = res_dir + scen + "_perf_xyzuvw.npy"
             init_xyzuvw = np.load(xyzuvw_file)
             astr_table = ms.measureXYZUVW(init_xyzuvw, prec_val[prec])
             cv.convertMeasurementsToCartesian(t=astr_table,
@@ -75,7 +77,8 @@ for i in range(len(fits_files)):
     ntimes = int(2 * true_age + 1)
     times = -np.linspace(0, 2 * true_age, ntimes)
     tb = torb.traceManyOrbitXYZUVW(xyzuvw_dict['xyzuvw'], times=times,
-                                   single_age=False, savefile='tb_{}.npy'. \
+                                   single_age=False,
+                                   savefile=res_dir + 'tb_{}.npy'.\
                                    format(int(true_age)))
 
     # for each timestep, get mean of association and distance from mean
@@ -88,4 +91,4 @@ for i in range(len(fits_files)):
     plt.clf()
     plt.plot(-times, dists.T, '#888888')
     plt.plot(-times, np.median(dists.T, axis=1), 'r')
-    plt.savefig(file_stems[i]+"_sep_from_mean.png")
+    plt.savefig(res_dir + file_stems[i]+"_sep_from_mean.pdf")

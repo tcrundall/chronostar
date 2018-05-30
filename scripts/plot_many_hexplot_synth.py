@@ -83,5 +83,6 @@ if __name__ == '__main__':
     else:
         map(plotTheThing, odd_scenarios)
         map(plotTheThing, even_scenarios)
+    logging.info("COMPLETE!")
 
 

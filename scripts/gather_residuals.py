@@ -13,7 +13,7 @@ import pdb
 import sys
 sys.path.insert(0, '..')
 
-master_pdir = "../plots/residuals/"
+master_pdir = "../plots/residuals_better/"
 
 def calc_best_fit(flat_samples):
     """
@@ -65,7 +65,7 @@ e_spreads = [2, 10]
 e_v_disps = [1, 5]
 e_sizes = [50, 200]
 
-precs = ['perf', 'half', 'gaia']
+precs = ['perf', 'half', 'gaia', 'double']
 # load all the relevant data into a massive array where
 # ix implicitly correspond to the value of the parameter
 
@@ -73,13 +73,15 @@ rdir = "../results/synth_fit/"
 chain_file = "final_chain.npy"
 origin_file = "origins.npy"
 
-prec_val = {'perf':0., 'half':0.5, 'gaia':1.0}
+prec_val = {'perf':0., 'half':0.5, 'gaia':1.0, 'double':2.0}
 
 #------------------------------------------------------------
 #-------   GATHER FITS FROM THE 'ODD' SIMULATIONS -----------
 #------------------------------------------------------------
 logging.info("Gathering 'ODD' simulations")
 o_fits = np.zeros((len(ages), len(o_spreads), len(o_v_disps), len(o_sizes),
+                    len(precs), 9, 3))
+o_fits_w_errs = np.zeros((len(ages), len(o_spreads), len(o_v_disps), len(o_sizes),
                     len(precs), 9, 3))
 for age_ix, age in enumerate(ages):
     for spread_ix, spread in enumerate(o_spreads):
@@ -96,6 +98,8 @@ for age_ix, age in enumerate(ages):
                         conv_chain[:,6:8] = np.exp(conv_chain[:,6:8])
                         origin = np.load(pdir + origin_file).item()
                         fit_w_errs = calc_best_fit(conv_chain)
+                        o_fits_w_errs[age_ix,spread_ix,v_disp_ix,size_ix,
+                                      prec_ix] = fit_w_errs
                         means = fit_w_errs[:,0]
                         sigs = fit_w_errs[:,1:].mean(axis=1)
                         key_info = np.vstack((means,sigs,
@@ -133,6 +137,8 @@ o_great_ixs = np.where(abs(o_norm_res).max(axis=-1) < 5)
 logging.info("Gathering 'EVEN' simulations")
 e_fits = np.zeros((len(ages), len(e_spreads), len(e_v_disps), len(e_sizes),
                    len(precs), 9, 3))
+e_fits_w_errs = np.zeros((len(ages), len(o_spreads), len(o_v_disps), len(o_sizes),
+                          len(precs), 9, 3))
 for age_ix, age in enumerate(ages):
     for spread_ix, spread in enumerate(e_spreads):
         for v_disp_ix, v_disp in enumerate(e_v_disps):
@@ -148,6 +154,8 @@ for age_ix, age in enumerate(ages):
                         conv_chain[:,6:8] = np.exp(conv_chain[:,6:8])
                         origin = np.load(pdir + origin_file).item()
                         fit_w_errs = calc_best_fit(conv_chain)
+                        e_fits_w_errs[age_ix,spread_ix,v_disp_ix,size_ix,
+                                      prec_ix] = fit_w_errs
                         means = fit_w_errs[:,0]
                         sigs = fit_w_errs[:,1:].mean(axis=1)
                         key_info = np.vstack((means,sigs,
@@ -215,7 +223,7 @@ for i, age in enumerate(ages):
 
 ax.errorbar(ages, age_fit_means, yerr=age_fit_stds, fmt='b.')
 ax.plot(ages, np.zeros(len(ages)), color='b', ls=':')
-ax.set_xlabel("True age")
+ax.set_xlabel("True age [Myr]")
 ax.set_ylabel("Normalised offset in age")
 
 # PLOTTING ALL RESIDUALS AS FUNCTION OF STAR COUNT
@@ -329,7 +337,7 @@ for i, age in enumerate(ages):
 
 ax.errorbar(ages, age_fit_means, yerr=age_fit_stds, fmt='b.')
 ax.plot(ages, np.zeros(len(ages)), color='b', ls=':')
-ax.set_xlabel("True age")
+ax.set_xlabel("True age [Myr]")
 ax.set_ylabel("Normalised offset in age")
 
 # PLOTTING ALL RESIDUALS AS FUNCTION OF STAR COUNT
@@ -448,7 +456,7 @@ for i, age in enumerate(ages):
 
 ax.errorbar(ages, age_fit_means, yerr=age_fit_stds, fmt='b.')
 ax.plot(ages, np.zeros(len(ages)), color='b', ls=':')
-ax.set_xlabel("True age")
+ax.set_xlabel("True age [Myr]")
 ax.set_ylabel("Raw offset in age [Myr]")
 
 # PLOTTING LOW DV RAW RESIDUALS AS FUNCTION OF STAR COUNT
@@ -555,7 +563,7 @@ age_fit_means = []
 age_fit_stds = []
 
 for i, age in enumerate(ages):
-    age_resids = np.hstack((o_res[i,:,0,:,:,-1].flatten(),
+    age_resids = np.hstack((o_res[i,0,0,:,:,-1].flatten(),
                              e_res[i,0,0,:,:,-1].flatten()))
     age_fit_means.append(np.mean(age_resids))
     age_fit_stds.append(np.std(age_resids))
@@ -563,7 +571,7 @@ for i, age in enumerate(ages):
 
 ax.errorbar(ages, age_fit_means, yerr=age_fit_stds, fmt='b.')
 ax.plot(ages, np.zeros(len(ages)), color='b', ls=':')
-ax.set_xlabel("True age")
+ax.set_xlabel("True age [Myr]")
 ax.set_ylabel("Raw offset in age [Myr]")
 
 # PLOTTING LOW DV RAW RESIDUALS AS FUNCTION OF STAR COUNT
@@ -573,7 +581,7 @@ age_fit_stds = []
 sizes = []
 
 for i, size in enumerate(zip(o_sizes, e_sizes)):
-    age_resids = o_res[:,:,0,:,i,-1]
+    age_resids = o_res[:,0,0,:,i,-1]
     age_fit_means.append(np.mean(age_resids))
     age_fit_stds.append(np.std(age_resids))
     sizes.append(size[0])
@@ -605,10 +613,10 @@ age_fit_means.append(np.mean(age_resids))
 age_fit_stds.append(np.std(age_resids))
 spreads.append(e_spreads[0])
 
-age_resids = o_res[:,1,0,:,:,-1]
-age_fit_means.append(np.mean(age_resids))
-age_fit_stds.append(np.std(age_resids))
-spreads.append(o_spreads[1])
+#age_resids = o_res[:,1,0,:,:,-1]
+#age_fit_means.append(np.mean(age_resids))
+#age_fit_stds.append(np.std(age_resids))
+#spreads.append(o_spreads[1])
 
 ax.errorbar(spreads, age_fit_means, yerr=age_fit_stds, fmt='b.')
 ax.plot(spreads, np.zeros(len(spreads)), color='b', ls=':')
@@ -622,7 +630,7 @@ age_fit_stds = []
 v_disps = []
 
 #for i, v_disp in enumerate(zip(o_v_disps, e_v_disps)):
-age_resids = o_res[:,:,0,:,:,-1]
+age_resids = o_res[:,0,0,:,:,-1]
 age_fit_means.append(np.mean(age_resids))
 age_fit_stds.append(np.std(age_resids))
 v_disps.append(o_v_disps[0])
@@ -646,7 +654,7 @@ vals = []
 
 for i, prec in enumerate(precs):
     vals.append(prec_val[prec])
-    age_resids = np.hstack((o_res[:,:,0,:,i,-1].flatten(),
+    age_resids = np.hstack((o_res[:,0,0,:,i,-1].flatten(),
                             e_res[:,0,0,:,i,-1].flatten()))
     age_fit_means.append(np.mean(age_resids))
     age_fit_stds.append(np.std(age_resids))
@@ -677,7 +685,7 @@ plt.savefig(master_pdir + "raw-age-res-low-dv-low-dx.pdf")
 # plt.clf()
 # plt.errorbar(ages, age_fit_means, yerr=age_fit_stds, fmt='b.')
 # plt.plot(ages, np.zeros(len(ages)), color='b', ls=':')
-# plt.xlabel("True age")
+# plt.xlabel("True age [Myr]")
 # plt.ylabel("Normalised offset in age")
 # plt.savefig(master_pdir + "age-norm-residuals-age-low-dv.pdf")
 #

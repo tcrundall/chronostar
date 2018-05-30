@@ -2,6 +2,7 @@ from __future__ import division, print_function
 
 """
 Reproduces the traceback plots seen all through the literature
+Lets use a 50_5_2_100
 """
 import matplotlib as mpl
 
@@ -56,7 +57,7 @@ def plotSeparation(xyzuvws, times, return_dists=False, prec='', true_age=None,
     plt.xlabel("Traceback age [Myr]")
     plt.ylabel("Distance from association centre [pc]")
 
-    plt.savefig(prec + "_sep_from_mean.pdf")
+    plt.savefig('temp_plots/' + prec + "_sep_from_mean.pdf")
     if return_dists:
         return dists
 

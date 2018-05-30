@@ -14,6 +14,7 @@ import chronostar.groupfitter as gf
 import chronostar.traceorbit as torb
 
 rdir = "../results/synth_fit/50_2_1_50/"
+rdir = "../results/synth_fit/30_5_2_100/"
 
 xyzuvw_init_file = rdir + "xyzuvw_init.npy"
 
@@ -29,8 +30,8 @@ nstars = xyzuvw_init.shape[0]
 
 def plot_subplot(traceforward, t_ix, dim1, dim2, ax):
     flat_tf = traceforward.reshape(-1,6)
-    mins = np.min(flat_tf, axis=0)
-    maxs = np.max(flat_tf, axis=0)
+#    mins = np.min(flat_tf, axis=0)
+#    maxs = np.max(flat_tf, axis=0)
     labels = ['X [pc]', 'Y [pc]', 'Z [pc]',
               'U [km/s]', 'V [km/s]', 'W [km/s]']
 
@@ -47,38 +48,48 @@ def plot_subplot(traceforward, t_ix, dim1, dim2, ax):
 #    ax.set_xlim(mins[dim1], maxs[dim1])
 #    ax.set_ylim(mins[dim2], maxs[dim2])
     ax.set_xlabel(labels[dim1])
-    ax.set_ylabel(labels[dim2])
+    #ax.set_ylabel(labels[dim2])
 
 def plot_row(traceforward, dim1, dim2, axs, row_ix):
+    labels = ['X [pc]', 'Y [pc]', 'Z [pc]',
+              'U [km/s]', 'V [km/s]', 'W [km/s]']
+    axs[row_ix,0].set_ylabel(labels[dim2])
     plot_subplot(traceforward, 1, dim1, dim2, axs[row_ix, 0])
     plot_subplot(traceforward, int(ntimes / 2), dim1, dim2, axs[row_ix, 1])
     plot_subplot(traceforward, ntimes, dim1, dim2, axs[row_ix, 2])
 
-    axs[row_ix, 0].set_xlim(axs[row_ix, 2].get_xlim())
-    axs[row_ix, 0].set_ylim(axs[row_ix, 2].get_ylim())
+    #axs[row_ix, 0].set_xlim(axs[row_ix, 2].get_xlim())
+    #axs[row_ix, 0].set_ylim(axs[row_ix, 2].get_ylim())
 
-    axs[row_ix, 1].set_xlim(axs[row_ix, 2].get_xlim())
-    axs[row_ix, 1].set_ylim(axs[row_ix, 2].get_ylim())
+    #axs[row_ix, 1].set_xlim(axs[row_ix, 2].get_xlim())
+    #axs[row_ix, 1].set_ylim(axs[row_ix, 2].get_ylim())
 
 plt.clf()
 nrows = 3
-fig, axs = plt.subplots(nrows=nrows, ncols=3, figsize=(10,9))#, sharey=True)
-
+fig, axs = plt.subplots(nrows=nrows, ncols=3, figsize=(10,9),
+                        sharey='row')#, sharey=True)
+axs[0,0].set_title("{} Myr".format(int(times[0])))
+axs[0,1].set_title("{} Myr".format(int(times[int(ntimes/2)])))
+axs[0,2].set_title("{} Myr".format(int(times[-1])))
 plot_row(traceforward, 0, 1, axs, 0)
 plot_row(traceforward, 1, 2, axs, 1)
 plot_row(traceforward, 3, 4, axs, 2)
 
-plt.savefig("temp_plots/break_down_unmixed.pdf")
+plt.savefig("temp_plots/break_down_unmixed2.pdf")
 
 plt.clf()
 nrows = 3
-fig, axs = plt.subplots(nrows=nrows, ncols=3, figsize=(10,9))#, sharey=True)
-
+fig, axs = plt.subplots(nrows=nrows, ncols=3, figsize=(10,9),
+                        sharey='row', sharex='row')#, sharey=True)
+fig.set_tight_layout(True)
+axs[0,0].set_title("{} Myr".format(int(times[0])))
+axs[0,1].set_title("{} Myr".format(int(times[int(ntimes/2)])))
+axs[0,2].set_title("{} Myr".format(int(times[-1])))
 plot_row(traceforward, 0, 3, axs, 0)
 plot_row(traceforward, 1, 4, axs, 1)
 plot_row(traceforward, 2, 5, axs, 2)
 
-plt.savefig("temp_plots/break_down_mixed.pdf")
+plt.savefig("temp_plots/break_down_mixed2.pdf")
 
 #times = np.array([1e-5])
 

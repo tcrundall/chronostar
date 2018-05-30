@@ -408,20 +408,21 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)
         ))
-        if (min(z.sum(axis=0)) < 10):
-            logging.info("!!! WARNING, GROUP {} HAS LESS THAN 10 STARS".\
-                         format(np.argmin(z.sum(axis=0))))
-            logging.info("+++++++++++++++++++++++++++++++++++++++++++")
-            logging.info("++++            Intervening            ++++")
-            logging.info("+++++++++++++++++++++++++++++++++++++++++++")
-            logging.info("Decomposing group {}...".format(
-                np.argmax(z.sum(axis=0)))
-            )
-            all_init_pos = [None] * ngroups
-            all_init_pars, sub_groups =\
-                decomposeGroup(old_groups[np.argmax(z.sum(axis=0))])
-            z = expectation(star_pars, sub_groups)
-            np.save(idir+"init_subgroups.npy", sub_groups)
+# TODO: NEED TO REWRITE THIS VVVVV SO CAN HANDLE MORE THAN 2 GROUPS
+#        if (min(z.sum(axis=0)) < 10):
+#            logging.info("!!! WARNING, GROUP {} HAS LESS THAN 10 STARS".\
+#                         format(np.argmin(z.sum(axis=0))))
+#            logging.info("+++++++++++++++++++++++++++++++++++++++++++")
+#            logging.info("++++            Intervening            ++++")
+#            logging.info("+++++++++++++++++++++++++++++++++++++++++++")
+#            logging.info("Decomposing group {}...".format(
+#                np.argmax(z.sum(axis=0)))
+#            )
+#            all_init_pos = [None] * ngroups
+#            all_init_pars, sub_groups =\
+#                decomposeGroup(old_groups[np.argmax(z.sum(axis=0))])
+#            z = expectation(star_pars, sub_groups)
+#            np.save(idir+"init_subgroups.npy", sub_groups)
         np.save(idir+"membership.npy", z)
 
         # MAXIMISE

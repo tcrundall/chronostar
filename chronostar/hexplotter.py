@@ -63,6 +63,93 @@ def plot_age_hist(ages, ax, init_conditions=None):
 #            ls='--'
 #        )
 
+def plot_then(star_pars, means, covs, ngroups, iter_count, ax, dim1, dim2):
+    try:
+        means['origin_then']
+        origins_inc = True
+    except KeyError:
+        origins_inc = False
+
+    dim_label = 'XYZUVW'
+    units = ['pc']*3 + ['km/s']*3
+
+    for i in range(ngroups):
+        if origins_inc:
+            #import pdb; pdb.set_trace()
+            ee.plotCovEllipse(
+                covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
+                means['origin_then'][i][np.ix_([dim1,dim2])],
+                with_line=True,
+                ax=ax, color="xkcd:grey", alpha=0.3, ls='--',
+                #hatch='|',
+            )
+            ax.plot(means['origin_then'][i][dim1],
+                    means['origin_then'][i][dim2],
+                    color="xkcd:grey", marker='+', alpha=1)
+        # I plot a marker in the middle for scenarios where the volume
+        # collapses to a point
+        ax.plot(means['fitted_then'][i][dim1],
+                means['fitted_then'][i][dim2],
+                color=COLORS[i], marker='x', alpha=1)
+        ee.plotCovEllipse(
+            covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
+            means['fitted_then'][i][np.ix_([dim1,dim2])],
+            with_line=True,
+            ax=ax, color=COLORS[i], alpha=0.3, ls='-.', #hatch='/',
+        )
+
+    ax.set_xlabel("{} [{}]".format(dim_label[dim1], units[dim1]))
+    ax.set_ylabel("{} [{}]".format(dim_label[dim2], units[dim2]))
+
+    logging.info("Iteration {}: {}{} plot plotted".\
+                 format(iter_count, dim_label[dim1], dim_label[dim2]))
+
+
+def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
+             dim2=1, z=None):
+    try:
+        means['origin_then']
+        origins_inc = True
+    except KeyError:
+        origins_inc = False
+
+    dim_label = 'XYZUVW'
+    units = ['pc']*3 + ['km/s']*3
+    xyzuvw = star_pars['xyzuvw']
+    xyzuvw_cov = star_pars['xyzuvw_cov']
+    if z is not None:
+        for i in range(ngroups):
+            mask = np.where(z[:,i] > 0.5)
+            ax.plot(xyzuvw[mask][:, dim1], xyzuvw[mask][:, dim2], '.',
+                    color=COLORS[i])
+            for mn, cov in zip(xyzuvw[mask], xyzuvw_cov[mask]):
+                ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
+                                  mn[np.ix_([dim1,dim2])],
+                                  ax=ax, color=COLORS[i], alpha=0.1)
+    else:
+        ax.plot(xyzuvw[:, dim1], xyzuvw[:, dim2], 'b.')
+        for mn, cov in zip(xyzuvw, xyzuvw_cov):
+            ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
+                                mn[np.ix_([dim1,dim2])],
+                                ax=ax, color='b', alpha=0.1)
+    for i in range(ngroups):
+
+        ee.plotCovEllipse(
+            covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
+            means['fitted_now'][i][np.ix_([dim1,dim2])],
+            with_line=True,
+            ax=ax, color=COLORS[i], ec=COLORS[i],
+            fill=False, alpha=0.3, hatch=HATCHES[i], ls='-.',
+        )
+
+    ax.set_xlabel("{} [{}]".format(dim_label[dim1], units[dim1]))
+    #ax.set_ylabel("{} [{}]".format(dim_label[dim2], units[dim2]))
+
+    logging.info("Iteration {}: {}{} plot plotted".\
+                 format(iter_count, dim_label[dim1], dim_label[dim2]))
+
+
+
 def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
              dim2=1):
     try:
@@ -245,6 +332,30 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
     plotXYandZW(star_pars, means, covs, chain, iter_count=0,
                  save_dir=save_dir, file_stem=file_stem, title=title)
 
+def plotNewHex(star_pars, means, covs, chain, iter_count, prec=None,
+               save_dir='', file_stem='', title='', z=None):
+    logging.info("In plotXY., iter {}".format(iter_count))
+    ngroups = covs['fitted_then'].shape[0]
+
+    # INITIALISE PLOT
+    plt.clf()
+    #f, ax1 = plt.subplots(1, 1)
+    f, axs = plt.subplots(3, 2, sharey='row', sharex='row')
+    f.set_size_inches(10, 15)
+    # f.suptitle(title)
+    f.set_tight_layout(tight=True)
+    plot_then(star_pars, means, covs, ngroups, iter_count, axs[0,0], 0, 3)
+    plot_then(star_pars, means, covs, ngroups, iter_count, axs[1,0], 1, 4)
+    plot_then(star_pars, means, covs, ngroups, iter_count, axs[2,0], 2, 5)
+    plot_now(star_pars, means, covs, ngroups, iter_count, axs[0,1], 0, 3, z)
+    plot_now(star_pars, means, covs, ngroups, iter_count, axs[1,1], 1, 4, z)
+    plot_now(star_pars, means, covs, ngroups, iter_count, axs[2,1], 2, 5, z)
+
+    f.savefig(
+        save_dir + "newsixplot_" + file_stem + "{:02}.pdf".format(iter_count),
+        bbox_inches='tight', format='pdf')
+    f.clear()
+
 def plotXYandZW(star_pars, means, covs, chain, iter_count, prec=None,
                   save_dir='', file_stem='', title=''):
     logging.info("In plotXY., iter {}".format(iter_count))
@@ -299,10 +410,17 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
     if not xyzuvw_file:
         logging.info("No xyzuvw filename provided. Must be synth fit yes?")
         xyzuvw_file = res_dir + "../xyzuvw_now.fits"
-    star_pars['xyzuvw'] = fits.getdata(xyzuvw_file, 1)
-    star_pars['xyzuvw_cov'] = fits.getdata(xyzuvw_file, 2)
+    try:
+        star_pars['xyzuvw'] = fits.getdata(xyzuvw_file, 1)
+        star_pars['xyzuvw_cov'] = fits.getdata(xyzuvw_file, 2)
+    except:
+        import chronostar.retired.groupfitter as rgf
+        old_star_pars = rgf.read_stars(res_dir + "../perf_tb_file.pkl")
+        star_pars = {'xyzuvw':old_star_pars['xyzuvw'][:,0],
+                     'xyzuvw_cov':old_star_pars['xyzuvw_cov'][:,0]}
 
     origins = np.load(res_dir + '../origins.npy')
+    z = np.load(res_dir + '../memberships.npy')
 
     fitted_then_mns = []
     fitted_then_covs = []
@@ -347,5 +465,6 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
         'fitted_now':np.array(fitted_now_covs),
     }
 
-    plot_hexplot(star_pars, means, covs, all_chains, iter_count=iter_count,
-                 save_dir=save_dir, file_stem=file_stem, title=title)
+    plotNewHex(star_pars, means, covs, all_chains, iter_count=iter_count,
+               save_dir=save_dir, file_stem=file_stem, title=title,
+               z=z)
