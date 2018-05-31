@@ -24,7 +24,19 @@ except IndexError:
           " ----------------------------------------------")
     raise
 
-rdir = "../results/em_fit/" + ass_name + "/"
+
+try:
+    rdir = "/data/mash/tcrun/em_fit/{}/".format(ass_name.strip('/'))
+    path_msg = "Storing data on mash data server"
+    mkpath(rdir)
+except (IOError, DistutilsFileError):
+    path_msg = ("I'm guessing you're not Tim Crundall..."
+                "or not on an RSAA server")
+    rdir = "../results/em_fit/{}/".format(ass_name)
+    if rdir[-1] != '/':
+        rdir += '/'
+    mkpath(rdir)
+
 xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
 best_fit_file = rdir + "best_fit.npy"
 
