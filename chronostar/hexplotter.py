@@ -121,7 +121,7 @@ def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
         for i in range(ngroups):
             mask = np.where(z[:,i] > 0.5)
             ax.plot(xyzuvw[mask][:, dim1], xyzuvw[mask][:, dim2], '.',
-                    color=COLORS[i])
+                    color=COLORS[i], alpha=0.6)
             for mn, cov in zip(xyzuvw[mask], xyzuvw_cov[mask]):
                 ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
                                   mn[np.ix_([dim1,dim2])],
@@ -419,7 +419,10 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
         star_pars = {'xyzuvw':old_star_pars['xyzuvw'][:,0],
                      'xyzuvw_cov':old_star_pars['xyzuvw_cov'][:,0]}
 
-    origins = np.load(res_dir + '../origins.npy')
+    try:
+        origins = np.load(res_dir + '../origins.npy')
+    except:
+        origins = None
     z = np.load(res_dir + '../memberships.npy')
 
     fitted_then_mns = []
@@ -450,9 +453,9 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
         fitted_now_mns.append(fitted_now_mn)
         fitted_now_covs.append(fitted_now_cov)
 
-        origin_then_mns.append(origins[group_ix].mean)
-        origin_then_covs.append(origins[group_ix].generateCovMatrix())
-
+        if origins is not None:
+            origin_then_mns.append(origins[group_ix].mean)
+            origin_then_covs.append(origins[group_ix].generateCovMatrix())
 
     means = {
        'origin_then':origin_then_mns,
