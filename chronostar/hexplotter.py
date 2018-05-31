@@ -76,16 +76,19 @@ def plot_then(star_pars, means, covs, ngroups, iter_count, ax, dim1, dim2):
     for i in range(ngroups):
         if origins_inc:
             #import pdb; pdb.set_trace()
-            ee.plotCovEllipse(
-                covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
-                means['origin_then'][i][np.ix_([dim1,dim2])],
-                with_line=True,
-                ax=ax, color="xkcd:grey", alpha=0.3, ls='--',
-                #hatch='|',
-            )
-            ax.plot(means['origin_then'][i][dim1],
-                    means['origin_then'][i][dim2],
-                    color="xkcd:grey", marker='+', alpha=1)
+            try:
+                ee.plotCovEllipse(
+                    covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
+                    means['origin_then'][i][np.ix_([dim1,dim2])],
+                    with_line=True,
+                    ax=ax, color="xkcd:grey", alpha=0.3, ls='--',
+                    #hatch='|',
+                )
+                ax.plot(means['origin_then'][i][dim1],
+                        means['origin_then'][i][dim2],
+                        color="xkcd:grey", marker='+', alpha=1)
+            except:
+                logging.info("No origins provided")
         # I plot a marker in the middle for scenarios where the volume
         # collapses to a point
         ax.plot(means['fitted_then'][i][dim1],
