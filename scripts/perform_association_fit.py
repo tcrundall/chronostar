@@ -50,8 +50,8 @@ except:
 try:
     ass_name = sys.argv[1]
 except IndexError:
-    print(" -------------- INCORRECT USAGE ---------------"
-          "  Usage: nohup mpirun -np 19 python [ass_name]"
+    print(" -------------- INCORRECT USAGE ---------------\n"
+          "  Usage: nohup mpirun -np 19 python [ass_name]\n"
           " ----------------------------------------------")
     raise
 
@@ -67,7 +67,7 @@ C_TOL = 0.25
 
 mkpath(results_dir)
 logging.basicConfig(
-    level=logging.INFO, filemode='a',
+    level=logging.INFO, filemode='w',
     filename=results_dir+'ass_fit.log',
 )
 logging.info("In preamble")

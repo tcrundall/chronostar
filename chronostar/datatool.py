@@ -26,14 +26,14 @@ def createSubFitsFile(mask, filename):
     filename : string
         name of destination fits file
     """
-    if filename[-4] == "fits":
+    if filename[-4:] != "fits":
         filename += ".fits"
     gaia_file = "../data/all_rvs_w_ok_plx.fits"
     with fits.open(gaia_file) as hdul:
         primary_hdu = fits.PrimaryHDU(header=hdul[1].header)
         hdu = fits.BinTableHDU(data=hdul[1].data[mask])
         new_hdul = fits.HDUList([primary_hdu, hdu])
-        new_hdul.writeto(filename)
+        new_hdul.writeto(filename, overwrite=True)
 
 
 def convertRecToArray(sr):
@@ -118,17 +118,17 @@ def convertManyRecToArray(data):
 
     # Array of dictionary keys to aid construction of cov matrices
     cls = np.array([
-        ['ra_error',         'ra_dec_corr',             'ra_parallax_corr',
+        ['ra_error',         'ra_dec_corr',           'ra_parallax_corr',
                 'ra_pmra_corr',       'ra_pmdec_corr',       None],
-        ['ra_dec_corr',      'dec_error',               'dec_parallax_corr',
+        ['ra_dec_corr',      'dec_error',             'dec_parallax_corr',
                 'dec_pmra_corr',      'dec_pmdec_corr',      None],
-        ['ra_parallax_corr', 'dec_parallax_corr',       'parallax_error',
+        ['ra_parallax_corr', 'dec_parallax_corr',     'parallax_error',
                 'parallax_pmra_corr', 'parallax_pmdec_corr', None],
-        ['ra_pmra_corr',     'dec_pmra_corr',           'parallax_pmra_corr',
+        ['ra_pmra_corr',     'dec_pmra_corr',         'parallax_pmra_corr',
                  'pmra_error',        'pmra_pmdec_corr',     None],
-        ['ra_pmdec_corr',    'dec_pmdec_corr',          'parallax_pmdec_corr',
+        ['ra_pmdec_corr',    'dec_pmdec_corr',        'parallax_pmdec_corr',
                  'pmra_pmdec_corr',   'pmdec_error',         None],
-        [None,               None,                      None,
+        [None,               None,                     None,
                  None,                 None, 'radial_velocity_error']
     ])
 
@@ -150,34 +150,36 @@ def convertManyRecToArray(data):
     # Might need to introduce some artificial uncertainty in
     # ra and dec so as to avoid indefinite matrices (too narrow)
 
-    # RA and DEC errors are actually quoted in mas, so we convert cov entries
-    # into degrees
+    # RA and DEC errors are actually quoted in mas, so we convert cov
+    # entries into degrees
     covs[:,:,:2] /= 3600000.
     covs[:,:2,:] /= 3600000.
 
     return means, covs
 
-def convertGaiaToXYZUVWDict(astr_file="gaia_dr2_ok_plx", server=False,
+def convertGaiaToXYZUVWDict(astr_file="../data/gaia_dr2_ok_plx.fits",
+                            server=False,
                             return_dict=False):
     """
     Supposed to generate XYZYVW dictionary for input to GroupFitter
 
     Doesn't work on whole Gaia catalogue... too much memory I think
+
+    TODO: Sort out a more consistent way to handle file names...
     """
     if server:
         rdir = '/data/mash/tcrun/'
     else:
         rdir = '../data/'
 
-    gaia_astr_file = rdir+astr_file+".fits"
-    logging.info("Converting: {}".format(gaia_astr_file))
-    hdul = fits.open(gaia_astr_file)#, memmap=True)
+    logging.info("Converting: {}".format(astr_file))
+    hdul = fits.open(astr_file)#, memmap=True)
     logging.info("Loaded hdul")
     means, covs = convertManyRecToArray(hdul[1].data)
     logging.info("Converted many recs")
     astr_dict = {'astr_mns': means, 'astr_covs': covs}
     cv.convertMeasurementsToCartesian(
-        astr_dict=astr_dict, savefile=rdir+astr_file+"_xyzuvw.fits")
+        astr_dict=astr_dict, savefile=rdir+astr_file[:-5]+"_xyzuvw.fits")
     logging.info("Converted and saved dictionary")
     if return_dict:
         return {'xyzuvw':means, 'xyzuvw_cov':covs}
@@ -185,7 +187,7 @@ def convertGaiaToXYZUVWDict(astr_file="gaia_dr2_ok_plx", server=False,
 
 def convertGaiaMeansToXYZUVW(astr_file="all_rvs_w_ok_plx", server=False):
     """
-    Generate mean XYZUVW for eac star in provided fits file (with Gaia format)
+    Generate mean XYZUVW for eac star in provided fits file (Gaia format)
     """
     if server:
         rdir = '/data/mash/tcrun/'

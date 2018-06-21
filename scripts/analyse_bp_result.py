@@ -5,6 +5,7 @@ For investigating accuracy of field distribution required to provide
 realistic BMPG membership probabilities based on current best fit to group
 """
 
+import logging
 import numpy as np
 import matplotlib as pyplot
 from distutils.dir_util import mkpath
@@ -49,6 +50,7 @@ def MVGaussian(vec_x, mean, cov, inv_cov = None):
                           np.dot(inv_cov, diff))
     return coeff * np.exp(expon)
 
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 rdir = "../results/em_fit/gaia_dr2_bp/"
 
@@ -69,6 +71,7 @@ gaia_gaia_evals_file = andir + "gaia_gaia_evals.npy"
 bpmg_candidates_mask_file = andir + "bpmg_candidates_mask.npy"
 gaia_mean_file = andir + "gaia_mean.npy"
 gaia_cov_file = andir + "gaia_cov.npy"
+bpmg_memb_probs_file = andir + "bpmg_memb_probs.npy"
 
 gaia_xyzuvw = np.load(gaia_xyzuvw_mean_file)
 z_final = np.load(final_membership_file)
@@ -101,10 +104,11 @@ except IOError:
     for i, gaia_star in enumerate(gaia_xyzuvw):
         if (i % 100000 == 0):
             print("{:10} of {:10}... {:6.1f}%".format(i, ngaia_stars,
-                                                      i / ngaia_stars * 100))
+                                                      i / ngaia_stars*100))
         # UNTESTED!!!
         gaia_bpmg_evals[i] = MVGaussian(gaia_star, bpmg_mean_now,
-                                        bpmg_cov_now, inv_cov=bpmg_invcov_now)
+                                        bpmg_cov_now,
+                                        inv_cov=bpmg_invcov_now)
     np.save(gaia_bpmg_evals_file, gaia_bpmg_evals)
 
 bpmg_candidates_mask = np.where(gaia_bpmg_evals >
@@ -146,21 +150,31 @@ except IOError:
 
 nbpmg_stars = 100
 print("Beginning iteration: n = {:5.4f}".format(nbpmg_stars))
-for i in range(10):
+for i in range(6):
     memb_probs = (nbpmg_stars * gaia_bpmg_evals /
                   (nbpmg_stars * gaia_bpmg_evals +
                    ( (ngaia_stars-nbpmg_stars) * gaia_gaia_evals) ))
     nbpmg_stars = np.sum(memb_probs)
     print("Iteration {}: n = {:5.4f}".format(i, nbpmg_stars))
 
+np.save(bpmg_memb_probs_file, memb_probs)
 best_bpmg_mask = np.where(memb_probs > 0.7)
 all_bpmg_mask = np.where(memb_probs > 0.0001)
 
+mkpath("../results/gaia_dr2_bp_best/")
 best_bpmg_astro_file = "../data/gaia_dr2_bp_best_astro.fits"
 dt.createSubFitsFile(best_bpmg_mask, best_bpmg_astro_file)
+dt.convertGaiaToXYZUVWDict(best_bpmg_astro_file)
+np.save("../results/gaia_dr2_bp_best/init_z.npy",
+        memb_probs[best_bpmg_mask])
 
+mkpath("../results/gaia_dr2_bp_all_poss/")
 all_poss_bpmg_astro_file = "../data/gaia_dr2_bp_all_poss_astro.fits"
 dt.createSubFitsFile(all_bpmg_mask, all_poss_bpmg_astro_file)
+dt.convertGaiaToXYZUVWDict(all_poss_bpmg_astro_file)
+np.save("../results/gaia_dr2_bp_all_poss/init_z.npy",
+        memb_probs[all_bpmg_mask])
+
 
 
 
