@@ -1,24 +1,43 @@
-from __future__ import division, print_function
 """
-Script that takes a gaia fits file with astrometric measurements, errors
-and correlations, converting them into XYZUVW mean and covariance
-matrix.
+A suite of useful functions for partitioning the gaia data
+TODO: write tests especially for cov construction
+"""
 
-Currently not working as covariance calculation seems to break things...
-"""
 from astropy.io import fits
-import logging
 import numpy as np
+import logging
 import sys
 sys.path.insert(0, '..')
 
 import chronostar.converter as cv
 import chronostar.coordinate as cc
 
-def test():
-    print("Sup")
+def createSubFitsFile(mask, filename):
+    """
+    Provide a mask (constructed based on Gaia DR2 fits) to build new one
+
+    Parameters
+    ----------
+    mask : [nstars] int array in tuple
+        The output of np.where applying some filter to gaia data
+        e.g.
+            np.where(hdul[1].data[:,1] > 0)
+        produces a mask to grab all stars with positive DEC
+    filename : string
+        name of destination fits file
+    """
+    if filename[-4] == "fits":
+        filename += ".fits"
+    gaia_file = "../data/all_rvs_w_ok_plx.fits"
+    with fits.open(gaia_file) as hdul:
+        primary_hdu = fits.PrimaryHDU(header=hdul[1].header)
+        hdu = fits.BinTableHDU(data=hdul[1].data[mask])
+        new_hdul = fits.HDUList([primary_hdu, hdu])
+        new_hdul.writeto(filename)
+
 
 def convertRecToArray(sr):
+    """UNTESTED"""
     ra = sr['ra']
     e_ra = sr['ra_error'] / 3600. / 1000.
     dec = sr['dec']
@@ -97,34 +116,42 @@ def convertManyRecToArray(data):
     means[:,4] = data['pmdec']
     means[:,5] = data['radial_velocity']
 
+    # Array of dictionary keys to aid construction of cov matrices
     cls = np.array([
-        ['ra_error', 'ra_dec_corr', 'ra_parallax_corr',
-            'ra_pmra_corr', 'ra_pmdec_corr', None],
-        ['ra_dec_corr', 'dec_error', 'dec_parallax_corr',
-            'dec_pmra_corr', 'dec_pmdec_corr', None],
-        ['ra_parallax_corr', 'dec_parallax_corr', 'parallax_error',
-            'parallax_pmra_corr', 'parallax_pmdec_corr', None],
-        ['ra_pmra_corr', 'dec_pmra_corr', 'parallax_pmra_corr',
-             'pmra_error','pmra_pmdec_corr', None],
-        ['ra_pmdec_corr', 'dec_pmdec_corr', 'parallax_pmdec_corr',
-             'pmra_pmdec_corr', 'pmdec_error', None],
-        [None, None, None, None, None, 'radial_velocity_error']
+        ['ra_error',         'ra_dec_corr',             'ra_parallax_corr',
+                'ra_pmra_corr',       'ra_pmdec_corr',       None],
+        ['ra_dec_corr',      'dec_error',               'dec_parallax_corr',
+                'dec_pmra_corr',      'dec_pmdec_corr',      None],
+        ['ra_parallax_corr', 'dec_parallax_corr',       'parallax_error',
+                'parallax_pmra_corr', 'parallax_pmdec_corr', None],
+        ['ra_pmra_corr',     'dec_pmra_corr',           'parallax_pmra_corr',
+                 'pmra_error',        'pmra_pmdec_corr',     None],
+        ['ra_pmdec_corr',    'dec_pmdec_corr',          'parallax_pmdec_corr',
+                 'pmra_pmdec_corr',   'pmdec_error',         None],
+        [None,               None,                      None,
+                 None,                 None, 'radial_velocity_error']
     ])
 
+    # Construct an [nstars,6,6] array of identity matrices
     covs = np.zeros((nstars,6,6))
     idx = np.arange(6)
     covs[:, idx, idx] = 1.0
 
+    # Insert correlations into off diagonals
     for i in range(0,5):
         for j in range(i+1,5):
             covs[:,i,j] = covs[:,j,i] = data[cls[i,j]]
 
+    # multiply each row and each column by appropriate error
     for i in range(6):
         covs[:,i,:] *= np.tile(data[cls[i,i]], (6,1)).T
         covs[:,:,i] *= np.tile(data[cls[i,i]], (6,1)).T
 
     # Might need to introduce some artificial uncertainty in
     # ra and dec so as to avoid indefinite matrices (too narrow)
+
+    # RA and DEC errors are actually quoted in mas, so we convert cov entries
+    # into degrees
     covs[:,:,:2] /= 3600000.
     covs[:,:2,:] /= 3600000.
 
@@ -132,7 +159,11 @@ def convertManyRecToArray(data):
 
 def convertGaiaToXYZUVWDict(astr_file="gaia_dr2_ok_plx", server=False,
                             return_dict=False):
-    """Doesn't work... too much memory I think"""
+    """
+    Supposed to generate XYZYVW dictionary for input to GroupFitter
+
+    Doesn't work on whole Gaia catalogue... too much memory I think
+    """
     if server:
         rdir = '/data/mash/tcrun/'
     else:
@@ -142,7 +173,7 @@ def convertGaiaToXYZUVWDict(astr_file="gaia_dr2_ok_plx", server=False,
     logging.info("Converting: {}".format(gaia_astr_file))
     hdul = fits.open(gaia_astr_file)#, memmap=True)
     logging.info("Loaded hdul")
-    means, covs = convertManyRecToArray(hdul[1].data[:100])
+    means, covs = convertManyRecToArray(hdul[1].data)
     logging.info("Converted many recs")
     astr_dict = {'astr_mns': means, 'astr_covs': covs}
     cv.convertMeasurementsToCartesian(
@@ -151,12 +182,17 @@ def convertGaiaToXYZUVWDict(astr_file="gaia_dr2_ok_plx", server=False,
     if return_dict:
         return {'xyzuvw':means, 'xyzuvw_cov':covs}
 
-def convertGaiaMeansToXYZUVW(server=False):
+
+def convertGaiaMeansToXYZUVW(astr_file="all_rvs_w_ok_plx", server=False):
+    """
+    Generate mean XYZUVW for eac star in provided fits file (with Gaia format)
+    """
     if server:
         rdir = '/data/mash/tcrun/'
     else:
         rdir = '../data/'
-    gaia_astr_file = rdir+'all_rvs_w_ok_plx.fits'
+    #gaia_astr_file = rdir+'all_rvs_w_ok_plx.fits'
+    gaia_astr_file = rdir+astr_file+".fits"
     hdul = fits.open(gaia_astr_file)#, memmap=True)
     nstars = hdul[1].data.shape[0]
     means = np.zeros((nstars,6))
@@ -168,22 +204,4 @@ def convertGaiaMeansToXYZUVW(server=False):
     means[:,5] = hdul[1].data['radial_velocity']
 
     xyzuvw_mns = cc.convertManyAstrometryToLSRXYZUVW(means, mas=True)
-    np.save(rdir + "gaia_dr2_mean_xyzuvw.npy", xyzuvw_mns)
-
-
-if __name__ == '__main__':
-    """Convert astrometry to XYZUVW"""
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout,
-                        filemode='w')
-   # gaia_astr_file = '../data/all_rvs_w_ok_plx.fits'
-
-   # hdul = fits.open(gaia_astr_file, memmap=True)
-
-    convertGaiaMeansToXYZUVW(True)
-
-
-
-#    means, covs = convertManyRecToArray(hdul[1].data)
-#    astr_dict = {'astr_mns': means, 'astr_covs':covs}
-#    xyzuvw_dict = cv.convertMeasurementsToCartesian(
-        #astr_dict=astr_dict, savefile='../data/1526-xyzuvw.fits.gz')
+    np.save(rdir + astr_file + "mean_xyzuvw.npy", xyzuvw_mns)

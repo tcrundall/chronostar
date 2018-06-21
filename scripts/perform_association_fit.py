@@ -1,7 +1,7 @@
 #! /usr/bin/env python -W ignore
 """
 This script demos the use of tfgroupfitter. It determines the most likely
-origin point of a set of stars assuming a (separate) spherical distribution in
+origin point of a set of stars assuming a spherical distribution in
 position and velocity space.
 
 It requires the xyzuvw data to be stored in the relative path:
