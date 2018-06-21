@@ -19,9 +19,10 @@ import chronostar.groupfitter as gf
 try:
     ass_name = sys.argv[1]
 except IndexError:
-    print(" -------------- INCORRECT USAGE ---------------"
-          "  Usage: nohup mpirun -np 19 python [ass_name]"
-          " ----------------------------------------------")
+    print(" ---------------- INCORRECT USAGE ---------------\n"
+          "  Usage: nohup mpirun -np 19 python\n"
+          "         perform_em_association_fit.py [ass_name]\n"
+          " ------------------------------------------------")
     raise
 
 
@@ -70,7 +71,7 @@ print("Master should be working in the directory:\n{}".format(rdir))
 
 star_pars = gf.loadXYZUVW(xyzuvw_file)
 
-ngroups = 3
+ngroups = 2
 logging.info("Everythign loaded, about to fit with {} components"\
     .format(ngroups))
 em.fitManyGroups(star_pars, ngroups,
