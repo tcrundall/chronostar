@@ -11,9 +11,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pdb
 import sys
+import os
 sys.path.insert(0, '..')
 
 master_pdir = "../plots/residuals_better/"
+master_pdir = "../plots/tb_synth_residuals/"
+os.mkdir(master_pdir)
 
 def calc_best_fit(flat_samples):
     """
@@ -69,7 +72,7 @@ precs = ['perf', 'half', 'gaia', 'double']
 # load all the relevant data into a massive array where
 # ix implicitly correspond to the value of the parameter
 
-rdir = "../results/synth_fit/"
+rdir = "../results/tb_synth_fit/"
 chain_file = "final_chain.npy"
 origin_file = "origins.npy"
 

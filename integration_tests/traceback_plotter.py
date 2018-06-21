@@ -53,7 +53,8 @@ def plotSeparation(xyzuvws, times, return_dists=False, prec='', true_age=None,
                                      tb[:, tix, :3].mean(axis=0))
     plt.clf()
     plt.plot(-times, dists.T, '#888888')
-    plt.plot(-times, np.median(dists.T, axis=1), 'r')
+    #plt.plot(-times, np.median(dists.T, axis=1), 'r')
+    plt.plot(-times, np.mean(dists.T, axis=1), 'r')
     plt.xlabel("Traceback age [Myr]")
     plt.ylabel("Distance from association centre [pc]")
 
