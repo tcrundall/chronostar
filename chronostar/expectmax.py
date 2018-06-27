@@ -270,12 +270,12 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
     # group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
     #                         np.log(5), 3])
     pts = getPointsOnCircle(npoints=ngroups, v_dist=10, offset=offset)
-    logging.log("Points around circle are:\n{}".format(pts))
+    logging.info("Points around circle are:\n{}".format(pts))
 
     for i in range(ngroups):
         mean_w_offset = np.copy(mean)
         mean_w_offset[3:5] += pts[i]
-        logging.log("Group {} has init UV of ({},{})".\
+        logging.info("Group {} has init UV of ({},{})".\
                     format(i, mean_w_offset[3], mean_w_offset[4]))
         group_pars = np.hstack((mean_w_offset, dx, dv, age))
         group = syn.Group(group_pars, sphere=True, starcount=False)
