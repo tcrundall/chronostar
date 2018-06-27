@@ -71,11 +71,11 @@ print("Master should be working in the directory:\n{}".format(rdir))
 
 star_pars = gf.loadXYZUVW(xyzuvw_file)
 
-ngroups = 2
+ngroups = 3
 logging.info("Everythign loaded, about to fit with {} components"\
     .format(ngroups))
 em.fitManyGroups(star_pars, ngroups,
-                 rdir=rdir, pool=pool,
+                 rdir=rdir, pool=pool, offset=True
                  )
 if using_mpi:
     pool.close()

@@ -14,9 +14,10 @@ import sys
 import os
 sys.path.insert(0, '..')
 
-master_pdir = "../plots/residuals_better/"
-master_pdir = "../plots/tb_synth_residuals/"
-os.mkdir(master_pdir)
+# master_pdir = "../plots/residuals_better/"
+#master_pdir = "../plots/tb_synth_residuals/"
+master_pdir = "../plots/residuals_better_2/"
+# os.mkdir(master_pdir)
 
 def calc_best_fit(flat_samples):
     """
@@ -72,7 +73,8 @@ precs = ['perf', 'half', 'gaia', 'double']
 # load all the relevant data into a massive array where
 # ix implicitly correspond to the value of the parameter
 
-rdir = "../results/tb_synth_fit/"
+rdir = "../results/synth_fit/all_with_lcc_vel/"
+#rdir = "../results/tb_synth_fit/"
 chain_file = "final_chain.npy"
 origin_file = "origins.npy"
 
@@ -132,8 +134,6 @@ o_great_ixs = np.where(abs(o_norm_res).max(axis=-1) < 5)
 #plt.hist2d(o_norm_res[o_great_ixs][:,-1].flatten(),
 #           o_norm_res[o_great_ixs][:,5].flatten(), bins=5)
 
-
-
 #------------------------------------------------------------
 #-------   GATHER FITS FROM THE 'EVEN' SIMULATIONS ----------
 #------------------------------------------------------------
@@ -192,6 +192,16 @@ plt.hist(all_norm_resids)
 plt.xlabel("Normalised offset in age")
 plt.ylabel("Number of simulations")
 plt.savefig(master_pdir + "all-norm-age-res-hist.pdf")
+
+#plotting histogram of all first
+plt.clf()
+age_resids = np.hstack((o_res[:, 0, 0, :, :, -1].flatten(),
+                        e_res[:, 0, 0, :, :, -1].flatten()))
+plt.hist(age_resids)
+plt.xlabel("Raw offset in age")
+plt.ylabel("Number of simulations")
+plt.savefig(master_pdir+"all-raw-age-low-dv-low-dx-hist.pdf")
+
 
 # ------------------------------------------------------------
 # ----  PLOTTING RAW RESIDUALS WITH LOW DV HIST  -------------
@@ -556,6 +566,7 @@ plt.savefig(master_pdir + "raw-age-res-low-dv.pdf")
 # ------------------------------------------------------------
 # ----  PLOTTING LOW DV LOW DX RAW RESIDUALS V PARS  ---------
 # ------------------------------------------------------------
+
 
 plt.clf()
 fig, axs = plt.subplots(nrows=3, ncols=2, figsize=(7,7), sharey=True)

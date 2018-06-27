@@ -389,6 +389,28 @@ def plotXYandZW(star_pars, means, covs, chain, iter_count, prec=None,
         bbox_inches='tight', format='pdf')
     f.clear()
 
+def plotNewQuad(star_pars, means, covs, chain, iter_count, prec=None,
+               save_dir='', file_stem='', title='', z=None):
+    logging.info("In plotXY., iter {}".format(iter_count))
+    ngroups = covs['fitted_then'].shape[0]
+
+    # INITIALISE PLOT
+    plt.clf()
+    #f, ax1 = plt.subplots(1, 1)
+    f, axs = plt.subplots(2, 2, sharey='row', sharex='row')
+    f.set_size_inches(10, 10)
+    # f.suptitle(title)
+    f.set_tight_layout(tight=True)
+    plot_then(star_pars, means, covs, ngroups, iter_count, axs[0,0], 0, 1)
+    plot_then(star_pars, means, covs, ngroups, iter_count, axs[1,0], 3, 4)
+    plot_now(star_pars, means, covs, ngroups, iter_count, axs[0,1], 0, 1, z)
+    plot_now(star_pars, means, covs, ngroups, iter_count, axs[1,1], 3, 4, z)
+
+    f.savefig(
+        save_dir + "newquadplot_" + file_stem + "{:02}.pdf".format(iter_count),
+        bbox_inches='tight', format='pdf')
+    f.clear()
+
 def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
                    xyzuvw_file='', title='', file_stem='', groups_file=''):
     """
@@ -414,8 +436,10 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
         logging.info("No xyzuvw filename provided. Must be synth fit yes?")
         xyzuvw_file = res_dir + "../xyzuvw_now.fits"
     try:
+        print("Trying to load from {}".format(xyzuvw_file))
         star_pars['xyzuvw'] = fits.getdata(xyzuvw_file, 1)
         star_pars['xyzuvw_cov'] = fits.getdata(xyzuvw_file, 2)
+        print("Successfully loaded from xyzuvw_file")
     except:
         import chronostar.retired.groupfitter as rgf
         old_star_pars = rgf.read_stars(res_dir + "../perf_tb_file.pkl")
@@ -471,6 +495,10 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
         'fitted_now':np.array(fitted_now_covs),
     }
 
+    plotNewQuad(star_pars, means, covs, all_chains, iter_count=iter_count,
+               save_dir=save_dir, file_stem=file_stem, title=title,
+               z=z)
     plotNewHex(star_pars, means, covs, all_chains, iter_count=iter_count,
                save_dir=save_dir, file_stem=file_stem, title=title,
                z=z)
+

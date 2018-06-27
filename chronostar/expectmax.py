@@ -243,7 +243,6 @@ def getPointsOnCircle(npoints, v_dist=20, offset=False):
 def getInitialGroups(ngroups, xyzuvw, offset=False):
     """
     Generate the parameter list with which walkers will be initialised
-    TODO: CENTRE THIS BY MEAN U AND V OF STARS
 
     Parameters
     ----------
@@ -319,7 +318,8 @@ def decomposeGroup(group):
 
 
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
-                  origins=None, pool=None, init_with_origin=False):
+                  origins=None, pool=None, init_with_origin=False,
+                  offset=False):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -366,7 +366,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     nstars = star_pars['xyzuvw'].shape[0]
     # INITIALISE GROUPS
     if not init_with_origin:
-        init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'])
+        init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'],
+                                       offset=offset)
         # having z = None triggers an equal weighting of groups in
         # expectation step
         z = None

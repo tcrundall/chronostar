@@ -389,7 +389,7 @@ def lnprobTracebackFunc(pars, star_pars, z):
     return lp + lnlikeTraceback(pars, star_pars, z)
 
 
-def burninConvergence(lnprob, tol=0.1, slice_size=100, cutoff=0):
+def burninConvergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
     """Checks early lnprob vals with final lnprob vals for convergence
 
     Parameters
@@ -546,7 +546,7 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         pos[:,-1] = abs(pos[:,-1])
     else:
         pos = np.array(init_pos)
-        logging.info("Using provided positions which have mean:\n".\
+        logging.info("Using provided positions which have mean:\n{}".\
                      format(np.mean(pos, axis=0)))
 
     # Perform burnin

@@ -27,7 +27,7 @@ try:
     nstars = int(sys.argv[4])
     precs = sys.argv[5:]
 except (IndexError, ValueError):
-    print("Usage: python plot_hexplot_synth.py [age] [dX] [dV] [nstars]"
+    print("Usage: python plot_corner_tb_synth.py [age] [dX] [dV] [nstars]"
           "[prec1] [prec2] ... ")
     raise
 
@@ -40,7 +40,6 @@ if not os.path.isdir(rdir):
                                                       int(dV), int(nstars))
 
 logging.basicConfig(level=logging.INFO, filename='cornerplotting.log')
-print("In preamble")
 logging.info("Input arguments: {}".format(sys.argv[1:]))
 logging.info("\n"
              "\tage:     {}\n"
