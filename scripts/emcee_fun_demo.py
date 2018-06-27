@@ -233,15 +233,16 @@ def acquirePDF(plot_dir='temp_plots/', save_dir='temp_data/',
         [nwalkers, nsteps] array of probabilities for each sample
     """
     init_pars = [0.,0.]
-    init_pars = [6.,6.]
     INIT_SDEV = [2.,2.]
+    # init_pars = [6.,6.]
+    # INIT_SDEV = [2.,2.]
 
     NPAR = len(init_pars)
     NWALKERS = 2 * 2 * NPAR
 
 
     # Whole emcee shebang
-    sampler = emcee.EnsembleSampler(NWALKERS, NPAR, asaLnprobFunc)
+    sampler = emcee.EnsembleSampler(NWALKERS, NPAR, faceLnprobFunc)
 
     # initialise walkers, note that INIT_SDEV is carefully chosen such thata
     # all generated positions are permitted by lnprior
@@ -269,7 +270,7 @@ def acquirePDF(plot_dir='temp_plots/', save_dir='temp_data/',
     if plot_it:
         plt.clf()
         plt.plot(sampler.lnprobability.T)
-        plt.savefig(plot_dir+"burnin_lnprobT.png")
+        plt.savefig(plot_dir+"face_burnin_lnprobT.png")
 
     logging.info("Entering sampling stage for {} steps".format(
         sampling_steps
@@ -279,15 +280,15 @@ def acquirePDF(plot_dir='temp_plots/', save_dir='temp_data/',
     logging.info("Sampling done")
 
     # save the chain for later inspection
-    np.save(save_dir+"final_chain.npy", sampler.chain)
-    np.save(save_dir+"final_lnprob.npy", sampler.lnprobability)
+    np.save(save_dir+"face_final_chain.npy", sampler.chain)
+    np.save(save_dir+"face_final_lnprob.npy", sampler.lnprobability)
 
 #    print("Sampled")
     if plot_it:
         logging.info("Plotting final lnprob")
         plt.clf()
         plt.plot(sampler.lnprobability.T)
-        plt.savefig(plot_dir+"lnprobT.png")
+        plt.savefig(plot_dir+"face_lnprobT.png")
 #        logging.info("Plotting corner")
 #        plt.clf()
 #        corner.corner(sampler.flatchain)
@@ -301,11 +302,11 @@ def acquirePDF(plot_dir='temp_plots/', save_dir='temp_data/',
 
     plt.clf()
     corner.corner(sampler.flatchain, bins=32)
-    plt.savefig(plot_dir + "corner.pdf")
+    plt.savefig(plot_dir + "face_corner.pdf")
 
     return best_sample, sampler.chain, sampler.lnprobability
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    acquirePDF(burnin_steps=2000, sampling_steps=100000, plot_dir='temp_plots/')
+    acquirePDF(burnin_steps=2000, sampling_steps=1000000, plot_dir='temp_plots/')
 
