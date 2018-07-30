@@ -26,9 +26,10 @@ void inplace(double* npyArray3D, int npyLength1D, int npylength2D,
 int print_matrix(FILE *f, const gsl_matrix *m)
 {
   int status, n = 0;
+  size_t i, j;
 
-  for (size_t i = 0; i < m->size1; i++) {
-    for (size_t j = 0; j < m->size2; j++) {
+  for (i = 0; i < m->size1; i++) {
+    for (j = 0; j < m->size2; j++) {
       if ((status = fprintf(f,"%g ", gsl_matrix_get(m, i, j))) < 0)
         return -1;
       n += status;
@@ -44,8 +45,9 @@ int print_matrix(FILE *f, const gsl_matrix *m)
 int print_vector(FILE *f, const gsl_vector *m)
 {
   int status, n = 0;
+  size_t i;
 
-  for (size_t i = 0; i < m->size; i++) {
+  for (i = 0; i < m->size; i++) {
     if ((status = fprintf(f, "%g ", gsl_vector_get(m, i))) < 0)
       return -1;
     n += status;

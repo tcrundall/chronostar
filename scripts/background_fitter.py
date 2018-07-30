@@ -15,80 +15,80 @@ import chronostar.expectmax as em
 import chronostar.synthesiser as syn
 
 
-def plot_cov_ellipse(cov, pos, volume=.5, ax=None, fc='none', ec=[0, 0, 0], a=1,
-                     lw=2):
-    """
-    Plots an ellipse enclosing *volume* based on the specified covariance
-    matrix (*cov*) and location (*pos*). Additional keyword arguments are
-    passed on to the
-    ellipse patch artist.
-
-    Parameters
-    ----------
-        cov : The 2x2 covariance matrix to base the ellipse on
-        pos : The location of the center of the ellipse. Expects a 2-element
-            sequence of [x0, y0].
-        volume : The volume inside the ellipse; defaults to 0.5
-        ax : The axis that the ellipse will be plotted on. Defaults to the
-            current axis.
-    """
-    import numpy as np
-    from scipy.stats import chi2
-    import matplotlib.pyplot as plt
-    from matplotlib.patches import Ellipse
-
-    def eigsorted(cov):
-        vals, vecs = np.linalg.eigh(cov)
-        order = vals.argsort()[::-1]
-        return vals[order], vecs[:, order]
-
-    if ax is None:
-        ax = plt.gca()
-
-    vals, vecs = eigsorted(cov)
-    theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
-
-    kwrg = {'facecolor': fc, 'edgecolor': ec, 'alpha': a, 'linewidth': lw}
-
-    # Width and height are "full" widths, not radius
-    width, height = 2 * np.sqrt(chi2.ppf(volume, 2)) * np.sqrt(vals)
-    ellip = Ellipse(xy=pos, width=width, height=height, angle=theta, **kwrg)
-
-    ax.add_artist(ellip)
-
-
-def plot_components(mu, Sigma, colours, *args, **kwargs):
-    '''
-    Plot ellipses for the bivariate normals with mean mu[:,i] and covariance
-    Sigma[:,:,i]
-    '''
-    assert mu.shape[0] == Sigma.shape[0]
-    assert mu.shape[1] == 2
-    assert Sigma.shape[1] == 2
-    assert Sigma.shape[2] == 2
-    for i in range(mu.shape[1]):
-        kwargs['ec'] = colours[i]
-        plot_cov_ellipse(Sigma[i, :, :], mu[i, :], *args, **kwargs)
-
-
-import matplotlib.colors as mcol
-
-br_cmap = mcol.LinearSegmentedColormap.from_list("MyCmapName", ["b", "r"])
-
-
-def plot_data(redness=None):
-    if redness is not None:
-        assert len(redness) == data.shape[1]
-        assert all(_ >= 0 and _ <= 1 for _ in redness)
-        c = redness
-    else:
-        c = 'g'
-    plt.figure(figsize=(8, 8))
-    plt.scatter(data[0, :], data[1, :], marker='.', s=8, linewidths=2, c=c,
-                cmap=br_cmap)
-    plt.xlabel(data_labels[0])
-    plt.ylabel(data_labels[1])
-    #plt.axis([-2, 2, -2, 2], 'equal')
+#def plot_cov_ellipse(cov, pos, volume=.5, ax=None, fc='none', ec=[0, 0, 0], a=1,
+#                     lw=2):
+#    """
+#    Plots an ellipse enclosing *volume* based on the specified covariance
+#    matrix (*cov*) and location (*pos*). Additional keyword arguments are
+#    passed on to the
+#    ellipse patch artist.
+#
+#    Parameters
+#    ----------
+#        cov : The 2x2 covariance matrix to base the ellipse on
+#        pos : The location of the center of the ellipse. Expects a 2-element
+#            sequence of [x0, y0].
+#        volume : The volume inside the ellipse; defaults to 0.5
+#        ax : The axis that the ellipse will be plotted on. Defaults to the
+#            current axis.
+#    """
+#    import numpy as np
+#    from scipy.stats import chi2
+#    import matplotlib.pyplot as plt
+#    from matplotlib.patches import Ellipse
+#
+#    def eigsorted(cov):
+#        vals, vecs = np.linalg.eigh(cov)
+#        order = vals.argsort()[::-1]
+#        return vals[order], vecs[:, order]
+#
+#    if ax is None:
+#        ax = plt.gca()
+#
+#    vals, vecs = eigsorted(cov)
+#    theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
+#
+#    kwrg = {'facecolor': fc, 'edgecolor': ec, 'alpha': a, 'linewidth': lw}
+#
+#    # Width and height are "full" widths, not radius
+#    width, height = 2 * np.sqrt(chi2.ppf(volume, 2)) * np.sqrt(vals)
+#    ellip = Ellipse(xy=pos, width=width, height=height, angle=theta, **kwrg)
+#
+#    ax.add_artist(ellip)
+#
+#
+#def plot_components(mu, Sigma, colours, *args, **kwargs):
+#    '''
+#    Plot ellipses for the bivariate normals with mean mu[:,i] and covariance
+#    Sigma[:,:,i]
+#    '''
+#    assert mu.shape[0] == Sigma.shape[0]
+#    assert mu.shape[1] == 2
+#    assert Sigma.shape[1] == 2
+#    assert Sigma.shape[2] == 2
+#    for i in range(mu.shape[1]):
+#        kwargs['ec'] = colours[i]
+#        plot_cov_ellipse(Sigma[i, :, :], mu[i, :], *args, **kwargs)
+#
+#
+#import matplotlib.colors as mcol
+#
+#br_cmap = mcol.LinearSegmentedColormap.from_list("MyCmapName", ["b", "r"])
+#
+#
+#def plot_data(redness=None):
+#    if redness is not None:
+#        assert len(redness) == data.shape[1]
+#        assert all(_ >= 0 and _ <= 1 for _ in redness)
+#        c = redness
+#    else:
+#        c = 'g'
+#    plt.figure(figsize=(8, 8))
+#    plt.scatter(data[0, :], data[1, :], marker='.', s=8, linewidths=2, c=c,
+#                cmap=br_cmap)
+#    plt.xlabel(data_labels[0])
+#    plt.ylabel(data_labels[1])
+#    #plt.axis([-2, 2, -2, 2], 'equal')
 
 def calc_MLE_mean(data, z, comp_ix=0):
     """
