@@ -12,6 +12,46 @@ sys.path.insert(0, '..')
 import chronostar.converter as cv
 import chronostar.coordinate as cc
 
+def loadXYZUVW(xyzuvw_file):
+    """Load mean and covariances of stars in XYZUVW space from fits file
+
+    Parameters
+    ----------
+    xyzuvw_file : (String)
+        Ideally *.fits, the file name of the fits file with and hdulist:
+            [1] : xyzuvw
+            [2] : xyzuvw covariances
+
+    Returns
+    -------
+    xyzuvw_dict : (dictionary)
+        xyzuvw : ([nstars, 6] float array)
+            the means of the stars
+        xyzuvw_cov : ([nstars, 6, 6] float array)
+            the covariance matrices of the stars
+    """
+    if (xyzuvw_file[-3:] != 'fit') and (xyzuvw_file[-4:] != 'fits'):
+        xyzuvw_file = xyzuvw_file + ".fits"
+    # TODO Ask Mike re storing fits files as float64 (instead of '>f8')
+    xyzuvw_now = fits.getdata(xyzuvw_file, 1).\
+        astype('float64') #hdulist[1].data
+    xyzuvw_cov_now = fits.getdata(xyzuvw_file, 2)\
+        .astype('float64') #hdulist[2].data
+    xyzuvw_dict = {'xyzuvw':xyzuvw_now, 'xyzuvw_cov':xyzuvw_cov_now}
+    try:
+        times = fits.getdata(xyzuvw_file, 3)
+        xyzuvw_dict['times'] = times
+    except:
+        logging.info("No times in fits file")
+    try:
+        stars_table = fits.getdata(xyzuvw_file, 3)
+        xyzuvw_dict['table'] = stars_table
+    except:
+        logging.info("No table in fits file")
+    logging.info("Floats stored in format {}".\
+                 format(xyzuvw_dict['xyzuvw'].dtype))
+    return xyzuvw_dict
+
 def createSubFitsFile(mask, filename):
     """
     Provide a mask (constructed based on Gaia DR2 fits) to build new one

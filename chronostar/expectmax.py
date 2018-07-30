@@ -262,6 +262,7 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
     groups = []
 
     mean = np.mean(xyzuvw, axis=0)[:6]
+    logging.info("Mean is\n{}".format(mean))
 #    meanXYZ = np.array([0.,0.,0.])
 #    meanW = 0.
     dx = 50.
@@ -506,6 +507,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("Finished fit")
         final_best_fits[i] = best_fit
         final_med_errs[i] = calcErrors(chain)
+        np.save(gdir + "best_group_fit.npy", new_group)
         np.save(final_gdir + 'final_chain.npy', chain)
         np.save(final_gdir + 'final_lnprob.npy', lnprob)
 
