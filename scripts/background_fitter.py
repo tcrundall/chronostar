@@ -261,4 +261,5 @@ if __name__ == '__main__':
     end = time.time()
     print("Time taken: {:02.0f}:{:05.2f}".format(int((end - start) // 60),
                                          (end - start)%60))
-    pdb.set_trace()
+    np.save("bg_means_{}.npy".format(ncomps), np.array(means))
+    np.save("bg_covs_{}.npy".format(ncomps), np.array(cov_mats))
