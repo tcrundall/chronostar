@@ -131,14 +131,33 @@ def calc_MLE_cov(data, z, mean, comp_ix=0):
     cov_mat = np.einsum('i,ij,ik->jk',z[:,comp_ix],diff,diff) / ept_count
     return cov_mat
 
-def eval_ln_mvgauss(d, mu, sigma):
+def eval_ln_mvgauss(d, mu, sigma, sigma_inv, s_det):
 #    d = np.array(d).reshape(-1,1)
 #    mu = np.array(mu).reshape(-1,1)
     k = len(d)
     #sigma = np.array(sigma).reshape(k,k)
+    # pdb.set_trace()
     coeff = 1./np.sqrt(np.linalg.det(2*np.pi*sigma))
-    expon = -0.5*np.dot(d - mu, np.dot(np.linalg.inv(sigma), d - mu))
+    expon = -0.5*np.dot(d - mu, np.dot(sigma_inv, d - mu))
     return np.log(coeff) + expon
+
+
+def evalLnMvgaussEinsum(data, mus, sigmas, z):
+    weights = np.sum(z, axis=0)
+    nstars = z.shape[0]
+    ncomps = z.shape[1]
+    ln_evals = np.zeros((nstars, ncomps))
+    for j in range(ncomps):
+        sigma_inv = np.linalg.inv(sigmas[j])
+        diff = data - mus[j]
+        ln_evals[:,j] = np.einsum('im,mn,in->i',diff,sigma_inv,diff)
+        coeff = np.log(np.linalg.det(2 * np.pi * sigmas[j]))
+        ln_evals[:,j] += coeff
+    ln_evals *= -0.5
+    for j in range(ncomps):
+        ln_evals[:,j] += np.log(weights[j])
+    return ln_evals
+
 
 def calcMembershipProbs(star_ln_evals):
     """Calculate probabilities of membership for a single star from overlaps
@@ -163,22 +182,38 @@ def calcMembershipProbs(star_ln_evals):
     #logging.info("done")
     return star_memb_probs
 
-def e_step(data, mus, sigmas, old_z=None):
-    nstars = len(data)
-    ncomps = len(mus)
-    #z = np.zeros(data.shape[0], ncomps)
 
+def calc_ln_eval(data, mus, sigmas, old_z):
+    ncomps = old_z.shape[1]
+    nstars = old_z.shape[0]
     ln_evals = np.zeros((data.shape[0], ncomps))
 
     if old_z is None:
         old_z = np.ones((nstars, ncomps))/ncomps
 
     for i, (mu, sigma) in enumerate(zip(mus, sigmas)):
+        sigma_inv = np.linalg.inv(sigma)
+        sigma_det = np.linalg.det(sigma)
         weight = old_z[:,i].sum()
         for j in range(nstars):
 #            if (j%100000) == 0:
 #               print("Evaluated {} of {}".format(j, nstars))
-            ln_evals[j,i] = np.log(weight) + eval_ln_mvgauss(data[j], mu, sigma)
+            ln_evals[j,i] = np.log(weight) + eval_ln_mvgauss(data[j], mu,
+                                                             sigma, sigma_inv,
+                                                             sigma_det)
+    return ln_evals
+
+def e_step(data, mus, sigmas, old_z=None):
+    e_start = time.time()
+    nstars = len(data)
+    ncomps = len(mus)
+
+    if old_z is None:
+        old_z = np.ones((nstars, ncomps))/ncomps
+
+    #ln_evals = calc_ln_eval(data, mus, sigmas, old_z)
+    ln_evals = evalLnMvgaussEinsum(data, mus, sigmas, old_z)
+
     #pdb.set_trace()
     z = np.zeros((nstars, ncomps))
     for i in range(nstars):
@@ -186,9 +221,13 @@ def e_step(data, mus, sigmas, old_z=None):
     if np.isnan(z).any():
         logging.info("!!!!!! AT LEAST ONE MEMBERSHIP IS 'NAN' !!!!!!")
         #import pdb; pdb.set_trace()
-    return z
+    e_end = time.time()
+    logging.info("E Time taken: {:02.0f}:{:05.2f}".\
+                 format(int((e_end - e_start) // 60), (e_end - e_start)%60))
+    return z, ln_evals
 
 def m_step(data, z):
+    m_start = time.time()
     means = []
     cov_mats = []
     ncomps = z.shape[1]
@@ -202,23 +241,38 @@ def m_step(data, z):
             print("!!!!!! AT LEAST ONE MEAN IS 'NAN' !!!!!!")
             #import pdb; pdb.set_trace()
 
+    m_end = time.time()
+    logging.info("M Time taken: {:02.0f}:{:05.2f}". \
+                 format(int((m_end - m_start) // 60), (m_end - m_start)%60))
     return means, cov_mats
 
 
-def calc_lnlike(data, z, means, cov_mats):
-    weights = z.sum(axis=0)
+def calc_lnlike(z, ln_evals):
+    # weights = z.sum(axis=0)
 
-    nstars = z.shape[0]
-    ncomps = z.shape[1]
+    # nstars = z.shape[0]
+    # ncomps = z.shape[1]
 
-    lnlike = 0
-    for i in range(nstars):
-        lnlike_contrib = 0
-        for j in range(ncomps):
-            # pdb.set_trace()
-            lnlike_contrib += z[i,j] *\
-                              eval_ln_mvgauss(data[i], means[j], cov_mats[j])
-        lnlike += lnlike_contrib
+    # cov_mat_dets = []
+    # cov_mat_invs = []
+    # for cov_mat in cov_mats:
+    #     cov_mat_dets.append(np.linalg.det(cov_mat))
+    #     cov_mat_invs.append(np.linalg.inv(cov_mat))
+
+    # ln_evals = evalLnMvgaussEinsum(data, means, cov_mats, z)
+    lnlike = np.einsum('ij,ij->',ln_evals,z)
+
+    # lnlike = 0
+    # for i in range(nstars):
+    #     lnlike_contrib = 0
+    #     for j in range(ncomps):
+    #         # pdb.set_trace()
+    #         lnlike_contrib += z[i,j] *\
+    #                           eval_ln_mvgauss(
+    #                               data[i], means[j], cov_mats[j],
+    #                               cov_mat_invs[j], cov_mat_dets[j]
+    #                           )
+    #     lnlike += lnlike_contrib
     return lnlike
 
 def initialise_means(data, ncomps):
@@ -232,9 +286,9 @@ def initialise_means(data, ncomps):
     return means, cov_mats
 
 if __name__ == '__main__':
-    ITERATIONS = 10
-    NSTARS = 10000
-    ncomps = 4
+    ITERATIONS = 100
+    NSTARS = 100000
+    ncomps = 2
     start = time.time()
     logging.basicConfig(level=logging.DEBUG,
                         filename="bgfitter_{}_{}.log".format(ncomps,
@@ -290,7 +344,7 @@ if __name__ == '__main__':
         iter_start = time.time()
         logging.info("---- Iteration {} of {} -----".format(i, ITERATIONS))
         old_means = np.copy(means)
-        new_z = e_step(gaia_xyzuvw, means, cov_mats)
+        new_z, ln_evals = e_step(gaia_xyzuvw, means, cov_mats)
         logging.info("Current weight breakdown:\n{}"\
                      .format(np.sum(new_z, axis=0)))
         means, cov_mats = m_step(gaia_xyzuvw, new_z)
@@ -304,8 +358,14 @@ if __name__ == '__main__':
 
         logging.info("{:.4f}% difference in means".format(means_diff))
 
-        lnlikes.append(calc_lnlike(gaia_xyzuvw, new_z,
-                                   means, cov_mats))
+        lnlike_start = time.time()
+        lnlikes.append(calc_lnlike(new_z, ln_evals))
+
+        lnlike_end = time.time()
+        logging.info("lnlike time taken: {:02.0f}:{:05.2f}" \
+                     .format(int((lnlike_end - lnlike_start) // 60),
+                             (lnlike_end - lnlike_start)%60))
+
         logging.info("Lnlike: {}".format(lnlikes[-1]))
 
         iter_end = time.time()
