@@ -153,14 +153,14 @@ def calcMembershipProbs(star_ln_evals):
     star_memb_probs : [ngroups] array
         The probability of membership to each group, normalised to sum to 1
     """
-    logging.info("Calculating membership probs")
+    #logging.info("Calculating membership probs")
     ngroups = star_ln_evals.shape[0]
     star_memb_probs = np.zeros(ngroups)
 
     for i in range(ngroups):
         star_memb_probs[i] = 1. / np.sum(np.exp(star_ln_evals - star_ln_evals[i]))
 
-    logging.info("done")
+    #logging.info("done")
     return star_memb_probs
 
 def e_step(data, mus, sigmas, old_z=None):
@@ -205,6 +205,22 @@ def m_step(data, z):
     return means, cov_mats
 
 
+def calc_lnlike(data, z, means, cov_mats):
+    weights = z.sum(axis=0)
+
+    nstars = z.shape[0]
+    ncomps = z.shape[1]
+
+    lnlike = 0
+    for i in range(nstars):
+        lnlike_contrib = 0
+        for j in range(ncomps):
+            # pdb.set_trace()
+            lnlike_contrib += z[i,j] *\
+                              eval_ln_mvgauss(data[i], means[j], cov_mats[j])
+        lnlike += lnlike_contrib
+    return lnlike
+
 def initialise_means(data, ncomps):
     groups = em.getInitialGroups(ncomps, data, offset=False)
 
@@ -216,20 +232,39 @@ def initialise_means(data, ncomps):
     return means, cov_mats
 
 if __name__ == '__main__':
+    ITERATIONS = 10
+    NSTARS = 10000
+    ncomps = 4
     start = time.time()
+    logging.basicConfig(level=logging.DEBUG,
+                        filename="bgfitter_{}_{}.log".format(ncomps,
+                                                             ITERATIONS),
+                        filemode='w')
+    logging.info("Initialising run")
+    logging.info("Iterations: {}".format(ITERATIONS))
+    logging.info("N components: {}".format(ncomps))
+    logging.info("Up to star index: {}".format(NSTARS))
+
+    rdir = "../results/background_fits/"
+    mean_savefile = rdir + "bg_means_{}.npy".format(ncomps)
+    cov_savefile = rdir + "bg_covs_{}.npy".format(ncomps)
+    z_savefile = rdir + "z_{}.npy".format(ncomps)
+    logging.info("Storing results in {}".format(rdir))
+
+    lnlikes = []
 
     gaia_file = "../data/gaia_dr2_mean_xyzuvw.npy"
     try:
-        gaia_xyzuvw = np.load(gaia_file)[:10000]
+        gaia_xyzuvw = np.load(gaia_file)[:NSTARS]
+        logging.info("Nstars are: {}".format(gaia_xyzuvw.shape[0]))
     except IOError:
         gaia_file = "/data/mash/tcrun/gaia_dr2_mean_xyzuvw.npy"
-        gaia_xyzuvw = np.load(gaia_file)
+        gaia_xyzuvw = np.load(gaia_file)[:NSTARS]
     # gaia_xyzuvw = np.loadtxt('../data/faithful.csv', delimiter=',')
     # gaia_xyzuvw -= gaia_xyzuvw.mean(axis=0)
     # gaia_xyzuvw /= gaia_xyzuvw.std(axis=0)
     data_labels = ('Eruption length','Eruption wait')
     data = gaia_xyzuvw.T
-    ncomps = 10
 
     nstars = gaia_xyzuvw.shape[0]
     #z = np.ones((nstars, ncomps))
@@ -241,19 +276,42 @@ if __name__ == '__main__':
     #    print("z shape: {}".format(z.shape))
     #means, cov_mats = m_step(gaia_xyzuvw, z)
 
-    means, cov_mats = initialise_means(gaia_xyzuvw, ncomps)
+    try:
+        means = np.load(mean_savefile)
+        cov_mats = np.load(cov_savefile)
+        logging.info("Loaded fit from previous run")
+    except IOError:
+        logging.info("Initialsing from scratch")
+        means, cov_mats = initialise_means(gaia_xyzuvw, ncomps)
     # means = [np.array([1,-1]), np.array([-1,1])]
     # cov_mats = [np.diag((2,1)), np.diag((1,2))]
     #pdb.set_trace()
-    for i in range(100):
+    for i in range(ITERATIONS):
+        iter_start = time.time()
+        logging.info("---- Iteration {} of {} -----".format(i, ITERATIONS))
         old_means = np.copy(means)
         new_z = e_step(gaia_xyzuvw, means, cov_mats)
-        print(np.sum(new_z, axis=0))
+        logging.info("Current weight breakdown:\n{}"\
+                     .format(np.sum(new_z, axis=0)))
         means, cov_mats = m_step(gaia_xyzuvw, new_z)
         means_diff = 100*np.mean(abs(
             (np.array(means)-np.array(old_means))/np.array(old_means)
         ))
-        print("{:.4f}% difference in means".format(means_diff))
+        np.save(mean_savefile, np.array(means))
+        np.save(cov_savefile, np.array(cov_mats))
+        np.save(z_savefile, np.array(new_z))
+
+
+        logging.info("{:.4f}% difference in means".format(means_diff))
+
+        lnlikes.append(calc_lnlike(gaia_xyzuvw, new_z,
+                                   means, cov_mats))
+        logging.info("Lnlike: {}".format(lnlikes[-1]))
+
+        iter_end = time.time()
+        logging.info("Iter time taken: {:02.0f}:{:05.2f}"\
+                     .format(int((iter_end - iter_start) // 60),
+                             (iter_end - iter_start)%60))
 
 #        if not i % 10:
 #            pdb.set_trace()
@@ -261,9 +319,13 @@ if __name__ == '__main__':
 #            plot_components(np.array(means)[:,:2], np.array(cov_mats)[:,:2,:2],
 #                            ['b', 'r'], 0.2)
 #            plt.show()
+    plt.clf()
+    plt.plot(lnlikes)
+    plt.savefig("temp_plots/bgfitting_lnlike_{}_{}.pdf".\
+                format(ncomps, ITERATIONS))
+    np.save(rdir+"bg_lnlike_{}.npy".format(ncomps), np.array(lnlikes))
 
     end = time.time()
-    print("Time taken: {:02.0f}:{:05.2f}".format(int((end - start) // 60),
+    logging.info("_________ COMPLETE __________")
+    logging.info("Time taken: {:02.0f}:{:05.2f}".format(int((end - start) // 60),
                                          (end - start)%60))
-    np.save("bg_means_{}.npy".format(ncomps), np.array(means))
-    np.save("bg_covs_{}.npy".format(ncomps), np.array(cov_mats))
