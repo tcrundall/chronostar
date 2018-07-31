@@ -219,13 +219,17 @@ if __name__ == '__main__':
     start = time.time()
 
     gaia_file = "../data/gaia_dr2_mean_xyzuvw.npy"
-    gaia_xyzuvw = np.load(gaia_file)[:10000]
+    try:
+        gaia_xyzuvw = np.load(gaia_file)[:10000]
+    except IOError:
+        gaia_file = "/data/mash/tcrun/gaia_dr2_mean_xyzuvw.npy"
+        gaia_xyzuvw = np.load(gaia_file)
     # gaia_xyzuvw = np.loadtxt('../data/faithful.csv', delimiter=',')
     # gaia_xyzuvw -= gaia_xyzuvw.mean(axis=0)
     # gaia_xyzuvw /= gaia_xyzuvw.std(axis=0)
     data_labels = ('Eruption length','Eruption wait')
     data = gaia_xyzuvw.T
-    ncomps = 3
+    ncomps = 10
 
     nstars = gaia_xyzuvw.shape[0]
     #z = np.ones((nstars, ncomps))
