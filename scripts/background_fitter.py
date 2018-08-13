@@ -286,9 +286,9 @@ def initialise_means(data, ncomps):
     return means, cov_mats
 
 if __name__ == '__main__':
-    ITERATIONS = 100
     NSTARS = 100000
-    ncomps = 2
+    ncomps = int(sys.argv[1])
+    ITERATIONS = int(sys.argv[2])
     start = time.time()
     logging.basicConfig(level=logging.DEBUG,
                         filename="bgfitter_{}_{}.log".format(ncomps,
@@ -299,7 +299,17 @@ if __name__ == '__main__':
     logging.info("N components: {}".format(ncomps))
     logging.info("Up to star index: {}".format(NSTARS))
 
+    gaia_file = "../data/gaia_dr2_mean_xyzuvw.npy"
     rdir = "../results/background_fits/"
+    try:
+        gaia_xyzuvw = np.load(gaia_file)[:NSTARS]
+        logging.info("Nstars are: {}".format(gaia_xyzuvw.shape[0]))
+    except IOError:
+        gaia_file = "/data/mash/tcrun/gaia_dr2_mean_xyzuvw.npy"
+        #gaia_xyzuvw = np.load(gaia_file)[:NSTARS]
+        gaia_xyzuvw = np.load(gaia_file)
+        rdir = "/data/mash/tcrun/background_fits/"
+
     mean_savefile = rdir + "bg_means_{}.npy".format(ncomps)
     cov_savefile = rdir + "bg_covs_{}.npy".format(ncomps)
     z_savefile = rdir + "z_{}.npy".format(ncomps)
@@ -307,28 +317,10 @@ if __name__ == '__main__':
 
     lnlikes = []
 
-    gaia_file = "../data/gaia_dr2_mean_xyzuvw.npy"
-    try:
-        gaia_xyzuvw = np.load(gaia_file)[:NSTARS]
-        logging.info("Nstars are: {}".format(gaia_xyzuvw.shape[0]))
-    except IOError:
-        gaia_file = "/data/mash/tcrun/gaia_dr2_mean_xyzuvw.npy"
-        gaia_xyzuvw = np.load(gaia_file)[:NSTARS]
-    # gaia_xyzuvw = np.loadtxt('../data/faithful.csv', delimiter=',')
-    # gaia_xyzuvw -= gaia_xyzuvw.mean(axis=0)
-    # gaia_xyzuvw /= gaia_xyzuvw.std(axis=0)
     data_labels = ('Eruption length','Eruption wait')
     data = gaia_xyzuvw.T
 
     nstars = gaia_xyzuvw.shape[0]
-    #z = np.ones((nstars, ncomps))
-    #    z = np.random.rand(nstars, ncomps)
-    #    print("z shape: {}".format(z.shape))
-    #    inv_sum = np.sum(z, axis=1)**-1
-    #    z = np.einsum('i,ij->ij',inv_sum, z)
-    #    print(np.sum(z, axis=0))
-    #    print("z shape: {}".format(z.shape))
-    #means, cov_mats = m_step(gaia_xyzuvw, z)
 
     try:
         means = np.load(mean_savefile)
@@ -337,9 +329,7 @@ if __name__ == '__main__':
     except IOError:
         logging.info("Initialsing from scratch")
         means, cov_mats = initialise_means(gaia_xyzuvw, ncomps)
-    # means = [np.array([1,-1]), np.array([-1,1])]
-    # cov_mats = [np.diag((2,1)), np.diag((1,2))]
-    #pdb.set_trace()
+
     for i in range(ITERATIONS):
         iter_start = time.time()
         logging.info("---- Iteration {} of {} -----".format(i, ITERATIONS))
@@ -373,12 +363,6 @@ if __name__ == '__main__':
                      .format(int((iter_end - iter_start) // 60),
                              (iter_end - iter_start)%60))
 
-#        if not i % 10:
-#            pdb.set_trace()
-#            plot_data(redness=new_z[:,1])
-#            plot_components(np.array(means)[:,:2], np.array(cov_mats)[:,:2,:2],
-#                            ['b', 'r'], 0.2)
-#            plt.show()
     plt.clf()
     plt.plot(lnlikes)
     plt.savefig("temp_plots/bgfitting_lnlike_{}_{}.pdf".\
