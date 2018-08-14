@@ -77,7 +77,7 @@ with open(data_file, 'rw') as cf, tempfile:
     approx_mass_ix = header.index(approx_mass_name)
     name_ix = header.index(name_name)
     gaia_astr_start = header.index(gaia_ra_name)
-    gaia_astr_end = header.index(gaia_end_name)
+    gaia_astr_end = header.index(gaia_end_name) + 1
 
     wt.writerow(header)
 

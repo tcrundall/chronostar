@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+import pdb
 import pickle
 import sys
 
@@ -42,6 +43,7 @@ data_ordered = np.vstack((data_ordered, data_astro[:,1]))
 data_ordered = data_ordered.T
 
 t = ms.convertAstroArrayToTable(data_ordered)
+pdb.set_trace()
 try:
     t.write(astro_file, format='ascii', overwrite=False)
 except IOError:

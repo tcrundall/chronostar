@@ -16,6 +16,8 @@ sys.path.insert(0, '..')
 import chronostar.expectmax as em
 import chronostar.groupfitter as gf
 
+NGROUPS = 3
+
 try:
     ass_name = sys.argv[1]
 except IndexError:
@@ -25,17 +27,25 @@ except IndexError:
           " ------------------------------------------------")
     raise
 
+try:
+    NGROUPS = int(sys.argv[2])
+except (IndexError, ValueError):
+    print("!!! WARNING !!! no ngroups read in, using default {}".\
+        format(NGROUPS))
+
 
 try:
-    rdir = "/data/mash/tcrun/em_fit/{}/".format(ass_name.strip('/'))
+    rdir = "/data/mash/tcrun/em_fit/{}_{}/".format(ass_name.strip('/'),
+                                                   NGROUPS)
     path_msg = "Storing data on mash data server"
     mkpath(rdir)
 except (IOError, DistutilsFileError):
     path_msg = ("I'm guessing you're not Tim Crundall..."
                 "or not on an RSAA server")
-    rdir = "../results/em_fit/{}/".format(ass_name)
-    if rdir[-1] != '/':
-        rdir += '/'
+    rdir = "../results/em_fit/{}_{}/".format(ass_name.strip('/'),
+                                             NGROUPS)
+    # if rdir[-1] != '/':
+    #     rdir += '/'
     mkpath(rdir)
 
 xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
@@ -71,7 +81,6 @@ print("Master should be working in the directory:\n{}".format(rdir))
 
 star_pars = gf.loadXYZUVW(xyzuvw_file)
 
-ngroups = 3
 logging.info("Everythign loaded, about to fit with {} components"\
     .format(ngroups))
 em.fitManyGroups(star_pars, ngroups,

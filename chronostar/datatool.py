@@ -76,6 +76,30 @@ def createSubFitsFile(mask, filename):
         new_hdul.writeto(filename, overwrite=True)
 
 
+# def tempCreateSubFitsFile(data, filename):
+#     """
+#     Provide a mask (constructed based on Gaia DR2 fits) to build new one
+#
+#     Parameters
+#     ----------
+#     mask : [nstars] int array in tuple
+#         The output of np.where applying some filter to gaia data
+#         e.g.
+#             np.where(hdul[1].data[:,1] > 0)
+#         produces a mask to grab all stars with positive DEC
+#     filename : string
+#         name of destination fits file
+#     """
+#     if filename[-4:] != "fits":
+#         filename += ".fits"
+#     gaia_file = "../data/all_rvs_w_ok_plx.fits"
+#     with fits.open(gaia_file) as hdul:
+#         primary_hdu = fits.PrimaryHDU(header=hdul[1].header)
+#         hdu = fits.BinTableHDU(data=hdul[1].data[mask])
+#         new_hdul = fits.HDUList([primary_hdu, hdu])
+#         new_hdul.writeto(filename, overwrite=True)
+
+
 def convertRecToArray(sr):
     """UNTESTED"""
     ra = sr['ra']
@@ -121,7 +145,7 @@ def convertRecToArray(sr):
 
 def convertManyRecToArray(data):
     """
-    Convert many Fits Records into mean and covs
+    Convert many Fits Records in astrometry into mean and covs (astro)
 
     Note: ra_error and dec_error are in 'mas' while ra and dec
     are given in degrees. Everything else is standard:
@@ -218,11 +242,11 @@ def convertGaiaToXYZUVWDict(astr_file="../data/gaia_dr2_ok_plx.fits",
     means, covs = convertManyRecToArray(hdul[1].data)
     logging.info("Converted many recs")
     astr_dict = {'astr_mns': means, 'astr_covs': covs}
-    cv.convertMeasurementsToCartesian(
+    cart_dict = cv.convertMeasurementsToCartesian(
         astr_dict=astr_dict, savefile=rdir+astr_file[:-5]+"_xyzuvw.fits")
     logging.info("Converted and saved dictionary")
     if return_dict:
-        return {'xyzuvw':means, 'xyzuvw_cov':covs}
+        return cart_dict
 
 
 def convertGaiaMeansToXYZUVW(astr_file="all_rvs_w_ok_plx", server=False):
