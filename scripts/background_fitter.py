@@ -3,8 +3,11 @@ Fits many 6D Gaussians to Gaia background catalogue using
  a simple Expectation Maximisation algorithm
 """
 from __future__ import print_function, division
-import logging
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
+
+import logging
 import numpy as np
 import pdb
 import time
@@ -290,7 +293,7 @@ if __name__ == '__main__':
     ncomps = int(sys.argv[1])
     ITERATIONS = int(sys.argv[2])
     start = time.time()
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO,
                         filename="bgfitter_{}_{}.log".format(ncomps,
                                                              ITERATIONS),
                         filemode='w')
@@ -363,13 +366,13 @@ if __name__ == '__main__':
                      .format(int((iter_end - iter_start) // 60),
                              (iter_end - iter_start)%60))
 
-    plt.clf()
-    plt.plot(lnlikes)
-    plt.savefig("temp_plots/bgfitting_lnlike_{}_{}.pdf".\
-                format(ncomps, ITERATIONS))
     np.save(rdir+"bg_lnlike_{}.npy".format(ncomps), np.array(lnlikes))
 
     end = time.time()
     logging.info("_________ COMPLETE __________")
     logging.info("Time taken: {:02.0f}:{:05.2f}".format(int((end - start) // 60),
                                          (end - start)%60))
+    plt.clf()
+    plt.plot(lnlikes)
+    plt.savefig("temp_plots/bgfitting_lnlike_{}_{}.pdf".\
+                format(ncomps, ITERATIONS))
