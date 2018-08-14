@@ -16,7 +16,6 @@ sys.path.insert(0, '..')
 import chronostar.expectmax as em
 import chronostar.groupfitter as gf
 
-NGROUPS = 3
 
 try:
     ass_name = sys.argv[1]
@@ -30,8 +29,7 @@ except IndexError:
 try:
     NGROUPS = int(sys.argv[2])
 except (IndexError, ValueError):
-    print("!!! WARNING !!! no ngroups read in, using default {}".\
-        format(NGROUPS))
+    NGROUPS = 3
 
 
 try:
@@ -82,8 +80,8 @@ print("Master should be working in the directory:\n{}".format(rdir))
 star_pars = gf.loadXYZUVW(xyzuvw_file)
 
 logging.info("Everythign loaded, about to fit with {} components"\
-    .format(ngroups))
-em.fitManyGroups(star_pars, ngroups,
+    .format(NGROUPS))
+em.fitManyGroups(star_pars, NGROUPS,
                  rdir=rdir, pool=pool, offset=True
                  )
 if using_mpi:
