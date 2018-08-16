@@ -46,8 +46,9 @@ def condit_weighted_average(v1, v2, w1, w2):
     res[missing1] = v2[missing1].astype(np.float)
     res[missing2] = v1[missing2].astype(np.float)
 
-    res[both_pres] = (w1*v1.astype(np.float) + w2*v2.astype(np.float))\
-                        /(w1+w2)
+    res[both_pres] = (w1**0.5 * v1.astype(np.float)
+                    + w2**0.5 * v2.astype(np.float))\
+                    / (w1**0.5 + w2**0.5)
 
     return res
 
