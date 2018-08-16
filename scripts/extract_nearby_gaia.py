@@ -44,4 +44,17 @@ for i, label in enumerate(labels):
     plt.xlabel(label)
     plt.savefig("temp_plots/nearby_gaia_{}.pdf".format(label))
 
+hists = []
+bins = int(MARGIN**1.5 * 25)
+n_nearby = nearby_gaia.shape[0]
+norm = n_nearby ** (5./6)
+for col in nearby_gaia.T:
+    hists.append(np.histogram(col, bins))
 # fit gaus and flat line to distros
+
+mystar = nearby_gaia[0]
+like_star = 1
+for i in range(6):
+    like_star *= hists[i][0][np.digitize(mystar[i], hists[i][1])]
+like_star /= n_nearby**5
+
