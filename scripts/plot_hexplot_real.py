@@ -24,7 +24,8 @@ try:
     package_path = sys.argv[1]
     xyzuvw_file = sys.argv[2]
     if len(sys.argv) > 3:
-        res_dir = sys.argv[3].strip('/') + '/'
+        # res_dir = sys.argv[3].strip('/') + '/'
+        res_dir = sys.argv[3]
     else:
         res_dir = ''
 except (ValueError, IndexError):

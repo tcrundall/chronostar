@@ -409,6 +409,10 @@ def decomposeGroup(group):
     return all_init_pars, sub_groups
 
 
+def getOveralLikelihood(star_pars, groups, bg_ln_ols):
+    return True
+
+
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
                   offset=False,  bg_hist_file=''):
@@ -610,6 +614,10 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         np.save(final_gdir + 'final_lnprob.npy', lnprob)
 
         all_init_pos[i] = chain[:, -1, :]
+
+    # get overall likelihood
+
+    # get BIC (or equivalent)
 
     final_groups = [syn.Group(final_best_fit, sphere=True, internal=True,
                               starcount=False)
