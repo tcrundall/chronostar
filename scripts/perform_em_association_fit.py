@@ -112,7 +112,7 @@ n_nearby = nearby_gaia.shape[0]
 norm = n_nearby ** (5./6)
 for col in nearby_gaia.T:
     bg_hists.append(np.histogram(col, bins))
-np.save(bg_hist_file, bg_hists)
+np.save(rdir+bg_hist_file, bg_hists)
 logging.info("Histograms constructed with {} stars, stored in {}".format(
     n_nearby, rdir+bg_hist_file
 ))
