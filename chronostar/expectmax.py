@@ -197,7 +197,8 @@ def backgroundLogOverlap(star_mean, bg_hists):
 
     # Renormalise such that the combined 6D histogram has a hyper-volume
     # of n_gaia_stars
-    lnol -= 5 * np.log(n_gaia_stars)
+    #lnol -= 5 * np.log(n_gaia_stars)
+    lnol -= 6 * np.log(n_gaia_stars)
     return lnol
 
 
