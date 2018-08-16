@@ -14,6 +14,14 @@ import pdb
 import shutil
 from tempfile import NamedTemporaryFile
 
+
+def isFloat(string):
+    try:
+        myfloat = float(string)
+        return (not np.isnan(myfloat) and not np.isinf(myfloat))
+    except ValueError:
+        return False
+
 def condit_weighted_average(v1, v2, w1, w2):
     """
     Takes the weighted average of two arrays, but can handle missing elements
@@ -99,10 +107,10 @@ with open(data_file, 'rw') as cf, tempfile:
         elif row[wide_binary_ix] == 'TRUE':
             pair_row = rd.next()
             # only bother if data is present
-            if (row[gaia_astr_start] or pair_row[gaia_astr_start])\
-                    and (row[main_erv_ix] or pair_row[main_erv_ix]):
-                #print(row)
-                #print(pair_row)
+            if (isFloat(row[gaia_astr_start])
+                    and isFloat(pair_row[gaia_astr_start])
+                    and isFloat(row[main_erv_ix])
+                    and isFloat(pair_row[main_erv_ix])):
 
                 # handle case where a mass is missing
                 try:

@@ -13,6 +13,7 @@ from distutils.dir_util import mkpath
 import logging
 import numpy as np
 import os
+import pdb
 import pickle
 import random
 
@@ -163,7 +164,71 @@ def calcMembershipProbs(star_lnols):
     return star_memb_probs
 
 
-def expectation(star_pars, groups, old_z=None):
+def backgroundLogOverlap(star_mean, bg_hists):
+    """Calculate the 'overlap' of a star with the background desnity of Gaia
+
+    We assume the Gaia density is approximately constant over the size scales
+    of a star's uncertainty, and so approximate the star as a delta function
+    at it's central estimate(/mean)
+
+    Parameters
+    ----------
+    star_mean : [6] float array
+        the XYZUVW central estimate of a star, XYZ in pc and UVW in km/s
+
+    bg_hists : 6*[[nbins],[nbins+1]] list
+        A collection of histograms desciribing the phase-space density of
+        the Gaia catalogue in the vicinity of associaiton in quesiton.
+        For each of the 6 dimensions there is an array of bin values and
+        an array of bin edges.
+
+        e.g. bg_hists[0][1] is an array of floats describing the bin edges
+        of the X dimension 1D histogram, and bg_hists[0][0] is an array of
+        integers describing the star counts in each bin
+    """
+    # get the total area under a histogram
+    n_gaia_stars = np.sum(bg_hists[0][0])
+    ndim = 6
+
+    lnol = 0
+    for i in range(ndim):
+        lnol += bg_hists[i][0][np.digitize(star_mean[i], bg_hists[i][1])]
+
+    # Renormalise such that the combined 6D histogram has a hyper-volume
+    # of n_gaia_stars
+    lnol -= 5 * n_gaia_stars
+    return lnol
+
+
+def backgroundLogOverlaps(xyzuvw, bg_hists):
+    """Calculate the 'overlaps' of stars with the background desnity of Gaia
+
+    We assume the Gaia density is approximately constant over the size scales
+    of a star's uncertainty, and so approximate the star as a delta function
+    at it's central estimate(/mean)
+
+    Parameters
+    ----------
+    xyzuvw: [nstars, 6] float array
+        the XYZUVW central estimate of a star, XYZ in pc and UVW in km/s
+
+    bg_hists : 6*[[nbins],[nbins+1]] list
+        A collection of histograms desciribing the phase-space density of
+        the Gaia catalogue in the vicinity of associaiton in quesiton.
+        For each of the 6 dimensions there is an array of bin values and
+        an array of bin edges.
+
+        e.g. bg_hists[0][1] is an array of floats describing the bin edges
+        of the X dimension 1D histogram, and bg_hists[0][0] is an array of
+        integers describing the star counts in each bin
+    """
+    bg_ln_ols = np.zeros(xyzuvw.shape[0])
+    for i in range(bg_ln_ols.shape[0]):
+        bg_ln_ols[i] = backgroundLogOverlap(xyzuvw[i], bg_hists)
+    return bg_ln_ols
+
+
+def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
     """Calculate membership probabilities given fits to each group
 
     Parameters
@@ -181,6 +246,17 @@ def expectation(star_pars, groups, old_z=None):
     groups : [ngroups] syn.Group object list
         a fit for each group (in internal form)
 
+    old_z : [nstars, ngroups (+1)] float array
+        Only used to get weights (amplitudes) for each fitted component.
+        Tracks membership probabilities of each star to each group. Each
+        element is between 0.0 and 1.0 such that each row sums to 1.0
+        exactly.
+        If bg_hists are also being used, there is an extra column for the
+        background. However it is not used in this context
+
+    bg_ln_ols : [nstars] float array
+        The overlap the stars have with the (fixed) background distribution
+
     Returns
     -------
     z : [nstars, ngroups] array
@@ -192,24 +268,33 @@ def expectation(star_pars, groups, old_z=None):
     ngroups = len(groups)
     nstars = len(star_pars['xyzuvw'])
 
+    using_bg = bg_ln_ols is not None
+
     # if no z provided, assume perfectly equal membership
     if old_z is None:
-        old_z = np.ones((nstars, ngroups))/ngroups
+        old_z = np.ones((nstars, ngroups + using_bg))/(ngroups + using_bg)
 
-    lnols = np.zeros((nstars, ngroups))
+    lnols = np.zeros((nstars, ngroups + using_bg))
     for i, group in enumerate(groups):
+        # weight is the amplitude of a component, proportional to its expected
+        # total of stellar members
         weight = old_z[:,i].sum()
-        threshold = nstars/(2. * (ngroups+1))
-        if weight < threshold:
-            logging.info("!!! GROUP {} HAS LESS THAN {} STARS, weight: {}".\
-                format(i, threshold, weight)
-        )
+        # threshold = nstars/(2. * (ngroups+1))
+        # if weight < threshold:
+        #     logging.info("!!! GROUP {} HAS LESS THAN {} STARS, weight: {}".\
+        #         format(i, threshold, weight)
+        # )
         group_pars = group.getInternalSphericalPars()
         lnols[:, i] =\
-            np.log(weight) + gf.lnlike(group_pars, star_pars,
-                                       old_z, return_lnols=True)
-        # calc_lnoverlaps(group_pars, star_pars, nstars)
-    z = np.zeros((nstars, ngroups))
+            np.log(weight) +\
+                gf.getLogOverlaps(group_pars, star_pars)
+            # gf.lnlike(group_pars, star_pars,
+            #                            old_z, return_lnols=True) #??!??!?!
+
+    # insert one time calculated background overlaps
+    if using_bg:
+        lnols[:,-1] = bg_ln_ols
+    z = np.zeros((nstars, ngroups + using_bg))
     for i in range(nstars):
         z[i] = calcMembershipProbs(lnols[i])
     if np.isnan(z).any():
@@ -324,7 +409,7 @@ def decomposeGroup(group):
 
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
-                  offset=False):
+                  offset=False,  bg_hist_file=''):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -350,6 +435,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     origins: [ngroups] synthetic Group
     pool: MPIPool object {None}
         the pool of threads to be passed into emcee
+    use_background: Bool {False}
+        If set, will use histograms based on Gaia data set to compare
+        association memberships to the field. Assumes file is in [rdir]
 
     Return
     ------
@@ -368,6 +456,14 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
 
+    use_background = False
+    bg_hists = None
+    bg_ln_ols = None
+    if bg_hist_file:
+        use_background = True
+        bg_hists = np.load(rdir + bg_hist_file)
+        bg_ln_ols = backgroundLogOverlaps(star_pars['xyzuvw'], bg_hists)
+
     nstars = star_pars['xyzuvw'].shape[0]
     # INITIALISE GROUPS
     if not init_with_origin:
@@ -378,7 +474,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         z = None
     else:
         init_groups = origins
-        z = np.zeros((nstars, ngroups))
+        z = np.zeros((nstars, ngroups + use_background))
         cnt = 0
         for i in range(ngroups):
             z[cnt:cnt+origins[i].nstars, i] = 1.0
@@ -407,7 +503,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         mkpath(idir)
 
         # EXPECTATION
-        z = expectation(star_pars, old_groups, z)
+        z = expectation(star_pars, old_groups, z, bg_ln_ols)
         #if iter_count == 1: # had this to force a decomposition
         #    z[:,0] = 0.01
         #    z[:,1] = 0.99

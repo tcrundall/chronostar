@@ -68,7 +68,6 @@ def test_converter():
     logging.info("Comparing with:\n{}".format(
         group.generateSphericalCovMatrix()
     ))
-    pdb.set_trace()
     assert np.allclose(np.cov(xyzuvw_now.T), group.generateSphericalCovMatrix(),
                        atol=0.5)
 

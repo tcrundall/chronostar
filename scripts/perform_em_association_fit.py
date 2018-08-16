@@ -35,6 +35,7 @@ except (IndexError, ValueError):
 try:
     rdir = "/data/mash/tcrun/em_fit/{}_{}/".format(ass_name.strip('/'),
                                                    NGROUPS)
+    gdir = "/data/mash/tcrun/" # directory with master gaia data
     path_msg = "Storing data on mash data server"
     mkpath(rdir)
 except (IOError, DistutilsFileError):
@@ -42,12 +43,16 @@ except (IOError, DistutilsFileError):
                 "or not on an RSAA server")
     rdir = "../results/em_fit/{}_{}/".format(ass_name.strip('/'),
                                              NGROUPS)
+    gdir = "../data/" # directory with master gaia data
+    path_msg = "Storing data on mash data server"
     # if rdir[-1] != '/':
     #     rdir += '/'
     mkpath(rdir)
 
+gaia_xyzuvw_file = gdir + 'gaia_dr2_mean_xyzuvw.npy'
 xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
 best_fit_file = rdir + "best_fit.npy"
+bg_hist_file = "bg_hists.npy"
 
 logging.basicConfig(
     level=logging.INFO, filemode='w',
@@ -79,10 +84,47 @@ print("Master should be working in the directory:\n{}".format(rdir))
 
 star_pars = gf.loadXYZUVW(xyzuvw_file)
 
+# -------------------------------------------------------------
+# constract histograms of Gaia stars in vicinity of association
+# -------------------------------------------------------------
+logging.info("Building histograms og Gaia stars in vicinity of associaiton")
+star_means = star_pars['xyzuvw']
+margin = 2.
+
+# construct box
+kin_max = np.max(star_means, axis=0)
+kin_min = np.min(star_means, axis=0)
+span = kin_max - kin_min
+upper_boundary = kin_max + margin*span
+lower_boundary = kin_min - margin*span
+
+# get gaia stars within box
+gaia_xyzuvw = np.load(gaia_xyzuvw_file)
+mask = np.where(
+    np.all(
+        (gaia_xyzuvw < upper_boundary) & (gaia_xyzuvw > lower_boundary),
+        axis=1)
+)
+nearby_gaia = gaia_xyzuvw[mask]
+bg_hists = []
+bins = int(margin**1.5 * 25)
+n_nearby = nearby_gaia.shape[0]
+norm = n_nearby ** (5./6)
+for col in nearby_gaia.T:
+    bg_hists.append(np.histogram(col, bins))
+np.save(bg_hist_file, bg_hists)
+logging.info("Histograms constructed with {} stars, stored in {}".format(
+    n_nearby, rdir+bg_hist_file
+))
+
+# --------------------------------------------------------------------------
+# Run fit
+# --------------------------------------------------------------------------
+logging.info("Using data file {}".format(xyzuvw_file))
 logging.info("Everythign loaded, about to fit with {} components"\
     .format(NGROUPS))
 em.fitManyGroups(star_pars, NGROUPS,
-                 rdir=rdir, pool=pool, offset=True
+                 rdir=rdir, pool=pool, offset=True, bg_hist_file=bg_hist_file,
                  )
 if using_mpi:
     pool.close()

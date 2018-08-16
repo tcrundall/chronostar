@@ -10,7 +10,14 @@ import chronostar.measurer as ms
 import chronostar.synthesiser as syn
 
 def test_stationaryGroup():
-    logging.basicConfig(level=logging.INFO, filename='logs/groupfitter.log')
+    """
+    Integrated test which fits a single component to a synthetic association.
+
+    Runtime on my mac (single thread) is ~ 20 mins. Check logs/groupfitter.log
+    and temp_plots/*.png for progress.
+    """
+    logging.basicConfig(level=logging.INFO, filename='logs/groupfitter.log',
+                        filemode='w')
     save_dir = 'temp_data/'
     group_savefile = save_dir + 'origins_stat.npy'
     xyzuvw_init_savefile = save_dir + 'xyzuvw_init_stat.npy'
@@ -18,7 +25,7 @@ def test_stationaryGroup():
     xyzuvw_conv_savefile = save_dir + 'xyzuvw_conv_stat.fits'
 
     pars = np.array([0., 0., 0., 0., 0., 0., 0., 0., 1e-8, 100])
-    error_frac = 1.0
+    error_frac = 0.1
     xyzuvw_init, group = syn.synthesiseXYZUVW(
         pars, return_group=True, internal=True, group_savefile=group_savefile,
         xyzuvw_savefile=xyzuvw_init_savefile
@@ -29,8 +36,8 @@ def test_stationaryGroup():
                                                   savefile=xyzuvw_conv_savefile)
 
     best_fit, chain, lnprob = gf.fitGroup(
-        xyzuvw_dict=star_pars, plot_it=True, convergence_tol=0.4,
-        burnin_steps=1000, plot_dir='temp_plots/', save_dir='temp_data/'
+        xyzuvw_dict=star_pars, plot_it=True, convergence_tol=0.25,
+        burnin_steps=400, plot_dir='temp_plots/', save_dir='temp_data/'
     )
     best_fit_group = syn.Group(best_fit, internal=True)
 

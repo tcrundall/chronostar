@@ -9,6 +9,7 @@ import astropy.units as u
 import emcee
 import logging
 import matplotlib.pyplot as plt
+import pdb
 
 import transform as tf
 from _overlap import get_lnoverlaps
@@ -164,35 +165,29 @@ def lnprior(pars, star_pars):
     return lnAlphaPrior(pars, star_pars)
 
 
-def lnlike(pars, star_pars, z, return_lnols=False):
-    """Computes the log-likelihood for a fit to a group.
+def getLogOverlaps(pars, star_pars):
+    """
+    Given the parametric description of an origin, calculate star overlaps
 
-    The emcee parameters encode the modelled origin point of the stars.
-    Using the parameters, a mean and covariance in 6D space are constructed
-    as well as an age. The kinematics are then projected forward to the
-    current age and compared with the current stars' XYZUVW values (and
-    uncertainties)
+    Utilises Overlap, a c module wrapped with swig to be callable by python.
+    This allows a 100x speed up in our 6x6 matrix operations when compared
+    to numpy.
 
     Parameters
     ----------
-    pars
-        Parameters describing the group model being fitted
-    star_pars
-        traceback data being fitted to
-    z
-        array of weights [0.0 - 1.0] for each star, describing how likely
-        they are members of group to be fitted.
-
-    Returns
-    -------
-    lnlike
-        the logarithm of the likelihood of the fit
+    pars: [npars] list
+        Parameters describing the origin of group
+        typically [X,Y,Z,U,V,W,dX,dV,age]
+    star_pars: dict
+        traceback data being fitted to, stored as a dict:
+        'xyzuvw': [nstars,6] float array
+            the central estimates of each star in XYZUVW space
+        'xyzuvw_cov': [nstars,6,6] float array
+            the covariance of each star in XYZUVW space
     """
-    # convert pars into covariance matrix
+    # convert pars into covariance matrix with our Group class
     g = syn.Group(pars, internal=True)
-    mean_then = g.mean
     cov_then = g.generateCovMatrix()
-    age = g.age
 
     # Trace group pars forward to now
     mean_now = torb.traceOrbitXYZUVW(g.mean, g.age, True)
@@ -205,9 +200,45 @@ def lnlike(pars, star_pars, z, return_lnols=False):
         cov_now, mean_now, star_pars['xyzuvw_cov'], star_pars['xyzuvw'],
         nstars
     )
-    if return_lnols:
-        return lnols
+    return lnols
 
+
+def lnlike(pars, star_pars, z):
+    """Computes the log-likelihood for a fit to a group.
+
+    The emcee parameters encode the modelled origin point of the stars.
+    Using the parameters, a mean and covariance in 6D space are constructed
+    as well as an age. The kinematics are then projected forward to the
+    current age and compared with the current stars' XYZUVW values (and
+    uncertainties)
+
+    P(D|G) = \prod_i[P(d_i|G)^{z_i}]
+    \ln P(D|G) = \sum_i z_i*\ln P(d_i|G)
+
+    Parameters
+    ----------
+    pars: [npars] list
+        Parameters describing the group model being fitted
+    star_pars: dict
+        traceback data being fitted to, stored as a dict:
+        'xyzuvw': [nstars,6] float array
+            the central estimates of each star in XYZUVW space
+        'xyzuvw_cov': [nstars,6,6] float array
+            the covariance of each star in XYZUVW space
+    z: [nstars] float array
+        array of weights [0.0 - 1.0] for each star, describing how likely
+        they are members of group to be fitted.
+
+    Returns
+    -------
+    lnlike
+        the logarithm of the likelihood of the fit
+    """
+    lnols = getLogOverlaps(pars, star_pars)
+    if np.isnan(lnols).any():
+        pdb.set_trace()
+    if (np.sum(lnols*z)) is np.nan:
+        pdb.set_trace()
     return np.sum(lnols * z)
 
 
