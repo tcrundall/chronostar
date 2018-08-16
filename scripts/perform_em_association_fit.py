@@ -10,11 +10,13 @@ from distutils.dir_util import mkpath
 from distutils.errors import DistutilsFileError
 import logging
 import numpy as np
+import pdb
 import sys
 from emcee.utils import MPIPool
 sys.path.insert(0, '..')
 import chronostar.expectmax as em
 import chronostar.groupfitter as gf
+import chronostar.synthesiser as syn
 
 
 try:
@@ -120,11 +122,22 @@ logging.info("Histograms constructed with {} stars, stored in {}".format(
 # --------------------------------------------------------------------------
 # Run fit
 # --------------------------------------------------------------------------
+bp_mean = np.mean(star_means, axis=0)
+bp_cov = np.cov(star_means.T)
+bp_dx = np.sqrt(np.min([bp_cov[0,0], bp_cov[1,1], bp_cov[2,2]]))
+bp_dv = np.sqrt(np.min([bp_cov[3,3], bp_cov[4,4], bp_cov[5,5]]))
+bp_age = 0.5
+nstars = star_means.shape[0]
+bp_pars = np.hstack((bp_mean, bp_dx, bp_dv, bp_age, nstars))
+bp_group = syn.Group(bp_pars)
+
+
 logging.info("Using data file {}".format(xyzuvw_file))
 logging.info("Everythign loaded, about to fit with {} components"\
     .format(NGROUPS))
 em.fitManyGroups(star_pars, NGROUPS,
                  rdir=rdir, pool=pool, offset=True, bg_hist_file=bg_hist_file,
+                 origins=[bp_group], init_with_origin=True
                  )
 if using_mpi:
     pool.close()

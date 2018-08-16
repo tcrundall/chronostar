@@ -192,11 +192,13 @@ def backgroundLogOverlap(star_mean, bg_hists):
 
     lnol = 0
     for i in range(ndim):
-        lnol += bg_hists[i][0][np.digitize(star_mean[i], bg_hists[i][1])]
+        lnol += np.log(
+            bg_hists[i][0][np.digitize(star_mean[i], bg_hists[i][1])]
+        )
 
     # Renormalise such that the combined 6D histogram has a hyper-volume
     # of n_gaia_stars
-    lnol -= 5 * n_gaia_stars
+    lnol -= 5 * np.log(n_gaia_stars)
     return lnol
 
 
@@ -300,6 +302,7 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
     if np.isnan(z).any():
         logging.info("!!!!!! AT LEAST ONE MEMBERSHIP IS 'NAN' !!!!!!")
         #import pdb; pdb.set_trace()
+    pdb.set_trace()
     return z
 
 
