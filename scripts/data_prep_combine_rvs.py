@@ -15,9 +15,49 @@ def gaussian(x, mu, sig):
     amp = 1 / np.sqrt(2. * np.pi * np.power(sig, 2.))
     return amp * np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
+
+def combine_ervs_inv_quad(e_rvs):
+    """
+    Taken from https://en.wikipedia.org/wiki/Inverse-variance_weighting
+    """
+    e_rvs = np.array(e_rvs)
+    sig_tot = (np.sum(e_rvs**-2))**-0.5
+    return sig_tot
+
+
+def combine_ervs_quad(e_rvs):
+    e_rvs = np.array(e_rvs)
+    sig_tot = np.sum(e_rvs**2)**0.5
+    return sig_tot
+
+
+def combine_rvs(rvs, e_rvs):
+    """
+    Take the mean of rvs, weighted by inverse sigma
+    Taken from https://en.wikipedia.org/wiki/Inverse-variance_weighting
+    """
+    rvs = np.array(rvs)
+    e_rvs = np.array(e_rvs)
+    return np.sum(rvs/e_rvs**2) / np.sum(1/e_rvs**2)
+
+
+def normed_error(rvs, e_rvs):
+    """
+    Calculates a normalised error.
+    If the actual spread of measurements is more than 3 sigma of
+    the combined uncertainty, then something is up...
+    """
+    rvs = np.array(rvs)
+    e_rvs = np.array(e_rvs)
+    ref_std = np.std(rvs)
+    sig_tot = combine_ervs_quad(e_rvs)
+    err = ref_std / sig_tot
+    return err
+
+
 # how many points to sample from a measurement
-NGAIA_SAMPLES = 1000
-NOTHER_SAMPLES = 100
+# NGAIA_SAMPLES = 1000
+# NOTHER_SAMPLES = 100
 DEF_ERR_STR = '4.0'
 
 data_file = "../data/bpmg_cand_w_gaia_dr2_astrometry.csv"
@@ -33,6 +73,11 @@ erv2_name = "eRV2"
 gaia_rv_name = "radial_velocity"
 gaia_erv_name = "radial_velocity_error"
 src_cnt_name = "n_obs"
+normed_erv_name = "normed e_RV"
+incons_flag_name = "incons_RV_flag"
+
+extra_columns_present = False
+nextra_columns = 0
 
 with open(data_file, 'rw') as cf, tempfile:
     rd = csv.reader(cf)
@@ -50,11 +95,26 @@ with open(data_file, 'rw') as cf, tempfile:
     gaia_erv_ix = header.index(gaia_erv_name)
     src_cnt_ix = header.index(src_cnt_name)
 
+    try:
+        normed_erv_ix = header.index(normed_erv_name)
+    except ValueError:
+        header += [normed_erv_name]
+        normed_erv_ix = header.index(normed_erv_name)
+        nextra_columns += 1
+    try:
+        incons_flag_ix = header.index(incons_flag_name)
+    except ValueError:
+        header += [incons_flag_name]
+        incons_flag_ix = header.index(incons_flag_name)
+        nextra_columns += 1
     wt.writerow(header)
 
     for row in rd:
+        row += nextra_columns*['']
         try:
             # handle the case with only one lit rv and no gaia
+            incons_flag = False
+            normed_erv = 0.
             if row[src_cnt_ix] == '1' and row[gaia_rv_ix] == '':
                 print("Just copying...")
                 row[main_rv_ix] = row[rv1_ix]
@@ -62,36 +122,40 @@ with open(data_file, 'rw') as cf, tempfile:
                     row[main_erv_ix] = DEF_ERR_STR
                 else:
                     row[main_erv_ix] = row[erv1_ix]
+                incons_flag = False
+                normed_erv = 1.
 
             # handle all other cases with monte carlo sampling, will append samples
             # to a single array
             else:
-                print("Sampling")
+                print("Combining")
                 samples = np.array([])
 
-                if row[gaia_rv_ix] != '':
-                    gaia_samples = np.random.randn(NGAIA_SAMPLES)\
-                                    * float(row[gaia_erv_ix])\
-                                    + float(row[gaia_rv_ix])
-                    samples = np.append(samples, gaia_samples)
+                rvs = []
+                e_rvs = []
+                # assumes errors immediately follow measurement
+                for src_ix in [gaia_rv_ix, rv1_ix, rv2_ix]:
+                    # handle empty string values
+                    try:
+                        rvs.append(float(row[src_ix]))
+                        e_rvs.append(float(row[src_ix+1]))
+                    except ValueError:
+                        pass
 
-                # Now do any literature RVs, if error not included, we use
-                # some large default uncertainty
-                if row[rv1_ix] != '':
-                    other_samples = np.random.randn(NOTHER_SAMPLES)\
-                                     * float(row[erv1_ix] or DEF_ERR_STR)\
-                                     + float(row[rv1_ix])
-                    samples = np.append(samples, other_samples)
+                comb_rv = combine_rvs(rvs, e_rvs)
+                comb_erv = combine_ervs_inv_quad(e_rvs)
+                normed_erv = normed_error(rvs, e_rvs)
 
-                if row[rv2_ix] != '':
-                    other_samples = np.random.randn(NOTHER_SAMPLES) \
-                                    * float(row[erv2_ix] or DEF_ERR_STR) \
-                                    + float(row[rv2_ix])
-                    samples = np.append(samples, other_samples)
+                incons_flag = normed_erv > 3.
 
-                row[main_rv_ix] = np.mean(samples)
-                row[main_erv_ix] = np.std(samples)
+                row[main_rv_ix] = comb_rv
+                if incons_flag:
+                    row[main_erv_ix] = np.std(rvs)
+                else:
+                    row[main_erv_ix] = comb_erv
 
+            row[normed_erv_ix] = str(normed_erv)
+            row[incons_flag_ix] = str(incons_flag)
             wt.writerow(row)
         except ValueError:
             pdb.set_trace()
