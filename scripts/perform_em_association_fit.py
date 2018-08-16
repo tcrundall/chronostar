@@ -120,18 +120,27 @@ logging.info("Histograms constructed with {} stars, stored in {}".format(
 ))
 
 # --------------------------------------------------------------------------
-# Run fit
+# Get initial parameters
 # --------------------------------------------------------------------------
-bp_mean = np.mean(star_means, axis=0)
-bp_cov = np.cov(star_means.T)
-bp_dx = np.sqrt(np.min([bp_cov[0,0], bp_cov[1,1], bp_cov[2,2]]))
-bp_dv = np.sqrt(np.min([bp_cov[3,3], bp_cov[4,4], bp_cov[5,5]]))
-bp_age = 0.5
-nstars = star_means.shape[0]
-bp_pars = np.hstack((bp_mean, bp_dx, bp_dv, bp_age, nstars))
+# bp_mean = np.mean(star_means, axis=0)
+# bp_cov = np.cov(star_means.T)
+# bp_dx = np.sqrt(np.min([bp_cov[0,0], bp_cov[1,1], bp_cov[2,2]]))
+# bp_dv = np.sqrt(np.min([bp_cov[3,3], bp_cov[4,4], bp_cov[5,5]]))
+# bp_age = 0.5
+# nstars = star_means.shape[0]
+# bp_pars = np.hstack((bp_mean, bp_dx, bp_dv, bp_age, nstars))
+# bp_group = syn.Group(bp_pars)
+
+bp_pars = np.array([
+   2.98170398e+01,  4.43573995e+01,  2.29251498e+01, -9.65731744e-01,
+   -3.42827894e+00, -3.99928052e-02 , 2.63084094e+00,  1.05302890e-01,
+   1.59367119e+01, nstars
+])
 bp_group = syn.Group(bp_pars)
 
-
+# --------------------------------------------------------------------------
+# Run fit
+# --------------------------------------------------------------------------
 logging.info("Using data file {}".format(xyzuvw_file))
 logging.info("Everythign loaded, about to fit with {} components"\
     .format(NGROUPS))
