@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 from astropy.io import fits
+import pdb
 import sys
 
 sys.path.insert(0, '..')
@@ -13,7 +14,24 @@ import chronostar.traceorbit as to
 import chronostar.measurer as ms
 
 def test_converter():
-    """Fairly in depth integration test"""
+    """Fairly in depth integration test
+
+    Synthesises an association in XYZUVW
+    at LSR (i.e. -25 pc from the sun in Z
+    direction), traces forward a negligible time step, converts to
+    astrometric measurement with some small error, converts back
+    to XYZUVW and compares distribution to initialising covariance
+    matrix.
+
+    Note, if measurement uncertainty is allowed to be large (>0.7?)
+    then points are scattered in W so much that the covariance matrix
+    comparision fails.
+
+    This is because the largest contributer to uncertainty is radial
+    velocity, and since the association is initialised at (0,0,0) and
+    measured from the sun at (0,0,25), the uncertainty translates to
+    an uncertainty in W (the vertical component of space velocity).
+    """
     AGE = 1e-5
 
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -24,15 +42,20 @@ def test_converter():
     astro_savefile = save_dir + 'astro_table.txt'
     xyzuvw_conv_savefile = save_dir + 'xyzuvw_conv.fits'
 
+    # Generate 100 synthetic stars centred at LSR with dX = dV = 1
     group_pars = [0., 0., 0., 0., 0., 0., 1., 1., AGE, 100]
     xyzuvw_init, group = syn.synthesiseXYZUVW(
         group_pars, sphere=True, xyzuvw_savefile=xyzuvw_init_savefile,
         group_savefile=group_savefile, return_group=True
     )
+
+    # Traceforward by a negligible time step
     xyzuvw_now_true = to.traceManyOrbitXYZUVW(xyzuvw_init, group.age,
                                               single_age=True)
 
-    ms.measureXYZUVW(xyzuvw_now_true, 1.0, astro_savefile)
+    # Measure with Gaia-ish uncertainty
+    # ms.measureXYZUVW(xyzuvw_now_true, 1.0, astro_savefile)
+    ms.measureXYZUVW(xyzuvw_now_true, 0.1, astro_savefile)
     cv.convertMeasurementsToCartesian(loadfile=astro_savefile,
                                       savefile=xyzuvw_conv_savefile)
 
@@ -45,6 +68,7 @@ def test_converter():
     logging.info("Comparing with:\n{}".format(
         group.generateSphericalCovMatrix()
     ))
+    pdb.set_trace()
     assert np.allclose(np.cov(xyzuvw_now.T), group.generateSphericalCovMatrix(),
                        atol=0.5)
 
