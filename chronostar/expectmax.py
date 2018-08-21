@@ -187,18 +187,23 @@ def backgroundLogOverlap(star_mean, bg_hists):
     """
     # get the total area under a histogram
     n_gaia_stars = np.sum(bg_hists[0][0])
+
     ndim = 6
 
     lnol = 0
     for i in range(ndim):
+        # evaluate the density: bin_height / bin_width / n_gaia_stars
+        bin_width = bg_hists[i][1][1] - bg_hists[i][1][0]
         lnol += np.log(
-            bg_hists[i][0][np.digitize(star_mean[i], bg_hists[i][1])]
+            bg_hists[i][0][np.digitize(star_mean[i], bg_hists[i][1])]\
         )
+        lnol -= bin_width
+        lnol -= np.log(n_gaia_stars)
 
     # Renormalise such that the combined 6D histogram has a hyper-volume
     # of n_gaia_stars
     #lnol -= 5 * np.log(n_gaia_stars)
-    lnol -= 6 * np.log(n_gaia_stars)
+    lnol += np.log(n_gaia_stars)
     return lnol
 
 
@@ -275,6 +280,7 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
     # if no z provided, assume perfectly equal membership
     if old_z is None:
         old_z = np.ones((nstars, ngroups + using_bg))/(ngroups + using_bg)
+        import pdb; pdb.set_trace()
 
     lnols = np.zeros((nstars, ngroups + using_bg))
     for i, group in enumerate(groups):
@@ -286,6 +292,7 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
         #     logging.info("!!! GROUP {} HAS LESS THAN {} STARS, weight: {}".\
         #         format(i, threshold, weight)
         # )
+        import pdb; pdb.set_trace()
         group_pars = group.getInternalSphericalPars()
         lnols[:, i] =\
             np.log(weight) +\
