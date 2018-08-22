@@ -280,7 +280,6 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
     # if no z provided, assume perfectly equal membership
     if old_z is None:
         old_z = np.ones((nstars, ngroups + using_bg))/(ngroups + using_bg)
-        import pdb; pdb.set_trace()
 
     lnols = np.zeros((nstars, ngroups + using_bg))
     for i, group in enumerate(groups):
@@ -292,7 +291,6 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
         #     logging.info("!!! GROUP {} HAS LESS THAN {} STARS, weight: {}".\
         #         format(i, threshold, weight)
         # )
-        import pdb; pdb.set_trace()
         group_pars = group.getInternalSphericalPars()
         lnols[:, i] =\
             np.log(weight) +\
