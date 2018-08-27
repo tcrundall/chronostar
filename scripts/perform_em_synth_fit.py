@@ -92,21 +92,27 @@ all_xyzuvw_now_perf = np.zeros((0,6))
 origins = []
 
 logging.info("---------- Generating synthetic data...")
+# Calculate the initial parameters for each component that correspond
+# to the current day mean of mean_now
 for i in range(ngroups):
     logging.info(" generating from group {}".format(i))
     mean_then = torb.traceOrbitXYZUVW(mean_now, -extra_pars[i,-2],
                                       single_age=True)
     group_pars = np.hstack((mean_then, extra_pars[i]))
-    xyzuvw_init, group =\
-        syn.synthesiseXYZUVW(group_pars, sphere=True, return_group=True)
-    all_xyzuvw_init = np.vstack((all_xyzuvw_init, xyzuvw_init))
 
-    xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init, group.age,
-                                                single_age=True)
-    all_xyzuvw_now_perf =\
-        np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
-    origins.append(group)
-    logging.info(" done")
+all_xyzuvw_init, origins = syn.synthesiseManyXYZUVW(
+    group_pars, sphere=True, return_groups=True
+)
+logging.info(" done")
+    # xyzuvw_init, group =\
+    #     syn.synthesiseXYZUVW(group_pars, sphere=True, return_group=True)
+    # all_xyzuvw_init = np.vstack((all_xyzuvw_init, xyzuvw_init))
+    #
+    # xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init, group.age,
+    #                                             single_age=True)
+    # all_xyzuvw_now_perf =\
+    #     np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
+    # origins.append(group)
 
 logging.info("Saving synthetic data...")
 np.save(rdir+groups_savefile, origins)

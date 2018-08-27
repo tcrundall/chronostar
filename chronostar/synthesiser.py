@@ -175,7 +175,7 @@ def synthesiseManyXYZUVW(many_pars, sphere=True, return_groups=False,
                          xyzuvw_savefile='', groups_savefile='',
                          internal=False):
     """
-    Generate a bunch of stars in situ from many Guassian parametrisations
+    Generate a bunch of stars in situ from many Gaussian parametrisations
 
     Parameters
     ----------
@@ -202,7 +202,7 @@ def synthesiseManyXYZUVW(many_pars, sphere=True, return_groups=False,
 
     Returns
     -------
-    xyzuvw_init : [nstars,6] float array
+    xyzuvw_init : [Nstars,6] float array
         Initial distribution of stars in XYZUVW coordinates in corotating, RH
         (X,U positive towards galactic anti-centre) cartesian coordinates
         centred on local standard fo rest.
