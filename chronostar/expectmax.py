@@ -476,7 +476,7 @@ def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False):
 
 
 def maximisation(star_pars, ngroups, z, burnin_steps, idir,
-                 all_init_pars, plot_it=False, pool=None,
+                 all_init_pars, all_init_pos, plot_it=False, pool=None,
                  convergence_tol=0.25):
     """
     Performs the 'maximisation' step of the EM algorithm
@@ -498,7 +498,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
     new_groups = []
     all_samples = []
     all_lnprob = []
-    all_init_pos = ngroups * [None]
+    # all_init_pos = ngroups * [None]
 
     for i in range(ngroups):
         logging.info("........................................")
@@ -524,6 +524,8 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
         np.save(gdir + 'final_lnprob.npy', lnprob)
         all_samples.append(chain)
         all_lnprob.append(lnprob)
+
+        # record the final position of the walkers for each group
         all_init_pos[i] = chain[:, -1, :]
 
     return new_groups, all_samples, all_lnprob, all_init_pos
@@ -652,7 +654,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             maximisation(star_pars, ngroups=ngroups,
                          burnin_steps=BURNIN_STEPS,
                          plot_it=True, pool=pool, convergence_tol=C_TOL,
-                         z=z, idir=idir, all_init_pars=all_init_pars)
+                         z=z, idir=idir, all_init_pars=all_init_pars,
+                         all_init_pos=all_init_pos,
+                         )
 
         overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
                                                bg_ln_ols)
