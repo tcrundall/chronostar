@@ -91,15 +91,18 @@ def plot_then(star_pars, means, covs, ngroups, iter_count, ax, dim1, dim2):
                 logging.info("No origins provided")
         # I plot a marker in the middle for scenarios where the volume
         # collapses to a point
-        ax.plot(means['fitted_then'][i][dim1],
-                means['fitted_then'][i][dim2],
-                color=COLORS[i], marker='x', alpha=1)
-        ee.plotCovEllipse(
-            covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
-            means['fitted_then'][i][np.ix_([dim1,dim2])],
-            with_line=True,
-            ax=ax, color=COLORS[i], alpha=0.3, ls='-.', #hatch='/',
-        )
+        try:
+            ax.plot(means['fitted_then'][i][dim1],
+                    means['fitted_then'][i][dim2],
+                    color=COLORS[i], marker='x', alpha=1)
+            ee.plotCovEllipse(
+                covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
+                means['fitted_then'][i][np.ix_([dim1,dim2])],
+                with_line=True,
+                ax=ax, color=COLORS[i], alpha=0.3, ls='-.', #hatch='/',
+            )
+        except IndexError:
+            pass
 
     ax.set_xlabel("{} [{}]".format(dim_label[dim1], units[dim1]))
     ax.set_ylabel("{} [{}]".format(dim_label[dim2], units[dim2]))
@@ -126,9 +129,12 @@ def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
             ax.plot(xyzuvw[mask][:, dim1], xyzuvw[mask][:, dim2], '.',
                     color=COLORS[i], alpha=0.6)
             for mn, cov in zip(xyzuvw[mask], xyzuvw_cov[mask]):
-                ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
-                                  mn[np.ix_([dim1,dim2])],
-                                  ax=ax, color=COLORS[i], alpha=0.1)
+                try:
+                    ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
+                                      mn[np.ix_([dim1,dim2])],
+                                      ax=ax, color=COLORS[i], alpha=0.1)
+                except IndexError:
+                    pass
     else:
         ax.plot(xyzuvw[:, dim1], xyzuvw[:, dim2], 'b.')
         for mn, cov in zip(xyzuvw, xyzuvw_cov):
@@ -136,14 +142,16 @@ def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
                                 mn[np.ix_([dim1,dim2])],
                                 ax=ax, color='b', alpha=0.1)
     for i in range(ngroups):
-
-        ee.plotCovEllipse(
-            covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
-            means['fitted_now'][i][np.ix_([dim1,dim2])],
-            with_line=True,
-            ax=ax, color=COLORS[i], ec=COLORS[i],
-            fill=False, alpha=0.3, hatch=HATCHES[i], ls='-.',
-        )
+        try:
+            ee.plotCovEllipse(
+                covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
+                means['fitted_now'][i][np.ix_([dim1,dim2])],
+                with_line=True,
+                ax=ax, color=COLORS[i], ec=COLORS[i],
+                fill=False, alpha=0.3, hatch=HATCHES[i], ls='-.',
+            )
+        except IndexError:
+            pass
 
     ax.set_xlabel("{} [{}]".format(dim_label[dim1], units[dim1]))
     #ax.set_ylabel("{} [{}]".format(dim_label[dim2], units[dim2]))
@@ -392,7 +400,10 @@ def plotXYandZW(star_pars, means, covs, chain, iter_count, prec=None,
 def plotNewQuad(star_pars, means, covs, chain, iter_count, prec=None,
                save_dir='', file_stem='', title='', z=None):
     logging.info("In plotXY., iter {}".format(iter_count))
-    ngroups = covs['fitted_then'].shape[0]
+    try:
+        ngroups = z.shape[1]
+    except:
+        ngroups = covs['fitted_then'].shape[0]
 
     # INITIALISE PLOT
     plt.clf()
@@ -406,9 +417,14 @@ def plotNewQuad(star_pars, means, covs, chain, iter_count, prec=None,
     plot_now(star_pars, means, covs, ngroups, iter_count, axs[0,1], 0, 1, z)
     plot_now(star_pars, means, covs, ngroups, iter_count, axs[1,1], 3, 4, z)
 
+    if type(iter_count) == int:
+        iter_stamp = "{:02}".format(iter_count)
+    else:
+        iter_stamp = str(iter_count)
     f.savefig(
-        save_dir + "newquadplot_" + file_stem + "{:02}.pdf".format(iter_count),
-        bbox_inches='tight', format='pdf')
+        save_dir + "newquadplot_" + file_stem + "{}.pdf".format(iter_stamp),
+        bbox_inches='tight', format='pdf'
+    )
     f.clear()
 
 def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',

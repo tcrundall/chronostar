@@ -7,8 +7,9 @@ Tests for `expectmax` module
 """
 from __future__ import division, print_function
 
-import sys
+import logging
 import numpy as np
+import sys
 
 sys.path.insert(0, '..')  # hacky way to get access to module
 
@@ -17,7 +18,7 @@ import chronostar.synthesiser as syn
 import chronostar.measurer as ms
 import chronostar.converter as cv
 
-group_pars_ex = np.array([
+group_pars = np.array([
     # X, Y, Z, U, V, W, dX, dV, age,nstars
     [ 0, 0, 0, 0, 0, 0, 10,  5,  10,  500],
     [50,50, 0, 0, 0, 0, 10,  5,  10,  500],
@@ -38,61 +39,56 @@ def test_maximisation():
     Synthesise a tb file with negligible error, retrieve initial
     parameters
     """
-    group_pars_ex = np.array([
+    logging.basicConfig(level=logging.INFO, filemode='w',
+                        filename='temp_logs/test_maximisation.log')
+    group_pars = np.array([
         # X, Y, Z, U, V, W, dX, dV, age,nstars
-        [ 0, 0, 0, 0, 0, 0, 10,  5,  10,  10],
-        [50,50, 0, 0, 0, 0, 10,  5,  10,  10],
+        [ 0, 0, 0, 0, 0, 0, 10.,  5,  10,  100],
+        [50,50, 0, 0, 0, 0, 10.,  5,  10,  100],
     ])
-    ngroups = group_pars_ex.shape[0]
-    nstars = np.sum(group_pars_ex[:,-1])
+    ngroups = group_pars.shape[0]
+    nstars = int(np.sum(group_pars[:,-1]))
     z = np.zeros((nstars, ngroups))
 
+    # initialise z appropriately
     start = 0
     for i in range(ngroups):
-        nstars_in_group = group_pars_ex[i,-1]
+        nstars_in_group = int(group_pars[i,-1])
         z[start:start+nstars_in_group,i] = 1.0
         start += nstars_in_group
 
-    init_xyzuvw, origins = syn.synthesiseManyXYZUVW(group_pars_ex,
+    # generate data
+    init_xyzuvw, origins = syn.synthesiseManyXYZUVW(group_pars,
                                                     return_groups=True,
+                                                    internal=False,
                                                     )
-    astro_table = ms.measureXYZUVW(init_xyzuvw, 0.1)
+    astro_table = ms.measureXYZUVW(init_xyzuvw, 1.0)
     star_pars = cv.convertMeasurementsToCartesian(astro_table)
 
-    import pdb; pdb.set_trace()
-    # find best fit
-    best_fits, _, _ = em.maximise(
-        star_pars, ngroups, z=z, burnin_steps=200, sampling_steps=200,
-    )
+    import pdb;
+    all_init_pars = [o.getInternalSphericalPars() for o in origins]
+
+    # perform maximisation step
+    best_groups, all_samples, all_lnprob, all_init_pos =\
+        em.maximisation(
+            star_pars, ngroups, z, burnin_steps=100, idir=data_dir,
+            all_init_pars=all_init_pars, plot_it=True
+        )
     pdb.set_trace()
 
-    for ctr, (best_fit, group_pars_ex) in\
-            enumerate(zip(best_fits, group_pars_ex)):
-        means = best_fit[0:6]
-        dx = 1. / best_fit[6]
-        dv = 1. / best_fit[7]
-        age = best_fit[8]
+    # compare fit with input
+    for origin, best_group in zip(origins, best_groups):
+        o_pars = origin.getSphericalPars()
+        b_pars = best_group.getSphericalPars()
 
-        tol_mean = 3.5
-        tol_std = 2.5
-        tol_age = 0.5
+        logging.info("origin pars:   {}".format(o_pars))
+        logging.info("best fit pars: {}".format(b_pars))
+        assert np.allclose(origin.mean, best_group.mean, atol=5.)
+        assert np.allclose(origin.sphere_dx, best_group.sphere_dx, atol=2.)
+        assert np.allclose(origin.dv, best_group.dv, atol=2.)
+        assert np.allclose(origin.age, best_group.age, atol=1.)
+    pdb.set_trace()
 
-        assert (
-            np.max(abs(means - group_pars_ex[0:6])) < tol_mean,
-            "\nFailed {} received:\n{}\nshould be within {} to:\n{}".
-            format(ctr, means, tol_mean, group_pars_ex[0:6]))
-        assert (
-            np.max(abs(dx - group_pars_ex[6])) < tol_std,
-            "\nFailed {} received:\n{}\nshould be close to:\n{}".
-            format(ctr, dx, tol_std, group_pars_ex[6:10]))
-        assert (
-            np.max(abs(dv - group_pars_ex[7])) < tol_std,
-            "\nFailed {} received:\n{}\nshould be close to:\n{}".
-                format(ctr, dv, tol_std, group_pars_ex[6:10]))
-        assert (
-            np.max(abs(age - group_pars_ex[8])) < tol_age,
-            "\nFailed {} received:\n{}\nshould be close to:\n{}". \
-            format(ctr, age, tol_age, group_pars_ex[13]))
 
 """
 def test_expectation(self):

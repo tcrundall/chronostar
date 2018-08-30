@@ -8,6 +8,7 @@ todo:
 """
 from __future__ import print_function, division
 
+import pdb
 import sys
 from distutils.dir_util import mkpath
 import logging
@@ -185,6 +186,12 @@ def backgroundLogOverlap(star_mean, bg_hists):
         of the X dimension 1D histogram, and bg_hists[0][0] is an array of
         integers describing the star counts in each bin
     """
+    # unique to BPMG, calculated by extrapolating the Gaia catalogue
+    # star count per magnitude if Gaia were sensitive enough to pick up
+    # the faintest BPMG star
+    CORRECTION_FACTOR = 15.3
+    # CORRECTION_FACTOR = 10000.
+
     # get the total area under a histogram
     n_gaia_stars = np.sum(bg_hists[0][0])
 
@@ -202,8 +209,9 @@ def backgroundLogOverlap(star_mean, bg_hists):
 
     # Renormalise such that the combined 6D histogram has a hyper-volume
     # of n_gaia_stars
-    #lnol -= 5 * np.log(n_gaia_stars)
-    lnol += np.log(n_gaia_stars)
+    # lnol -= 5 * np.log(n_gaia_stars)
+    # lnol += np.log(n_gaia_stars)
+    lnol += np.log(n_gaia_stars*CORRECTION_FACTOR)
     return lnol
 
 
@@ -233,6 +241,34 @@ def backgroundLogOverlaps(xyzuvw, bg_hists):
     for i in range(bg_ln_ols.shape[0]):
         bg_ln_ols[i] = backgroundLogOverlap(xyzuvw[i], bg_hists)
     return bg_ln_ols
+
+
+def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
+    nstars = len(star_pars['xyzuvw'])
+    ngroups = len(groups)
+    using_bg = bg_ln_ols is not None
+
+    lnols = np.zeros((nstars, ngroups + using_bg))
+    for i, group in enumerate(groups):
+        # weight is the amplitude of a component, proportional to its expected
+        # total of stellar members
+        weight = old_z[:,i].sum()
+        # threshold = nstars/(2. * (ngroups+1))
+        # if weight < threshold:
+        #     logging.info("!!! GROUP {} HAS LESS THAN {} STARS, weight: {}".\
+        #         format(i, threshold, weight)
+        # )
+        group_pars = group.getInternalSphericalPars()
+        lnols[:, i] =\
+            np.log(weight) +\
+                gf.getLogOverlaps(group_pars, star_pars)
+            # gf.lnlike(group_pars, star_pars,
+            #                            old_z, return_lnols=True) #??!??!?!
+
+    # insert one time calculated background overlaps
+    if using_bg:
+        lnols[:,-1] = bg_ln_ols
+    return lnols
 
 
 def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
@@ -281,26 +317,8 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
     if old_z is None:
         old_z = np.ones((nstars, ngroups + using_bg))/(ngroups + using_bg)
 
-    lnols = np.zeros((nstars, ngroups + using_bg))
-    for i, group in enumerate(groups):
-        # weight is the amplitude of a component, proportional to its expected
-        # total of stellar members
-        weight = old_z[:,i].sum()
-        # threshold = nstars/(2. * (ngroups+1))
-        # if weight < threshold:
-        #     logging.info("!!! GROUP {} HAS LESS THAN {} STARS, weight: {}".\
-        #         format(i, threshold, weight)
-        # )
-        group_pars = group.getInternalSphericalPars()
-        lnols[:, i] =\
-            np.log(weight) +\
-                gf.getLogOverlaps(group_pars, star_pars)
-            # gf.lnlike(group_pars, star_pars,
-            #                            old_z, return_lnols=True) #??!??!?!
+    lnols = getAllLnOverlaps(star_pars, groups, old_z, bg_ln_ols)
 
-    # insert one time calculated background overlaps
-    if using_bg:
-        lnols[:,-1] = bg_ln_ols
     z = np.zeros((nstars, ngroups + using_bg))
     for i in range(nstars):
         z[i] = calcMembershipProbs(lnols[i])
@@ -414,8 +432,91 @@ def decomposeGroup(group):
     return all_init_pars, sub_groups
 
 
-def getOveralLikelihood(star_pars, groups, bg_ln_ols):
-    return True
+def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False):
+    """
+    Get overall likelihood for a proposed model.
+
+    Evaluates each star's overlap with every component and background
+
+    Parameters
+    ----------
+    star_pars : (dict)
+    groups : [ngroups] list of Synthesiser.Group objects
+    z : [nstars, ngroups] float array
+        membership array
+    bg_ln_ols : [nstars] float array
+        the overlap each star has with the provided background density
+        distribution
+
+    Returns
+    -------
+    overall_lnlikelihood : float
+    """
+    z = expectation(star_pars, groups, None, bg_ln_ols)
+    all_ln_ols = getAllLnOverlaps(star_pars, groups, z, bg_ln_ols)
+
+    # multiplies each log overlap by the star's membership probability
+    # import pdb; pdb.set_trace()
+    weighted_lnols = np.einsum('ij,ij->ij', all_ln_ols, z)
+    if return_z:
+        return np.sum(weighted_lnols), z
+    else:
+        return np.sum(weighted_lnols)
+
+
+def maximisation(star_pars, ngroups, z, burnin_steps, idir,
+                 all_init_pars, plot_it=False, pool=None,
+                 convergence_tol=0.25):
+    """
+    Performs the 'maximisation' step of the EM algorithm
+
+    all_init_pars must be givin in 'internal' form, that is the standard
+    deviations must be provided in log form.
+
+    :param star_pars:
+    :param ngroups:
+    :param z:
+    :param burnin_steps:
+    :param idir:
+    :param all_init_pars:
+    :param plot_it:
+    :param pool:
+    :param convergence_tol:
+    :return:
+    """
+    new_groups = []
+    all_samples = []
+    all_lnprob = []
+    all_init_pos = ngroups * [None]
+
+    for i in range(ngroups):
+        logging.info("........................................")
+        logging.info("          Fitting group {}".format(i))
+        logging.info("........................................")
+        gdir = idir + "group{}/".format(i)
+        mkpath(gdir)
+        # pdb.set_trace()
+        best_fit, chain, lnprob = gf.fitGroup(
+            xyzuvw_dict=star_pars, burnin_steps=burnin_steps,
+            plot_it=plot_it, pool=pool, convergence_tol=convergence_tol,
+            plot_dir=gdir, save_dir=gdir, z=z[:, i],
+            # init_pos=all_init_pos[i],
+            init_pos=None,
+            init_pars=all_init_pars[i],
+        )
+        logging.info("Finished fit")
+        new_group = syn.Group(best_fit, sphere=True, internal=True,
+                              starcount=False)
+        # pdb.set_trace()
+        new_groups.append(new_group)
+        np.save(gdir + "best_group_fit.npy", new_group)
+        np.save(gdir + 'final_chain.npy', chain)
+        np.save(gdir + 'final_lnprob.npy', lnprob)
+        all_samples.append(chain)
+        all_lnprob.append(lnprob)
+        all_init_pos[i] = chain[:, -1, :]
+
+    return new_groups, all_samples, all_lnprob, all_init_pos
 
 
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
@@ -515,9 +616,6 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         # EXPECTATION
         z = expectation(star_pars, old_groups, z, bg_ln_ols)
-        #if iter_count == 1: # had this to force a decomposition
-        #    z[:,0] = 0.01
-        #    z[:,1] = 0.99
 
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)
@@ -540,36 +638,11 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         np.save(idir+"membership.npy", z)
 
         # MAXIMISE
-        #new_groups = np.zeros(old_groups.shape)
-        new_groups = []
-
-        all_samples = []
-        all_lnprob = []
-
-        for i in range(ngroups):
-            logging.info("........................................")
-            logging.info("          Fitting group {}".format(i))
-            logging.info("........................................")
-            gdir = idir + "group{}/".format(i)
-            mkpath(gdir)
-
-            best_fit, chain, lnprob = gf.fitGroup(
-                xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS,
-                plot_it=True, pool=pool, convergence_tol=C_TOL,
-                plot_dir=gdir, save_dir=gdir, z=z[:, i],
-                init_pos=all_init_pos[i],
-                init_pars=all_init_pars[i],
-            )
-            logging.info("Finished fit")
-            new_group = syn.Group(best_fit, sphere=True, internal=True,
-                                  starcount=False)
-            new_groups.append(new_group)
-            np.save(gdir + "best_group_fit.npy", new_group)
-            np.save(gdir+'final_chain.npy', chain)
-            np.save(gdir+'final_lnprob.npy', lnprob)
-            all_samples.append(chain)
-            all_lnprob.append(lnprob)
-            all_init_pos[i] = chain[:, -1, :]
+        new_groups, all_samples, all_lnprob, all_init_pos =\
+            maximisation(star_pars, ngroups=ngroups,
+                         burnin_steps=BURNIN_STEPS,
+                         plot_it=True, pool=pool, convergence_tol=C_TOL,
+                         z=z, idir=idir, all_init_pars=all_init_pars)
 
         converged = checkConvergence(old_best_fits=old_groups,
                                      new_chains=all_samples,
@@ -614,7 +687,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("Finished fit")
         final_best_fits[i] = best_fit
         final_med_errs[i] = calcErrors(chain)
-        np.save(gdir + "best_group_fit.npy", new_group)
+        # np.save(final_gdir + "best_group_fit.npy", new_group)
         np.save(final_gdir + 'final_chain.npy', chain)
         np.save(final_gdir + 'final_lnprob.npy', lnprob)
 
@@ -633,6 +706,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     logging.info("FINISHED CHARACTERISATION")
     #logging.info("Origin:\n{}".format(origins))
     logging.info("Best fits:\n{}".format(new_groups))
+    logging.info("Best fits:\n{}".format(
+        [fg.getSphericalPars() for fg in final_groups]
+    ))
     logging.info("Memberships: \n{}".format(z))
 
     return final_best_fits, final_med_errs, z

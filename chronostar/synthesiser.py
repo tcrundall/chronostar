@@ -219,7 +219,8 @@ def synthesiseManyXYZUVW(many_pars, sphere=True, return_groups=False,
 
     for pars in many_pars_cp:
         init_xyzuvw, group = synthesiseXYZUVW(pars, sphere=sphere,
-                                              return_group=True)
+                                              return_group=True,
+                                              internal=internal)
         groups.append(group)
         all_init_xyzuvw = np.vstack((all_init_xyzuvw, init_xyzuvw))
     if xyzuvw_savefile:

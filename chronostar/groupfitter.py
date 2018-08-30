@@ -421,6 +421,24 @@ def lnprobTracebackFunc(pars, star_pars, z):
     return lp + lnlikeTraceback(pars, star_pars, z)
 
 
+def noStuckWalkers(lnprob):
+    """
+    Examines lnprob to see if any walkers have flatlined far from pack
+
+    TODO: rewrite this using 'percentile' to set some range
+          i.e. no walker should be more than 3*D from mean where
+          D is np.perc(final_pos, 50) - np.perc(final_pos, 16)
+    """
+    final_pos = lnprob[:,-1]
+    std_proxy = np.percentile(final_pos, 50) -\
+                np.percentile(final_pos, 16)
+
+    worst_walker = np.min(final_pos)
+    res = worst_walker > np.percentile(final_pos, 50) - 3*std_proxy
+    logging.info("No stuck walkers? {}".format(res))
+    return res
+
+
 def burninConvergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
     """Checks early lnprob vals with final lnprob vals for convergence
 
@@ -441,7 +459,10 @@ def burninConvergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
         only confirm no deviation in the steps [500:END]
     """
     # take a chunk the smaller of 100 or half the chain
-    if lnprob.shape[1] < slice_size:
+    if lnprob.shape[1] <= 2*slice_size:
+        logging.info("Burnin length {} too small for reliable convergence"
+                     "checking".\
+                     format(lnprob.shape[1]))
         slice_size = int(round(0.5*lnprob.shape[1]))
 
     start_lnprob_mn = np.mean(lnprob[:,:slice_size])
@@ -450,8 +471,10 @@ def burninConvergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
     end_lnprob_mn = np.mean(lnprob[:, -slice_size:])
     end_lnprob_std = np.std(lnprob[:, -slice_size:])
 
-    return np.isclose(start_lnprob_mn, end_lnprob_mn,
-                      atol=tol*end_lnprob_std)
+    return (np.isclose(start_lnprob_mn, end_lnprob_mn,
+                       atol=tol*end_lnprob_std)
+            and noStuckWalkers(lnprob))
+
 
 def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
              plot_it=False, pool=None, convergence_tol=0.25, init_pos=None,
@@ -593,17 +616,19 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)
         converged = burninConvergence(sampler.lnprobability,
                                       tol=convergence_tol)
-
-        # Help out the struggling walkers
-        best_ix = np.argmax(lnprob)
-        poor_ixs = np.where(lnprob < np.percentile(lnprob, 33))
-        for ix in poor_ixs:
-            pos[ix] = pos[best_ix]
+        logging.info("Burnin status: {}".format(converged))
 
         if plot_it:
             plt.clf()
             plt.plot(sampler.lnprobability.T)
             plt.savefig(plot_dir+"burnin_lnprobT{:02}.png".format(cnt))
+
+        # If about to burnin again, help out the struggling walkers
+        if not converged:
+            best_ix = np.argmax(lnprob)
+            poor_ixs = np.where(lnprob < np.percentile(lnprob, 33))
+            for ix in poor_ixs:
+                pos[ix] = pos[best_ix]
 
         burnin_lnprob_res = np.hstack((
             burnin_lnprob_res, sampler.lnprobability
