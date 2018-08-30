@@ -608,14 +608,13 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
     np.save(rdir + "init_groups.npy", init_groups)
 
-    all_init_pos = ngroups * [None]
-    iter_count = 0
-    converged = False
-
     old_groups = init_groups
     all_init_pars = [init_group.getInternalSphericalPars() for init_group
                      in init_groups]
-
+    old_overallLnLike = -np.inf
+    all_init_pos = ngroups * [None]
+    iter_count = 0
+    converged = False
     while not converged:
         # for iter_count in range(10):
         idir = rdir+"iter{}/".format(iter_count)
@@ -666,11 +665,13 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("-- BIC so far: {}                --".\
                      format(calcBIC(star_pars, ngroups, overallLnLike)))
 
-        converged = checkConvergence(old_best_fits=old_groups,
-                                     new_chains=all_samples,
-                                     #perc=45, # COMMENT OUT THIS LINE
-                                     #          # FOR LEGIT FITS!
-                                     )
+        converged = (np.isclose(old_overallLnLike, overallLnLike, atol=0.1) and
+                     checkConvergence(old_best_fits=old_groups,
+                                      new_chains=all_samples,
+                                      #perc=45, # COMMENT OUT THIS LINE
+                                      #          # FOR LEGIT FITS!
+                                      ))
+        old_overallLnLike = overallLnLike
         logging.info("-- Convergence status: {}        --".\
                      format(converged))
         logging.info("---------------------------------------")
@@ -692,7 +693,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     final_dir = rdir+"final/"
     mkpath(final_dir)
 
-    final_z = expectation(star_pars, new_groups, z)
+    final_z = expectation(star_pars, new_groups, z, bg_ln_ols)
     np.save(final_dir+"final_membership.npy", final_z)
     final_best_fits = [None] * ngroups
     final_med_errs = [None] * ngroups
@@ -720,6 +721,13 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         all_init_pos[i] = chain[:, -1, :]
 
+
+    final_groups = [syn.Group(final_best_fit, sphere=True, internal=True,
+                              starcount=False)
+                    for final_best_fit in final_best_fits]
+    np.save(final_dir+'final_groups.npy', final_groups)
+    np.save(final_dir+'final_med_errs.npy', final_med_errs)
+
     # get overall likelihood
     overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
                                            bg_ln_ols)
@@ -728,12 +736,6 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     logging.info("Final BIC: {}".format(bic))
 
     np.save(final_dir+'likelihood_and_bic.npy', (overallLnLike, bic))
-
-    final_groups = [syn.Group(final_best_fit, sphere=True, internal=True,
-                              starcount=False)
-                    for final_best_fit in final_best_fits]
-    np.save(final_dir+'final_groups.npy', final_groups)
-    np.save(final_dir+'final_med_errs.npy', final_med_errs)
 
     logging.info("FINISHED CHARACTERISATION")
     #logging.info("Origin:\n{}".format(origins))
