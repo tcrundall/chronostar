@@ -271,6 +271,17 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
     return lnols
 
 
+def calcBIC(star_pars, ncomps, lnlike):
+    """Calculates the Bayesian Information Criterion
+
+    A simple metric to judge whether added components are worthwhile
+    """
+    nstars = len(star_pars['xyzuvw'])
+    n = nstars * 7 # 6 for phase space origin and 1 for age
+    k = ncomps * 8 # 6 for central estimate, 2 for dx and dv, 1 for age
+    return np.log(n)*k - 2 * lnlike
+
+
 def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
     """Calculate membership probabilities given fits to each group
 
@@ -500,8 +511,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
             xyzuvw_dict=star_pars, burnin_steps=burnin_steps,
             plot_it=plot_it, pool=pool, convergence_tol=convergence_tol,
             plot_dir=gdir, save_dir=gdir, z=z[:, i],
-            # init_pos=all_init_pos[i],
-            init_pos=None,
+            init_pos=all_init_pos[i],
             init_pars=all_init_pars[i],
         )
         logging.info("Finished fit")
@@ -644,6 +654,14 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                          plot_it=True, pool=pool, convergence_tol=C_TOL,
                          z=z, idir=idir, all_init_pars=all_init_pars)
 
+        overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
+                                               bg_ln_ols)
+        logging.info("Overall likelihood so far: {}".format(overallLnLike))
+        logging.info("BIC so far: {}".format(calcBIC(star_pars,
+                                                     ngroups,
+                                                     overallLnLike
+                                                     )))
+
         converged = checkConvergence(old_best_fits=old_groups,
                                      new_chains=all_samples,
                                      #perc=45, # COMMENT OUT THIS LINE
@@ -662,6 +680,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     np.save(rdir+"memberships.npy", z)
 
     # PERFORM FINAL EXPLORATION OF PARAMETER SPACE
+    logging.info("\n--------------------------------------------------"
+                 "\n--------------   Characterising   ----------------"
+                 "\n--------------------------------------------------")
     final_dir = rdir+"final/"
     mkpath(final_dir)
 
@@ -694,8 +715,13 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         all_init_pos[i] = chain[:, -1, :]
 
     # get overall likelihood
+    overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
+                                           bg_ln_ols)
+    bic = calcBIC(star_pars, ngroups, overallLnLike)
+    logging.info("Final overall likelihood: {}".format(overallLnLike))
+    logging.info("Final BIC: {}".format(bic))
 
-    # get BIC (or equivalent)
+    np.save(final_dir+'likelihood_and_bic.npy', (overallLnLike, bic))
 
     final_groups = [syn.Group(final_best_fit, sphere=True, internal=True,
                               starcount=False)
