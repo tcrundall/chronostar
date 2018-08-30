@@ -56,7 +56,8 @@ for ncomps in range(1,4):
     overall_lnlike, z = em.getOverallLnLikelihood(star_pars, groups,
                                                bg_ln_ols, return_z=True)
     print("overall_lnlike with {} comps is: {:.5}".format(ncomps, overall_lnlike))
-    print("BIC is: {}".format(calcBIC(star_pars, ncomps, overall_lnlike)))
+    bic = calcBIC(star_pars, ncomps, overall_lnlike)
+    print("BIC is: {}".format(bic))
     print("With {:.2} stars accounted for by background"\
           .format(np.sum(z[:,-1])))
 
@@ -80,16 +81,19 @@ for ncomps in range(1,4):
     hp.plotNewQuad(star_pars, means, covs, None, 'final',
                    save_dir='temp_plots/',
                    file_stem='XY-UV_ncomps_{}_'.format(ncomps), z=z,
+                   title="BIC: {}, likelihood: {}".format(bic, overall_lnlike),
                    top_dims=(0,1), bot_dims=(3,4))
 
     hp.plotNewQuad(star_pars, means, covs, None, 'final',
                    save_dir='temp_plots/',
                    file_stem='XU-YV_ncomps_{}_'.format(ncomps), z=z,
+                   title="BIC: {}, likelihood: {}".format(bic, overall_lnlike),
                    top_dims=(0,3), bot_dims=(1,4))
 
     hp.plotNewQuad(star_pars, means, covs, None, 'final',
                    save_dir='temp_plots/',
                    file_stem='ZX-ZW_ncomps_{}_'.format(ncomps), z=z,
+                   title="BIC: {}, likelihood: {}".format(bic, overall_lnlike),
                    top_dims=(2,1), bot_dims=(2,5))
 
 

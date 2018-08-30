@@ -123,9 +123,7 @@ def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
     units = ['pc']*3 + ['km/s']*3
     xyzuvw = star_pars['xyzuvw']
     xyzuvw_cov = star_pars['xyzuvw_cov']
-    #print("In plot now, z has value? {}".format(z is not None))
     if z is not None:
-        print("In plot now, z has value? {}".format(z is not None))
         for i in range(ngroups):
             mask = np.where(z[:,i] > 0.5)
             ax.plot(xyzuvw[mask][:, dim1], xyzuvw[mask][:, dim2], '.',
@@ -154,7 +152,6 @@ def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
                 fill=False, alpha=0.3, hatch=HATCHES[i], ls='-.',
             )
         except IndexError:
-            print("Couldn't draw ellipse")
             #pdb.set_trace()
             pass
 
