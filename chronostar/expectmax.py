@@ -731,10 +731,10 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
     logging.info("FINISHED CHARACTERISATION")
     #logging.info("Origin:\n{}".format(origins))
-    logging.info("Best fits:\n{}".format(new_groups))
     logging.info("Best fits:\n{}".format(
         [fg.getSphericalPars() for fg in final_groups]
     ))
+    logging.info("Stars per component:\n{}".format(z.sum(axis=0)))
     logging.info("Memberships: \n{}".format(z))
 
     return final_best_fits, final_med_errs, z
