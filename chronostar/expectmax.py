@@ -660,18 +660,20 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
                                                bg_ln_ols)
-        logging.info("Overall likelihood so far: {}".format(overallLnLike))
-        logging.info("BIC so far: {}".format(calcBIC(star_pars,
-                                                     ngroups,
-                                                     overallLnLike
-                                                     )))
+        logging.info("---        Iteration results         --")
+        logging.info("-- Overall likelihood so far: {} --".\
+                     format(overallLnLike))
+        logging.info("-- BIC so far: {}                --".\
+                     format(calcBIC(star_pars, ngroups, overallLnLike)))
 
         converged = checkConvergence(old_best_fits=old_groups,
                                      new_chains=all_samples,
                                      #perc=45, # COMMENT OUT THIS LINE
                                      #          # FOR LEGIT FITS!
                                      )
-        logging.info("Convergence status: {}".format(converged))
+        logging.info("-- Convergence status: {}        --".\
+                     format(converged))
+        logging.info("---------------------------------------")
         old_old_groups = old_groups
         old_groups = new_groups
 
