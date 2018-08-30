@@ -123,7 +123,9 @@ def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
     units = ['pc']*3 + ['km/s']*3
     xyzuvw = star_pars['xyzuvw']
     xyzuvw_cov = star_pars['xyzuvw_cov']
+    #print("In plot now, z has value? {}".format(z is not None))
     if z is not None:
+        print("In plot now, z has value? {}".format(z is not None))
         for i in range(ngroups):
             mask = np.where(z[:,i] > 0.5)
             ax.plot(xyzuvw[mask][:, dim1], xyzuvw[mask][:, dim2], '.',
@@ -143,6 +145,7 @@ def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
                                 ax=ax, color='b', alpha=0.1)
     for i in range(ngroups):
         try:
+            #pdb.set_trace()
             ee.plotCovEllipse(
                 covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['fitted_now'][i][np.ix_([dim1,dim2])],
@@ -151,6 +154,8 @@ def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
                 fill=False, alpha=0.3, hatch=HATCHES[i], ls='-.',
             )
         except IndexError:
+            print("Couldn't draw ellipse")
+            #pdb.set_trace()
             pass
 
     ax.set_xlabel("{} [{}]".format(dim_label[dim1], units[dim1]))
@@ -398,7 +403,8 @@ def plotXYandZW(star_pars, means, covs, chain, iter_count, prec=None,
     f.clear()
 
 def plotNewQuad(star_pars, means, covs, chain, iter_count, prec=None,
-               save_dir='', file_stem='', title='', z=None):
+               save_dir='', file_stem='', title='', z=None, top_dims=(0,1),
+               bot_dims=(3,4)):
     logging.info("In plotXY., iter {}".format(iter_count))
     try:
         ngroups = z.shape[1]
@@ -412,10 +418,14 @@ def plotNewQuad(star_pars, means, covs, chain, iter_count, prec=None,
     f.set_size_inches(10, 10)
     # f.suptitle(title)
     f.set_tight_layout(tight=True)
-    plot_then(star_pars, means, covs, ngroups, iter_count, axs[0,0], 0, 1)
-    plot_then(star_pars, means, covs, ngroups, iter_count, axs[1,0], 3, 4)
-    plot_now(star_pars, means, covs, ngroups, iter_count, axs[0,1], 0, 1, z)
-    plot_now(star_pars, means, covs, ngroups, iter_count, axs[1,1], 3, 4, z)
+    plot_then(star_pars, means, covs, ngroups, iter_count, axs[0,0],
+              top_dims[0], top_dims[1])
+    plot_then(star_pars, means, covs, ngroups, iter_count, axs[1,0],
+              bot_dims[0], bot_dims[1])
+    plot_now(star_pars, means, covs, ngroups, iter_count, axs[0,1],
+              top_dims[0], top_dims[1], z)
+    plot_now(star_pars, means, covs, ngroups, iter_count, axs[1,1],
+              bot_dims[0], bot_dims[1], z)
 
     if type(iter_count) == int:
         iter_stamp = "{:02}".format(iter_count)

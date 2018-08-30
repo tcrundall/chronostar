@@ -7,6 +7,8 @@ Use this script to analyse the results of a multi-component fit
 
 import logging
 import numpy as np
+import os
+import pdb
 import sys
 sys.path.insert(0, '..')
 
@@ -27,8 +29,13 @@ logging.basicConfig(level=logging.INFO, filemode='w',
                     filename='temp_logs/analysing_em.log')
 
 assoc_name = "bpmg_cand_w_gaia_dr2_astrometry_comb_binars"
+rdir_stem = "../results/em_fit/"
+
+if not os.path.exists(rdir_stem):  # on server
+    rdir_stem = "/data/mash/tcrun/em_fit/"
+    
 for ncomps in range(1,4):
-    rdir = "../results/em_fit/" + assoc_name + "_{}/".format(ncomps)
+    rdir = rdir_stem + assoc_name + "_{}/".format(ncomps)
     ddir = "../data/"
 
 
@@ -56,7 +63,7 @@ for ncomps in range(1,4):
     means = {}
     means['fitted_then'] = [g.mean for g in groups]
     means['fitted_now'] = [
-        np.array([torb.traceOrbitXYZUVW(g.mean, g.age)])
+        torb.traceOrbitXYZUVW(g.mean, g.age, single_age=True)
         for g in groups
     ]
     covs = {}
@@ -70,9 +77,19 @@ for ncomps in range(1,4):
                              )
         for g in groups
         ])
-    hp.plotNewQuad(star_pars, means, covs, None, 'final', save_dir='temp_plots/',
-                   file_stem='ncomps_{}_'.format(ncomps), z=z)
+    hp.plotNewQuad(star_pars, means, covs, None, 'final',
+                   save_dir='temp_plots/',
+                   file_stem='XY-UV_ncomps_{}_'.format(ncomps), z=z,
+                   top_dims=(0,1), bot_dims=(3,4))
 
+    hp.plotNewQuad(star_pars, means, covs, None, 'final',
+                   save_dir='temp_plots/',
+                   file_stem='XU-YV_ncomps_{}_'.format(ncomps), z=z,
+                   top_dims=(0,3), bot_dims=(1,4))
 
+    hp.plotNewQuad(star_pars, means, covs, None, 'final',
+                   save_dir='temp_plots/',
+                   file_stem='ZX-ZW_ncomps_{}_'.format(ncomps), z=z,
+                   top_dims=(2,1), bot_dims=(2,5))
 
 
