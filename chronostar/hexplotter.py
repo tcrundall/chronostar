@@ -423,6 +423,7 @@ def plotNewQuad(star_pars, means, covs, chain, iter_count, prec=None,
               top_dims[0], top_dims[1], z)
     plot_now(star_pars, means, covs, ngroups, iter_count, axs[1,1],
               bot_dims[0], bot_dims[1], z)
+    f.suptitle(title)
 
     if type(iter_count) == int:
         iter_stamp = "{:02}".format(iter_count)
