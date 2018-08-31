@@ -535,7 +535,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
 
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
-                  offset=False,  bg_hist_file=''):
+                  offset=False,  bg_hist_file='', correction_factor=15.3):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -564,6 +564,10 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     use_background: Bool {False}
         If set, will use histograms based on Gaia data set to compare
         association memberships to the field. Assumes file is in [rdir]
+    correction_factor: float {15.3}
+        unique to BPMG, calculated by extrapolating the Gaia catalogue
+        star count per magnitude if Gaia were sensitive enough to pick up
+        the faintest BPMG star
 
     Return
     ------
@@ -582,21 +586,16 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
 
-    # unique to BPMG, calculated by extrapolating the Gaia catalogue
-    # star count per magnitude if Gaia were sensitive enough to pick up
-    # the faintest BPMG star
-    CORRECTION_FACTOR=15.3
-
     use_background = False
     # bg_hists = None
     bg_ln_ols = None
     if bg_hist_file:
-        logging.info("CORRECTION FACTOR: {}".format(CORRECTION_FACTOR))
+        logging.info("CORRECTION FACTOR: {}".format(correction_factor))
         use_background = True
         bg_hists = np.load(rdir + bg_hist_file)
         bg_ln_ols = backgroundLogOverlaps(
             star_pars['xyzuvw'], bg_hists,
-            correction_factor=CORRECTION_FACTOR
+            correction_factor=correction_factor,
         )
 
     nstars = star_pars['xyzuvw'].shape[0]
