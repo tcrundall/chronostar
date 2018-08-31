@@ -164,7 +164,7 @@ def calcMembershipProbs(star_lnols):
     return star_memb_probs
 
 
-def backgroundLogOverlap(star_mean, bg_hists):
+def backgroundLogOverlap(star_mean, bg_hists, correction_factor=1.):
     """Calculate the 'overlap' of a star with the background desnity of Gaia
 
     We assume the Gaia density is approximately constant over the size scales
@@ -189,7 +189,7 @@ def backgroundLogOverlap(star_mean, bg_hists):
     # unique to BPMG, calculated by extrapolating the Gaia catalogue
     # star count per magnitude if Gaia were sensitive enough to pick up
     # the faintest BPMG star
-    CORRECTION_FACTOR = 15.3
+    # CORRECTION_FACTOR = 15.3
     # CORRECTION_FACTOR = 10000.
 
     # get the total area under a histogram
@@ -211,11 +211,11 @@ def backgroundLogOverlap(star_mean, bg_hists):
     # of n_gaia_stars
     # lnol -= 5 * np.log(n_gaia_stars)
     # lnol += np.log(n_gaia_stars)
-    lnol += np.log(n_gaia_stars*CORRECTION_FACTOR)
+    lnol += np.log(n_gaia_stars*correction_factor)
     return lnol
 
 
-def backgroundLogOverlaps(xyzuvw, bg_hists):
+def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
     """Calculate the 'overlaps' of stars with the background desnity of Gaia
 
     We assume the Gaia density is approximately constant over the size scales
@@ -239,7 +239,9 @@ def backgroundLogOverlaps(xyzuvw, bg_hists):
     """
     bg_ln_ols = np.zeros(xyzuvw.shape[0])
     for i in range(bg_ln_ols.shape[0]):
-        bg_ln_ols[i] = backgroundLogOverlap(xyzuvw[i], bg_hists)
+        bg_ln_ols[i] = backgroundLogOverlap(
+            xyzuvw[i], bg_hists, correction_factor=correction_factor
+        )
     return bg_ln_ols
 
 
@@ -580,13 +582,22 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
 
+    # unique to BPMG, calculated by extrapolating the Gaia catalogue
+    # star count per magnitude if Gaia were sensitive enough to pick up
+    # the faintest BPMG star
+    CORRECTION_FACTOR=15.3
+
     use_background = False
-    bg_hists = None
+    # bg_hists = None
     bg_ln_ols = None
     if bg_hist_file:
+        logging.info("CORRECTION FACTOR: {}".format(CORRECTION_FACTOR))
         use_background = True
         bg_hists = np.load(rdir + bg_hist_file)
-        bg_ln_ols = backgroundLogOverlaps(star_pars['xyzuvw'], bg_hists)
+        bg_ln_ols = backgroundLogOverlaps(
+            star_pars['xyzuvw'], bg_hists,
+            correction_factor=CORRECTION_FACTOR
+        )
 
     nstars = star_pars['xyzuvw'].shape[0]
     # INITIALISE GROUPS
