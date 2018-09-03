@@ -117,18 +117,19 @@ def lnlognormal(x, mu=1.05, sig=0.105):
             (np.log(x) - mu)**2 / (2*sig**2))
 
 
-def lnAlphaPrior(pars, star_pars):
+def lnAlphaPrior(pars, star_pars, z):
     """
     A very approximate, gentle prior preferring super-virial distributions
     """
     dX = np.exp(pars[6])
     dV = np.exp(pars[7])
-    nstars = star_pars['xyzuvw'].shape[0]
+    #nstars = star_pars['xyzuvw'].shape[0]
+    nstars = np.sum(z)
     alpha = calcAlpha(dX, dV, nstars)
     return lnlognormal(alpha) * 0.1
 
 
-def lnprior(pars, star_pars):
+def lnprior(pars, star_pars, z):
     """Computes the prior of the group models constraining parameter space
 
     Parameters
@@ -137,7 +138,7 @@ def lnprior(pars, star_pars):
         Parameters describing the group model being fitted
     star_pars
         traceback data being fitted to
-    (retired) z
+    z
         array of weights [0.0 - 1.0] for each star, describing how likely
         they are members of group to be fitted.
 
@@ -162,7 +163,7 @@ def lnprior(pars, star_pars):
     if age < 0.0 or age > max_age:
         return -np.inf
 
-    return lnAlphaPrior(pars, star_pars)
+    return lnAlphaPrior(pars, star_pars, z)
 
 
 def getLogOverlaps(pars, star_pars):
@@ -262,7 +263,7 @@ def lnprobFunc(pars, star_pars, z):
     logprob
         the logarithm of the posterior probability of the fit
     """
-    lp = lnprior(pars, star_pars)
+    lp = lnprior(pars, star_pars, z)
     if not np.isfinite(lp):
         return -np.inf
     return lp + lnlike(pars, star_pars, z)
