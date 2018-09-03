@@ -619,6 +619,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     np.save(rdir + "init_groups.npy", init_groups)
 
     old_groups = init_groups
+    old_samples = None
     all_init_pars = [init_group.getInternalSphericalPars() for init_group
                      in init_groups]
     old_overallLnLike = -np.inf
@@ -675,25 +676,33 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("-- BIC so far: {}                --".\
                      format(calcBIC(star_pars, ngroups, overallLnLike)))
 
-        converged = (np.isclose(old_overallLnLike, overallLnLike, atol=0.1) and
+        #converged = (np.isclose(old_overallLnLike, overallLnLike, atol=0.1) and
+
+        # checks if the fit ever worsens
+        converged = ( (old_overallLnLike > overallLnLike) and\
                      checkConvergence(old_best_fits=old_groups,
                                       new_chains=all_samples,
                                       #perc=45, # COMMENT OUT THIS LINE
                                       #          # FOR LEGIT FITS!
                                       ))
+        # old_samples = all_samples
         old_overallLnLike = overallLnLike
         logging.info("-- Convergence status: {}        --".\
                      format(converged))
         logging.info("---------------------------------------")
-        old_old_groups = old_groups
-        old_groups = new_groups
+
+        # only update if the fit has improved
+        if not converged:
+            old_old_groups = old_groups
+            old_groups = new_groups
 
         iter_count += 1
 
     logging.info("CONVERGENCE COMPLETE")
 
-    np.save(rdir+"final_groups.npy", new_groups)
-    np.save(rdir+"prev_groups.npy", old_old_groups) # old grps overwritten by new grps
+
+    #np.save(rdir+"final_groups.npy", new_groups)
+    np.save(rdir+"final_groups.npy", new_groups) # old grps overwritten by new grps
     np.save(rdir+"memberships.npy", z)
 
     # PERFORM FINAL EXPLORATION OF PARAMETER SPACE
@@ -753,7 +762,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         [fg.getSphericalPars() for fg in final_groups]
     ))
     logging.info("Stars per component:\n{}".format(z.sum(axis=0)))
-    logging.info("Memberships: \n{}".format(z))
+    logging.info("Memberships: \n{}".format((z*100).astype(np.int)))
 
     return final_best_fits, final_med_errs, z
 

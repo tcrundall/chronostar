@@ -25,7 +25,7 @@ bin_width = flux_hist[1][1] - flux_hist[1][0]
 # between mags 4 and 12
 
 # first order, fit a line between the points at mag 4 and mag 12
-approx_f1 = 10
+approx_f1 =  4
 approx_f2 = 12
 f1_ix = np.digitize(approx_f1, flux_hist[1])
 f2_ix = np.digitize(approx_f2, flux_hist[1])
@@ -43,12 +43,6 @@ def lnflux_dens_fit(flux, slope, interp):
 
 fs = np.linspace(2,17,100)
 
-plt.clf()
-plt.plot(fs, lnflux_dens_fit(fs, approx_slope, approx_interp))
-plt.plot(flux_hist[1][:-1], ln_counts)
-plt.xlabel("Flux in G band (mag)")
-plt.ylabel("Density, log N per {:.4} mag".format(bin_width))
-plt.savefig("temp_plots/gaia_flux_histogram.pdf")
 
 def dens_functional_form(flux, slope, interp, bin_width):
     """For a given flux, gives the PDF (number of stars per units
@@ -70,7 +64,8 @@ def sum_stars_from_fit(min_f, max_f, nrecs, bin_width, fit_slope,
     return total_area
 
 
-max_bp_mag = 16.32 # 2MASS J03350208+2342356
+# max_bp_mag = 16.32 # 2MASS J03350208+2342356
+max_bp_mag = 20. #just checking...
 
 max_mag_ix = np.digitize(max_bp_mag, flux_hist[1])
 gaia_star_count = np.sum(flux_hist[0][:max_mag_ix])
@@ -92,4 +87,15 @@ corrected_star_count = np.sum(flux_hist[0][:cut_off_ix])\
 correction_factor = corrected_star_count / gaia_star_count
 
 print("Correction factor: {}".format(correction_factor))
+
+
+plt.clf()
+plt.plot(fs, lnflux_dens_fit(fs, approx_slope, approx_interp),
+         label="Extrap. {} to {}".format(approx_f1, approx_f2))
+plt.plot(flux_hist[1][:-1], ln_counts,
+         label="Histogram")
+plt.xlabel("Flux in G band (mag)")
+plt.ylabel("Density, log N per {:.4} mag".format(bin_width))
+plt.title("Correciton factor: {:.4}".format(correction_factor))
+plt.savefig("temp_plots/gaia_flux_histogram.pdf")
 
