@@ -10,6 +10,7 @@ sys.path.insert(0, '..')
 
 import chronostar.synthesiser as syn
 import chronostar.groupfitter as gf
+import chronostar.expectmax as em
 
 # 1 comp fit
 one_group_pars_ex = [
@@ -41,6 +42,10 @@ three_group_pars_ex = [
 ]
 three_weights = [36.60656637,  4.70398271, 24.68926151,  2.00018941]
 
+# overallLnLike
+overallLnLikes = [-1092.54943463, -1063.00062202, -1010.87585206]
+BICs = [2234.42221209, 2224.6479297, 2169.72173262]
+
 # gather everything up
 all_group_pars = [one_group_pars_ex,
                   two_group_pars_ex,
@@ -50,13 +55,81 @@ all_weights = [one_weights,
                three_weights]
 
 # For each fit
-for group_pars_ex, weights in zip(all_group_pars, all_weights):
+for i, (group_pars_ex, weights) in enumerate(zip(all_group_pars, all_weights)):
     lnalpha_priors = []
 
+    print("\n---  {} component fit  ---".format(len(group_pars_ex)))
+    print("Likelihood from overlaps: {:8.4f}".format(overallLnLikes[i]))
+    print("BIC: {:8.4f}".format(BICs[i]))
     for group_par, weight in zip(group_pars_ex, weights):
         group_obj = syn.Group(group_par, starcount=False, internal=False,
                               sphere=True)
-        lnalpha_priors.append(gf.lnAlphaPrior(group_obj.getInternalSphericalPars(),
-                                              None, weight))
-    print("{} component fit".format(len(group_pars_ex)))
-    print(lnalpha_priors)
+        lnalpha_prior = gf.lnAlphaPrior(group_obj.getInternalSphericalPars(),
+                                              None, weight)
+        lnalpha_priors.append(lnalpha_prior)
+        print("nstars: {:6.3f} | age: {:6.3f} | dX: {:6.3f} | dV: {:6.3f} |"
+              "lnalpha_pr: {:6.3f}"\
+              .format(weight, group_obj.age, group_obj.dx, group_obj.dv,
+                      lnalpha_prior))
+    #print(lnalpha_priors)
+
+
+# for deeper insight, lets investigate the ratio of overlap between
+# the flat bg field and the crappy 1.5 Myr component (3_comp[1]) and
+# see if the difference will be corrected for by the large prior
+
+rdir = "../results/em_fit/cf-15/"
+star_pars_file = "../data/bpmg_cand_w_gaia_dr2_astrometry_comb_binars_xyzuvw.fits"
+
+star_pars = gf.loadXYZUVW(star_pars_file)
+bg_hists = np.load(rdir + "bg_hists.npy")
+final_z = np.load(rdir + "final/final_membership.npy")
+final_groups = np.load(rdir + "final_groups.npy")
+
+for i in range(len(three_group_pars_ex)):
+    spec_comp_stars_mask = np.where(final_z[:,i] > .5)
+    spec_comp_star_pars = {'xyzuvw':star_pars['xyzuvw'][spec_comp_stars_mask],
+                          'xyzuvw_cov':star_pars['xyzuvw_cov'][spec_comp_stars_mask]}
+    spec_comp_group = syn.Group(three_group_pars_ex[1], starcount=False,
+                               internal=False)
+
+    spec_ln_bg_ols = em.backgroundLogOverlaps(spec_comp_star_pars['xyzuvw'], bg_hists,
+                                         correction_factor=1.)
+
+    # BUG IS FROM ME FORGETTING TO INCORPORATE AMPLITUDE OF
+    # GROUP!!!
+    spec_ln_comp_ols = gf.getLogOverlaps(spec_comp_group.getInternalSphericalPars(),
+                                    spec_comp_star_pars)
+    try:
+        assert np.all(spec_ln_comp_ols > spec_ln_bg_ols)
+    except AssertionError:
+        print("Stars {} are members of component {} despite"
+              " having stronger overlap with background".\
+              format(np.where(spec_ln_comp_ols<spec_ln_bg_ols), i))
+        break
+
+
+# good_comp_stars_mask = np.where(final_z[:,0] > .5)
+# good_comp_star_pars = {'xyzuvw':star_pars['xyzuvw'][good_comp_stars_mask],
+#                       'xyzuvw_cov':star_pars['xyzuvw_cov'][good_comp_stars_mask]}
+# good_comp_group = syn.Group(three_group_pars_ex[0], starcount=False,
+#                            internal=False)
+# good_ln_bg_ols = em.backgroundLogOverlaps(good_comp_star_pars['xyzuvw'], bg_hists,
+#                                      correction_factor=15.)
+# good_ln_comp_ols = gf.getLogOverlaps(good_comp_group.getInternalSphericalPars(),
+#                                 good_comp_star_pars)
+#
+#
+# fine_comp_stars_mask = np.where(final_z[:,2] > .5)
+# fine_comp_star_pars = {'xyzuvw':star_pars['xyzuvw'][fine_comp_stars_mask],
+#                       'xyzuvw_cov':star_pars['xyzuvw_cov'][fine_comp_stars_mask]}
+# fine_comp_group = syn.Group(three_group_pars_ex[0], starcount=False,
+#                            internal=False)
+# fine_ln_bg_ols = em.backgroundLogOverlaps(fine_comp_star_pars['xyzuvw'], bg_hists,
+#                                      correction_factor=15.)
+# fine_ln_comp_ols = gf.getLogOverlaps(fine_comp_group.getInternalSphericalPars(),
+#                                 fine_comp_star_pars)
+#
+# #BUG!!!
+#
+

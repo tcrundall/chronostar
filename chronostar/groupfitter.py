@@ -112,6 +112,7 @@ def calcAlpha(dX, dV, nstars):
     return ( (dV*u.km/u.s)**2 * dX*u.pc /
               (const.G * 5 * nstars * const.M_sun) ).decompose().value
 
+
 def lnlognormal(x, mu=1.05, sig=0.105):
     return (-np.log(x*sig*np.sqrt(2*np.pi)) -
             (np.log(x) - mu)**2 / (2*sig**2))
@@ -120,13 +121,22 @@ def lnlognormal(x, mu=1.05, sig=0.105):
 def lnAlphaPrior(pars, star_pars, z):
     """
     A very approximate, gentle prior preferring super-virial distributions
+
+
+
+    pars: [8] float array
+        X,Y,Z,U,V,W,log(dX),log(dV),age
+    star_pars:
+        (retired)
+    z: [nstars, ngroups] float array
+        membership array
     """
     dX = np.exp(pars[6])
     dV = np.exp(pars[7])
     #nstars = star_pars['xyzuvw'].shape[0]
     nstars = np.sum(z)
     alpha = calcAlpha(dX, dV, nstars)
-    return lnlognormal(alpha) * 0.1
+    return lnlognormal(alpha, sig=0.12) * 0.1
 
 
 def lnprior(pars, star_pars, z):
