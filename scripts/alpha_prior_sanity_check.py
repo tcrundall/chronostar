@@ -98,12 +98,16 @@ for i in range(len(three_group_pars_ex)):
 
     # BUG IS FROM ME FORGETTING TO INCORPORATE AMPLITUDE OF
     # GROUP!!!
-    spec_ln_comp_ols = gf.getLogOverlaps(spec_comp_group.getInternalSphericalPars(),
-                                    spec_comp_star_pars)
+    weight = np.sum(final_z[:,i])
+    print(weight)
+    spec_ln_comp_ols = np.log(weight) + \
+                       gf.getLogOverlaps(spec_comp_group.\
+                                         getInternalSphericalPars(),
+                                         spec_comp_star_pars)
     try:
         assert np.all(spec_ln_comp_ols > spec_ln_bg_ols)
     except AssertionError:
-        print("Stars {} are members of component {} despite"
+        print("Stars {}\n  are members of component {} despite"
               " having stronger overlap with background".\
               format(np.where(spec_ln_comp_ols<spec_ln_bg_ols), i))
         break

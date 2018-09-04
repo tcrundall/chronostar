@@ -122,8 +122,6 @@ def lnAlphaPrior(pars, star_pars, z):
     """
     A very approximate, gentle prior preferring super-virial distributions
 
-
-
     pars: [8] float array
         X,Y,Z,U,V,W,log(dX),log(dV),age
     star_pars:
@@ -136,7 +134,10 @@ def lnAlphaPrior(pars, star_pars, z):
     #nstars = star_pars['xyzuvw'].shape[0]
     nstars = np.sum(z)
     alpha = calcAlpha(dX, dV, nstars)
-    return lnlognormal(alpha, sig=0.12) * 0.1
+    # taking the 10th root to make plot gentle
+    # TODO: just rework mu and sig to give desired
+    # mode and shape
+    return lnlognormal(alpha) * 0.1
 
 
 def lnprior(pars, star_pars, z):

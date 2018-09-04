@@ -25,7 +25,7 @@ bin_width = flux_hist[1][1] - flux_hist[1][0]
 # between mags 4 and 12
 
 # first order, fit a line between the points at mag 4 and mag 12
-approx_f1 =  4
+approx_f1 = 10
 approx_f2 = 12
 f1_ix = np.digitize(approx_f1, flux_hist[1])
 f2_ix = np.digitize(approx_f2, flux_hist[1])
@@ -64,8 +64,8 @@ def sum_stars_from_fit(min_f, max_f, nrecs, bin_width, fit_slope,
     return total_area
 
 
-# max_bp_mag = 16.32 # 2MASS J03350208+2342356
-max_bp_mag = 20. #just checking...
+max_bp_mag = 16.32 # 2MASS J03350208+2342356
+# max_bp_mag = 20. #just checking...
 
 max_mag_ix = np.digitize(max_bp_mag, flux_hist[1])
 gaia_star_count = np.sum(flux_hist[0][:max_mag_ix])

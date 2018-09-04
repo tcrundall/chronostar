@@ -251,6 +251,19 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
     using_bg = bg_ln_ols is not None
 
     lnols = np.zeros((nstars, ngroups + using_bg))
+
+    if old_z is None:
+        old_z = np.ones((nstars, ngroups)) / ngroups
+
+    group_lnpriors = np.zeros(ngroups)# &TC
+    for i, group in enumerate(groups):
+        group_lnpriors[i] = gf.lnAlphaPrior(group.getInternalSphericalPars(),
+                                            star_pars=None, old_z=old_z)
+
+    weights = old_z[:ngroups].sum(axis=0)
+    weights *= np.exp(group_lnpriors)
+    weights /= weights.sum()
+
     for i, group in enumerate(groups):
         # weight is the amplitude of a component, proportional to its expected
         # total of stellar members
