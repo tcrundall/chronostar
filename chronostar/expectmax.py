@@ -246,6 +246,39 @@ def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
 
 
 def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
+    """
+    Parameters
+    ----------
+    star_pars : dict
+        stars: (nstars) high astropy table including columns as
+                    documented in the Traceback class.
+        times : [ntimes] numpy array
+            times that have been traced back, in Myr
+        xyzuvw : [nstars, ntimes, 6] array
+            XYZ in pc and UVW in km/s
+        xyzuvw_cov : [nstars, ntimes, 6, 6] array
+            covariance of xyzuvw
+
+    groups : [ngroups] syn.Group object list
+        a fit for each group (in internal form)
+
+    old_z : [nstars, ngroups (+1)] float array
+        Only used to get weights (amplitudes) for each fitted component.
+        Tracks membership probabilities of each star to each group. Each
+        element is between 0.0 and 1.0 such that each row sums to 1.0
+        exactly.
+        If bg_hists are also being used, there is an extra column for the
+        background. Note that it is not used in this function
+
+    bg_ln_ols : [nstars] float array
+        The overlap the stars have with the (fixed) background distribution
+
+    Returns
+    -------
+    lnols: [nstars, ngroups (+1)] float array
+        The log overlaps of each star with each component, optionally
+        with the log background overlaps appended as the final column
+    """
     nstars = len(star_pars['xyzuvw'])
     ngroups = len(groups)
     using_bg = bg_ln_ols is not None
@@ -260,9 +293,12 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
         group_lnpriors[i] = gf.lnAlphaPrior(group.getInternalSphericalPars(),
                                             star_pars=None, z=old_z)
 
-    weights = old_z[:ngroups].sum(axis=0)
-    weights *= np.exp(group_lnpriors)
-    weights /= weights.sum()
+    try:
+        weights = old_z[:,:ngroups].sum(axis=0)
+        weights *= np.exp(group_lnpriors)
+        weights /= weights.sum()
+    except:
+        import pdb; pdb.set_trace()
 
     for i, group in enumerate(groups):
         # weight is the amplitude of a component, proportional to its expected
