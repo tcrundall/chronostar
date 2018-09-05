@@ -246,6 +246,41 @@ def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
 
 
 def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
+    """
+    Get the log overlap integrals of each star with each component
+
+    Parameters
+    ----------
+    star_pars : dict
+        stars: (nstars) high astropy table including columns as
+                    documented in the Traceback class.
+        times : [ntimes] numpy array
+            times that have been traced back, in Myr
+        xyzuvw : [nstars, ntimes, 6] array
+            XYZ in pc and UVW in km/s
+        xyzuvw_cov : [nstars, ntimes, 6, 6] array
+            covariance of xyzuvw
+
+    groups : [ngroups] syn.Group object list
+        a fit for each group (in internal form)
+
+    old_z : [nstars, ngroups (+1)] float array {None}
+        Only used to get weights (amplitudes) for each fitted component.
+        Tracks membership probabilities of each star to each group. Each
+        element is between 0.0 and 1.0 such that each row sums to 1.0
+        exactly.
+        If bg_hists are also being used, there is an extra column for the
+        background. However it is not used in this context
+
+    bg_ln_ols : [nstars] float array {None}
+        The overlap the stars have with the (fixed) background distribution
+
+    Return
+    ------
+    lnols: [nstars, ngroups (+1)] float array
+        the overlap integral of
+        each star with each component as well as the background
+    """
     nstars = len(star_pars['xyzuvw'])
     ngroups = len(groups)
     using_bg = bg_ln_ols is not None
@@ -580,6 +615,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         membership probabilities
 
     TODO: Generalise interventions for more than 2 groups
+    TODO: Allow option with which step to start with
     """
     # setting up some constants
     BURNIN_STEPS = 1000
