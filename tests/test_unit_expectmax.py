@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 
 import numpy as np
+import pdb
 import sys
 sys.path.insert(0,'..')
 
@@ -10,6 +11,29 @@ import chronostar.converter as cv
 import chronostar.groupfitter as gf
 import chronostar.expectmax as em
 
+
+def test_calcMedAndSpan():
+    """
+    Test that the median, and +- 34th percentiles is found correctly
+    """
+    dx = 10.
+    dv = 5.
+    dummy_mean = np.array([10,10,10, 5, 5, 5,np.log(dx),np.log(dv),20])
+    dummy_std =  np.array([1.,1.,1.,1.,1.,1.,0.5,       0.5,       3.])
+    assert len(dummy_mean) == len(dummy_std)
+    npars = len(dummy_mean)
+
+    nsteps = 10000
+    nwalkers = 18
+
+    dummy_chain = np.array([np.random.randn(nsteps)*std + mean
+                            for (std, mean) in zip(dummy_std, dummy_mean)]).T
+    np.repeat(dummy_chain, 18, axis=0).reshape(nwalkers,nsteps,npars)
+
+    med_and_span = em.calcMedAndSpan(dummy_chain)
+    assert np.allclose(dummy_mean, med_and_span[:,0], atol=0.1)
+    approx_stds = 0.5*(med_and_span[:,1] - med_and_span[:,2])
+    assert np.allclose(dummy_std, approx_stds, atol=0.1)
 
 def test_calcMembershipProbs():
     """

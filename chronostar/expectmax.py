@@ -33,6 +33,7 @@ import chronostar.transform as tf
 import groupfitter as gf
 
 def ix_fst(array, ix):
+    """Helper function to index array by first axis that could be None"""
     if array is None:
         return None
     else:
@@ -40,30 +41,50 @@ def ix_fst(array, ix):
 
 
 def ix_snd(array, ix):
+    """Helper function to index array by second axis that could be None"""
     if array is None:
         return None
     else:
         return array[:, ix]
 
 
-def calcErrors(chain, perc=34):
+def calcMedAndSpan(chain, perc=34, sphere=True):
     """
-    Given a set of aligned (converted?) samples, calculate the median and
-    errors of each parameter
+    Given a set of aligned samples, calculate the 50th, (50-perc)th and
+     (50+perc)th percentiles.
 
     Parameters
     ----------
     chain : [nwalkers, nsteps, npars]
         The chain of samples (in internal encoding)
+    perc: integer {34}
+        The percentage from the midpoint you wish to set as the error.
+        The default is to take the 16th and 84th percentile.
+    sphere: Boolean {True}
+        Currently hardcoded to take the exponent of the logged
+        standard deviations. If sphere is true the log stds are at
+        indices 6, 7. If sphere is false, the log stds are at
+        indices 6:10.
+
+    Returns
+    -------
+    _ : [npars,3] float array
+        For each paramter, there is the 50th, (50+perc)th and (50-perc)th
+        percentiles
     """
     npars = chain.shape[-1]  # will now also work on flatchain as input
     flat_chain = np.reshape(chain, (-1, npars))
 
-    #    conv_chain = np.copy(flat_chain)
-    #    conv_chain[:, 6:10] = 1/conv_chain[:, 6:10]
+    # conv_chain = np.copy(flat_chain)
+    # if sphere:
+    #     conv_chain[:, 6:8] = np.exp(conv_chain[:, 6:8])
+    # else:
+    #     conv_chain[:, 6:10] = np.exp(conv_chain[:, 6:10])
 
-    # return np.array( map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-    #                 zip(*np.percentile(flat_chain, [16,50,84], axis=0))))
+    # return np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+    #                     zip(*np.percentile(conv_chain,
+    #                                        [50-perc,50,50+perc],
+    #                                        axis=0))))
     return np.array(map(lambda v: (v[1], v[2], v[0]),
                         zip(*np.percentile(flat_chain,
                                            [50-perc, 50, 50+perc],
@@ -102,7 +123,7 @@ def checkConvergence(old_best_fits, new_chains,
     each_converged = []
 
     for old_best_fit, new_chain in zip(old_best_fits, new_chains):
-        errors = calcErrors(new_chain, perc=perc)
+        errors = calcMedAndSpan(new_chain, perc=perc)
         upper_contained =\
             old_best_fit.getInternalSphericalPars() < errors[:, 1]
         lower_contained =\
@@ -112,34 +133,6 @@ def checkConvergence(old_best_fits, new_chains,
             np.all(upper_contained) and np.all(lower_contained))
 
     return np.all(each_converged)
-
-
-def calcLnoverlaps(group_pars, star_pars, nstars):
-    """Find the lnoverlaps given the parameters of a group
-
-    Parameters
-    ----------
-    group_pars : [npars] array
-        Group parameters (internal encoding, 1/dX... no nstars)
-    star_pars : dict
-        stars: (nstars) high astropy table including columns as
-            documented in the Traceback class.
-        times : [ntimes] numpy array
-            times that have been traced back, in Myr
-        xyzuvw : [nstars, ntimes, 6] array
-            XYZ in pc and UVW in km/s
-        xyzuvw_cov : [nstars, ntimes, 6, 6] array
-            covariance of xyzuvw
-    nstars : int
-        number of stars in traceback
-
-    Returns
-    -------
-    lnols : [nstars] array
-        The log of the overlap of each star with the provided group
-    """
-    lnols = None
-    return lnols
 
 
 def calcMembershipProbs(star_lnols):
@@ -185,18 +178,15 @@ def backgroundLogOverlap(star_mean, bg_hists, correction_factor=1.):
         e.g. bg_hists[0][1] is an array of floats describing the bin edges
         of the X dimension 1D histogram, and bg_hists[0][0] is an array of
         integers describing the star counts in each bin
-    """
-    # unique to BPMG, calculated by extrapolating the Gaia catalogue
-    # star count per magnitude if Gaia were sensitive enough to pick up
-    # the faintest BPMG star
-    # CORRECTION_FACTOR = 15.3
-    # CORRECTION_FACTOR = 10000.
 
+    correction_factor : positive float {1.}
+        artificially amplify the Gaia background density to account for
+        magnitude correctness
+    """
     # get the total area under a histogram
     n_gaia_stars = np.sum(bg_hists[0][0])
 
     ndim = 6
-
     lnol = 0
     for i in range(ndim):
         # evaluate the density: bin_height / bin_width / n_gaia_stars
@@ -236,6 +226,16 @@ def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
         e.g. bg_hists[0][1] is an array of floats describing the bin edges
         of the X dimension 1D histogram, and bg_hists[0][0] is an array of
         integers describing the star counts in each bin
+
+    correction_factor : positive float {1.}
+        artificially amplify the Gaia background density to account for
+        magnitude correctness
+
+    Returns
+    -------
+    bg_ln_ols: [nstars] float array
+        the overlap with each star and the flat-ish background field
+        distribution
     """
     bg_ln_ols = np.zeros(xyzuvw.shape[0])
     for i in range(bg_ln_ols.shape[0]):
@@ -782,7 +782,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         # runs once
         logging.info("Finished fit")
         final_best_fits[i] = best_fit
-        final_med_errs[i] = calcErrors(chain)
+        final_med_errs[i] = calcMedAndSpan(chain)
         # np.save(final_gdir + "best_group_fit.npy", new_group)
         np.save(final_gdir + 'final_chain.npy', chain)
         np.save(final_gdir + 'final_lnprob.npy', lnprob)
