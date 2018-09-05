@@ -258,7 +258,7 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
     group_lnpriors = np.zeros(ngroups)# &TC
     for i, group in enumerate(groups):
         group_lnpriors[i] = gf.lnAlphaPrior(group.getInternalSphericalPars(),
-                                            star_pars=None, old_z=old_z)
+                                            star_pars=None, z=old_z)
 
     weights = old_z[:ngroups].sum(axis=0)
     weights *= np.exp(group_lnpriors)
