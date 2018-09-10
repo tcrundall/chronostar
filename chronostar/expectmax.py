@@ -293,21 +293,17 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
         group_lnpriors[i] = gf.lnAlphaPrior(group.getInternalSphericalPars(),
                                             star_pars=None, z=old_z)
 
-    try:
-        weights = old_z[:,:ngroups].sum(axis=0)
-        weights *= np.exp(group_lnpriors)
-        weights /= weights.sum()
-    except:
-        logging.info("_____ DEBUGGGING _____")
-        logging.info("ngroups: {}".format(ngroups))
-        logging.info("old_z shape: {}".format(old_z.shape))
-        logging.info("weights shape: {}".format(weights.shape))
-        logging.info("weights: {}".format(weights))
-        #import pdb; pdb.set_trace()
-
-        weights = old_z[:,:ngroups].sum(axis=0)
-        weights *= np.exp(group_lnpriors)
-        weights /= weights.sum()
+    # try:
+    weights = old_z[:,:ngroups].sum(axis=0)
+    weights *= np.exp(group_lnpriors)
+    weights /= weights.sum()
+    # except:
+    #     logging.info("_____ DEBUGGGING _____")
+    #     logging.info("ngroups: {}".format(ngroups))
+    #     logging.info("old_z shape: {}".format(old_z.shape))
+    #     logging.info("weights shape: {}".format(weights.shape))
+    #     logging.info("weights: {}".format(weights))
+    #     #import pdb; pdb.set_trace()
 
 
     for i, group in enumerate(groups):
