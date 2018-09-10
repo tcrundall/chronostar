@@ -153,7 +153,7 @@ if NGROUPS == 1:
 # Run fit
 # --------------------------------------------------------------------------
 logging.info("Using data file {}".format(xyzuvw_file))
-logging.info("Everythign loaded, about to fit with {} components"\
+logging.info("Everything loaded, about to fit with {} components"\
     .format(NGROUPS))
 em.fitManyGroups(star_pars, NGROUPS,
                  rdir=rdir, pool=pool, offset=True, bg_hist_file=bg_hist_file,

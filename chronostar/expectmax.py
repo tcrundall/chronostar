@@ -303,7 +303,7 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
         logging.info("old_z shape: {}".format(old_z.shape))
         logging.info("weights shape: {}".format(weights.shape))
         logging.info("weights: {}".format(weights))
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
 
     for i, group in enumerate(groups):
         # weight is the amplitude of a component, proportional to its expected
@@ -639,6 +639,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     BURNIN_STEPS = 1000
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
+
+    logging.info("Fitting {} groups with {} burnin steps".format(ngroups,
+                                                                 BURNIN_STEPS))
 
     use_background = False
     # bg_hists = None
