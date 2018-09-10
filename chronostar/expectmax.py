@@ -305,6 +305,11 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
         logging.info("weights: {}".format(weights))
         #import pdb; pdb.set_trace()
 
+        weights = old_z[:,:ngroups].sum(axis=0)
+        weights *= np.exp(group_lnpriors)
+        weights /= weights.sum()
+
+
     for i, group in enumerate(groups):
         # weight is the amplitude of a component, proportional to its expected
         # total of stellar members
