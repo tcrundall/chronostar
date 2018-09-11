@@ -245,7 +245,8 @@ def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
     return bg_ln_ols
 
 
-def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
+def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
+                     inc_posterior=True):
     """
     Parameters
     ----------
@@ -273,6 +274,9 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
     bg_ln_ols : [nstars] float array
         The overlap the stars have with the (fixed) background distribution
 
+    inc_posterior: bool {False}
+        If true, includes prior on groups into their relative weightings
+
     Returns
     -------
     lnols: [nstars, ngroups (+1)] float array
@@ -288,15 +292,20 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
     if old_z is None:
         old_z = np.ones((nstars, ngroups)) / ngroups
 
-    group_lnpriors = np.zeros(ngroups)# &TC
-    for i, group in enumerate(groups):
-        group_lnpriors[i] = gf.lnAlphaPrior(group.getInternalSphericalPars(),
-                                            star_pars=None, z=old_z)
 
-    # try:
     weights = old_z[:,:ngroups].sum(axis=0)
-    weights *= np.exp(group_lnpriors)
-    weights /= weights.sum()
+
+    # Optionally scale each weight by the component prior, then rebalance
+    # so total expected stars across all components is unchanged
+    if inc_posterior:
+        group_lnpriors = np.zeros(ngroups)# &TC
+        for i, group in enumerate(groups):
+            group_lnpriors[i] = gf.lnAlphaPrior(group.getInternalSphericalPars(),
+                                                star_pars=None, z=old_z)
+        ngroup_stars = weights.sum()
+        weights *= np.exp(group_lnpriors)
+        weights = weights / weights.sum() * ngroup_stars
+
     # except:
     #     logging.info("_____ DEBUGGGING _____")
     #     logging.info("ngroups: {}".format(ngroups))
@@ -309,7 +318,7 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
     for i, group in enumerate(groups):
         # weight is the amplitude of a component, proportional to its expected
         # total of stellar members
-        weight = old_z[:,i].sum()
+        #weight = old_z[:,i].sum()
         # threshold = nstars/(2. * (ngroups+1))
         # if weight < threshold:
         #     logging.info("!!! GROUP {} HAS LESS THAN {} STARS, weight: {}".\
@@ -317,7 +326,7 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None):
         # )
         group_pars = group.getInternalSphericalPars()
         lnols[:, i] =\
-            np.log(weight) +\
+            np.log(weights[i]) +\
                 gf.getLogOverlaps(group_pars, star_pars)
             # gf.lnlike(group_pars, star_pars,
             #                            old_z, return_lnols=True) #??!??!?!
