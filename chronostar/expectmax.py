@@ -348,7 +348,8 @@ def calcBIC(star_pars, ncomps, lnlike):
     return np.log(n)*k - 2 * lnlike
 
 
-def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
+def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
+                inc_posterior=False):
     """Calculate membership probabilities given fits to each group
 
     Parameters
@@ -394,7 +395,8 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None):
     if old_z is None:
         old_z = np.ones((nstars, ngroups + using_bg))/(ngroups + using_bg)
 
-    lnols = getAllLnOverlaps(star_pars, groups, old_z, bg_ln_ols)
+    lnols = getAllLnOverlaps(star_pars, groups, old_z, bg_ln_ols,
+                             inc_posterior=inc_posterior)
 
     z = np.zeros((nstars, ngroups + using_bg))
     for i in range(nstars):
@@ -509,7 +511,8 @@ def decomposeGroup(group):
     return all_init_pars, sub_groups
 
 
-def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False):
+def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False,
+                           inc_posterior=False):
     """
     Get overall likelihood for a proposed model.
 
@@ -529,8 +532,10 @@ def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False):
     -------
     overall_lnlikelihood : float
     """
-    z = expectation(star_pars, groups, None, bg_ln_ols)
-    all_ln_ols = getAllLnOverlaps(star_pars, groups, z, bg_ln_ols)
+    z = expectation(star_pars, groups, None, bg_ln_ols,
+                    inc_posterior=inc_posterior)
+    all_ln_ols = getAllLnOverlaps(star_pars, groups, z, bg_ln_ols,
+                                  inc_posterior=inc_posterior)
 
     # multiplies each log overlap by the star's membership probability
     # import pdb; pdb.set_trace()
@@ -599,7 +604,8 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
 
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
-                  offset=False,  bg_hist_file='', correction_factor=15.3):
+                  offset=False,  bg_hist_file='', correction_factor=15.3,
+                  inc_posterior=True):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -704,7 +710,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         mkpath(idir)
 
         # EXPECTATION
-        z = expectation(star_pars, old_groups, z, bg_ln_ols)
+        z = expectation(star_pars, old_groups, z, bg_ln_ols,
+                        inc_posterior=inc_posterior)
 
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)
@@ -736,10 +743,14 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                          )
 
         overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
-                                               bg_ln_ols)
+                                               bg_ln_ols, inc_posterior=False)
+        overallLnPosterior = getOverallLnLikelihood(star_pars, new_groups,
+                                               bg_ln_ols, inc_posterior=True)
         logging.info("---        Iteration results         --")
         logging.info("-- Overall likelihood so far: {} --".\
                      format(overallLnLike))
+        logging.info("-- Overall posterior so far:  {} --". \
+                     format(overallLnPosterior))
         logging.info("-- BIC so far: {}                --".\
                      format(calcBIC(star_pars, ngroups, overallLnLike)))
 
@@ -779,7 +790,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     final_dir = rdir+"final/"
     mkpath(final_dir)
 
-    final_z = expectation(star_pars, new_groups, z, bg_ln_ols)
+    final_z = expectation(star_pars, new_groups, z, bg_ln_ols,
+                          inc_posterior=inc_posterior)
     np.save(final_dir+"final_membership.npy", final_z)
     final_best_fits = [None] * ngroups
     final_med_errs = [None] * ngroups
@@ -816,12 +828,17 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
     # get overall likelihood
     overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
-                                           bg_ln_ols)
+                                           bg_ln_ols, inc_posterior=False)
+    overallLnPosterior = getOverallLnLikelihood(star_pars, new_groups,
+                                                bg_ln_ols, inc_posterior=True)
     bic = calcBIC(star_pars, ngroups, overallLnLike)
-    logging.info("Final overall likelihood: {}".format(overallLnLike))
+    logging.info("Final overall lnlikelihood: {}".format(overallLnLike))
+    logging.info("Final overall lnposterior:  {}".format(overallLnLike))
     logging.info("Final BIC: {}".format(bic))
 
-    np.save(final_dir+'likelihood_and_bic.npy', (overallLnLike, bic))
+    np.save(final_dir+'likelihood_post_and_bic.npy', (overallLnLike,
+                                                      overallLnPosterior,
+                                                      bic))
 
     logging.info("FINISHED CHARACTERISATION")
     #logging.info("Origin:\n{}".format(origins))
