@@ -491,7 +491,7 @@ def burninConvergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
 def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
              plot_it=False, pool=None, convergence_tol=0.25, init_pos=None,
              plot_dir='', save_dir='', init_pars=None, sampling_steps=None,
-             traceback=False):
+             traceback=False, max_iter=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -549,6 +549,11 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     traceback : bool {False}
         Set this as true to run with the (retired) traceback
         implementation.
+
+    max_iter : int {None}
+        The maximum iterations permitted to run. (Useful for expectation
+        maximisation implementation triggering an abandonment of rubbish
+        components)
 
     Returns
     -------
@@ -622,7 +627,9 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     cnt = 0
     logging.info("Beginning burnin loop")
     burnin_lnprob_res = np.zeros((NWALKERS,0))
-    while not converged:
+
+    # burn in until converged or the optional max_iter is reached
+    while (not converged) and cnt != max_iter:
         logging.info("Burning in cnt: {}".format(cnt))
         sampler.reset()
         pos, lnprob, state = sampler.run_mcmc(pos, burnin_steps, state)

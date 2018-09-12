@@ -248,6 +248,8 @@ def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
 def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
                      inc_posterior=True):
     """
+    Get the log overlap integrals of each star with each component
+
     Parameters
     ----------
     star_pars : dict
@@ -263,7 +265,7 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
     groups : [ngroups] syn.Group object list
         a fit for each group (in internal form)
 
-    old_z : [nstars, ngroups (+1)] float array
+    old_z : [nstars, ngroups (+1)] float array {None}
         Only used to get weights (amplitudes) for each fitted component.
         Tracks membership probabilities of each star to each group. Each
         element is between 0.0 and 1.0 such that each row sums to 1.0
@@ -282,6 +284,18 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
     lnols: [nstars, ngroups (+1)] float array
         The log overlaps of each star with each component, optionally
         with the log background overlaps appended as the final column
+=======
+        background. However it is not used in this context
+
+    bg_ln_ols : [nstars] float array {None}
+        The overlap the stars have with the (fixed) background distribution
+
+    Return
+    ------
+    lnols: [nstars, ngroups (+1)] float array
+        the overlap integral of
+        each star with each component as well as the background
+>>>>>>> smart-decomp
     """
     nstars = len(star_pars['xyzuvw'])
     ngroups = len(groups)
@@ -602,6 +616,41 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
     return new_groups, all_samples, all_lnprob, all_init_pos
 
 
+def checkStability(star_pars, best_groups, z, bg_ln_ols=None):
+    """
+    Checks if run has encountered problems
+
+    Common problems include: a component losing all its members, lnprob
+    return nans, a membership listed as nan
+
+    Paramters
+    ---------
+    star_pars : dict
+        Contains XYZUVW kinematics of stars
+    best_groups : [ngroups] list of Synthesiser.Group objects
+        The best fits (np.argmax(chain)) for each component from the most
+        recent run
+    z : [nstars, ngroups] float array
+        The membership array from the most recent run
+    bg_ln_ols : [nstars] float array
+        The overlap the stars have with the (fixed) background distribution
+    """
+    ngroups = len(best_groups)
+    stable = True
+    if np.min(np.sum(z[:,:ngroups], axis=0)) <= 2.:
+        logging.info("ERROR: A component has less than 2 members")
+        stable = False
+    if not np.isfinite(getOverallLnLikelihood(star_pars,
+                                              best_groups,
+                                              bg_ln_ols)):
+        logging.info("ERROR: Posterior is not finite")
+        stable = False
+    if not np.isfinite(z).all():
+        logging.info("ERROR: At least one membership is not finite")
+        stable = False
+    return stable
+
+
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
                   offset=False,  bg_hist_file='', correction_factor=15.3,
@@ -650,17 +699,19 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         membership probabilities
 
     TODO: Generalise interventions for more than 2 groups
+    TODO: Allow option with which step to start with
     """
     # setting up some constants
     BURNIN_STEPS = 1000
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
+    nstars = star_pars['xyzuvw'].shape[0]
 
     logging.info("Fitting {} groups with {} burnin steps".format(ngroups,
                                                                  BURNIN_STEPS))
 
+    # Set up background histograms
     use_background = False
-    # bg_hists = None
     bg_ln_ols = None
     if bg_hist_file:
         logging.info("CORRECTION FACTOR: {}".format(correction_factor))
@@ -671,7 +722,6 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             correction_factor=correction_factor,
         )
 
-    nstars = star_pars['xyzuvw'].shape[0]
     # INITIALISE GROUPS
     if not init_with_origin:
         init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'],
@@ -681,7 +731,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         z = None
     else:
         init_groups = origins
-        z = np.zeros((nstars, ngroups + use_background))
+        z = np.zeros((nstars, ngroups + use_background)) # extra column for bg
         cnt = 0
         for i in range(ngroups):
             z[cnt:cnt+origins[i].nstars, i] = 1.0
@@ -692,14 +742,15 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     np.save(rdir + "init_groups.npy", init_groups)
 
     old_groups = init_groups
-    old_samples = None
+    # old_samples = None
     all_init_pars = [init_group.getInternalSphericalPars() for init_group
                      in init_groups]
     old_overallLnLike = -np.inf
     all_init_pos = ngroups * [None]
     iter_count = 0
     converged = False
-    while not converged:
+    stable_state = True         # used to track issues
+    while not converged and stable_state:
         # for iter_count in range(10):
         idir = rdir+"iter{}/".format(iter_count)
         logging.info("\n--------------------------------------------------"
@@ -712,7 +763,6 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         # EXPECTATION
         z = expectation(star_pars, old_groups, z, bg_ln_ols,
                         inc_posterior=inc_posterior)
-
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)
         ))
@@ -742,6 +792,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                          all_init_pos=all_init_pos,
                          )
 
+        # LOG RESULTS OF ITERATION
         overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
                                                bg_ln_ols, inc_posterior=False)
         overallLnPosterior = getOverallLnLikelihood(star_pars, new_groups,
@@ -769,6 +820,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                      format(converged))
         logging.info("---------------------------------------")
 
+        # CHECK STABILITY
+        stable_state = checkStability(star_pars, new_groups, z, bg_ln_ols)
+
         # only update if the fit has improved
         if not converged:
             old_old_groups = old_groups
@@ -777,76 +831,85 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         iter_count += 1
 
     logging.info("CONVERGENCE COMPLETE")
+    logging.info("********** EM Algorithm finished *************")
+
+    # TODO: HAVE A THINK ABOUT WHAT RESULTS END UP WHERE...
+#    #np.save(rdir+"final_groups.npy", new_groups)
+#    np.save(rdir+"final_groups.npy", new_groups) # old grps overwritten by new grps
+#    np.save(rdir+"memberships.npy", z)
+
+    if stable_state:
+        # PERFORM FINAL EXPLORATION OF PARAMETER SPACE
+        logging.info("\n--------------------------------------------------"
+                     "\n--------------   Characterising   ----------------"
+                     "\n--------------------------------------------------")
+        final_dir = rdir+"final/"
+        mkpath(final_dir)
+
+        final_z = expectation(star_pars, new_groups, z, bg_ln_ols,
+                              inc_posterior=inc_posterior)
+        np.save(final_dir+"final_membership.npy", final_z)
+        final_best_fits = [None] * ngroups
+        final_med_errs = [None] * ngroups
+
+        for i in range(ngroups):
+            logging.info("Characterising group {}".format(i))
+            final_gdir = final_dir + "group{}/".format(i)
+            mkpath(final_gdir)
+
+            best_fit, chain, lnprob = gf.fitGroup(
+                xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS,
+                plot_it=True, pool=pool, convergence_tol=C_TOL,
+                plot_dir=final_gdir, save_dir=final_gdir, z=z[:, i],
+                init_pos=all_init_pos[i], sampling_steps=SAMPLING_STEPS,
+                max_iter=4
+                # init_pars=old_groups[i],
+            )
+            # run with extremely large convergence tolerance to ensure it only
+            # runs once
+            logging.info("Finished fit")
+            final_best_fits[i] = best_fit
+            final_med_errs[i] = calcMedAndSpan(chain)
+            # np.save(final_gdir + "best_group_fit.npy", new_group)
+            np.save(final_gdir + 'final_chain.npy', chain)
+            np.save(final_gdir + 'final_lnprob.npy', lnprob)
+
+            all_init_pos[i] = chain[:, -1, :]
 
 
-    #np.save(rdir+"final_groups.npy", new_groups)
-    np.save(rdir+"final_groups.npy", new_groups) # old grps overwritten by new grps
-    np.save(rdir+"memberships.npy", z)
+        final_groups = [syn.Group(final_best_fit, sphere=True, internal=True,
+                                  starcount=False)
+                        for final_best_fit in final_best_fits]
+        np.save(final_dir+'final_groups.npy', final_groups)
+        np.save(final_dir+'final_med_errs.npy', final_med_errs)
 
-    # PERFORM FINAL EXPLORATION OF PARAMETER SPACE
-    logging.info("\n--------------------------------------------------"
-                 "\n--------------   Characterising   ----------------"
-                 "\n--------------------------------------------------")
-    final_dir = rdir+"final/"
-    mkpath(final_dir)
-
-    final_z = expectation(star_pars, new_groups, z, bg_ln_ols,
-                          inc_posterior=inc_posterior)
-    np.save(final_dir+"final_membership.npy", final_z)
-    final_best_fits = [None] * ngroups
-    final_med_errs = [None] * ngroups
-
-    for i in range(ngroups):
-        logging.info("Characterising group {}".format(i))
-        final_gdir = final_dir + "group{}/".format(i)
-        mkpath(final_gdir)
-
-        best_fit, chain, lnprob = gf.fitGroup(
-            xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS,
-            plot_it=True, pool=pool, convergence_tol=C_TOL,
-            plot_dir=final_gdir, save_dir=final_gdir, z=z[:, i],
-            init_pos=all_init_pos[i], sampling_steps=SAMPLING_STEPS,
-            # init_pars=old_groups[i],
-        )
-        # run with extremely large convergence tolerance to ensure it only
-        # runs once
-        logging.info("Finished fit")
-        final_best_fits[i] = best_fit
-        final_med_errs[i] = calcMedAndSpan(chain)
-        # np.save(final_gdir + "best_group_fit.npy", new_group)
-        np.save(final_gdir + 'final_chain.npy', chain)
-        np.save(final_gdir + 'final_lnprob.npy', lnprob)
-
-        all_init_pos[i] = chain[:, -1, :]
-
-
-    final_groups = [syn.Group(final_best_fit, sphere=True, internal=True,
-                              starcount=False)
-                    for final_best_fit in final_best_fits]
-    np.save(final_dir+'final_groups.npy', final_groups)
-    np.save(final_dir+'final_med_errs.npy', final_med_errs)
-
-    # get overall likelihood
-    overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
-                                           bg_ln_ols, inc_posterior=False)
-    overallLnPosterior = getOverallLnLikelihood(star_pars, new_groups,
+        # get overall likelihood
+        overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
+                                               bg_ln_ols, inc_posterior=False)
+        overallLnPosterior = getOverallLnLikelihood(star_pars, new_groups,
                                                 bg_ln_ols, inc_posterior=True)
-    bic = calcBIC(star_pars, ngroups, overallLnLike)
-    logging.info("Final overall lnlikelihood: {}".format(overallLnLike))
-    logging.info("Final overall lnposterior:  {}".format(overallLnLike))
-    logging.info("Final BIC: {}".format(bic))
+        bic = calcBIC(star_pars, ngroups, overallLnLike)
+        logging.info("Final overall lnlikelihood: {}".format(overallLnLike))
+        logging.info("Final overall lnposterior:  {}".format(overallLnLike))
+        logging.info("Final BIC: {}".format(bic))
 
-    np.save(final_dir+'likelihood_post_and_bic.npy', (overallLnLike,
-                                                      overallLnPosterior,
-                                                      bic))
+        np.save(final_dir+'likelihood_post_and_bic.npy', (overallLnLike,
+                                                          overallLnPosterior,
+                                                          bic))
 
-    logging.info("FINISHED CHARACTERISATION")
-    #logging.info("Origin:\n{}".format(origins))
-    logging.info("Best fits:\n{}".format(
-        [fg.getSphericalPars() for fg in final_groups]
-    ))
-    logging.info("Stars per component:\n{}".format(z.sum(axis=0)))
-    logging.info("Memberships: \n{}".format((z*100).astype(np.int)))
+        logging.info("FINISHED CHARACTERISATION")
+        #logging.info("Origin:\n{}".format(origins))
+        logging.info("Best fits:\n{}".format(
+            [fg.getSphericalPars() for fg in final_groups]
+        ))
+        logging.info("Stars per component:\n{}".format(z.sum(axis=0)))
+        logging.info("Memberships: \n{}".format((z*100).astype(np.int)))
 
-    return final_best_fits, final_med_errs, z
+        return final_best_fits, final_med_errs, z
+
+    else: # not stable_state
+        logging.info("****************************************")
+        logging.info("********** BAD RUN TERMINATED **********")
+        logging.info("****************************************")
+        return new_groups, None, z
 

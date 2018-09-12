@@ -29,14 +29,22 @@ def testRotatedLSR():
     assert np.allclose(xyzuvws[0,0], 16000.)
 
 def testSingleTime():
-    """Test usage where we only provide the desired age, and not an array"""
+    """Test usage where we only provide the desired age, and not an array
+
+    Good demo of how to traceback 2 stars forward through time, either
+    with an array of time steps, or a single age
+    """
     logging.basicConfig(level=LOGGINGLEVEL, stream=sys.stdout)
     xyzuvw_1 = [0.,0.,25.,0.,0.,0.]
     xyzuvw_2 = [0.,0.,0.,0.,-10.,0.]
     xyzuvws = np.vstack((xyzuvw_1, xyzuvw_2))
     age = 10.
     times = np.linspace(0., age, 2)
+
+    # get position for each time in times
     xyzuvws_both = torb.traceManyOrbitXYZUVW(xyzuvws, times, single_age=False)
+
+    # get position for *age* only
     xyzuvws_now = torb.traceManyOrbitXYZUVW(xyzuvws, age, single_age=True)
     assert np.allclose(xyzuvws_both[:,1], xyzuvws_now)
 
