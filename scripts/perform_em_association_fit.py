@@ -34,8 +34,6 @@ try:
     NGROUPS = int(sys.argv[2])
 except (IndexError, ValueError):
     NGROUPS = 1
-CORRECTION_FACTOR = 1000
-
 
 try:
     rdir = "/data/mash/tcrun/em_fit/{}_{}/".format(ass_name.strip('/'),
@@ -158,7 +156,6 @@ logging.info("Everythign loaded, about to fit with {} components"\
 em.fitManyGroups(star_pars, NGROUPS,
                  rdir=rdir, pool=pool, offset=True, bg_hist_file=bg_hist_file,
                  origins=origins, init_with_origin=init_origin,
-                 correction_factor=CORRECTION_FACTOR,
                  )
 if using_mpi:
     pool.close()
