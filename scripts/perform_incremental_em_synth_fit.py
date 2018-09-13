@@ -116,8 +116,8 @@ for i in range(ngroups):
 logging.info(" done")
 
 logging.info("Saving synthetic data...")
-np.save(rdir+groups_savefile, origins)
-np.save(rdir+xyzuvw_perf_file, all_xyzuvw_now_perf)
+np.save(groups_savefile, origins)
+np.save(xyzuvw_perf_file, all_xyzuvw_now_perf)
 astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
                                savefile=astro_savefile)
 
