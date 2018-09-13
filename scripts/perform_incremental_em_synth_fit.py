@@ -107,11 +107,11 @@ for i in range(ngroups):
     xyzuvw_init, origin = syn.synthesiseXYZUVW(group_pars, sphere=True,
                                                return_group=True,
                                                internal=False)
-    all_xyzuvw_init = np.vstack(all_xyzuvw_init, xyzuvw_init)
+    all_xyzuvw_init = np.vstack((all_xyzuvw_init, xyzuvw_init))
     xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init,
                                                 times=origin.age,
                                                 single_age=True)
-    all_xyzuvw_now_perf = np.vstack(all_xyzuvw_now_perf, xyzuvw_now_perf)
+    all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
 
 logging.info(" done")
 
