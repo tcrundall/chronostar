@@ -911,5 +911,5 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("****************************************")
         logging.info("********** BAD RUN TERMINATED **********")
         logging.info("****************************************")
-        return new_groups, None, z
+        return new_groups, -1, z
 

@@ -177,6 +177,10 @@ def synthesiseManyXYZUVW(many_pars, sphere=True, return_groups=False,
     """
     Generate a bunch of stars in situ from many Gaussian parametrisations
 
+    Note: there is no orbital projection, only the initial positions
+    of the stars are returned
+    As a consequence, this function is stupid and useless....
+
     Parameters
     ----------
     many_pars : [ngroups, 10] or [ngroups, 15] float array
