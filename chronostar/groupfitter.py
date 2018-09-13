@@ -137,7 +137,7 @@ def lnAlphaPrior(pars, star_pars, z):
     # taking the 10th root to make plot gentle
     # TODO: just rework mu and sig to give desired
     # mode and shape
-    return lnlognormal(alpha) * 0.1
+    return lnlognormal(alpha) * 0.01
 
 
 def lnprior(pars, star_pars, z):
