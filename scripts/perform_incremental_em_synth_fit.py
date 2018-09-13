@@ -62,6 +62,7 @@ print("Master should be working in the directory:\n{}".format(rdir))
 # Setting up standard filenames
 # Partial data generation saved in results/em_fit/[run_name]/synth_data/
 sd_dir = rdir + 'synth_data/'
+mkpath(sd_dir)
 xyzuvw_perf_file     = sd_dir + 'perf_xyzuvw.npy'
 groups_savefile      = sd_dir + 'origins.npy'
 xyzuvw_init_savefile = sd_dir + 'xyzuvw_init.npy'
