@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 
+"""
+TODO: THIS SCRIPT IS A PILE OF GARBAGE. REALLY NEED TO REVIEW THIS
+"""
+
 try:
     import matplotlib as mpl
     mpl.use('Agg')
