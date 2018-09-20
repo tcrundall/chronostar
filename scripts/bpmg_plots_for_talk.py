@@ -3,15 +3,11 @@ from __future__ import division, print_function
 Generate some BPMG plots for talk
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 import sys
 sys.path.insert(0, "..")
 
-import chronostar.hexplotter as hp
+import chronostar.retired.hexplotter as hp
 import chronostar.groupfitter as gf
-import chronostar.synthesiser as syn
 
 xyzuvw_file = "../data/gaia_dr2_bp_xyzuvw.fits"
 rdir = "../results/em_fit/gaia_dr2_bp/iter11/"

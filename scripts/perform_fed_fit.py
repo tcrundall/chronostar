@@ -74,7 +74,7 @@ try:
     import chronostar.converter as cv
     import chronostar.measurer as ms
     import chronostar.groupfitter as gf
-    import chronostar.hexplotter as hp
+    import chronostar.retired.hexplotter as hp
 
 except ImportError:
     #logging.info("Failed to import chronostar package")

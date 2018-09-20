@@ -13,14 +13,11 @@ except ImportError:
     print("Warning: matplotlib not imported")
     pass
 
-from distutils.dir_util import mkpath
 import logging
-import numpy as np
 import os
-import platform
 import sys
 sys.path.insert(0, '..')
-import chronostar.hexplotter as hp
+import chronostar.retired.hexplotter as hp
 
 try:
     dir_name = sys.argv[1]

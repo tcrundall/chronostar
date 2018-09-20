@@ -8,14 +8,12 @@ Use this script to analyse the results of a multi-component fit
 import logging
 import numpy as np
 import os
-import pdb
 import sys
 sys.path.insert(0, '..')
 
-import chronostar.synthesiser as syn
 import chronostar.groupfitter as gf
 import chronostar.expectmax as em
-import chronostar.hexplotter as hp
+import chronostar.retired.hexplotter as hp
 import chronostar.traceorbit as torb
 import chronostar.transform as tf
 
