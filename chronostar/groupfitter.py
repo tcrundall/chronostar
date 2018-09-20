@@ -113,7 +113,19 @@ def calcAlpha(dX, dV, nstars):
               (const.G * 5 * nstars * const.M_sun) ).decompose().value
 
 
+def lognormal(x, mu, sig):
+    """
+    Caclulate lognormal parameterised by mu and sig at point x
+    TODO: Actually utilise this function in lnlognormal
+    """
+    return 1./x * 1./(sig*np.sqrt(2*np.pi)) *\
+           np.exp(-(np.log(x) - mu)**2/(2*sig**2))
+
+
 def lnlognormal(x, mu=1.05, sig=0.105):
+    # TODO: replace lognormal innerowrkings so is called with desired mode
+    # mu = sigma**2 + np.log(mode)
+    # return np.log(lognormal(x, mu, sig)
     return (-np.log(x*sig*np.sqrt(2*np.pi)) -
             (np.log(x) - mu)**2 / (2*sig**2))
 
@@ -121,6 +133,10 @@ def lnlognormal(x, mu=1.05, sig=0.105):
 def lnAlphaPrior(pars, star_pars, z):
     """
     A very approximate, gentle prior preferring super-virial distributions
+
+    Since alpha is strictly positive, we use a lognormal prior. We then
+    take the log of the result to incorporate it into the log likelihood
+    evaluation.
 
     pars: [8] float array
         X,Y,Z,U,V,W,log(dX),log(dV),age
