@@ -10,12 +10,15 @@ import synthesiser as syn
 import errorellipse as ee
 import traceorbit as torb
 import transform as tf
+import datatool as dt
 
 COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']
+COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
 HATCHES = ['|', '/',  '+', '.', '*'] * 10
 
-def add_arrow(line, position=None, indices=None, direction='right', size=15, color=None):
+def add_arrow(line, position=None, indices=None, direction='right',
+              size=15, color=None):
     """
     Add an arrow along a plotted line.
 
@@ -28,6 +31,8 @@ def add_arrow(line, position=None, indices=None, direction='right', size=15, col
     color:      if None, line color is taken.
 
     -- credit to some forgotten contributor to stackoverflow --
+    https://stackoverflow.com/questions/34017866/arrow-on-a-line-plot-with-matplotlib
+    thomas - https://stackoverflow.com/users/5543796/thomas
     """
     if color is None:
         color = line.get_color()
@@ -42,10 +47,7 @@ def add_arrow(line, position=None, indices=None, direction='right', size=15, col
         indices = [np.argmin(np.absolute(xdata - position))]
 
     for start_ind in indices:
-        if direction == 'right':
-            end_ind = start_ind + 1
-        else:
-            end_ind = start_ind - 1
+        end_ind = start_ind + 1 if direction == 'right' else start_ind - 1
 
         line.axes.annotate('',
             xytext=(xdata[start_ind], ydata[start_ind]),
@@ -55,7 +57,54 @@ def add_arrow(line, position=None, indices=None, direction='right', size=15, col
         )
 
 
+def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
+              with_arrow=False, annotate=False):
+    """
+    For traceback use negative age
+
+    Parameters
+    ----------
+    pos_now: [6] array, known position of object
+    dim1: integer, x-axis dimension
+    dim2: integer, y-axis dimension
+    ax: axes object, axes on which to plot line
+    end_age: non-zero number, time to orbit till.
+        Negative value --> traceback
+        Positive value --> trace forward
+    ntimes: integer {50], number of timesteps to calculate
+    group_ix: index of group being plotted (for coloring reasons)
+    with_arrow: (bool) {False}, whether to include arrows along orbit
+    annotate: (bool) {False}, whether to include text
+    """
+    if group_ix is None:
+        color = 'xkcd:red'
+    else:
+        color = COLORS[group_ix]
+
+
+
+    # orb_alpha = 0.1
+    gorb = torb.traceOrbitXYZUVW(pos_now,
+                                 times=np.linspace(0, end_age, ntimes),
+                                 single_age=False)
+    line_obj = ax.plot(gorb[:, dim1], gorb[:, dim2], ls='-',
+                       alpha=0.1,
+                       color=color)
+    indices = [int(ntimes / 3), int(2 * ntimes / 3)]
+    if with_arrow:
+        # make sure arrow is always pointing forwards through time
+        direction = 'right' if end_age > 0 else 'left'
+        add_arrow(line_obj[0], indices=indices, direction=direction,
+                  color=color)
+    if annotate:
+        ax.annotate("Orbital trajectory",
+                    (gorb[int(ntimes / 2), dim1],
+                     gorb[int(ntimes / 2), dim2]),
+                    color=color)
+
+
 def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
+             star_orbits=False,
              group_then=False, group_now=False, group_orbit=False,
              annotate=False):
     """
@@ -76,6 +125,8 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
     star_pars:  dict object with keys 'xyzuvw' ([nstars,6] array of current
                 star means) and 'xyzuvw_cov' ([nstars,6,6] array of current
                 star covariance matrices)
+    star_orbits: (bool) plot the calculated stellar traceback orbits of
+                        central estimate of measurements
     group_then: (bool) plot the group's origin
     group_now:  (bool) plot the group's current day distribution
     group_orbit: (bool) plot the trajectory of the group's mean
@@ -84,6 +135,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
     Returns
     -------
     (nothing returned)
+    TODO: Extend to handle membership probabilities
     """
     labels = 'XYZUVW'
     units = 3 * ['pc'] + 3 * ['km/s']
@@ -95,27 +147,42 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         dim1 = labels.index(dim1.upper())
     if type(dim2) is not int:
         dim2 = labels.index(dim2.upper())
+    # ensure groups is iterable
+    try:
+        len(groups)
+    except:
+        groups = [groups]
     if type(groups) is not list:
         groups = [groups]
 
-
+    # plot stellar data (positions with errors and optionally traceback
+    # orbits back to some ill-defined age
     if star_pars:
         mns = star_pars['xyzuvw']
         covs = star_pars['xyzuvw_cov']
         ax.plot(mns[:,dim1], mns[:,dim2], '.', color='xkcd:red')
         for star_mn, star_cov in zip(mns, covs):
+            # plot uncertainties
             ee.plotCovEllipse(star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
                               star_mn[np.ix_([dim1, dim2])],
                               ax=ax, alpha=0.1, linewidth='0.1',
                               color='xkcd:red',
                               )
+            # plot traceback orbits for as long as oldest group (if known)
+            # else, 30 Myr
+            if star_orbits:
+                try:
+                    tb_limit = max([g.age for g in groups])
+                except:
+                    tb_limit = 30
+                plotOrbit(star_mn, dim1, dim2, ax, end_age=-tb_limit)
 
+    # plot info for each group (fitted, or true synthetic origin)
     for i, group in enumerate(groups):
-        # TODO: get colors behaving neatly
-        assert isinstance(group, syn.Group)
+        assert isinstance(group, syn.Group) # for autocomplete when coding
         cov_then = group.generateSphericalCovMatrix()
         mean_then = group.mean
-
+        # plot group initial distribution
         if group_then:
             ax.plot(mean_then[dim1], mean_then[dim2], marker='x',
                     color=COLORS[i])
@@ -130,6 +197,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
                              mean_then[dim2]),
                              color=COLORS[i])
 
+        # plot group current day distribution (should match well with stars)
         if group_now:
             mean_now = torb.traceOrbitXYZUVW(mean_then, group.age,
                                              single_age=True)
@@ -148,26 +216,75 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
                             (mean_now[dim1],mean_now[dim2]),
                             color=COLORS[i])
 
+        # plot orbit of mean of group
         if group_orbit:
-            ntimes = 50
-            orb_alpha = 0.1
-            gorb = torb.traceOrbitXYZUVW(mean_then,
-                                       times=np.linspace(0,group.age,ntimes),
-                                       single_age=False)
-            line_obj = ax.plot(gorb[:,dim1], gorb[:,dim2], ls='-',
-                               alpha=orb_alpha,
-                               color=COLORS[i])
-            indices = [int(ntimes/3), int(2*ntimes/3)]
-            add_arrow(line_obj[0], indices=indices,
-                      color=COLORS[i])
-            if annotate:
-                ax.annotate("Orbital trajectory",
-                            (gorb[int(ntimes/2), dim1],
-                             gorb[int(ntimes/2), dim2]),
-                             color=COLORS[i])
-
+            plotOrbit(mean_now, dim1, dim2, ax, -group.age, group_ix=i,
+                      with_arrow=True, annotate=annotate)
 
         ax.set_xlabel("{} [{}]".format(labels[dim1], units[dim1]))
         ax.set_ylabel("{} [{}]".format(labels[dim2], units[dim2]))
 
+
+def plotMultiPane(dim_pairs, star_pars, groups, save_file='dummy.pdf'):
+    """
+    Flexible function that plots many 2D slices through data and fits
+
+    Takes as input a list of dimension pairs, stellar data and fitted
+    groups, and will plot each dimension pair in a different pane.
+
+    TODO: Maybe add functionality to control the data plotted in each pane
+
+    Parameters
+    ----------
+    dim_pairs: a list of dimension pairs e.g.
+        [(0,1), (3,4), (0,3), (1,4), (2,5)]
+        ['xz', 'uv', 'zw']
+        ['XY', 'UV', 'XU', 'YV', 'ZW']
+    star_pars: either
+        dicitonary of stellar data with keys 'xyzuvw' and 'xyzuvw_cov'
+            or
+        string filename to saved data
+    groups: either
+        a single synthesiser.Group object,
+        a list or array of synthesiser.Group objects,
+            or
+        string filename to data saved as '.npy' file
+    save_file: string, name (and path) of saved plot figure
+
+    Returns
+    -------
+    (nothing)
+    """
+
+    # Tidying up inputs
+    if type(star_pars) is str:
+        star_pars = dt.loadXYZUVW(star_pars)
+    if type(groups) is str:
+        groups = np.load(groups)
+        # handle case where groups is a single stored object
+        if len(groups.shape) == 0:
+            groups = groups.item()
+    # ensure groups is iterable
+    try:
+        len(groups)
+    except:  # groups is a single group instance
+        groups = [groups]
+
+    # setting up plot dimensions
+    npanes = len(dim_pairs)
+    rows = int(np.sqrt(npanes)) #plots are never taller than wide
+    cols = (npanes + rows - 1) // rows  # get enough cols
+    ax_h = 5
+    ax_w = 5
+    f, axs = plt.subplots(rows, cols)
+    f.set_size_inches(ax_w * cols, ax_h * rows)
+
+    # drawing each axes
+    for i, (dim1, dim2) in enumerate(dim_pairs):
+        plotPane(dim1, dim2, axs.flatten()[i], groups=groups,
+                 star_pars=star_pars, star_orbits=False,
+                 group_then=True, group_now=True, group_orbit=True,
+                 annotate=False)
+
+    f.savefig(save_file, bbox_inches='tight', format='pdf')
 
