@@ -2,10 +2,11 @@
 Provides many functions that aid plotting of stellar data sets and their fits
 """
 
-import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
+import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
+import numpy as np
 import synthesiser as syn
 import errorellipse as ee
 import traceorbit as torb
@@ -152,8 +153,8 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         len(groups)
     except:
         groups = [groups]
-    if type(groups) is not list:
-        groups = [groups]
+    # if type(groups) is not list: #???
+    #     groups = [groups]
 
     # plot stellar data (positions with errors and optionally traceback
     # orbits back to some ill-defined age
@@ -179,7 +180,11 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
 
     # plot info for each group (fitted, or true synthetic origin)
     for i, group in enumerate(groups):
-        assert isinstance(group, syn.Group) # for autocomplete when coding
+        try:
+            assert isinstance(group, syn.Group) # for autocomplete when coding
+        except:
+            import pdb; pdb.set_trace()
+
         cov_then = group.generateSphericalCovMatrix()
         mean_then = group.mean
         # plot group initial distribution
@@ -287,4 +292,150 @@ def plotMultiPane(dim_pairs, star_pars, groups, save_file='dummy.pdf'):
                  annotate=False)
 
     f.savefig(save_file, bbox_inches='tight', format='pdf')
+
+
+def sampleStellarPDFs(dim, star_pars):
+    """
+    Sample each provided star the build histogram from samples
+    """
+    all_samples = np.zeros(0)
+    count = 100
+
+    for mn, cov in zip(star_pars['xyzuvw'], star_pars['xyzuvw_cov']):
+        samples = np.random.randn(count) * np.sqrt(cov[dim,dim]) + mn[dim]
+        all_samples = np.append(all_samples, samples)
+    return all_samples
+
+
+def calcStellarPDFs(x, dim, star_pars):
+    """
+    For each point in `xs`, sum up the contributions from each star's PDF
+
+    :param xs:
+    :param star_pars:
+    :return:
+    """
+    total = 0
+    for mn, cov in zip(star_pars['xyzuvw'], star_pars['xyzuvw_cov']):
+        total += dt.gauss(x, mn[dim], cov[dim,dim]**.5)
+    return total
+
+
+def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False):
+    """
+    Given an axes object, plot the 1D projection of stellar data and fits
+
+    :param dim:
+    :param star_pars:
+    :param groups:
+    :param z:
+    :param vertical:
+    :return:
+    """
+    if horizontal:
+        orientation = 'horizontal'
+    else:
+        orientation = 'vertical'
+    if len(weights.shape) > 1:
+        weights = weights.sum(axis=0)
+    weights /= weights.sum()
+
+    npoints = 1000
+    if ax is None:
+        ax = plt.gca()
+    # ax.plot(xs, calcStellarPDFs(xs, dim, star_pars))
+    vals, bins, _ = \
+        ax.hist(sampleStellarPDFs(dim, star_pars), normed=True, histtype='step',
+                orientation=orientation)
+
+    xs = np.linspace(np.min(bins), np.max(bins), npoints)
+    combined_gauss = np.zeros(xs.shape)
+    for i, (group, weight) in enumerate(zip(groups, weights)):
+        mean_now = torb.traceOrbitXYZUVW(group.mean, group.age, single_age=True)
+        cov_now = tf.transform_cov(group.generateCovMatrix(), torb.traceOrbitXYZUVW,
+                                   group.mean, args=[group.age])
+        group_gauss = weight*dt.gauss(xs, mean_now[dim],
+                                      np.sqrt(cov_now[dim,dim]))
+        combined_gauss += group_gauss
+        if horizontal:
+            ax.plot(group_gauss, xs, color=COLORS[i])
+        else:
+            ax.plot(xs, group_gauss, color=COLORS[i])
+
+    if horizontal:
+        ax.plot(combined_gauss, xs, color='black', ls='--', alpha=0.4)
+    else:
+        ax.plot(xs, combined_gauss, color='black', ls='--', alpha=0.4)
+
+
+
+
+def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
+                      star_pars=None,
+                      star_orbits=False,
+                      group_then=False, group_now=False, group_orbit=False,
+                      annotate=False):
+    """
+    Plot a 2D projection of data and fit along with flanking 1D projections.
+
+    Uses global constants COLORS and HATCHES to inform consistent colour
+    scheme.
+    Can use this to plot different panes of one whole figure
+
+    Parameters
+    ----------
+    dim1: x-axis, can either be integer 0-5 (inclusive) or a letter form
+          'xyzuvw' (either case)
+    dim2: y-axis, same conditions as dim1
+    fignum: figure number in which to create the plot
+    groups: a list of (or just one) synthesiser.Group objects, corresponding
+            to the fit of the origin(s)
+    star_pars:  dict object with keys 'xyzuvw' ([nstars,6] array of current
+                star means) and 'xyzuvw_cov' ([nstars,6,6] array of current
+                star covariance matrices)
+    star_orbits: (bool) plot the calculated stellar traceback orbits of
+                        central estimate of measurements
+    group_then: (bool) plot the group's origin
+    group_now:  (bool) plot the group's current day distribution
+    group_orbit: (bool) plot the trajectory of the group's mean
+    annotate: (bool) add text describing the figure's contents
+
+    Returns
+    -------
+    (nothing returned)
+    """
+    labels = 'XYZUVW'
+    if weights is None:
+        weights = np.ones(len(groups)) / len(groups)
+    if type(dim1) is not int:
+        dim1 = labels.index(dim1.upper())
+    if type(dim2) is not int:
+        dim2 = labels.index(dim2.upper())
+
+    # Set up plot
+    fig = plt.figure(fignum)
+    plt.clf()
+    gs = gridspec.GridSpec(4, 4)
+
+    # Plot central pane
+    axcen = plt.subplot(gs[1:, :-1])
+    plotPane(dim1, dim2, ax=axcen, groups=groups, star_pars=star_pars,
+             star_orbits=star_orbits, group_then=group_then,
+             group_now=group_now, group_orbit=group_orbit, annotate=annotate)
+
+    # Plot flanking 1D projections
+    xlim = axcen.get_xlim()
+    axtop = plt.subplot(gs[0, :-1])
+    axtop.set_xlim(xlim)
+    axtop.set_xticklabels([])
+    plot1DProjection(dim1, star_pars, groups, weights, ax=axtop)
+
+    ylim = axcen.get_ylim()
+    axright = plt.subplot(gs[1:, -1])
+    axright.set_ylim(ylim)
+    axright.set_yticklabels([])
+    plot1DProjection(dim2, star_pars, groups, weights, ax=axright,
+                     horizontal=True)
+
+
 

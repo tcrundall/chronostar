@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 """
 A suite of useful functions for partitioning the gaia data
 TODO: write tests especially for cov construction
@@ -11,6 +12,14 @@ sys.path.insert(0, '..')
 
 import chronostar.converter as cv
 import chronostar.coordinate as cc
+
+
+def gauss(x, mu, sig):
+    """
+    Evaluates a 1D gaussian at `x` given mean `mu` and std `sig`
+    """
+    return 1./(sig*np.sqrt(2*np.pi)) * np.exp(-(x - mu)**2 / (2.*sig**2))
+
 
 def loadXYZUVW(xyzuvw_file):
     """Load mean and covariances of stars in XYZUVW space from fits file
