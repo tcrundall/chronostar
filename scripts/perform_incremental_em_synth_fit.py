@@ -1,10 +1,13 @@
 #! /usr/bin/env python
+from __future__ import print_function, division
 
 try:
     import matplotlib as mpl
     mpl.use('Agg')
+    import matplotlib.pyplot as plt
+    can_plot = True
 except ImportError:
-    pass
+    can_plot = False
 
 from distutils.dir_util import mkpath
 from distutils.errors import DistutilsFileError
@@ -18,8 +21,12 @@ import chronostar.traceorbit as torb
 import chronostar.converter as cv
 import chronostar.measurer as ms
 import chronostar.expectmax as em
+import chronostar.fitplotter as fp
 
-run_name = sys.argv[1]
+try:
+    run_name = sys.argv[1]
+except:
+    run_name = 'dummy'
 
 try:
     rdir = "/data/mash/tcrun/em_fit/{}/".format(run_name)
@@ -46,7 +53,6 @@ except:
     logging.info("MPI doesn't seem to be installed... maybe install it?")
     using_mpi = False
     pool=None
-
 if using_mpi:
     if not pool.is_master():
         print("One thread is going to sleep")
@@ -56,7 +62,6 @@ if using_mpi:
 print("Only one thread is master")
 
 logging.info(path_msg)
-
 print("Master should be working in the directory:\n{}".format(rdir))
 
 # Setting up standard filenames
@@ -67,12 +72,15 @@ xyzuvw_perf_file     = sd_dir + 'perf_xyzuvw.npy'
 groups_savefile      = sd_dir + 'origins.npy'
 xyzuvw_init_savefile = sd_dir + 'xyzuvw_init.npy'
 astro_savefile       = sd_dir + 'astro_table.txt'
-# xyzuvw_conv_savefile = sd_dir + 'xyzuvw_now.fits'
 
 # Final XYZUVW data file stored in chronostar/data/ to replicate
 # treatment of real data
 xyzuvw_conv_savefile = '../data/{}_xyzuvw.fits'.format(run_name)
 
+# Calculate the initial parameters for each component that correspond
+# to the current day mean of mean_now
+logging.info("---------- Generating synthetic data...")
+# Set a current-day location around which synth stars will end up
 mean_now = np.array([50., -100., -0., -10., -20., -5.])
 extra_pars = np.array([
     #dX, dV, age, nstars
@@ -83,26 +91,18 @@ extra_pars = np.array([
 ])
 logging.info("Mean (now):\n{}".format(mean_now))
 logging.info("Extra pars:\n{}".format(extra_pars))
-
 ERROR = 1.0
 ngroups = extra_pars.shape[0]
-
-
 all_xyzuvw_init = np.zeros((0,6))
 all_xyzuvw_now_perf = np.zeros((0,6))
-
 origins = []
-
-logging.info("---------- Generating synthetic data...")
-# Calculate the initial parameters for each component that correspond
-# to the current day mean of mean_now
 for i in range(ngroups):
     logging.info(" generating from group {}".format(i))
     # MANUALLY SEPARATE CURRENT DAY DISTROS IN DIMENSION X
     mean_now_w_offset = mean_now.copy()
     mean_now_w_offset[0] += i * 10
 
-    mean_then = torb.traceOrbitXYZUVW(mean_now, -extra_pars[i,-2],
+    mean_then = torb.traceOrbitXYZUVW(mean_now_w_offset, -extra_pars[i,-2],
                                       single_age=True)
     group_pars = np.hstack((mean_then, extra_pars[i]))
     xyzuvw_init, origin = syn.synthesiseXYZUVW(group_pars, sphere=True,
@@ -115,21 +115,28 @@ for i in range(ngroups):
                                                 single_age=True)
     all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
 
-logging.info(" done")
-
-logging.info("Saving synthetic data...")
 np.save(groups_savefile, origins)
 np.save(xyzuvw_perf_file, all_xyzuvw_now_perf)
 astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
                                savefile=astro_savefile)
-
 star_pars = cv.convertMeasurementsToCartesian(
     astro_table, savefile=xyzuvw_conv_savefile,
 )
-em.fitManyGroups(star_pars, ngroups, origins=origins,
-                 rdir=rdir, pool=pool,
-                 #init_with_origin=True
-                 )
+
+# make sure stars are initialised as expected
+if can_plot:
+    for dim1, dim2 in ('xy', 'xu', 'yv', 'zw', 'uv'):
+        plt.clf()
+        fp.plotPaneWithHists(dim1,dim2,groups=origins,
+                             weights=[origin.nstars for origin in origins],
+                             star_pars=star_pars,
+                             group_now=True)
+        plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
+
+# em.fitManyGroups(star_pars, ngroups, origins=origins,
+#                  rdir=rdir, pool=pool,
+#                  #init_with_origin=True
+#                  )
 
 if using_mpi:
     pool.close()

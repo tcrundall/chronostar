@@ -300,7 +300,6 @@ def sampleStellarPDFs(dim, star_pars):
     """
     all_samples = np.zeros(0)
     count = 100
-
     for mn, cov in zip(star_pars['xyzuvw'], star_pars['xyzuvw_cov']):
         samples = np.random.randn(count) * np.sqrt(cov[dim,dim]) + mn[dim]
         all_samples = np.append(all_samples, samples)
@@ -336,6 +335,7 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False)
         orientation = 'horizontal'
     else:
         orientation = 'vertical'
+    weights = np.array(weights).astype(np.float)
     if len(weights.shape) > 1:
         weights = weights.sum(axis=0)
     weights /= weights.sum()
