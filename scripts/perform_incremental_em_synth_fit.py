@@ -133,10 +133,10 @@ if can_plot:
                              group_now=True)
         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
 
-# em.fitManyGroups(star_pars, ngroups, origins=origins,
-#                  rdir=rdir, pool=pool,
-#                  #init_with_origin=True
-#                  )
+em.fitManyGroups(star_pars, ngroups, origins=origins,
+                 rdir=rdir, pool=pool,
+                 #init_with_origin=True
+                 )
 
 if using_mpi:
     pool.close()
