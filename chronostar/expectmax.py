@@ -654,7 +654,7 @@ def checkStability(star_pars, best_groups, z, bg_ln_ols=None):
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
                   offset=False,  bg_hist_file='', correction_factor=15.3,
-                  inc_posterior=True):
+                  inc_posterior=False):
     """
     Entry point: Fit multiple Gaussians to data set
 
