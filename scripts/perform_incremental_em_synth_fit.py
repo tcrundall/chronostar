@@ -206,7 +206,7 @@ while ncomps < MAX_COMP:
                 groups = dt.loadGroups(run_dir + 'final/final_groups.npy')
                 meds = np.load(run_dir + 'final/final_med_errs.npy')
                 z = np.load(run_dir + 'final/final_membership.npy')
-                logging.info("Loaded from previous run")
+                logging.info("Fit loaded from previous run")
             except IOError:
                 groups, meds, z = \
                     em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,

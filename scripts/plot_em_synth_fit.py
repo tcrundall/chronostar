@@ -57,7 +57,18 @@ if not is_inc_fit:
     plotEveryIter(rdir, star_pars_file)
 
 else: # incremental fit
-    pass
+    ncomps = 1
+    while os.path.isdir(rdir + ncomps + '/'):
+        print("ncomps: {}".format(ncomps))
+        if ncomps == 1:
+            plotEveryIter(rdir + ncomps + '/', star_pars_file)
+        else:
+            for i in range(ncomps-1):
+                print("sub directory {}".format(chr(ord('A') + i)))
+                subrdir = rdir + '{}/{}/'.format(ncomps, chr(ord('A') + i))
+                if os.path.isdir(subrdir):
+                    plotEveryIter(subrdir, star_pars_file)
+        ncomps += 1
 
 
 
