@@ -22,6 +22,7 @@ import chronostar.converter as cv
 import chronostar.measurer as ms
 import chronostar.expectmax as em
 import chronostar.fitplotter as fp
+import chronostar.datatool as dt
 
 try:
     run_name = sys.argv[1]
@@ -147,11 +148,18 @@ while ncomps < MAX_COMP:
         logging.info("******************************************")
         run_dir = rdir + '{}/'.format(ncomps)
         mkpath(run_dir)
-        new_groups, new_meds, new_z =\
-            em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
-                             burnin=300)
 
-        new_groups = np.array([new_groups])
+        try:
+            new_groups = dt.loadGroups(run_dir + 'final/final_groups.npy')
+            new_meds = np.load(run_dir + 'final/final_med_errs.npy')
+            new_z = np.load(run_dir + 'final/final_membership.npy')
+            logging.info("Loaded from previous run")
+        except IOError:
+            new_groups, new_meds, new_z =\
+                em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
+                                 burnin=300)
+            new_groups = np.array(new_groups)
+
         new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,
                                                bg_ln_ols=None)
         new_lnpost = em.getOverallLnLikelihood(star_pars, new_groups,
@@ -216,6 +224,7 @@ while ncomps < MAX_COMP:
         logging.info("Extra component has improved lnpost...")
         prev_groups, prev_meds, prev_z, prev_lnlike, prev_lnpost =\
             (new_groups, new_meds, new_z, new_lnlike, new_lnpost)
+        ncomps += 1
     else:
         logging.info("Extra component has worsened lnpost...")
         break
