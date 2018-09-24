@@ -691,8 +691,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
     Return
     ------
-    final_groups: [ngroups, npars] array
-        the best fit for each group
+    final_groups: [ngroups] list of synthesiser.Group objects
+        the best fit for each component
     final_med_errs: [ngroups, npars, 3] array
         the median, -34 perc, +34 perc values of each parameter from
         each final sampling chain
@@ -861,9 +861,11 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             all_init_pos[i] = chain[:, -1, :]
 
 
-        final_groups = [syn.Group(final_best_fit, sphere=True, internal=True,
-                                  starcount=False)
-                        for final_best_fit in final_best_fits]
+        final_groups = np.array(
+            [syn.Group(final_best_fit, sphere=True, internal=True,
+                       starcount=False)
+             for final_best_fit in final_best_fits]
+        )
         np.save(final_dir+'final_groups.npy', final_groups)
         np.save(final_dir+'final_med_errs.npy', final_med_errs)
 
@@ -889,7 +891,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("Stars per component:\n{}".format(z.sum(axis=0)))
         logging.info("Memberships: \n{}".format((z*100).astype(np.int)))
 
-        return final_best_fits, final_med_errs, z
+        return final_groups, final_med_errs, z
 
     else: # not stable_state
         logging.info("****************************************")
