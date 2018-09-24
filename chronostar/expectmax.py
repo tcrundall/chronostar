@@ -313,20 +313,20 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
     if inc_posterior:
         group_lnpriors = np.zeros(ngroups)# &TC
         for i, group in enumerate(groups):
-            group_lnpriors[i] = gf.lnAlphaPrior(group.getInternalSphericalPars(),
-                                                star_pars=None, z=old_z)
+            group_lnpriors[i] = gf.lnAlphaPrior(
+                group.getInternalSphericalPars(),
+                star_pars=None, z=old_z)
         ngroup_stars = weights.sum()
         weights *= np.exp(group_lnpriors)
         weights = weights / weights.sum() * ngroup_stars
 
-    # except:
-    logging.info("_____ DEBUGGGING _____")
-    logging.info("ngroups: {}".format(ngroups))
-    logging.info("old_z shape: {}".format(old_z.shape))
-    logging.info("weights shape: {}".format(weights.shape))
-    logging.info("weights: {}".format(weights))
-    import pdb; pdb.set_trace()
-
+#    # except:
+#    logging.info("_____ DEBUGGGING _____")
+#    logging.info("ngroups: {}".format(ngroups))
+#    logging.info("old_z shape: {}".format(old_z.shape))
+#    logging.info("weights shape: {}".format(weights.shape))
+#    logging.info("weights: {}".format(weights))
+#    import pdb; pdb.set_trace()
 
     for i, group in enumerate(groups):
         # weight is the amplitude of a component, proportional to its expected

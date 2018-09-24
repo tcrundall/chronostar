@@ -215,7 +215,6 @@ while ncomps < MAX_COMP:
             all_meds.append(meds)
             all_zs.append(z)
 
-            import pdb; pdb.set_trace()
             lnlikes.append(em.getOverallLnLikelihood(star_pars, groups,
                                                      bg_ln_ols=None))
             lnposts.append(em.getOverallLnLikelihood(star_pars, groups,
@@ -237,6 +236,7 @@ while ncomps < MAX_COMP:
     # Check if the fit has improved
     if new_lnpost > prev_lnpost:
         logging.info("Extra component has improved lnpost...")
+        logging.info("{} > {}".format(new_lnpost, prev_lnpost))
         prev_groups, prev_meds, prev_z, prev_lnlike, prev_lnpost =\
             (new_groups, new_meds, new_z, new_lnlike, new_lnpost)
         ncomps += 1
