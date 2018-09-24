@@ -146,6 +146,7 @@ while ncomps < MAX_COMP:
         logging.info("*********  FITTING 1 COMPONENT  **********")
         logging.info("******************************************")
         run_dir = rdir + '{}/'.format(ncomps)
+        mkpath(run_dir)
         new_groups, new_meds, new_z =\
             em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool)
         new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,
@@ -170,6 +171,7 @@ while ncomps < MAX_COMP:
             logging.info("-------- decomposing {}th component ---------".\
                          format(i))
             run_dir = rdir + '{}/{}/'.format(ncomps, chr(ord('A') + i))
+            mkpath(run_dir)
 
             # Decompose and replace the ith group with two new groups
             # by using the 16th and 84th percentile ages from chain
