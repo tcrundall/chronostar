@@ -29,6 +29,20 @@ def plotEveryIter(rdir, star_pars):
         except IOError:
             print("Iter {} is lacking files".format(iter_count))
             break
+    try:
+        print("Attempting final")
+        idir = rdir + 'final/'
+        z = np.load(idir + 'final_membership.npy')
+        weights = z.sum(axis=0)
+        for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
+            plt.clf()
+            fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
+                                 groups=idir + 'final_groups.npy',
+                                 weights=weights, group_now=True)
+            plt.savefig(idir + 'iter_{}_{}{}.pdf'.format(
+                iter_count, dim1, dim2))
+    except IOError:
+        print("final is lacking files")
     return
 
 assoc_name = sys.argv[1]
@@ -58,10 +72,10 @@ if not is_inc_fit:
 
 else: # incremental fit
     ncomps = 1
-    while os.path.isdir(rdir + ncomps + '/'):
+    while os.path.isdir(rdir + '{}/'.format(ncomps)):
         print("ncomps: {}".format(ncomps))
         if ncomps == 1:
-            plotEveryIter(rdir + ncomps + '/', star_pars_file)
+            plotEveryIter(rdir + '{}/'.format(ncomps), star_pars_file)
         else:
             for i in range(ncomps-1):
                 print("sub directory {}".format(chr(ord('A') + i)))
