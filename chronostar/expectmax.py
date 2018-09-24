@@ -654,7 +654,7 @@ def checkStability(star_pars, best_groups, z, bg_ln_ols=None):
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
                   offset=False,  bg_hist_file='', correction_factor=15.3,
-                  inc_posterior=False):
+                  inc_posterior=False, burnin=1000):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -702,7 +702,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     TODO: Allow option with which step to start with
     """
     # setting up some constants
-    BURNIN_STEPS = 1000
+    BURNIN_STEPS = burnin
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
     nstars = star_pars['xyzuvw'].shape[0]
