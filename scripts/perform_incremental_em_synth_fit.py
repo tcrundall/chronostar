@@ -197,7 +197,7 @@ while ncomps < MAX_COMP:
             # run em fit
             groups, meds, z = \
                 em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
-                                 origins=init_groups, init_with_origin=True)
+                                 init_groups=init_groups)
             best_fits.append(groups)
             all_meds.append(meds)
             all_zs.append(z)

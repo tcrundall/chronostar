@@ -653,6 +653,7 @@ def checkStability(star_pars, best_groups, z, bg_ln_ols=None):
 
 def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
+                  init_groups=None, init_weights=None,
                   offset=False,  bg_hist_file='', correction_factor=15.3,
                   inc_posterior=False, burnin=1000):
     """
@@ -723,7 +724,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         )
 
     # INITIALISE GROUPS
-    if not init_with_origin:
+    if init_groups is not None:
+        z = init_z
+    elif not init_with_origin:
         init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'],
                                        offset=offset)
         # having z = None triggers an equal weighting of groups in
@@ -736,8 +739,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         for i in range(ngroups):
             z[cnt:cnt+origins[i].nstars, i] = 1.0
             cnt += origins[i].nstars
-        logging.info("Initialising fit with origins and membership\n{}".\
-            format(z))
+        logging.info("Initialising fit with origins and membership\n{}".
+                     format(z))
 
     np.save(rdir + "init_groups.npy", init_groups)
 
