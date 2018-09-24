@@ -320,12 +320,12 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
         weights = weights / weights.sum() * ngroup_stars
 
     # except:
-    #     logging.info("_____ DEBUGGGING _____")
-    #     logging.info("ngroups: {}".format(ngroups))
-    #     logging.info("old_z shape: {}".format(old_z.shape))
-    #     logging.info("weights shape: {}".format(weights.shape))
-    #     logging.info("weights: {}".format(weights))
-    #     #import pdb; pdb.set_trace()
+    logging.info("_____ DEBUGGGING _____")
+    logging.info("ngroups: {}".format(ngroups))
+    logging.info("old_z shape: {}".format(old_z.shape))
+    logging.info("weights shape: {}".format(weights.shape))
+    logging.info("weights: {}".format(weights))
+    import pdb; pdb.set_trace()
 
 
     for i, group in enumerate(groups):
