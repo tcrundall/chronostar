@@ -612,6 +612,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
         # record the final position of the walkers for each group
         all_init_pos[i] = chain[:, -1, :]
 
+    np.save(idir + 'best_groups.npy', new_groups)
     return new_groups, all_samples, all_lnprob, all_init_pos
 
 
@@ -789,14 +790,10 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("-- BIC so far: {}                --".\
                      format(calcBIC(star_pars, ngroups, overallLnLike)))
 
-        #converged = (np.isclose(old_overallLnLike, overallLnLike, atol=0.1) and
-
         # checks if the fit ever worsens
         converged = ( (old_overallLnLike > overallLnLike) and\
                      checkConvergence(old_best_fits=old_groups,
                                       new_chains=all_samples,
-                                      #perc=45, # COMMENT OUT THIS LINE
-                                      #          # FOR LEGIT FITS!
                                       ))
         # old_samples = all_samples
         old_overallLnLike = overallLnLike

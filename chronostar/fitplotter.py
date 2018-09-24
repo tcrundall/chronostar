@@ -368,8 +368,6 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False)
         ax.plot(xs, combined_gauss, color='black', ls='--', alpha=0.4)
 
 
-
-
 def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
                       star_pars=None,
                       star_orbits=False,
@@ -411,6 +409,8 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
         dim1 = labels.index(dim1.upper())
     if type(dim2) is not int:
         dim2 = labels.index(dim2.upper())
+    if type(star_pars) is str:
+        star_pars = dt.loadXYZUVW(star_pars)
 
     # Set up plot
     fig = plt.figure(fignum)

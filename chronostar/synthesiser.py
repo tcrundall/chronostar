@@ -48,7 +48,7 @@ class Group:
             self.nstars = int(self.pars[-1])
         else:
             self.nstars = None
-            logging.info("No star count provided")
+            logging.debug("No star count provided")
 
     def __eq__(self, other):
         """Predominantly implemented for testing reasons"""
