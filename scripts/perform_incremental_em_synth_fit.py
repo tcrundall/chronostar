@@ -149,6 +149,8 @@ while ncomps < MAX_COMP:
         mkpath(run_dir)
         new_groups, new_meds, new_z =\
             em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool)
+
+        new_groups = np.array([new_groups])
         new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,
                                                bg_ln_ols=None)
         new_lnpost = em.getOverallLnLikelihood(star_pars, new_groups,

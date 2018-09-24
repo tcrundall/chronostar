@@ -21,6 +21,18 @@ def gauss(x, mu, sig):
     return 1./(sig*np.sqrt(2*np.pi)) * np.exp(-(x - mu)**2 / (2.*sig**2))
 
 
+def loadGroups(groups_file):
+    """A simple utility function to standardise loading of group savefiles
+
+    :param groups_file:
+    :return:
+    """
+    groups = np.load(groups_file)
+    if len(groups.shape) == 0:
+        groups = np.array([groups.item()])
+    return groups
+
+
 def loadXYZUVW(xyzuvw_file):
     """Load mean and covariances of stars in XYZUVW space from fits file
 
