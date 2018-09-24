@@ -39,7 +39,7 @@ def plotEveryIter(rdir, star_pars):
             fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
                                  groups=idir + 'final_groups.npy',
                                  weights=weights, group_now=True)
-            plt.savefig(idir + 'iter_{}_{}{}.pdf'.format(
+            plt.savefig(idir + 'final_{}{}.pdf'.format(
                 iter_count, dim1, dim2))
     except IOError:
         print("final is lacking files")
