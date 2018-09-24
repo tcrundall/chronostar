@@ -123,7 +123,7 @@ def lognormal(x, mu, sig):
 
 
 def lnlognormal(x, mu=1.05, sig=0.105):
-    # TODO: replace lognormal innerowrkings so is called with desired mode
+    # TODO: replace lognormal innerworkings so is called with desired mode
     # mu = sigma**2 + np.log(mode)
     # return np.log(lognormal(x, mu, sig)
     return (-np.log(x*sig*np.sqrt(2*np.pi)) -

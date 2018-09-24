@@ -170,13 +170,18 @@ while ncomps < MAX_COMP:
             logging.info("-------- decomposing {}th component ---------".\
                          format(i))
             run_dir = rdir + '{}/{}/'.format(ncomps, chr(ord('A') + i))
-            age_std = 0.5*(prev_meds[i,-1,2] - prev_meds[i,-1,1])
+
+            # Decompose and replace the ith group with two new groups
+            # by using the 16th and 84th percentile ages from chain
             _, split_groups = em.decomposeGroup(split_group,
-                                                age_offset=age_std)
+                                                young_age = prev_meds[i,-1,1],
+                                                old_age = prev_meds[i,-1,2])
             init_groups = prev_groups[:]
             init_groups.pop(i)
             init_groups.insert(i, split_groups[1])
             init_groups.insert(i, split_groups[0])
+
+            # run em fit
             groups, meds, z = \
                 em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
                                  origins=init_groups, init_with_origin=True)
@@ -188,6 +193,7 @@ while ncomps < MAX_COMP:
             lnposts.append(em.getOverallLnLikelihood(star_pars, groups,
                                                      bg_ln_ols=None,
                                                      inc_posterior=True))
+
         # identify the best performing decomposition
         best_split_ix = np.argmax(lnposts)
         new_groups, new_meds, new_z, new_lnlike, new_lnpost = \
@@ -211,11 +217,6 @@ while ncomps < MAX_COMP:
 
     logging.info("Best fit:\n{}".format(
         [group.getInternalSphericalPars() for group in prev_groups]))
-
-# em.fitManyGroups(star_pars, ngroups, origins=origins,
-#                  rdir=rdir, pool=pool,
-#                  #init_with_origin=True
-#                  )
 
 if using_mpi:
     pool.close()

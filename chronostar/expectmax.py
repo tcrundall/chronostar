@@ -295,7 +295,6 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
     lnols: [nstars, ngroups (+1)] float array
         the overlap integral of
         each star with each component as well as the background
->>>>>>> smart-decomp
     """
     nstars = len(star_pars['xyzuvw'])
     ngroups = len(groups)
@@ -487,7 +486,7 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
 
     return groups
 
-def decomposeGroup(group, age_offset=4):
+def decomposeGroup(group, young_age=None, old_age=None, age_offset=4):
     """
     Takes a group object and splits it into two components offset by age.
 
@@ -510,8 +509,9 @@ def decomposeGroup(group, age_offset=4):
 
     sub_groups = []
 
-    young_age = max(1e-5, group.age - age_offset)
-    old_age = group.age + age_offset
+    if (young_age is None) and (old_age is None):
+        young_age = max(1e-5, group.age - age_offset)
+        old_age = group.age + age_offset
 
     ages = [young_age, old_age]
     for age in ages:
@@ -765,21 +765,6 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("Membership distribution:\n{}".format(
             z.sum(axis=0)
         ))
-# TODO: NEED TO REWRITE THIS VVVVV SO CAN HANDLE MORE THAN 2 GROUPS
-#        if (min(z.sum(axis=0)) < 10):
-#            logging.info("!!! WARNING, GROUP {} HAS LESS THAN 10 STARS".\
-#                         format(np.argmin(z.sum(axis=0))))
-#            logging.info("+++++++++++++++++++++++++++++++++++++++++++")
-#            logging.info("++++            Intervening            ++++")
-#            logging.info("+++++++++++++++++++++++++++++++++++++++++++")
-#            logging.info("Decomposing group {}...".format(
-#                np.argmax(z.sum(axis=0)))
-#            )
-#            all_init_pos = [None] * ngroups
-#            all_init_pars, sub_groups =\
-#                decomposeGroup(old_groups[np.argmax(z.sum(axis=0))])
-#            z = expectation(star_pars, sub_groups)
-#            np.save(idir+"init_subgroups.npy", sub_groups)
         np.save(idir+"membership.npy", z)
 
         # MAXIMISE
