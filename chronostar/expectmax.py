@@ -487,7 +487,7 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
 
     return groups
 
-def decomposeGroup(group):
+def decomposeGroup(group, age_offset=4):
     """
     Takes a group object and splits it into two components offset by age.
 
@@ -507,12 +507,11 @@ def decomposeGroup(group):
     internal_pars = group.getInternalSphericalPars()
     mean_now = torb.traceOrbitXYZUVW(group.mean, group.age, single_age=True)
     ngroups = 2
-    AGE_OFFSET = 4
 
     sub_groups = []
 
-    young_age = max(1e-5, group.age - AGE_OFFSET)
-    old_age = group.age + AGE_OFFSET
+    young_age = max(1e-5, group.age - age_offset)
+    old_age = group.age + age_offset
 
     ages = [young_age, old_age]
     for age in ages:

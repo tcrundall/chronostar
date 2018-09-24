@@ -84,9 +84,9 @@ logging.info("---------- Generating synthetic data...")
 mean_now = np.array([50., -100., -0., -10., -20., -5.])
 extra_pars = np.array([
     #dX, dV, age, nstars
-    [10., 0.5, 20.,  20.],
-    [ 2., 1.0,  5., 100.],
-    [ 5., 0.7, 10.,  50.],
+    [10., 0.5,  2.,  10.],
+    [ 2., 1.0,  5.,  15.],
+    # [ 5., 0.7, 10.,  50.],
     # [100., 50.,  1e-5, 1000.],
 ])
 logging.info("Mean (now):\n{}".format(mean_now))
@@ -100,7 +100,7 @@ for i in range(ngroups):
     logging.info(" generating from group {}".format(i))
     # MANUALLY SEPARATE CURRENT DAY DISTROS IN DIMENSION X
     mean_now_w_offset = mean_now.copy()
-    mean_now_w_offset[0] += i * 10
+    mean_now_w_offset[0] += i * 50
 
     mean_then = torb.traceOrbitXYZUVW(mean_now_w_offset, -extra_pars[i,-2],
                                       single_age=True)
@@ -133,10 +133,89 @@ if can_plot:
                              group_now=True)
         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
 
-em.fitManyGroups(star_pars, ngroups, origins=origins,
-                 rdir=rdir, pool=pool,
-                 #init_with_origin=True
-                 )
+MAX_COMP = 5
+ncomps = 1
+# prev_groups = None
+# prev_meds = None
+prev_lnpost = -np.inf
+
+while ncomps < MAX_COMP:
+    # handle special case of one component
+    if ncomps == 1:
+        logging.info("******************************************")
+        logging.info("*********  FITTING 1 COMPONENT  **********")
+        logging.info("******************************************")
+        run_dir = rdir + '{}/'.format(ncomps)
+        new_groups, new_meds, new_z =\
+            em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool)
+        new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,
+                                               bg_ln_ols=None)
+        new_lnpost = em.getOverallLnLikelihood(star_pars, new_groups,
+                                               bg_ln_ols=None,
+                                               inc_posterior=True)
+    # handle multiple components
+    else:
+        logging.info("******************************************")
+        logging.info("*********  FITTING {} COMPONENTS  *********".\
+                     format(ncomps))
+        logging.info("******************************************")
+        best_fits = []
+        lnlikes = []
+        lnposts = []
+        all_meds = []
+        all_zs = []
+
+        # iteratively try subdividing each previous group
+        for i, split_group in enumerate(prev_groups):
+            logging.info("-------- decomposing {}th component ---------".\
+                         format(i))
+            run_dir = rdir + '{}/{}/'.format(ncomps, chr(ord('A') + i))
+            age_std = 0.5*(prev_meds[i,-1,2] - prev_meds[i,-1,1])
+            _, split_groups = em.decomposeGroup(split_group,
+                                                age_offset=age_std)
+            init_groups = prev_groups[:]
+            init_groups.pop(i)
+            init_groups.insert(i, split_groups[1])
+            init_groups.insert(i, split_groups[0])
+            groups, meds, z = \
+                em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
+                                 origins=init_groups, init_with_origin=True)
+            best_fits.append(groups)
+            all_meds.append(meds)
+            all_zs.append(z)
+            lnlikes.append(em.getOverallLnLikelihood(star_pars, groups,
+                                                     bg_ln_ols=None))
+            lnposts.append(em.getOverallLnLikelihood(star_pars, groups,
+                                                     bg_ln_ols=None,
+                                                     inc_posterior=True))
+        # identify the best performing decomposition
+        best_split_ix = np.argmax(lnposts)
+        new_groups, new_meds, new_z, new_lnlike, new_lnpost = \
+            zip(best_fits, all_meds, all_zs, lnlikes, lnposts)[best_split_ix]
+        logging.info("Selected {} as best decomposition".format(i))
+        logging.info("Turned\n{}".format(
+            prev_groups[best_split_ix].getInternalSphericalPars()))
+        logging.info("into\n{}\n&\n{}".format(
+            new_groups[best_split_ix].getInternalSphericalPars(),
+            new_groups[best_split_ix+1].getInternalSphericalPars(),
+        ))
+
+    # Check if the fit has improved
+    if new_lnpost > prev_lnpost:
+        logging.info("Extra component has improved lnpost...")
+        prev_groups, prev_meds, prev_z, prev_lnlike, prev_lnpost =\
+            (new_groups, new_meds, new_z, new_lnlike, new_lnpost)
+    else:
+        logging.info("Extra component has worsened lnpost...")
+        break
+
+    logging.info("Best fit:\n{}".format(
+        [group.getInternalSphericalPars() for group in prev_groups]))
+
+# em.fitManyGroups(star_pars, ngroups, origins=origins,
+#                  rdir=rdir, pool=pool,
+#                  #init_with_origin=True
+#                  )
 
 if using_mpi:
     pool.close()
