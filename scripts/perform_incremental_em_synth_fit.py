@@ -40,7 +40,7 @@ except (IOError, DistutilsFileError):
     mkpath(rdir)
 
 logging.basicConfig(
-    level=logging.INFO, filemode='w',
+    level=logging.INFO,
     filename=rdir + 'em.log',
 )
 
@@ -189,7 +189,7 @@ while ncomps < MAX_COMP:
             _, split_groups = em.decomposeGroup(split_group,
                                                 young_age = prev_meds[i,-1,1],
                                                 old_age = prev_meds[i,-1,2])
-            init_groups = prev_groups[:]
+            init_groups = list(prev_groups)
             init_groups.pop(i)
             init_groups.insert(i, split_groups[1])
             init_groups.insert(i, split_groups[0])
