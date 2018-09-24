@@ -180,10 +180,10 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
 
     # plot info for each group (fitted, or true synthetic origin)
     for i, group in enumerate(groups):
-        try:
-            assert isinstance(group, syn.Group) # for autocomplete when coding
-        except:
-            import pdb; pdb.set_trace()
+        # try:
+        #     assert isinstance(group, syn.Group) # for autocomplete when coding
+        # except:
+        #     import pdb; pdb.set_trace()
 
         cov_then = group.generateSphericalCovMatrix()
         mean_then = group.mean
@@ -411,6 +411,10 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
         dim2 = labels.index(dim2.upper())
     if type(star_pars) is str:
         star_pars = dt.loadXYZUVW(star_pars)
+    if type(groups) is str:
+        groups = np.load(groups)
+        if len(groups.shape) == 0:
+            groups = np.array(groups.item())
 
     # Set up plot
     fig = plt.figure(fignum)

@@ -23,7 +23,7 @@ if not is_inc_fit:
         try:
             print("Attempting iter {}".format(iter_count))
             idir = rdir + 'iter{}/'.format(iter_count)
-            z = np.load(rdir + 'membership.npy')
+            z = np.load(idir + 'membership.npy')
             weights = z.sum(axis=0)
             for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
                 plt.clf()
