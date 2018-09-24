@@ -101,36 +101,35 @@ try:
     star_pars = dt.loadXYZUVW(xyzuvw_conv_savefile)
     logging.info("Loaded synth data from previous run")
 except IOError:
-    # all_xyzuvw_init = np.zeros((0,6))
-    # all_xyzuvw_now_perf = np.zeros((0,6))
-    # origins = []
-    # for i in range(ngroups):
-    #     logging.info(" generating from group {}".format(i))
-    #     # MANUALLY SEPARATE CURRENT DAY DISTROS IN DIMENSION X
-    #     mean_now_w_offset = mean_now.copy()
-    #     mean_now_w_offset[0] += i * 50
-    #
-    #     mean_then = torb.traceOrbitXYZUVW(mean_now_w_offset, -extra_pars[i,-2],
-    #                                       single_age=True)
-    #     group_pars = np.hstack((mean_then, extra_pars[i]))
-    #     xyzuvw_init, origin = syn.synthesiseXYZUVW(group_pars, sphere=True,
-    #                                                return_group=True,
-    #                                                internal=False)
-    #     origins.append(origin)
-    #     all_xyzuvw_init = np.vstack((all_xyzuvw_init, xyzuvw_init))
-    #     xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init,
-    #                                                 times=origin.age,
-    #                                                 single_age=True)
-    #     all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
-    #
-    # np.save(groups_savefile, origins)
-    # np.save(xyzuvw_perf_file, all_xyzuvw_now_perf)
-    # astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
-    #                                savefile=astro_savefile)
-    # star_pars = cv.convertMeasurementsToCartesian(
-    #     astro_table, savefile=xyzuvw_conv_savefile,
-    # )
-    pass
+    all_xyzuvw_init = np.zeros((0,6))
+    all_xyzuvw_now_perf = np.zeros((0,6))
+    origins = []
+    for i in range(ngroups):
+        logging.info(" generating from group {}".format(i))
+        # MANUALLY SEPARATE CURRENT DAY DISTROS IN DIMENSION X
+        mean_now_w_offset = mean_now.copy()
+        mean_now_w_offset[0] += i * 50
+    
+        mean_then = torb.traceOrbitXYZUVW(mean_now_w_offset, -extra_pars[i,-2],
+                                          single_age=True)
+        group_pars = np.hstack((mean_then, extra_pars[i]))
+        xyzuvw_init, origin = syn.synthesiseXYZUVW(group_pars, sphere=True,
+                                                   return_group=True,
+                                                   internal=False)
+        origins.append(origin)
+        all_xyzuvw_init = np.vstack((all_xyzuvw_init, xyzuvw_init))
+        xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init,
+                                                    times=origin.age,
+                                                    single_age=True)
+        all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
+    
+    np.save(groups_savefile, origins)
+    np.save(xyzuvw_perf_file, all_xyzuvw_now_perf)
+    astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
+                                   savefile=astro_savefile)
+    star_pars = cv.convertMeasurementsToCartesian(
+        astro_table, savefile=xyzuvw_conv_savefile,
+    )
 
 # make sure stars are initialised as expected
 if can_plot:
@@ -212,10 +211,11 @@ while ncomps < MAX_COMP:
                 groups, meds, z = \
                     em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
                                      init_groups=init_groups)
-                best_fits.append(groups)
-                all_meds.append(meds)
-                all_zs.append(z)
+            best_fits.append(groups)
+            all_meds.append(meds)
+            all_zs.append(z)
 
+            import pdb; pdb.set_trace()
             lnlikes.append(em.getOverallLnLikelihood(star_pars, groups,
                                                      bg_ln_ols=None))
             lnposts.append(em.getOverallLnLikelihood(star_pars, groups,
