@@ -756,7 +756,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     iter_count = 0
     converged = False
     stable_state = True         # used to track issues
-    while not converged and stable_state:
+    while not converged and stable_state and iter_count < 50:
         # for iter_count in range(10):
         idir = rdir+"iter{:02}/".format(iter_count)
         logging.info("\n--------------------------------------------------"
@@ -894,7 +894,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("Stars per component:\n{}".format(z.sum(axis=0)))
         logging.info("Memberships: \n{}".format((z*100).astype(np.int)))
 
-        return final_groups, final_med_errs, z
+        return final_groups, np.array(final_med_errs), z
 
     else: # not stable_state
         logging.info("****************************************")

@@ -224,6 +224,9 @@ while ncomps < MAX_COMP:
                                                      bg_ln_ols=None,
                                                      inc_posterior=True))
             BICs.append(em.calcBIC(star_pars, ncomps, lnlike))
+            logging.info("Decomp finished with\nBIC: {}\nLnlike: {}".format(
+                BICs[-1], lnlikes[-1]
+            ))
 
         # identify the best performing decomposition
         best_split_ix = np.argmax(lnposts)
