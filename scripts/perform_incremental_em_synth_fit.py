@@ -242,15 +242,20 @@ while ncomps < MAX_COMP:
         ))
 
     # Check if the fit has improved
-    if new_lnpost > prev_lnpost:
-        logging.info("Extra component has improved lnpost...")
-        logging.info("{} > {}".format(new_lnpost, prev_lnpost))
-        logging.info("New BIC: {} | Old BIC: {}".format(new_BIC, prev_BIC))
-        prev_groups, prev_meds, prev_z, prev_lnlike, prev_lnpost, prev_BIC =\
+    if new_BIC < prev_BIC:
+        logging.info("Extra component has improved BIC...")
+        logging.info("New BIC: {} < Old BIC: {}".format(new_BIC, prev_BIC))
+        logging.info("lnlike: {} | {}".format(new_lnlike, prev_lnlike))
+        logging.info("lnpost: {} | {}".format(new_lnpost, prev_lnpost))
+        prev_groups, prev_meds, prev_z, prev_lnlike, prev_lnpost, \
+        prev_BIC = \
             (new_groups, new_meds, new_z, new_lnlike, new_lnpost, new_BIC)
         ncomps += 1
     else:
-        logging.info("Extra component has worsened lnpost...")
+        logging.info("Extra component has worsened BIC...")
+        logging.info("New BIC: {} < Old BIC: {}".format(new_BIC, prev_BIC))
+        logging.info("lnlike: {} | {}".format(new_lnlike, prev_lnlike))
+        logging.info("lnpost: {} | {}".format(new_lnpost, prev_lnpost))
         break
 
     logging.info("Best fit:\n{}".format(
