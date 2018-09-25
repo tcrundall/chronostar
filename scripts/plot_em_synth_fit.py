@@ -11,6 +11,17 @@ import chronostar.fitplotter as fp
 
 
 def plotEveryIter(rdir, star_pars):
+    try:
+        print("Attempting init")
+        for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
+            plt.clf()
+            fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
+                                 groups=rdir + 'init_groups.npy',
+                                 weights=None, group_now=True)
+            plt.savefig(rdir + 'init_{}{}.pdf'.format(dim1, dim2))
+    except:
+        print("init lacking files")
+
     iter_count = 0
     while True:
         try:
