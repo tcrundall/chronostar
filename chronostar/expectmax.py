@@ -691,6 +691,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         unique to BPMG, calculated by extrapolating the Gaia catalogue
         star count per magnitude if Gaia were sensitive enough to pick up
         the faintest BPMG star
+    bg_hist_file: string
+        direct path to histogram file being used to inform background
 
     Return
     ------
@@ -720,7 +722,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     if bg_hist_file:
         logging.info("CORRECTION FACTOR: {}".format(correction_factor))
         use_background = True
-        bg_hists = np.load(rdir + bg_hist_file)
+        # bg_hists = np.load(rdir + bg_hist_file)
+        bg_hists = np.load(bg_hist_file)
         bg_ln_ols = backgroundLogOverlaps(
             star_pars['xyzuvw'], bg_hists,
             correction_factor=correction_factor,

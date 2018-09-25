@@ -59,7 +59,7 @@ else:
 gaia_xyzuvw_file = gdir + 'gaia_dr2_mean_xyzuvw.npy'
 xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
 best_fit_file = rdir + "best_fit.npy"
-bg_hist_file = "bg_hists.npy"
+bg_hist_file = rdir + "bg_hists.npy"
 
 logging.basicConfig(
     level=logging.INFO, filemode='w',
