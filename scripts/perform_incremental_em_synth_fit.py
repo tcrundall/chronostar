@@ -164,8 +164,7 @@ while ncomps < MAX_COMP:
             logging.info("Loaded from previous run")
         except IOError:
             new_groups, new_meds, new_z =\
-                em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
-                                 burnin=300)
+                em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool)
             new_groups = np.array(new_groups)
 
         new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,

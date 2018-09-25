@@ -403,7 +403,7 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     (nothing returned)
     """
     labels = 'XYZUVW'
-    if weights is None:
+    if weights is None and len(groups) > 0:
         weights = np.ones(len(groups)) / len(groups)
     if type(dim1) is not int:
         dim1 = labels.index(dim1.upper())
