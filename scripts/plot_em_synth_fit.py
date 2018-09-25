@@ -15,7 +15,7 @@ def plotEveryIter(rdir, star_pars):
     while True:
         try:
             print("Attempting iter {}".format(iter_count))
-            idir = rdir + 'iter{}/'.format(iter_count)
+            idir = rdir + 'iter{:02}/'.format(iter_count)
             z = np.load(idir + 'membership.npy')
             weights = z.sum(axis=0)
             for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
@@ -40,7 +40,7 @@ def plotEveryIter(rdir, star_pars):
                                  groups=idir + 'final_groups.npy',
                                  weights=weights, group_now=True)
             plt.savefig(idir + 'final_{}{}.pdf'.format(
-                iter_count, dim1, dim2))
+                dim1, dim2))
     except IOError:
         print("final is lacking files")
     return
