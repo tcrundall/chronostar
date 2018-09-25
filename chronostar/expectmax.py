@@ -599,8 +599,11 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
             init_pars=all_init_pars[i],
         )
         logging.info("Finished fit")
+        logging.info("Best group (internal) pars:\n{}".format(best_fit))
         new_group = syn.Group(best_fit, sphere=True, internal=True,
                               starcount=False)
+        logging.info("With age of: {:.3} +- {:.3} Myr".\
+                     format(np.median(chain[:,:,-1]), np.std(chain[:,:,-1])))
         # pdb.set_trace()
         new_groups.append(new_group)
         np.save(gdir + "best_group_fit.npy", new_group)
