@@ -92,8 +92,13 @@ def calcMedAndSpan(chain, perc=34, sphere=True):
 
 
 def checkConvergence(old_best_fits, new_chains,
-                     perc=25):
+                     perc=35):
     """Check if the last maximisation step yielded is consistent to new fit
+
+    Note, percentage raised to 35 (from 25) as facing issues establishing
+    convergence despite 100+ iterations for components with ~10 stars.
+    Now, the previous best fits must be within the 70% range (i.e. not
+    fall within the bottom 15th or top 15th percentiles in any parameter).
 
     TODO: incorporate Z into this convergence checking. e.g.
     np.allclose(z_prev, z, rtol=1e-2)
@@ -103,14 +108,9 @@ def checkConvergence(old_best_fits, new_chains,
 
     Parameters
     ----------
-    new_best_fit : [15] array
-        paraameters (in external encoding) of the best fit from the new run
-    old_best_fit : [15] array
-        paraameters (in external encoding) of the best fit from the old run
-    new_chain : [nwalkers, nsteps, npars] array
+    old_best_fits : [ncomp] list of synthesiser Group objects
+    new_chain : list of ([nwalkers, nsteps, npars] array) with ncomp elements
         the sampler chain from the new run
-    old_chain : [nwalkers, nsteps, npars] array
-        the sampler chain from the old run
     perc : int (0, 50)
         the percentage distance that previous values must be within current
         values.
@@ -755,7 +755,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     stable_state = True         # used to track issues
     while not converged and stable_state:
         # for iter_count in range(10):
-        idir = rdir+"iter{}/".format(iter_count)
+        idir = rdir+"iter{:02}/".format(iter_count)
         logging.info("\n--------------------------------------------------"
                      "\n--------------    Iteration {}    ----------------"
                      "\n--------------------------------------------------".
