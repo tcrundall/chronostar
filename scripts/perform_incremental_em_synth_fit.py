@@ -147,6 +147,7 @@ ncomps = 1
 # prev_meds = None
 prev_lnpost = -np.inf
 prev_BIC = np.inf
+prev_lnlike = -np.inf
 
 while ncomps < MAX_COMP:
     # handle special case of one component

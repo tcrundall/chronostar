@@ -171,6 +171,7 @@ ncomps = 1
 # prev_groups = None
 # prev_meds = None
 prev_lnpost = -np.inf
+prev_lnlike = -np.inf
 prev_BIC = np.inf
 
 while ncomps < MAX_COMP:
