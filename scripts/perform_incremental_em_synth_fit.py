@@ -146,6 +146,7 @@ ncomps = 1
 # prev_groups = None
 # prev_meds = None
 prev_lnpost = -np.inf
+prev_BIC = np.inf
 
 while ncomps < MAX_COMP:
     # handle special case of one component
@@ -172,6 +173,7 @@ while ncomps < MAX_COMP:
         new_lnpost = em.getOverallLnLikelihood(star_pars, new_groups,
                                                bg_ln_ols=None,
                                                inc_posterior=True)
+        new_BIC = em.calcBIC(star_pars, ncomps, new_lnlike)
     # handle multiple components
     else:
         logging.info("******************************************")
@@ -181,6 +183,7 @@ while ncomps < MAX_COMP:
         best_fits = []
         lnlikes = []
         lnposts = []
+        BICs = []
         all_meds = []
         all_zs = []
 
@@ -215,16 +218,19 @@ while ncomps < MAX_COMP:
             all_meds.append(meds)
             all_zs.append(z)
 
-            lnlikes.append(em.getOverallLnLikelihood(star_pars, groups,
-                                                     bg_ln_ols=None))
+            lnlike = em.getOverallLnLikelihood(star_pars, groups,
+                                               bg_ln_ols=None)
+            lnlikes.append(lnlike)
             lnposts.append(em.getOverallLnLikelihood(star_pars, groups,
                                                      bg_ln_ols=None,
                                                      inc_posterior=True))
+            BICs.append(em.calcBIC(star_pars, ncomps, lnlike))
 
         # identify the best performing decomposition
         best_split_ix = np.argmax(lnposts)
-        new_groups, new_meds, new_z, new_lnlike, new_lnpost = \
-            zip(best_fits, all_meds, all_zs, lnlikes, lnposts)[best_split_ix]
+        new_groups, new_meds, new_z, new_lnlike, new_lnpost, new_BIC = \
+            zip(best_fits, all_meds, all_zs,
+                lnlikes, lnposts, BICs)[best_split_ix]
         logging.info("Selected {} as best decomposition".format(i))
         logging.info("Turned\n{}".format(
             prev_groups[best_split_ix].getInternalSphericalPars()))
@@ -237,8 +243,9 @@ while ncomps < MAX_COMP:
     if new_lnpost > prev_lnpost:
         logging.info("Extra component has improved lnpost...")
         logging.info("{} > {}".format(new_lnpost, prev_lnpost))
-        prev_groups, prev_meds, prev_z, prev_lnlike, prev_lnpost =\
-            (new_groups, new_meds, new_z, new_lnlike, new_lnpost)
+        logging.info("New BIC: {} | Old BIC: {}".format(new_BIC, prev_BIC))
+        prev_groups, prev_meds, prev_z, prev_lnlike, prev_lnpost, prev_BIC =\
+            (new_groups, new_meds, new_z, new_lnlike, new_lnpost, new_BIC)
         ncomps += 1
     else:
         logging.info("Extra component has worsened lnpost...")
