@@ -380,6 +380,9 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     scheme.
     Can use this to plot different panes of one whole figure
 
+    TODO: Incorporate Z
+    TODO: incoporate background histogram
+
     Parameters
     ----------
     dim1: x-axis, can either be integer 0-5 (inclusive) or a letter form
