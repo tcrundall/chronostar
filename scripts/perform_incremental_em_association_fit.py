@@ -29,9 +29,7 @@ import sys
 from emcee.utils import MPIPool
 sys.path.insert(0, '..')
 import chronostar.expectmax as em
-import chronostar.groupfitter as gf
 import chronostar.datatool as dt
-import chronostar.fitplotter as fp
 
 try:
     ass_name = sys.argv[1]
@@ -91,7 +89,7 @@ print("Only one thread is master")
 
 print("Master should be working in the directory:\n{}".format(rdir))
 
-star_pars = gf.loadXYZUVW(xyzuvw_file)
+star_pars = dt.loadXYZUVW(xyzuvw_file)
 
 # -------------------------------------------------------------
 # constract histograms of Gaia stars in vicinity of association
