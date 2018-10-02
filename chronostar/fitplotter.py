@@ -320,7 +320,32 @@ def calcStellarPDFs(x, dim, star_pars):
     return total
 
 
-def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False):
+def evaluatePointInHist(x, hist_vals, hist_bins, normed=True):
+    """
+    Little utility function to evaluate the density of a histogram at point x
+
+    NOTE! currently can't handle x > np.max(hist_bins)
+    If x is below bin range, just extrapolate wings
+
+    Parameters
+    ----------
+    x: a single value
+    hist_vals: [nbin] number array; heights of each bin
+    hist_bins: [nbin+1] float array; edges of bins
+    """
+    # if x < np.min(hist_bins) or x > np.max(hist_bins):
+    #     return 0.
+
+    bin_width = hist_bins[1] - hist_bins[0]
+    if normed:
+        hist_vals = hist_bins / float(np.sum(hist_vals))
+    bin_height = hist_vals[np.digitize(x, hist_bins)]
+    bin_density = bin_height / bin_width
+    return bin_density
+
+
+def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
+                     bg_hists=None):
     """
     Given an axes object, plot the 1D projection of stellar data and fits
 
@@ -329,6 +354,9 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False)
     :param groups:
     :param z:
     :param vertical:
+    bg_hists: [6, 2, ~nbins] list
+        for each of the six dimensions, has two elements: the bin heights,
+        and the bin edges
     :return:
     """
     if horizontal:
@@ -338,7 +366,10 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False)
     weights = np.array(weights).astype(np.float)
     if len(weights.shape) > 1:
         weights = weights.sum(axis=0)
-    weights /= weights.sum()
+
+    # Normalise weights to be unity
+    norm_factor = weights.sum()
+    weights /= norm_factor
 
     npoints = 1000
     if ax is None:
@@ -357,6 +388,11 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False)
         group_gauss = weight*dt.gauss(xs, mean_now[dim],
                                       np.sqrt(cov_now[dim,dim]))
         combined_gauss += group_gauss
+        if bg_hists is not None:
+            hist_contrib = weights[-1]*\
+                           evaluatePointInHist(xs, bg_hists[dim][0],
+                                               bg_hists[dim][1])
+            combined_gauss += hist_contrib
         if horizontal:
             ax.plot(group_gauss, xs, color=COLORS[i])
         else:
@@ -372,7 +408,7 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
                       star_pars=None,
                       star_orbits=False,
                       group_then=False, group_now=False, group_orbit=False,
-                      annotate=False):
+                      annotate=False, bg_hists=None):
     """
     Plot a 2D projection of data and fit along with flanking 1D projections.
 
@@ -418,6 +454,8 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
         groups = np.load(groups)
         if len(groups.shape) == 0:
             groups = np.array(groups.item())
+    if type(bg_hists) is str:
+        bg_hists = np.load(bg_hists)
 
     # Set up plot
     fig = plt.figure(fignum)
@@ -435,14 +473,15 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     axtop = plt.subplot(gs[0, :-1])
     axtop.set_xlim(xlim)
     axtop.set_xticklabels([])
-    plot1DProjection(dim1, star_pars, groups, weights, ax=axtop)
+    plot1DProjection(dim1, star_pars, groups, weights, ax=axtop,
+                     bg_hists=bg_hists)
 
     ylim = axcen.get_ylim()
     axright = plt.subplot(gs[1:, -1])
     axright.set_ylim(ylim)
     axright.set_yticklabels([])
     plot1DProjection(dim2, star_pars, groups, weights, ax=axright,
-                     horizontal=True)
+                     bg_hists=bg_hists, horizontal=True)
 
 
 

@@ -188,11 +188,12 @@ def backgroundLogOverlap(star_mean, bg_hists, correction_factor=1.):
 
     ndim = 6
     lnol = 0
-    for i in range(ndim):
+    for dim_ix in range(ndim):
         # evaluate the density: bin_height / bin_width / n_gaia_stars
-        bin_width = bg_hists[i][1][1] - bg_hists[i][1][0]
+        bin_width = bg_hists[dim_ix][1][1] - bg_hists[dim_ix][1][0]
         lnol += np.log(
-            bg_hists[i][0][np.digitize(star_mean[i], bg_hists[i][1])]\
+            bg_hists[dim_ix][0][np.digitize(star_mean[dim_ix],
+                                            bg_hists[dim_ix][1]) - 1]\
         )
         lnol -= bin_width
         lnol -= np.log(n_gaia_stars)

@@ -10,14 +10,15 @@ sys.path.insert(0, '..')
 import chronostar.fitplotter as fp
 
 
-def plotEveryIter(rdir, star_pars):
+def plotEveryIter(rdir, star_pars, bg_hists=None):
     try:
         print("Attempting init")
         for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
             plt.clf()
             fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
                                  groups=rdir + 'init_groups.npy',
-                                 weights=None, group_now=True)
+                                 weights=None, group_now=True,
+                                 bg_hists=bg_hists)
             plt.savefig(rdir + 'init_{}{}.pdf'.format(dim1, dim2))
     except:
         print("init lacking files")
@@ -34,7 +35,8 @@ def plotEveryIter(rdir, star_pars):
                 plt.clf()
                 fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
                                      groups=idir + 'best_groups.npy',
-                                     weights=weights, group_now=True)
+                                     weights=weights, group_now=True,
+                                     bg_hists=bg_hists)
                 plt.savefig(idir + 'iter_{:02}_{}{}.pdf'.format(
                     iter_count, dim1, dim2))
             iter_count += 1
@@ -63,6 +65,11 @@ rdir = '/data/mash/tcrun/em_fit/{}/'.format(assoc_name)
 if not os.path.isdir(rdir):
     rdir = '../results/em_fit/{}/'.format(assoc_name)
 
+if os.path.isfile(rdir + 'bg_hists.npy'):
+    bg_hists = np.load(rdir + 'bg_hists.npy')
+else:
+    bg_hists = None
+
 is_inc_fit = os.path.isdir(rdir + '1/')
 is_synth_fit = os.path.isdir(rdir + 'synth_data/')
 
@@ -81,19 +88,18 @@ if is_synth_fit:
 
 if not is_inc_fit:
     plotEveryIter(rdir, star_pars_file)
-
 else: # incremental fit
     ncomps = 1
     while os.path.isdir(rdir + '{}/'.format(ncomps)):
         print("ncomps: {}".format(ncomps))
         if ncomps == 1:
-            plotEveryIter(rdir + '{}/'.format(ncomps), star_pars_file)
+            plotEveryIter(rdir + '{}/'.format(ncomps), star_pars_file, bg_hists)
         else:
             for i in range(ncomps-1):
                 print("sub directory {}".format(chr(ord('A') + i)))
                 subrdir = rdir + '{}/{}/'.format(ncomps, chr(ord('A') + i))
                 if os.path.isdir(subrdir):
-                    plotEveryIter(subrdir, star_pars_file)
+                    plotEveryIter(subrdir, star_pars_file, bg_hists)
         ncomps += 1
 
 

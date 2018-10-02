@@ -203,7 +203,7 @@ while ncomps < MAX_COMP:
     # handle multiple components
     else:
         logging.info("******************************************")
-        logging.info("*********  FITTING {} COMPONENTS  *********". \
+        logging.info("*********  FITTING {} COMPONENTS  *********".\
                      format(ncomps))
         logging.info("******************************************")
         best_fits = []
