@@ -185,7 +185,7 @@ frac_assoc_identified = 0.8
 ninterlopers = 3
 random.shuffle(assoc_ix)
 random.shuffle(bg_ix)
-assoc_identified_ix = int(0.8 * assoc_ix)
+assoc_identified_ix = int(frac_assoc_identified * nassoc_stars)
 init_z[assoc_ix[:assoc_identified_ix],0] = 1.0
 init_z[bg_ix[:ninterlopers],0] = 1.0
 init_z[assoc_ix[assoc_identified_ix:],1] = 1.0
