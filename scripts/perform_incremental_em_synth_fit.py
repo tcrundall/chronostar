@@ -163,8 +163,6 @@ if can_plot:
                              group_now=True)
         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
 
-assert False
-
 MAX_COMP = 5
 ncomps = 1
 # prev_groups = None
