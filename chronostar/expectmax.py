@@ -742,7 +742,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     if bg_dens:
         logging.info("CORRECTION FACTOR: {}".format(correction_factor))
         use_background = True
-        bg_ln_ols = np.array(nstars * [bg_dens])
+        bg_ln_ols = correction_factor * np.array(nstars * [bg_dens])
 
     # INITIALISE GROUPS
     if init_groups is not None:
