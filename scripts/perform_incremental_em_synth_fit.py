@@ -95,7 +95,7 @@ extra_pars = np.array([
 logging.info("Mean (now):\n{}".format(mean_now))
 logging.info("Extra pars:\n{}".format(extra_pars))
 ERROR = 1.0
-BG_DENS = 1.2e-7    # background density for synth bg stars
+BG_DENS = 1.0e-9    # background density for synth bg stars
 ngroups = extra_pars.shape[0]
 
 try:
@@ -129,7 +129,7 @@ except IOError:
     # insert 'background stars' with density 1.2e-7
     ubound = np.max(all_xyzuvw_now_perf, axis=0)
     lbound = np.min(all_xyzuvw_now_perf, axis=0)
-    margin = 0.3 * (ubound - lbound)
+    margin = 1.0 * (ubound - lbound)
     ubound += margin
     lbound -= margin
     nbg_stars = int(BG_DENS * np.prod(ubound - lbound))
