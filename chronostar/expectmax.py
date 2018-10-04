@@ -428,7 +428,6 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
     if np.isnan(z).any():
         logging.info("!!!!!! AT LEAST ONE MEMBERSHIP IS 'NAN' !!!!!!")
         #import pdb; pdb.set_trace()
-    import pdb; pdb.set_trace()
     return z
 
 
