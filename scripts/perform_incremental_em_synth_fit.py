@@ -13,6 +13,7 @@ from distutils.dir_util import mkpath
 from distutils.errors import DistutilsFileError
 import logging
 import numpy as np
+import random
 import sys
 from emcee.utils import MPIPool
 sys.path.insert(0, '..')
@@ -171,6 +172,27 @@ ncomps = 1
 prev_lnpost = -np.inf
 prev_BIC = np.inf
 prev_lnlike = -np.inf
+
+# Initialise z
+nstars = star_pars['xyzuvw'].shape[0]
+nassoc_stars = np.sum([o.nstars for o in origins])
+nbg_stars = int(nstars - nassoc_stars)
+init_z = np.zeros((nstars, 2))
+
+assoc_ix = np.arange(nassoc_stars)
+bg_ix = np.arange(nassoc_stars, nbg_stars + nassoc_stars)
+frac_assoc_identified = 0.8
+ninterlopers = 3
+random.shuffle(assoc_ix)
+random.shuffle(bg_ix)
+assoc_identified_ix = int(0.8 * assoc_ix)
+init_z[assoc_ix[:assoc_identified_ix],0] = 1.0
+init_z[bg_ix[:ninterlopers],0] = 1.0
+init_z[assoc_ix[assoc_identified_ix:],1] = 1.0
+init_z[bg_ix[ninterlopers:],1] = 1.0
+
+logging.info("Init Z:\n{}".format(init_z))
+
 
 while ncomps < MAX_COMP:
     # handle special case of one component
