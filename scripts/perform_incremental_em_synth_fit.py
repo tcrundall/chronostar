@@ -211,7 +211,8 @@ while ncomps < MAX_COMP:
         except IOError:
             new_groups, new_meds, new_z =\
                 em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
-                                 bg_dens=BG_DENS, correction_factor=1.0)
+                                 bg_dens=BG_DENS, correction_factor=1.0,
+                                 init_z=init_z)
             new_groups = np.array(new_groups)
 
         new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,

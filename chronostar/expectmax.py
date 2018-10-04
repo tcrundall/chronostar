@@ -745,15 +745,15 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         bg_ln_ols = correction_factor * np.array(nstars * [bg_dens])
 
     # INITIALISE GROUPS
+    skip_first_e_step = False
+    # use init groups if given (along with any z)
     if init_groups is not None:
         z = init_z
-    elif not init_with_origin:
-        init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'],
-                                       offset=offset)
-        # having z = None triggers an equal weighting of groups in
-        # expectation step
-        z = None
-    else:
+    # if just init_z provided, skip first E-step, and maximise off of init_z
+    elif init_z:
+        skip_first_e_step = True
+    # if a synth fit, could initialse at origins
+    elif origins:
         init_groups = origins
         z = np.zeros((nstars, ngroups + use_background)) # extra column for bg
         cnt = 0
@@ -762,6 +762,13 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             cnt += origins[i].nstars
         logging.info("Initialising fit with origins and membership\n{}".
                      format(z))
+    # otherwise, begin with a blind guess
+    else:
+        init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'],
+                                       offset=offset)
+        # having z = None triggers an equal weighting of groups in
+        # expectation step
+        z = None
 
     np.save(rdir + "init_groups.npy", init_groups)
 
@@ -785,11 +792,16 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         mkpath(idir)
 
         # EXPECTATION
-        z = expectation(star_pars, old_groups, z, bg_ln_ols,
-                        inc_posterior=inc_posterior)
-        logging.info("Membership distribution:\n{}".format(
-            z.sum(axis=0)
-        ))
+        if skip_first_e_step:
+            logging.info("Using input z for first iteration")
+            z = init_z
+            skip_first_e_step = False
+        else:
+            z = expectation(star_pars, old_groups, z, bg_ln_ols,
+                            inc_posterior=inc_posterior)
+            logging.info("Membership distribution:\n{}".format(
+                z.sum(axis=0)
+            ))
         np.save(idir+"membership.npy", z)
 
         # MAXIMISE
