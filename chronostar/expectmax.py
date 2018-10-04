@@ -669,7 +669,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
                   init_groups=None, init_weights=None,
                   offset=False,  bg_hist_file='', correction_factor=15.3,
-                  inc_posterior=False, burnin=1000):
+                  inc_posterior=False, burnin=1000, bg_dens=None):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -739,6 +739,10 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             star_pars['xyzuvw'], bg_hists,
             correction_factor=correction_factor,
         )
+    if bg_dens:
+        logging.info("CORRECTION FACTOR: {}".format(correction_factor))
+        use_background = True
+        bg_ln_ols = np.array(nstars * [bg_dens])
 
     # INITIALISE GROUPS
     if init_groups is not None:
