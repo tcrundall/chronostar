@@ -566,7 +566,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
     """
     Performs the 'maximisation' step of the EM algorithm
 
-    all_init_pars must be givin in 'internal' form, that is the standard
+    all_init_pars must be given in 'internal' form, that is the standard
     deviations must be provided in log form.
 
     :param star_pars:

@@ -20,6 +20,18 @@ def gauss(x, mu, sig):
     """
     return 1./(sig*np.sqrt(2*np.pi)) * np.exp(-(x - mu)**2 / (2.*sig**2))
 
+def mvGauss(x, mean, cov_matrix, amp=1.):
+    """
+    Evaluates a 6D gaussian at `x` given a mean, covariance matrix and amplitude
+    """
+    dim = 6.
+    coeff = np.linalg.det(cov_matrix * 2*np.pi)**(-0.5)
+    inv_cm = np.linalg.inv(cov_matrix)
+    expon = -0.5 * np.dot(
+        x-mean,
+        np.dot(inv_cm, x-mean)
+    )
+    return amp * coeff * np.exp(expon)
 
 def loadGroups(groups_file):
     """A simple utility function to standardise loading of group savefiles
@@ -463,3 +475,23 @@ def sampleAndBuild1DHist(bin_heights, bin_edges, lower_bound, upper_bound,
 
     #TODO: normalise by nsamples_survived, and renormalise by star count
     return collapseHistogram(sample_hist[0], dim), sample_hist[1][dim]
+
+
+def getDensity(point, data, bin_per_std=8.):
+    """
+    Given a point in 6D space, and some data distributed in said space,
+    get the density at that point.
+    """
+    point = np.array(point)
+    # anchor the offset from the standard deviation of the data
+    spread = np.std(data, axis=0) / float(bin_per_std)
+    # print("spread: ", spread)
+    ubound = point + 0.5*spread
+    lbound = point - 0.5*spread
+
+    nstars = len(
+        np.where(np.all((data < ubound) & (data > lbound), axis=1))[0]
+    )
+
+    volume = np.prod(spread)
+    return nstars / volume

@@ -109,6 +109,12 @@ def calcAlpha(dX, dV, nstars):
     """
     Assuming 20% efficiency, average star mass of 0.5 M_sun, and we only
     have identified half the initial stars by mass.
+
+    That is, the mass of the stars identified is only 10% of the initial
+    "cloud"s mass, therefore each star, approximated as 0.5 M_sun, represents
+    5 M_sun worth of molecular gas
+
+    Calculated alpha is unitless
     """
     return ( (dV*u.km/u.s)**2 * dX*u.pc /
               (const.G * 5 * nstars * const.M_sun) ).decompose().value
@@ -121,6 +127,38 @@ def lognormal(x, mu, sig):
     """
     return 1./x * 1./(sig*np.sqrt(2*np.pi)) *\
            np.exp(-(np.log(x) - mu)**2/(2*sig**2))
+
+def lnlognormal2(x, mode=3., sig=0.105):
+    # TODO: replace lognormal innerworkings so is called with desired mode
+    mu = sig**2 + np.log(mode)
+    return np.log(lognormal(x, mu, sig))
+    # return (-np.log(x*sig*np.sqrt(2*np.pi)) -
+    #         (np.log(x) - mu)**2 / (2*sig**2))
+
+def lnAlphaPrior2(pars, z, sig=0.105):
+    """
+    A very approximate, gentle prior preferring super-virial distributions
+
+    Since alpha is strictly positive, we use a lognormal prior. We then
+    take the log of the result to incorporate it into the log likelihood
+    evaluation.
+
+    pars: [8] float array
+        X,Y,Z,U,V,W,log(dX),log(dV),age
+    star_pars:
+        (retired)
+    z: [nstars, ngroups] float array
+        membership array
+    """
+    dX = np.exp(pars[6])
+    dV = np.exp(pars[7])
+    #nstars = star_pars['xyzuvw'].shape[0]
+    nstars = np.sum(z)
+    alpha = calcAlpha(dX, dV, nstars)
+    # taking the 10th root to make plot gentle
+    # TODO: just rework mu and sig to give desired
+    # mode and shape
+    return lnlognormal2(alpha, sig=sig)
 
 
 def lnlognormal(x, mu=1.05, sig=0.105):
