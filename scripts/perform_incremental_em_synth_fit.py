@@ -139,6 +139,7 @@ except IOError:
     spread = ubound - lbound
     bg_stars_xyzuvw_perf =\
         np.random.uniform(-1,1,size=(nbg_stars, 6)) * spread + centre
+    logging.info("Using background density of {}".format(BG_DENS))
     logging.info("Generated {} background stars".format(nbg_stars))
     logging.info("Spread from {}".format(ubound))
     logging.info("         to {}".format(lbound))
@@ -291,6 +292,7 @@ while ncomps < MAX_COMP:
             new_groups[best_split_ix+1].getInternalSphericalPars(),
         ))
 
+    import pdb; pdb.set_trace()
     # Check if the fit has improved
     if new_BIC < prev_BIC:
         logging.info("Extra component has improved BIC...")
