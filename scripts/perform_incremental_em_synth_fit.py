@@ -152,7 +152,6 @@ except IOError:
     )
     logging.info("Synthesis complete")
 
-memb
 
 # make sure stars are initialised as expected
 if can_plot:
