@@ -244,7 +244,7 @@ def getLogOverlaps(pars, star_pars):
     ----------
     pars: [npars] list
         Parameters describing the origin of group
-        typically [X,Y,Z,U,V,W,dX,dV,age]
+        typically [X,Y,Z,U,V,W,np.log(dX),np.log(dV),age]
     star_pars: dict
         traceback data being fitted to, stored as a dict:
         'xyzuvw': [nstars,6] float array

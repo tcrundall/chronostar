@@ -12,6 +12,8 @@ sys.path.insert(0, '..')
 import chronostar.datatool as dt
 import chronostar.synthesiser as syn
 import chronostar.expectmax as em
+import chronostar.groupfitter as gf
+from chronostar._overlap import get_lnoverlaps
 
 bpmg_group_file = 'final_groups.npy'
 gaia_sep_hist_file = 'bg_hists.npy'
@@ -80,50 +82,52 @@ twin_mean = bpmg_mean.copy()
 twin_mean[2] *= -1
 twin_mean[5] *= -1
 
-w_step = []
-x_step = []
-bins_per_std = []
-bpmg_gen_dens = []
-twin_gen_dens = []
 
-for i in range(3,20):
-    bins_per_std.append(i)
-    w_step.append(gaia_std[-1]/float(i))
-    x_step.append(gaia_std[0]/i)
-    bpmg_gen_dens.append(dt.getDensity(bpmg_mean, gaia_xyzuvw, i))
-    twin_gen_dens.append(dt.getDensity(twin_mean, gaia_xyzuvw, i))
+if False:
+    w_step = []
+    x_step = []
+    bins_per_std = []
+    bpmg_gen_dens = []
+    twin_gen_dens = []
 
-plt.clf()
-plt.plot(x_step, bpmg_gen_dens, label='bpmg mean')
-plt.plot(x_step, twin_gen_dens, label='twin mean')
-plt.xlabel('x step [pc]')
-plt.ylabel(r'density [pc km/s]$^{-3}$')
-plt.yscale('log')
-plt.title('Density at point given different box size')
-plt.legend(loc='best')
-plt.xlim(plt.xlim()[::-1])
-plt.savefig('dens-vs-x-step.pdf')
+    for i in range(3,20):
+        bins_per_std.append(i)
+        w_step.append(gaia_std[-1]/float(i))
+        x_step.append(gaia_std[0]/i)
+        bpmg_gen_dens.append(dt.getDensity(bpmg_mean, gaia_xyzuvw, i))
+        twin_gen_dens.append(dt.getDensity(twin_mean, gaia_xyzuvw, i))
 
-plt.clf()
-plt.plot(w_step, bpmg_gen_dens, label='bpmg mean')
-plt.plot(w_step, twin_gen_dens, label='twin mean')
-plt.xlabel('w step [km/s]')
-plt.ylabel(r'density [pc km/s]$^{-3}$')
-plt.yscale('log')
-plt.title('Density at point given different box size')
-plt.legend(loc='best')
-plt.xlim(plt.xlim()[::-1])
-plt.savefig('dens-vs-w-step.pdf')
+    plt.clf()
+    plt.plot(x_step, bpmg_gen_dens, label='bpmg mean')
+    plt.plot(x_step, twin_gen_dens, label='twin mean')
+    plt.xlabel('x step [pc]')
+    plt.ylabel(r'density [pc km/s]$^{-3}$')
+    plt.yscale('log')
+    plt.title('Density at point given different box size')
+    plt.legend(loc='best')
+    plt.xlim(plt.xlim()[::-1])
+    plt.savefig('dens-vs-x-step.pdf')
 
-plt.clf()
-plt.plot(bins_per_std, bpmg_gen_dens, label='bpmg mean')
-plt.plot(bins_per_std, twin_gen_dens, label='twin mean')
-plt.xlabel('steps per gaia standard deviation')
-plt.ylabel(r'density [pc km/s]$^{-3}$')
-plt.yscale('log')
-plt.title('Density at point given different box size')
-plt.legend(loc='best')
-plt.savefig('dens-vs-bins-per-std.pdf')
+    plt.clf()
+    plt.plot(w_step, bpmg_gen_dens, label='bpmg mean')
+    plt.plot(w_step, twin_gen_dens, label='twin mean')
+    plt.xlabel('w step [km/s]')
+    plt.ylabel(r'density [pc km/s]$^{-3}$')
+    plt.yscale('log')
+    plt.title('Density at point given different box size')
+    plt.legend(loc='best')
+    plt.xlim(plt.xlim()[::-1])
+    plt.savefig('dens-vs-w-step.pdf')
+
+    plt.clf()
+    plt.plot(bins_per_std, bpmg_gen_dens, label='bpmg mean')
+    plt.plot(bins_per_std, twin_gen_dens, label='twin mean')
+    plt.xlabel('steps per gaia standard deviation')
+    plt.ylabel(r'density [pc km/s]$^{-3}$')
+    plt.yscale('log')
+    plt.title('Density at point given different box size')
+    plt.legend(loc='best')
+    plt.savefig('dens-vs-bins-per-std.pdf')
 
 
 
@@ -133,6 +137,8 @@ init_groups = dt.loadGroups(rdir+'iter00/best_groups.npy')
 init_z = np.load(rdir+'iter00/membership.npy')
 later_groups = dt.loadGroups(rdir + 'iter15/best_groups.npy')
 later_z = np.load(rdir+'iter15/membership.npy')
+
+hists_from_run = np.load('bg_hists.npy')
 
 print("Peak densities of components")
 for i, (igroup, lgroup) in enumerate(zip(init_groups, later_groups)):
@@ -145,3 +151,39 @@ for i, (igroup, lgroup) in enumerate(zip(init_groups, later_groups)):
                later_groups[i].generateSphericalCovMatrix(),
                later_z[:,i].sum())
     ))
+
+
+
+print("bg dens during run for reference:")
+print(np.exp(em.backgroundLogOverlap(init_groups[0].mean, hists_from_run)))
+
+# --------------------------------------------------
+# ----- an aside, does a delta function at ---------
+# ----- group mean return same as peak val ---------
+# --------------------------------------------------
+# spoiler... yes, yes it does
+lg0 = later_groups[0]
+delta_ol_at_mean =\
+    np.exp(get_lnoverlaps(lg0.generateSphericalCovMatrix(), lg0.mean,
+                          np.array([1e-10*np.eye(6)]), np.array([lg0.mean]),
+                          1))[0]
+peak_dens = dt.mvGauss(lg0.mean, lg0.mean, lg0.generateSphericalCovMatrix())
+assert np.isclose(delta_ol_at_mean, peak_dens)
+
+# demo synthesising some bg stars
+my_bg_dens = 1e-7
+
+spread = np.std(gaia_xyzuvw, axis=0) / 8.
+ubound = bpmg_mean + 0.5*spread
+lbound = bpmg_mean - 0.5*spread
+nbg_stars = int(my_bg_dens * np.prod(spread))
+print("There are {} stars in bg".format(nbg_stars))
+my_bg_stars = np.random.uniform(-1,1,size=(nbg_stars, 6)) * spread + bpmg_mean
+
+plt.clf()
+plt.plot(my_bg_stars[:,0], my_bg_stars[:,5], '.')
+plt.plot(bpmg_mean[0], bpmg_mean[5], 'x')
+plt.xlabel("X [pc]")
+plt.ylabel("W [km/s]")
+plt.savefig('demo_synth_bg_stars.pdf')
+

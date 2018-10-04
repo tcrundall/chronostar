@@ -157,6 +157,16 @@ def calcMembershipProbs(star_lnols):
     return star_memb_probs
 
 
+def background6DLogOverlap(star_mean, bg_6dhist):
+    """
+    Approximates density of Gaia catalogue at `star_mean`
+    :param star_mean:
+    :param bg_6dhist:
+    :return:
+    """
+    pass
+
+
 def backgroundLogOverlap(star_mean, bg_hists, correction_factor=1.):
     """Calculate the 'overlap' of a star with the background desnity of Gaia
 

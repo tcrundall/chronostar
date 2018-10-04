@@ -93,6 +93,7 @@ extra_pars = np.array([
 logging.info("Mean (now):\n{}".format(mean_now))
 logging.info("Extra pars:\n{}".format(extra_pars))
 ERROR = 1.0
+BG_DENS = 1.2e-7    # background density for synth bg stars
 ngroups = extra_pars.shape[0]
 
 try:
@@ -122,7 +123,26 @@ except IOError:
                                                     times=origin.age,
                                                     single_age=True)
         all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
-    
+
+    # insert 'background stars' with density 1.2e-7
+    ubound = np.max(all_xyzuvw_now_perf, axis=0)
+    lbound = np.min(all_xyzuvw_now_perf, axis=0)
+    margin = 0.1 * (ubound - lbound)
+    ubound += margin
+    lbound += margin
+    nbg_stars = int(BG_DENS * np.prod(ubound - lbound))
+
+    # centre bg stars on mean of assoc stars
+    centre = np.mean(all_xyzuvw_now_perf, axis=0)
+    spread = ubound - lbound
+    bg_stars_xyzuvw_perf =\
+        np.random.uniform(-1,1,size=(nbg_stars, 6)) * spread + centre
+    logging.info("Generated {} background stars".format(nbg_stars))
+    logging.info("Spread from {}".format(ubound))
+    logging.info("         to {}".format(lbound))
+
+    all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, bg_stars_xyzuvw_perf))
+
     np.save(groups_savefile, origins)
     np.save(xyzuvw_perf_file, all_xyzuvw_now_perf)
     astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
@@ -130,6 +150,8 @@ except IOError:
     star_pars = cv.convertMeasurementsToCartesian(
         astro_table, savefile=xyzuvw_conv_savefile,
     )
+
+assert False
 
 # make sure stars are initialised as expected
 if can_plot:
