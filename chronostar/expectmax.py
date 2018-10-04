@@ -750,10 +750,10 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     if init_groups is not None:
         z = init_z
     # if just init_z provided, skip first E-step, and maximise off of init_z
-    elif init_z:
+    elif init_z is not None:
         skip_first_e_step = True
     # if a synth fit, could initialse at origins
-    elif origins:
+    elif origins is not None:
         init_groups = origins
         z = np.zeros((nstars, ngroups + use_background)) # extra column for bg
         cnt = 0
