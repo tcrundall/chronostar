@@ -42,6 +42,7 @@ except (IOError, DistutilsFileError):
 logging.basicConfig(
     level=logging.INFO,
     filename=rdir + 'em.log',
+    filemode='a'
 )
 
 # Initialize the MPI-based pool used for parallisation.
