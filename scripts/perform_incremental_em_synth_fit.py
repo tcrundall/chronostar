@@ -180,6 +180,8 @@ nassoc_stars = np.sum([o.nstars for o in origins])
 nbg_stars = int(nstars - nassoc_stars)
 init_z = np.zeros((nstars, 2))
 
+# basing initial z on having 80% identified association members and 3
+# interlopers
 assoc_ix = np.arange(nassoc_stars)
 bg_ix = np.arange(nassoc_stars, nbg_stars + nassoc_stars)
 frac_assoc_identified = 0.8
@@ -193,6 +195,9 @@ init_z[assoc_ix[assoc_identified_ix:],1] = 1.0
 init_z[bg_ix[ninterlopers:],1] = 1.0
 
 logging.info("Init Z:\n{}".format(init_z))
+
+# Manually set background log overlaps to be equal to that of bg density
+bg_ln_ols = np.log(np.zeros(nstars) + BG_DENS)
 
 
 while ncomps < MAX_COMP:
@@ -217,9 +222,9 @@ while ncomps < MAX_COMP:
             new_groups = np.array(new_groups)
 
         new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,
-                                               bg_ln_ols=None)
+                                               bg_ln_ols=bg_ln_ols)
         new_lnpost = em.getOverallLnLikelihood(star_pars, new_groups,
-                                               bg_ln_ols=None,
+                                               bg_ln_ols=bg_ln_ols,
                                                inc_posterior=True)
         new_BIC = em.calcBIC(star_pars, ncomps, new_lnlike)
     # handle multiple components
@@ -269,10 +274,10 @@ while ncomps < MAX_COMP:
             all_zs.append(z)
 
             lnlike = em.getOverallLnLikelihood(star_pars, groups,
-                                               bg_ln_ols=None)
+                                               bg_ln_ols=bg_ln_ols)
             lnlikes.append(lnlike)
             lnposts.append(em.getOverallLnLikelihood(star_pars, groups,
-                                                     bg_ln_ols=None,
+                                                     bg_ln_ols=bg_ln_ols,
                                                      inc_posterior=True))
             BICs.append(em.calcBIC(star_pars, ncomps, lnlike))
             logging.info("Decomp finished with\nBIC: {}\nLnlike: {}".format(
@@ -292,7 +297,6 @@ while ncomps < MAX_COMP:
             new_groups[best_split_ix+1].getInternalSphericalPars(),
         ))
 
-    import pdb; pdb.set_trace()
     # Check if the fit has improved
     if new_BIC < prev_BIC:
         logging.info("Extra component has improved BIC...")
