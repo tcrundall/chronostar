@@ -44,7 +44,7 @@ logging.basicConfig(
     filename=rdir + 'em.log',
 )
 
-# Initialize the MPI-based pool used for parallelization.
+# Initialize the MPI-based pool used for parallisation.
 using_mpi = True
 try:
     pool = MPIPool()
@@ -85,7 +85,7 @@ logging.info("---------- Generating synthetic data...")
 mean_now = np.array([50., -100., -0., -10., -20., -5.])
 extra_pars = np.array([
     #dX, dV, age, nstars
-    [10., 0.5,  2.,  10.],
+    [10., 0.5,  2.,  20.],
     [ 2., 1.0,  5.,  15.],
     # [ 5., 0.7, 10.,  50.],
     # [100., 50.,  1e-5, 1000.],
@@ -127,9 +127,9 @@ except IOError:
     # insert 'background stars' with density 1.2e-7
     ubound = np.max(all_xyzuvw_now_perf, axis=0)
     lbound = np.min(all_xyzuvw_now_perf, axis=0)
-    margin = 0.1 * (ubound - lbound)
+    margin = 0.3 * (ubound - lbound)
     ubound += margin
-    lbound += margin
+    lbound -= margin
     nbg_stars = int(BG_DENS * np.prod(ubound - lbound))
 
     # centre bg stars on mean of assoc stars
@@ -150,8 +150,9 @@ except IOError:
     star_pars = cv.convertMeasurementsToCartesian(
         astro_table, savefile=xyzuvw_conv_savefile,
     )
+    logging.info("Synthesis complete")
 
-assert False
+memb
 
 # make sure stars are initialised as expected
 if can_plot:
@@ -162,6 +163,8 @@ if can_plot:
                              star_pars=star_pars,
                              group_now=True)
         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
+
+assert False
 
 MAX_COMP = 5
 ncomps = 1
