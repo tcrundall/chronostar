@@ -752,6 +752,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     # if just init_z provided, skip first E-step, and maximise off of init_z
     elif init_z is not None:
         skip_first_e_step = True
+        # still need a sensible location to begin the walkers
+        init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'],
+                                       offset=offset)
     # if a synth fit, could initialse at origins
     elif origins is not None:
         init_groups = origins
