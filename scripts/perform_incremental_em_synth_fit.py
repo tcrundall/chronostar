@@ -323,6 +323,15 @@ while ncomps < MAX_COMP:
         np.save(rdir+'final_membership.npy', prev_z)
         np.save(rdir+'final_likelihood_post_and_bic', [prev_lnlike, prev_lnpost,
                                                        prev_BIC])
+        logging.info('Final best fits:')
+        [logging.info(g.getSphericalPars()) for g in prev_groups]
+        logging.info('Final age med and span:')
+        [logging.info(row[-1] for row in prev_meds)]
+        logging.info('Final membership:')
+        logging.info(prev_z)
+        logging.info('Final lnlikelihood: {}'.format(prev_lnlike))
+        logging.info('Final lnposterior:  {}'.format(prev_lnpost))
+        logging.info('Final BIC: {}'.format(prev_BIC))
         break
 
     logging.info("Best fit:\n{}".format(
