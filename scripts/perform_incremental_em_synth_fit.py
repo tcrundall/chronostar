@@ -326,9 +326,9 @@ while ncomps < MAX_COMP:
         logging.info('Final best fits:')
         [logging.info(g.getSphericalPars()) for g in prev_groups]
         logging.info('Final age med and span:')
-        [logging.info(row[-1] for row in prev_meds)]
+        [logging.info(row[-1]) for row in prev_meds]
         logging.info('Final membership:')
-        logging.info(np.round(prev_z*100), decimals=2)
+        logging.info(np.round(prev_z*100, decimals=2))
         logging.info('Final lnlikelihood: {}'.format(prev_lnlike))
         logging.info('Final lnposterior:  {}'.format(prev_lnpost))
         logging.info('Final BIC: {}'.format(prev_BIC))
