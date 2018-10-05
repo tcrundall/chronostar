@@ -94,8 +94,8 @@ extra_pars = np.array([
 ])
 logging.info("Mean (now):\n{}".format(mean_now))
 logging.info("Extra pars:\n{}".format(extra_pars))
-ERROR = 1.0
-BG_DENS = 1.0e-9    # background density for synth bg stars
+ERROR = 0.5
+BG_DENS = 1.0e-7    # background density for synth bg stars
 ngroups = extra_pars.shape[0]
 
 try:
