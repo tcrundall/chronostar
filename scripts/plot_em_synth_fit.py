@@ -13,13 +13,16 @@ import chronostar.fitplotter as fp
 def plotEveryIter(rdir, star_pars, bg_hists=None):
     try:
         print("Attempting init")
-        for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
-            plt.clf()
-            fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
-                                 groups=rdir + 'init_groups.npy',
-                                 weights=None, group_now=True,
-                                 bg_hists=bg_hists)
-            plt.savefig(rdir + 'init_{}{}.pdf'.format(dim1, dim2))
+        if os.path.isfile(rdir + 'init_xw.pdf'):
+            print("  init already plotted...")
+        else:
+            for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
+                plt.clf()
+                fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
+                                     groups=rdir + 'init_groups.npy',
+                                     weights=None, group_now=True,
+                                     bg_hists=bg_hists)
+                plt.savefig(rdir + 'init_{}{}.pdf'.format(dim1, dim2))
     except:
         print("init lacking files")
 
@@ -29,16 +32,19 @@ def plotEveryIter(rdir, star_pars, bg_hists=None):
             print("Attempting iter {}".format(iter_count))
             # idir = rdir + 'iter{}/'.format(iter_count)
             idir = rdir + 'iter{:02}/'.format(iter_count)
-            z = np.load(idir + 'membership.npy')
-            weights = z.sum(axis=0)
-            for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
-                plt.clf()
-                fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
-                                     groups=idir + 'best_groups.npy',
-                                     weights=weights, group_now=True,
-                                     bg_hists=bg_hists)
-                plt.savefig(idir + 'iter_{:02}_{}{}.pdf'.format(
-                    iter_count, dim1, dim2))
+            if os.path.isfile(idir + 'iter_{:02}_xw.pdf'.format(iter_count)):
+                print('    iter_{:02} already plotted'.format(iter_count))
+            else:
+                z = np.load(idir + 'membership.npy')
+                weights = z.sum(axis=0)
+                for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
+                    plt.clf()
+                    fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
+                                         groups=idir + 'best_groups.npy',
+                                         weights=weights, group_now=True,
+                                         bg_hists=bg_hists)
+                    plt.savefig(idir + 'iter_{:02}_{}{}.pdf'.format(
+                        iter_count, dim1, dim2))
             iter_count += 1
         except IOError:
             print("Iter {} is lacking files".format(iter_count))
@@ -46,15 +52,18 @@ def plotEveryIter(rdir, star_pars, bg_hists=None):
     try:
         print("Attempting final")
         idir = rdir + 'final/'
-        z = np.load(idir + 'final_membership.npy')
-        weights = z.sum(axis=0)
-        for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
-            plt.clf()
-            fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
-                                 groups=idir + 'final_groups.npy',
-                                 weights=weights, group_now=True)
-            plt.savefig(idir + 'final_{}{}.pdf'.format(
-                dim1, dim2))
+        if os.path.isfile(idir + 'final_xw.pdf'):
+            print("    final already plotted")
+        else:
+            z = np.load(idir + 'final_membership.npy')
+            weights = z.sum(axis=0)
+            for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
+                plt.clf()
+                fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars,
+                                     groups=idir + 'final_groups.npy',
+                                     weights=weights, group_now=True)
+                plt.savefig(idir + 'final_{}{}.pdf'.format(
+                    dim1, dim2))
     except IOError:
         print("final is lacking files")
     return
