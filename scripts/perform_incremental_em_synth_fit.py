@@ -314,7 +314,7 @@ while ncomps < MAX_COMP:
         ncomps += 1
     else:
         logging.info("Extra component has worsened BIC...")
-        logging.info("New BIC: {} < Old BIC: {}".format(new_BIC, prev_BIC))
+        logging.info("New BIC: {} > Old BIC: {}".format(new_BIC, prev_BIC))
         logging.info("lnlike: {} | {}".format(new_lnlike, prev_lnlike))
         logging.info("lnpost: {} | {}".format(new_lnpost, prev_lnpost))
         logging.info("... saving previous fit as best fit to data")
