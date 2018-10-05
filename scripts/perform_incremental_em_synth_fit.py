@@ -83,6 +83,10 @@ xyzuvw_conv_savefile = '../data/{}_xyzuvw.fits'.format(run_name)
 # Calculate the initial parameters for each component that correspond
 # to the current day mean of mean_now
 logging.info("---------- Generating synthetic data...")
+ERROR = 0.5
+BG_DENS = 1.0e-7    # background density for synth bg stars
+logging.info("  with error fraction {}".format(ERROR))
+logging.info("  and background density {}".format(BG_DENS))
 # Set a current-day location around which synth stars will end up
 mean_now = np.array([50., -100., -0., -10., -20., -5.])
 extra_pars = np.array([
@@ -94,8 +98,6 @@ extra_pars = np.array([
 ])
 logging.info("Mean (now):\n{}".format(mean_now))
 logging.info("Extra pars:\n{}".format(extra_pars))
-ERROR = 0.5
-BG_DENS = 1.0e-7    # background density for synth bg stars
 ngroups = extra_pars.shape[0]
 
 try:
@@ -148,7 +150,7 @@ except IOError:
 
     np.save(groups_savefile, origins)
     np.save(xyzuvw_perf_file, all_xyzuvw_now_perf)
-    astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
+    astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, error_frac=ERROR,
                                    savefile=astro_savefile)
     star_pars = cv.convertMeasurementsToCartesian(
         astro_table, savefile=xyzuvw_conv_savefile,
@@ -168,11 +170,14 @@ if can_plot:
 
 MAX_COMP = 5
 ncomps = 1
-# prev_groups = None
-# prev_meds = None
+
+# Set up initial values of results
+prev_groups = None
+prev_meds = None
 prev_lnpost = -np.inf
 prev_BIC = np.inf
 prev_lnlike = -np.inf
+prev_z = None
 
 # Initialise z
 nstars = star_pars['xyzuvw'].shape[0]
@@ -312,6 +317,12 @@ while ncomps < MAX_COMP:
         logging.info("New BIC: {} < Old BIC: {}".format(new_BIC, prev_BIC))
         logging.info("lnlike: {} | {}".format(new_lnlike, prev_lnlike))
         logging.info("lnpost: {} | {}".format(new_lnpost, prev_lnpost))
+        logging.info("... saving previous fit as best fit to data")
+        np.save(rdir+'final_best_groups.npy', prev_groups)
+        np.save(rdir+'final_med_errs.npy', prev_meds)
+        np.save(rdir+'final_membership.npy', prev_z)
+        np.save(rdir+'final_likelihood_post_and_bic', [prev_lnlike, prev_lnpost,
+                                                       prev_BIC])
         break
 
     logging.info("Best fit:\n{}".format(
