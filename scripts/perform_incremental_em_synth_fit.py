@@ -129,7 +129,7 @@ except IOError:
     # insert 'background stars' with density 1.2e-7
     ubound = np.max(all_xyzuvw_now_perf, axis=0)
     lbound = np.min(all_xyzuvw_now_perf, axis=0)
-    margin = 1.5 * (ubound - lbound)
+    margin = 0.5 * (ubound - lbound)
     ubound += margin
     lbound -= margin
     nbg_stars = int(BG_DENS * np.prod(ubound - lbound))
