@@ -7,6 +7,7 @@ BPMG
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import stats
 import sys
 sys.path.insert(0, '..')
 import chronostar.datatool as dt
@@ -186,4 +187,26 @@ plt.plot(bpmg_mean[0], bpmg_mean[5], 'x')
 plt.xlabel("X [pc]")
 plt.ylabel("W [km/s]")
 plt.savefig('demo_synth_bg_stars.pdf')
+
+# Using scipy kernel density estimator
+X, Y, Z, U, V, W = np.mgrid[lbound[0]:lbound[0]:10j, lbound[1]:ubound[1]:10j, lbound[2]:ubound[2]:10j, lbound[3]:ubound[3]:10j, lbound[4]:ubound[4]:10j, lbound[5]:ubound[5]:10j]
+positions = np.vstack([X.ravel(), Y.ravel(), Z.ravel(), U.ravel(), V.ravel(), W.ravel()])
+kernel = stats.gaussian_kde(gaia_xyzuvw.T)
+print("kernel at BPMG mean: {}".format(kernel(bpmg_mean)[0]))
+print("kernel at TWIN mean: {}".format(kernel(twin_mean)[0]))
+
+nearby_stars = gaia_xyzuvw[np.where(np.all((gaia_xyzuvw > lbound)
+                                           & (gaia_xyzuvw < ubound),
+                                           axis=1))]
+near_kernel = stats.gaussian_kde(nearby_stars.T)
+print("near kernel at BPMG mean: {}".format(near_kernel(bpmg_mean)[0]))
+print("near kernel at TWIN mean: {}".format(near_kernel(twin_mean)[0]))
+
+nearby_stars = gaia_xyzuvw[np.where(np.all((gaia_xyzuvw > lbound)
+                                           & (gaia_xyzuvw < ubound),
+                                           axis=1))]
+near_kernel_silv = stats.gaussian_kde(nearby_stars.T, bw_method='silverman')
+print("near kernel silv at BPMG mean: {}".format(near_kernel_silv(bpmg_mean)[0]))
+print("near kernel silv at TWIN mean: {}".format(near_kernel_silv(twin_mean)[0]))
+
 
