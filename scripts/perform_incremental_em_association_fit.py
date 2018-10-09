@@ -94,16 +94,22 @@ print("Master should be working in the directory:\n{}".format(rdir))
 star_pars = dt.loadXYZUVW(xyzuvw_file)
 
 # GET BACKGROUND LOG OVERLAP DENSITIES:
+logging.info("Acquiring background overlaps")
 try:
+    print("In try")
     bg_ln_ols = np.load(bg_ln_ols_file)
+    print("could load")
     assert len(bg_ln_ols) == len(star_pars['xyzuvw'])
     logging.info("Loaded bg_ln_ols from file")
 except (IOError, AssertionError):
+    print("in except")
     logging.info("Calculating background overlaps")
     logging.info(" -- this step employs scipy's kernel density estimator")
     logging.info(" -- so could take a few minutes...")
     bg_ln_ols = dt.getKernelDensities(gaia_xyzuvw_file, star_pars['xyzuvw'])
-    logging.info("DONE!")
+    np.save(bg_ln_ols_file, bg_ln_ols)
+print("continuing")
+logging.info("DONE!")
 
 # # !!! plotPaneWithHists not set up to handle None groups and None weights
 # # make sure stars are initialised as expected
