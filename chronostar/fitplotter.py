@@ -150,8 +150,8 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         dim2 = labels.index(dim2.upper())
     if star_pars:
         nstars = star_pars['xyzuvw'].shape[0]
-        pt_colors = nstars * ['xkcd:red']
-        markers = nstars * ['.']
+        pt_colors = np.array(nstars * ['xkcd:red'])
+        markers = np.array(nstars * ['.'])
         if membership:
             best_mship = np.argmax(membership, axis=0)
             pt_colors = np.array(COLORS)[best_mship]
