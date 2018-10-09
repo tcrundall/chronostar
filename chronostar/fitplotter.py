@@ -173,7 +173,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
     if star_pars:
         mns = star_pars['xyzuvw']
         covs = star_pars['xyzuvw_cov']
-        ax.plot(mns[:,dim1], mns[:,dim2], '.', color=pt_colors)
+        ax.scatter(mns[:,dim1], mns[:,dim2], '.', color=pt_colors)
         for star_mn, star_cov, pt_color in zip(mns, covs, pt_colors):
             # plot uncertainties
             ee.plotCovEllipse(star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
