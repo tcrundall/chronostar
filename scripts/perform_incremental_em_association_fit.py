@@ -97,15 +97,15 @@ star_pars = dt.loadXYZUVW(xyzuvw_file)
 logging.info("Acquiring background overlaps")
 try:
     print("In try")
+    logging.info("Calculating background overlaps")
+    logging.info(" -- this step employs scipy's kernel density estimator")
+    logging.info(" -- so could take a few minutes...")
     bg_ln_ols = np.load(bg_ln_ols_file)
     print("could load")
     assert len(bg_ln_ols) == len(star_pars['xyzuvw'])
     logging.info("Loaded bg_ln_ols from file")
 except (IOError, AssertionError):
     print("in except")
-    logging.info("Calculating background overlaps")
-    logging.info(" -- this step employs scipy's kernel density estimator")
-    logging.info(" -- so could take a few minutes...")
     bg_ln_ols = dt.getKernelDensities(gaia_xyzuvw_file, star_pars['xyzuvw'])
     np.save(bg_ln_ols_file, bg_ln_ols)
 print("continuing")
@@ -152,9 +152,9 @@ while ncomps < MAX_COMP:
             new_groups = np.array(new_groups)
 
         new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,
-                                               bg_ln_ols=None)
+                                               bg_ln_ols=bg_ln_ols)
         new_lnpost = em.getOverallLnLikelihood(star_pars, new_groups,
-                                               bg_ln_ols=None,
+                                               bg_ln_ols=bg_ln_ols,
                                                inc_posterior=True)
         new_BIC = em.calcBIC(star_pars, ncomps, new_lnlike)
     # handle multiple components
@@ -205,10 +205,10 @@ while ncomps < MAX_COMP:
             all_zs.append(z)
 
             lnlike = em.getOverallLnLikelihood(star_pars, groups,
-                                               bg_ln_ols=None)
+                                               bg_ln_ols=bg_ln_ols)
             lnlikes.append(lnlike)
             lnposts.append(em.getOverallLnLikelihood(star_pars, groups,
-                                                     bg_ln_ols=None,
+                                                     bg_ln_ols=bg_ln_ols,
                                                      inc_posterior=True))
             BICs.append(em.calcBIC(star_pars, ncomps, lnlike))
             logging.info("Decomp finished with\nBIC: {}\nLnlike: {}".format(
