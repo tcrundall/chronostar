@@ -22,6 +22,7 @@ except ImportError:
 from distutils.dir_util import mkpath
 from distutils.errors import DistutilsFileError
 import os
+from scipy import stats
 import logging
 import numpy as np
 import pdb
@@ -42,7 +43,7 @@ except IndexError:
     ass_name = 'bpmg_cand_w_gaia_dr2_astrometry_comb_binars'
 
 # Setting key parameters for fit
-CORRECTION_FACTOR = 15.     # maybe don't even need this...
+# CORRECTION_FACTOR = 15.     # maybe don't even need this...
 
 if os.path.isdir('/data/mash/tcrun/'):
     rdir = "/data/mash/tcrun/em_fit/{}/".format(ass_name)
@@ -58,8 +59,8 @@ else:
 
 gaia_xyzuvw_file = gdir + 'gaia_dr2_mean_xyzuvw.npy'
 xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
-best_fit_file = rdir + "best_fit.npy"
-bg_hist_file = rdir + "bg_hists.npy"
+# best_fit_file = rdir + "best_fit.npy"
+# bg_hist_file = rdir + "bg_hists.npy"
 
 logging.basicConfig(
     level=logging.INFO, filemode='w',
@@ -91,73 +92,10 @@ print("Master should be working in the directory:\n{}".format(rdir))
 
 star_pars = dt.loadXYZUVW(xyzuvw_file)
 
-# -------------------------------------------------------------
-# constract histograms of Gaia stars in vicinity of association
-# -------------------------------------------------------------
-logging.info("Building histograms of Gaia stars in vicinity of associaiton")
-star_means = star_pars['xyzuvw']
-margin = 2.
+# GET BACKGROUND LOG OVERLAP DENSITIES:
+bg_ln_ols = dt.getKernelDensities(gaia_xyzuvw_file, star_pars['xyzuvw'])
 
-# construct box
-kin_max = np.max(star_means, axis=0)
-kin_min = np.min(star_means, axis=0)
-span = kin_max - kin_min
-upper_boundary = kin_max + margin*span
-lower_boundary = kin_min - margin*span
-
-# get gaia stars within box
-gaia_xyzuvw = np.load(gaia_xyzuvw_file)
-mask = np.where(
-    np.all(
-        (gaia_xyzuvw < upper_boundary) & (gaia_xyzuvw > lower_boundary),
-        axis=1)
-)
-nearby_gaia = gaia_xyzuvw[mask]
-bg_hists = []
-bins = int(margin**1.5 * 25)
-n_nearby = nearby_gaia.shape[0]
-norm = n_nearby ** (5./6)
-for col in nearby_gaia.T:
-    bg_hists.append(np.histogram(col, bins))
-np.save(bg_hist_file, bg_hists)
-logging.info("Histograms constructed with {} stars, stored in {}".format(
-    n_nearby, bg_hist_file
-))
-
-# --------------------------------------------------------------------------
-# Get initial parameters
-# --------------------------------------------------------------------------
-# init_origin = False
-# origins = None
-# if NGROUPS == 1:
-#     init_origin = True
-#     nstars = star_means.shape[0]
-#     bp_mean = np.mean(star_means, axis=0)
-#     bp_cov = np.cov(star_means.T)
-#     bp_dx = np.sqrt(np.min([bp_cov[0,0], bp_cov[1,1], bp_cov[2,2]]))
-#     bp_dv = np.sqrt(np.min([bp_cov[3,3], bp_cov[4,4], bp_cov[5,5]]))
-#     bp_age = 0.5
-#     bp_pars = np.hstack((bp_mean, bp_dx, bp_dv, bp_age, nstars))
-#     bp_group = syn.Group(bp_pars)
-#     origins = [bp_group]
-
-#go through and compare overlap with groups with
-#background overlap
-#
-#bp_pars = np.array([
-#   2.98170398e+01,  4.43573995e+01,  2.29251498e+01, -9.65731744e-01,
-#   -3.42827894e+00, -3.99928052e-02 , 2.63084094e+00,  1.05302890e-01,
-#   1.59367119e+01, nstars
-#])
-#bp_group = syn.Group(bp_pars)
-#
-# --------------------------------------------------------------------------
-# Run fit
-# --------------------------------------------------------------------------
-# logging.info("Everythign loaded, about to fit with {} components"\
-#     .format(NGROUPS))
-
-# !!! plotPaneWithHists not set up to handle None groups and None weights
+# # !!! plotPaneWithHists not set up to handle None groups and None weights
 # # make sure stars are initialised as expected
 # if can_plot:
 #     for dim1, dim2 in ('xy', 'xu', 'yv', 'zw', 'uv'):
@@ -168,11 +106,14 @@ logging.info("Histograms constructed with {} stars, stored in {}".format(
 logging.info("Using data file {}".format(xyzuvw_file))
 MAX_COMP = 5
 ncomps = 1
-# prev_groups = None
-# prev_meds = None
+
+# Set up initial values of results
+prev_groups = None
+prev_meds = None
 prev_lnpost = -np.inf
-prev_lnlike = -np.inf
 prev_BIC = np.inf
+prev_lnlike = -np.inf
+prev_z = None
 
 while ncomps < MAX_COMP:
     # handle special case of one component
@@ -191,7 +132,7 @@ while ncomps < MAX_COMP:
         except IOError:
             new_groups, new_meds, new_z = \
                 em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
-                                 bg_hist_file=bg_hist_file)
+                                 bg_ln_ols=bg_ln_ols)
             new_groups = np.array(new_groups)
 
         new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,
@@ -242,7 +183,7 @@ while ncomps < MAX_COMP:
                     em.fitManyGroups(star_pars, ncomps, rdir=run_dir,
                                      pool=pool,
                                      init_groups=init_groups,
-                                     bg_hist_file=bg_hist_file)
+                                     bg_ln_ols=bg_ln_ols)
             best_fits.append(groups)
             all_meds.append(meds)
             all_zs.append(z)
@@ -283,9 +224,25 @@ while ncomps < MAX_COMP:
         ncomps += 1
     else:
         logging.info("Extra component has worsened BIC...")
-        logging.info("New BIC: {} < Old BIC: {}".format(new_BIC, prev_BIC))
+        logging.info("New BIC: {} > Old BIC: {}".format(new_BIC, prev_BIC))
         logging.info("lnlike: {} | {}".format(new_lnlike, prev_lnlike))
         logging.info("lnpost: {} | {}".format(new_lnpost, prev_lnpost))
+        logging.info("... saving previous fit as best fit to data")
+        np.save(rdir+'final_best_groups.npy', prev_groups)
+        np.save(rdir+'final_med_errs.npy', prev_meds)
+        np.save(rdir+'final_membership.npy', prev_z)
+        np.save(rdir+'final_likelihood_post_and_bic', [prev_lnlike, prev_lnpost,
+                                                       prev_BIC])
+        logging.info('Final best fits:')
+        [logging.info(g.getSphericalPars()) for g in prev_groups]
+        logging.info('Final age med and span:')
+        [logging.info(row[-1]) for row in prev_meds]
+        logging.info('Membership distribution: {}'.format(prev_z.sum(axis=0)))
+        logging.info('Final membership:')
+        logging.info('\n',np.round(prev_z*100))
+        logging.info('Final lnlikelihood: {}'.format(prev_lnlike))
+        logging.info('Final lnposterior:  {}'.format(prev_lnpost))
+        logging.info('Final BIC: {}'.format(prev_BIC))
         break
 
     logging.info("Best fit:\n{}".format(

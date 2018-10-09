@@ -167,6 +167,7 @@ if can_plot:
                              weights=[origin.nstars for origin in origins],
                              star_pars=star_pars,
                              group_now=True,
+                             membership=true_memb,
                              true_memb=true_memb)
         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
 

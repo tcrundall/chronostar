@@ -7,6 +7,7 @@ TODO: write tests especially for cov construction
 from astropy.io import fits
 import numpy as np
 import logging
+from scipy import stats
 import sys
 sys.path.insert(0, '..')
 
@@ -517,3 +518,30 @@ def getZfromOrigins(origins, star_pars):
         z[stars_so_far:,-1] = 1.
     return z
 
+
+def getKernelDensities(data, points, get_twins=False):
+    """
+    Build a PDF from `data`, then evaluate said pdf at `points`
+
+    Parameters
+    ----------
+    data : [nstars, 6] array of star means (typically data/gaia_xyzuvw.npy content)
+    points: [npoints, 6] array of star means of particular interest
+    """
+    if type(data) is str:
+        data = np.load(data)
+    nstars = data.shape[0]
+
+    kernel = stats.gaussian_kde(data.T)
+
+    bg_ln_ols = np.log(nstars)+kernel.logpdf(points.T)
+
+    if get_twins:
+        twin_points = np.copy(points)
+        twin_points[:,2] *= -1
+        twin_points[:,5] *= -1
+
+        twin_bg_ln_ols = np.log(nstars)+kernel.logpdf(twin_points.T)
+        return bg_ln_ols, twin_bg_ln_ols
+    else:
+        return bg_ln_ols
