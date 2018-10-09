@@ -107,7 +107,7 @@ def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
 def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
              star_orbits=False,
              group_then=False, group_now=False, group_orbit=False,
-             annotate=False):
+             annotate=False, membership=None, true_memb=None):
     """
     Plots a single pane capturing kinematic info in any desired 2D plane
 
@@ -148,6 +148,18 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         dim1 = labels.index(dim1.upper())
     if type(dim2) is not int:
         dim2 = labels.index(dim2.upper())
+    if star_pars:
+        nstars = star_pars['xyzuvw'].shape[0]
+        pt_colors = nstars * ['xkcd:red']
+        markers = nstars * ['.']
+        if membership:
+            best_mship = np.argmax(membership, axis=0)
+            pt_colors = np.array(COLORS)[best_mship]
+            # give correct and incorrect memberships a point and X respectively
+            if true_memb:
+                mrk_opts = np.array(['X', '.'])
+                markers = mrk_opts[(best_mship == true_memb).astype(np.int)]
+
     # ensure groups is iterable
     try:
         len(groups)
@@ -161,13 +173,13 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
     if star_pars:
         mns = star_pars['xyzuvw']
         covs = star_pars['xyzuvw_cov']
-        ax.plot(mns[:,dim1], mns[:,dim2], '.', color='xkcd:red')
-        for star_mn, star_cov in zip(mns, covs):
+        ax.plot(mns[:,dim1], mns[:,dim2], '.', color=pt_colors)
+        for star_mn, star_cov, pt_color in zip(mns, covs, pt_colors):
             # plot uncertainties
             ee.plotCovEllipse(star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
                               star_mn[np.ix_([dim1, dim2])],
                               ax=ax, alpha=0.1, linewidth='0.1',
-                              color='xkcd:red',
+                              color=pt_color,
                               )
             # plot traceback orbits for as long as oldest group (if known)
             # else, 30 Myr
@@ -408,7 +420,8 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
                       star_pars=None,
                       star_orbits=False,
                       group_then=False, group_now=False, group_orbit=False,
-                      annotate=False, bg_hists=None):
+                      annotate=False, bg_hists=None, membership=None,
+                      true_memb=None):
     """
     Plot a 2D projection of data and fit along with flanking 1D projections.
 
@@ -466,7 +479,8 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     axcen = plt.subplot(gs[1:, :-1])
     plotPane(dim1, dim2, ax=axcen, groups=groups, star_pars=star_pars,
              star_orbits=star_orbits, group_then=group_then,
-             group_now=group_now, group_orbit=group_orbit, annotate=annotate)
+             group_now=group_now, group_orbit=group_orbit, annotate=annotate,
+             membership=membership, true_memb=true_memb)
 
     # Plot flanking 1D projections
     xlim = axcen.get_xlim()
