@@ -116,6 +116,7 @@ true_memb = None
 if is_synth_fit:
     origins = np.load(rdir + 'synth_data/origins.npy')
     true_memb = getZfromOrigins(origins, star_pars_file)
+    assert true_memb.shape[0] == dt.loadXYZUVW(star_pars_file)['xyzuvw'].shape[0]
     if len(origins.shape) == 0:
         origins = np.array(origins.item())
     weights = np.array([origin.nstars for origin in origins])
@@ -131,6 +132,9 @@ if not is_inc_fit:
     plotEveryIter(rdir, star_pars_file)
 else: # incremental fit
     ncomps = 1
+    assert true_memb.shape[0] == dt.loadXYZUVW(star_pars_file)['xyzuvw'].shape[0]
+    print("true memb shape: {}".format(true_memb.shape))
+    print("nstars: {}".format(dt.loadXYZUVW(star_pars_file)['xyzuvw'].shape[0]))
     while os.path.isdir(rdir + '{}/'.format(ncomps)):
         print("ncomps: {}".format(ncomps))
         if ncomps == 1:

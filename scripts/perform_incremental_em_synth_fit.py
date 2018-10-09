@@ -162,10 +162,12 @@ except IOError:
 if can_plot:
     for dim1, dim2 in ('xy', 'xu', 'yv', 'zw', 'uv'):
         plt.clf()
+        true_memb = dt.getZfromOrigins(origins, star_pars)
         fp.plotPaneWithHists(dim1,dim2,groups=origins,
                              weights=[origin.nstars for origin in origins],
                              star_pars=star_pars,
-                             group_now=True)
+                             group_now=True,
+                             true_memb=true_memb)
         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
 
 MAX_COMP = 5

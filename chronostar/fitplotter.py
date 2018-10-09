@@ -16,7 +16,9 @@ import datatool as dt
 COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']
 COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
+MARKERS = ['v', '^', '*', 'd', 'x']
 HATCHES = ['|', '/',  '+', '.', '*'] * 10
+MARK_SIZE = 10.
 
 def add_arrow(line, position=None, indices=None, direction='right',
               size=15, color=None):
@@ -152,13 +154,18 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         nstars = star_pars['xyzuvw'].shape[0]
         pt_colors = np.array(nstars * ['xkcd:red'])
         markers = np.array(nstars * ['.'])
-        if membership:
-            best_mship = np.argmax(membership, axis=0)
+        if membership is not None:
+            # LIES: Reverse order so backgroudn (if present) is assigned consistently
+            best_mship = np.argmax(membership, axis=1)
             pt_colors = np.array(COLORS)[best_mship]
+            # assigns unique markers to "True" associations
             # give correct and incorrect memberships a point and X respectively
-            if true_memb:
-                mrk_opts = np.array(['X', '.'])
-                markers = mrk_opts[(best_mship == true_memb).astype(np.int)]
+            if true_memb is not None:
+                markers = np.array(MARKERS)[np.argmax(true_memb,
+                                                      axis=1)]
+                true_bg_mask = np.where(true_memb[:,-1] == 1.)
+                markers[true_bg_mask] = '.'
+
 
     # ensure groups is iterable
     try:
@@ -173,8 +180,10 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
     if star_pars:
         mns = star_pars['xyzuvw']
         covs = star_pars['xyzuvw_cov']
-        ax.scatter(mns[:,dim1], mns[:,dim2], marker='.', color=pt_colors)
-        for star_mn, star_cov, pt_color in zip(mns, covs, pt_colors):
+        # ax.scatter(mns[:,dim1], mns[:,dim2], marker=markers, color=pt_colors)
+        for star_mn, star_cov, marker, pt_color in zip(mns, covs, markers, pt_colors):
+            ax.scatter(star_mn[dim1], star_mn[dim2], s=MARK_SIZE,
+                       color=pt_color, marker=marker, alpha=0.8)
             # plot uncertainties
             ee.plotCovEllipse(star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
                               star_mn[np.ix_([dim1, dim2])],
@@ -201,7 +210,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         mean_then = group.mean
         # plot group initial distribution
         if group_then:
-            ax.plot(mean_then[dim1], mean_then[dim2], marker='x',
+            ax.plot(mean_then[dim1], mean_then[dim2], marker='+',
                     color=COLORS[i])
             ee.plotCovEllipse(cov_then[np.ix_([dim1,dim2], [dim1,dim2])],
                               mean_then[np.ix_([dim1,dim2])],
@@ -220,7 +229,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
                                              single_age=True)
             cov_now = tf.transform_cov(cov_then, torb.traceOrbitXYZUVW,
                                        mean_then, args=[group.age])
-            ax.plot(mean_now[dim1], mean_now[dim2], marker='x',
+            ax.plot(mean_now[dim1], mean_now[dim2], marker='+',
                    color=COLORS[i])
             ee.plotCovEllipse(cov_now[np.ix_([dim1,dim2], [dim1,dim2])],
                               mean_now[np.ix_([dim1,dim2])],
