@@ -730,7 +730,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
     # Set up stars' log overlaps with background
     use_background = False
-    if bg_ln_ols:
+    if bg_ln_ols is not None:
         use_background = True
     elif bg_hist_file:
         logging.info("CORRECTION FACTOR: {}".format(correction_factor))

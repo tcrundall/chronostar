@@ -59,6 +59,7 @@ else:
 
 gaia_xyzuvw_file = gdir + 'gaia_dr2_mean_xyzuvw.npy'
 xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
+bg_ln_ols_file = rdir + 'bg_ln_ols.npy'
 # best_fit_file = rdir + "best_fit.npy"
 # bg_hist_file = rdir + "bg_hists.npy"
 
@@ -93,7 +94,16 @@ print("Master should be working in the directory:\n{}".format(rdir))
 star_pars = dt.loadXYZUVW(xyzuvw_file)
 
 # GET BACKGROUND LOG OVERLAP DENSITIES:
-bg_ln_ols = dt.getKernelDensities(gaia_xyzuvw_file, star_pars['xyzuvw'])
+try:
+    bg_ln_ols = np.load(bg_ln_ols_file)
+    assert len(bg_ln_ols) == len(star_pars['xyzuvw'])
+    logging.info("Loaded bg_ln_ols from file")
+except (IOError, AssertionError):
+    logging.info("Calculating background overlaps")
+    logging.info(" -- this step employs scipy's kernel density estimator")
+    logging.info(" -- so could take a few minutes...")
+    bg_ln_ols = dt.getKernelDensities(gaia_xyzuvw_file, star_pars['xyzuvw'])
+    logging.info("DONE!")
 
 # # !!! plotPaneWithHists not set up to handle None groups and None weights
 # # make sure stars are initialised as expected
