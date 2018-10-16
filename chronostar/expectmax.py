@@ -257,7 +257,7 @@ def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
 
 
 def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
-                     inc_posterior=True):
+                     inc_posterior=True, amp_prior=None):
     """
     Get the log overlap integrals of each star with each component
 
@@ -289,6 +289,10 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
 
     inc_posterior: bool {False}
         If true, includes prior on groups into their relative weightings
+
+    amp_prior: int {None}
+        If set, forces the combined ampltude of Gaussian components to be
+        at least equal to `amp_prior`
 
     Returns
     -------
@@ -330,6 +334,12 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
         ngroup_stars = weights.sum()
         weights *= np.exp(group_lnpriors)
         weights = weights / weights.sum() * ngroup_stars
+
+    # Optionally scale each weight such that the total expected stars
+    # is equal to or greater than `amp_prior`
+    if amp_prior:
+        if weights.sum() < amp_prior:
+            weights *= amp_prior / weights.sum()
 
 #    # except:
 #    logging.info("_____ DEBUGGGING _____")
@@ -373,7 +383,7 @@ def calcBIC(star_pars, ncomps, lnlike):
 
 
 def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
-                inc_posterior=False):
+                inc_posterior=False, amp_prior=None):
     """Calculate membership probabilities given fits to each group
 
     Parameters
@@ -420,7 +430,7 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
         old_z = np.ones((nstars, ngroups + using_bg))/(ngroups + using_bg)
 
     lnols = getAllLnOverlaps(star_pars, groups, old_z, bg_ln_ols,
-                             inc_posterior=inc_posterior)
+                             inc_posterior=inc_posterior, amp_prior=amp_prior)
 
     z = np.zeros((nstars, ngroups + using_bg))
     for i in range(nstars):
