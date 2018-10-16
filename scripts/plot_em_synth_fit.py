@@ -132,8 +132,6 @@ if not is_inc_fit:
     plotEveryIter(rdir, star_pars_file)
 else: # incremental fit
     ncomps = 1
-    assert true_memb.shape[0] == dt.loadXYZUVW(star_pars_file)['xyzuvw'].shape[0]
-    print("true memb shape: {}".format(true_memb.shape))
     print("nstars: {}".format(dt.loadXYZUVW(star_pars_file)['xyzuvw'].shape[0]))
     while os.path.isdir(rdir + '{}/'.format(ncomps)):
         print("ncomps: {}".format(ncomps))
