@@ -130,11 +130,11 @@ def timings(group_icov, group_mean, group_icov_det,
 
     newswignpmultistart = time.clock()
     for i in range(noverlaps/batch_size):
-        result = overlap.new_get_lnoverlaps(group_cov, group_mean,
+        result = overlap.get_lnoverlaps(group_cov, group_mean,
                               star_covs, star_means, batch_size)
     end = time.clock()
 
-    print("New swigging numpy multi: {} s".format(end - newswignpmultistart))
+    print("Swigging numpy multi logged: {} s".format(end - newswignpmultistart))
     print("  -> total module calls: {}".format(noverlaps/batch_size))
     print("  -> {} microsec per overlap".\
             format((end - newswignpmultistart)/noverlaps*1e6))
