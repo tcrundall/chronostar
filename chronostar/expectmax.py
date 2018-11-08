@@ -581,7 +581,7 @@ def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False,
 
 
 def maximisation(star_pars, ngroups, z, burnin_steps, idir,
-                 all_init_pars, all_init_pos, plot_it=False, pool=None,
+                 all_init_pars, all_init_pos=None, plot_it=False, pool=None,
                  convergence_tol=0.25):
     """
     Performs the 'maximisation' step of the EM algorithm
@@ -595,6 +595,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
     :param burnin_steps:
     :param idir:
     :param all_init_pars:
+    :param all_init_pos: .... not sure how to handle this
     :param plot_it:
     :param pool:
     :param convergence_tol:
@@ -603,7 +604,8 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
     new_groups = []
     all_samples = []
     all_lnprob = []
-    # all_init_pos = ngroups * [None]
+    if all_init_pos is None:
+        all_init_pos = ngroups * [None]
 
     for i in range(ngroups):
         logging.info("........................................")
