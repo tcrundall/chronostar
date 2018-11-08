@@ -38,6 +38,8 @@ def test_maximisation():
     """
     Synthesise a tb file with negligible error, retrieve initial
     parameters
+
+    Takes a while... maybe this belongs in integration tests
     """
     logging.basicConfig(level=logging.INFO, filemode='w',
                         filename='temp_logs/test_maximisation.log')
@@ -74,7 +76,6 @@ def test_maximisation():
             star_pars, ngroups, z, burnin_steps=100, idir=data_dir,
             all_init_pars=all_init_pars, plot_it=True
         )
-    pdb.set_trace()
 
     # compare fit with input
     for origin, best_group in zip(origins, best_groups):
@@ -87,7 +88,6 @@ def test_maximisation():
         assert np.allclose(origin.sphere_dx, best_group.sphere_dx, atol=2.)
         assert np.allclose(origin.dv, best_group.dv, atol=2.)
         assert np.allclose(origin.age, best_group.age, atol=1.)
-    pdb.set_trace()
 
 
 """
