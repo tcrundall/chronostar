@@ -15,6 +15,7 @@ sys.path.insert(0, '..')  # hacky way to get access to module
 
 import chronostar.expectmax as em
 import chronostar.synthesiser as syn
+import chronostar.traceorbit as torb
 import chronostar.measurer as ms
 import chronostar.converter as cv
 
@@ -43,10 +44,11 @@ def test_maximisation():
     """
     logging.basicConfig(level=logging.INFO, filemode='w',
                         filename='temp_logs/test_maximisation.log')
+    uniform_age = 100
     group_pars = np.array([
         # X, Y, Z, U, V, W, dX, dV, age,nstars
-        [ 0, 0, 0, 0, 0, 0, 10.,  5,  10,  100],
-        [50,50, 0, 0, 0, 0, 10.,  5,  10,  100],
+        [ 0, 0, 0, 0, 0, 0, 10.,  5,  10,  uniform_age],
+        [50,50, 0, 0, 0, 0, 10.,  5,  10,  uniform_age],
     ])
     ngroups = group_pars.shape[0]
     nstars = int(np.sum(group_pars[:,-1]))
@@ -64,7 +66,9 @@ def test_maximisation():
                                                     return_groups=True,
                                                     internal=False,
                                                     )
-    astro_table = ms.measureXYZUVW(init_xyzuvw, 1.0)
+    # NEED TO TRACE STARS FORWARD!!!
+    now_xyzuvw = torb.traceManyOrbitXYZUVW(init_xyzuvw,uniform_age,)
+    astro_table = ms.measureXYZUVW(now_xyzuvw, 1.0)
     star_pars = cv.convertMeasurementsToCartesian(astro_table)
 
     import pdb;

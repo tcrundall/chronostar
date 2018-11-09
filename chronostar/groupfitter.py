@@ -8,7 +8,11 @@ import astropy.constants as const
 import astropy.units as u
 import emcee
 import logging
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+    plt_avail = True
+except ImportError:
+    plt_avail = False
 import pdb
 
 import transform as tf
@@ -692,7 +696,7 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
                                       tol=convergence_tol)
         logging.info("Burnin status: {}".format(converged))
 
-        if plot_it:
+        if plot_it and plt_avail:
             plt.clf()
             plt.plot(sampler.lnprobability.T)
             plt.savefig(plot_dir+"burnin_lnprobT{:02}.png".format(cnt))
@@ -710,7 +714,7 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         cnt += 1
 
     logging.info("Burnt in, with convergence: {}".format(converged))
-    if plot_it:
+    if plot_it and plt_avail:
         plt.clf()
         plt.plot(burnin_lnprob_res.T)
         plt.savefig(plot_dir+"burnin_lnprobT.png")
@@ -731,7 +735,7 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     np.save(save_dir+"final_lnprob.npy", sampler.lnprobability)
 
 #    print("Sampled")
-    if plot_it:
+    if plot_it and plt_avail:
         logging.info("Plotting final lnprob")
         plt.clf()
         plt.plot(sampler.lnprobability.T)
