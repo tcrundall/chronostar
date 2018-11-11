@@ -19,6 +19,17 @@ def test():
     print("Sup")
 
 def convertRecToArray(sr):
+    """
+    Inflexbile approach to read in a single row of astrometric data
+    and build mean and covraiance matrix
+
+    Parameters
+    ----------
+    sr :
+
+    :param sr:
+    :return:
+    """
     ra = sr['ra']
     e_ra = sr['ra_error'] / 3600. / 1000.
     dec = sr['dec']
@@ -29,8 +40,12 @@ def convertRecToArray(sr):
     e_pmra = sr['pmra_error']
     pmdec = sr['pmdec']
     e_pmdec = sr['pmdec_error']
-    rv = sr['radial_velocity']
-    e_rv = sr['radial_velocity_error']
+    try:
+        rv = sr['radial_velocity_best']
+        e_rv = sr['radial_velocity_error_best']
+    except KeyError:
+        rv = sr['radial_velocity']
+        e_rv = sr['radial_velocity_error']
     c_ra_dec = sr['ra_dec_corr']
     c_ra_plx = sr['ra_parallax_corr']
     c_ra_pmra = sr['ra_pmra_corr']
