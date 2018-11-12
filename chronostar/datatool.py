@@ -47,7 +47,7 @@ def loadGroups(groups_file):
     return groups
 
 
-def loadXYZUVW(xyzuvw_file, assoc_name):
+def loadXYZUVW(xyzuvw_file, assoc_name=None):
     """Load mean and covariances of stars in XYZUVW space from fits file
 
     Parameters

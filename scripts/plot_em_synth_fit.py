@@ -102,9 +102,9 @@ if not os.path.isfile(star_pars_file):
     banyan_data = '../data/gagne_bonafide_full_kinematics_with_lit' \
                   '_and_best_radial_velocity_comb_binars.fits'
     star_pars_file = dt.loadDictFromTable(banyan_data, assoc_name)
-rdir = '/data/mash/tcrun/em_fit/{}/'.format(assoc_name)
+rdir = '/data/mash/tcrun/em_fit/{}/'.format(assoc_name.replace(' ','_'))
 if not os.path.isdir(rdir):
-    rdir = '../results/em_fit/{}/'.format(assoc_name)
+    rdir = '../results/em_fit/{}/'.format(assoc_name.replace(' ','_'))
 
 if os.path.isfile(rdir + 'bg_hists.npy'):
     bg_hists = np.load(rdir + 'bg_hists.npy')
@@ -136,7 +136,9 @@ if not is_inc_fit:
     plotEveryIter(rdir, star_pars_file)
 else: # incremental fit
     ncomps = 1
-    print("nstars: {}".format(dt.loadXYZUVW(star_pars_file)['xyzuvw'].shape[0]))
+    if type(star_pars_file) is str:
+        star_pars_file = dt.loadXYZUVW(star_pars_file)
+    print("nstars: {}".format(star_pars_file['xyzuvw'].shape[0]))
     while os.path.isdir(rdir + '{}/'.format(ncomps)):
         print("ncomps: {}".format(ncomps))
         if ncomps == 1:
