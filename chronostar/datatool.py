@@ -401,7 +401,6 @@ def loadDictFromTable(table, assoc_name=None):
     gaia_ids = []
     nrows = len(table['source_id'])
     for ix, row in enumerate(table):
-        print(ix)
         if np.isfinite(row['U']) and (assoc_name == None or
                                       row['Moving group'] == assoc_name):
             mean, cov = buildMeanAndCovMatFromRow(row)
