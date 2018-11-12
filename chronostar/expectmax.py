@@ -257,7 +257,7 @@ def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
 
 
 def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
-                     inc_posterior=True, amp_prior=None):
+                     inc_posterior=False, amp_prior=None):
     """
     Get the log overlap integrals of each star with each component
 
@@ -299,17 +299,6 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
     lnols: [nstars, ngroups (+1)] float array
         The log overlaps of each star with each component, optionally
         with the log background overlaps appended as the final column
-=======
-        background. However it is not used in this context
-
-    bg_ln_ols : [nstars] float array {None}
-        The overlap the stars have with the (fixed) background distribution
-
-    Return
-    ------
-    lnols: [nstars, ngroups (+1)] float array
-        the overlap integral of
-        each star with each component as well as the background
     """
     nstars = len(star_pars['xyzuvw'])
     ngroups = len(groups)
@@ -330,7 +319,8 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
         for i, group in enumerate(groups):
             group_lnpriors[i] = gf.lnAlphaPrior(
                 group.getInternalSphericalPars(),
-                star_pars=None, z=old_z)
+                z=old_z
+            )
         ngroup_stars = weights.sum()
         weights *= np.exp(group_lnpriors)
         weights = weights / weights.sum() * ngroup_stars
@@ -437,7 +427,7 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
         z[i] = calcMembershipProbs(lnols[i])
     if np.isnan(z).any():
         logging.info("!!!!!! AT LEAST ONE MEMBERSHIP IS 'NAN' !!!!!!")
-        #import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
     return z
 
 

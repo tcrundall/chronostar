@@ -82,7 +82,7 @@ precs = ['double']
 
 #precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
 precs_string = ' '.join(precs)
-prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
+prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0, 'quint':5.0}
 
 def perform_synth_fit_wrapper(scenario):
     logging.info("Fitting: {}".format(scenario))

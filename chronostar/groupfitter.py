@@ -132,14 +132,14 @@ def lognormal(x, mu, sig):
     return 1./x * 1./(sig*np.sqrt(2*np.pi)) *\
            np.exp(-(np.log(x) - mu)**2/(2*sig**2))
 
-def lnlognormal2(x, mode=3., sig=0.105):
+def lnlognormal(x, mode=3., sig=0.105):
     # TODO: replace lognormal innerworkings so is called with desired mode
     mu = sig**2 + np.log(mode)
     return np.log(lognormal(x, mu, sig))
     # return (-np.log(x*sig*np.sqrt(2*np.pi)) -
     #         (np.log(x) - mu)**2 / (2*sig**2))
 
-def lnAlphaPrior2(pars, z, sig=0.105):
+def lnAlphaPrior(pars, z, sig=0.105):
     """
     A very approximate, gentle prior preferring super-virial distributions
 
@@ -162,41 +162,41 @@ def lnAlphaPrior2(pars, z, sig=0.105):
     # taking the 10th root to make plot gentle
     # TODO: just rework mu and sig to give desired
     # mode and shape
-    return lnlognormal2(alpha, sig=sig)
+    return lnlognormal(alpha, sig=sig)
+
+#
+# def lnlognormal(x, mu=1.05, sig=0.105):
+#     # TODO: replace lognormal innerworkings so is called with desired mode
+#     # mu = sigma**2 + np.log(mode)
+#     # return np.log(lognormal(x, mu, sig)
+#     return (-np.log(x*sig*np.sqrt(2*np.pi)) -
+#             (np.log(x) - mu)**2 / (2*sig**2))
 
 
-def lnlognormal(x, mu=1.05, sig=0.105):
-    # TODO: replace lognormal innerworkings so is called with desired mode
-    # mu = sigma**2 + np.log(mode)
-    # return np.log(lognormal(x, mu, sig)
-    return (-np.log(x*sig*np.sqrt(2*np.pi)) -
-            (np.log(x) - mu)**2 / (2*sig**2))
-
-
-def lnAlphaPrior(pars, star_pars, z):
-    """
-    A very approximate, gentle prior preferring super-virial distributions
-
-    Since alpha is strictly positive, we use a lognormal prior. We then
-    take the log of the result to incorporate it into the log likelihood
-    evaluation.
-
-    pars: [8] float array
-        X,Y,Z,U,V,W,log(dX),log(dV),age
-    star_pars:
-        (retired)
-    z: [nstars, ngroups] float array
-        membership array
-    """
-    dX = np.exp(pars[6])
-    dV = np.exp(pars[7])
-    #nstars = star_pars['xyzuvw'].shape[0]
-    nstars = np.sum(z)
-    alpha = calcAlpha(dX, dV, nstars)
-    # taking the 10th root to make plot gentle
-    # TODO: just rework mu and sig to give desired
-    # mode and shape
-    return lnlognormal(alpha) * 0.01
+# def lnAlphaPrior(pars, star_pars, z):
+#     """
+#     A very approximate, gentle prior preferring super-virial distributions
+#
+#     Since alpha is strictly positive, we use a lognormal prior. We then
+#     take the log of the result to incorporate it into the log likelihood
+#     evaluation.
+#
+#     pars: [8] float array
+#         X,Y,Z,U,V,W,log(dX),log(dV),age
+#     star_pars:
+#         (retired)
+#     z: [nstars, ngroups] float array
+#         membership array
+#     """
+#     dX = np.exp(pars[6])
+#     dV = np.exp(pars[7])
+#     #nstars = star_pars['xyzuvw'].shape[0]
+#     nstars = np.sum(z)
+#     alpha = calcAlpha(dX, dV, nstars)
+#     # taking the 10th root to make plot gentle
+#     # TODO: just rework mu and sig to give desired
+#     # mode and shape
+#     return lnlognormal(alpha) * 0.01
 
 
 def lnprior(pars, star_pars, z):
@@ -233,7 +233,7 @@ def lnprior(pars, star_pars, z):
     if age < 0.0 or age > max_age:
         return -np.inf
 
-    return lnAlphaPrior(pars, star_pars, z)
+    return lnAlphaPrior(pars, z)
 
 
 def getLogOverlaps(pars, star_pars):
@@ -339,7 +339,7 @@ def lnprobFunc(pars, star_pars, z):
     return lp + lnlike(pars, star_pars, z)
 
 
-def lnpriorTraceback(pars, star_pars):
+def lnpriorTraceback(pars, star_pars, z):
     """Computes the prior of the group models constraining parameter space
 
     Parameters
@@ -348,7 +348,7 @@ def lnpriorTraceback(pars, star_pars):
         Parameters describing the group model being fitted
     star_pars
         traceback data being fitted to
-    (retired) z
+    z
         array of weights [0.0 - 1.0] for each star, describing how likely
         they are members of group to be fitted.
 
@@ -373,7 +373,7 @@ def lnpriorTraceback(pars, star_pars):
     if age < 0.0 or age >= max_age:
         return -np.inf
 
-    return lnAlphaPrior(pars, star_pars)
+    return lnAlphaPrior(pars, z)
 
 
 def interp_cov(target_time, star_pars):
@@ -486,7 +486,7 @@ def lnprobTracebackFunc(pars, star_pars, z):
     logprob
         the logarithm of the posterior probability of the fit
     """
-    lp = lnpriorTraceback(pars, star_pars)
+    lp = lnpriorTraceback(pars, z)
     if not np.isfinite(lp):
         return -np.inf
     return lp + lnlikeTraceback(pars, star_pars, z)
@@ -550,7 +550,7 @@ def burninConvergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
 def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
              plot_it=False, pool=None, convergence_tol=0.25, init_pos=None,
              plot_dir='', save_dir='', init_pars=None, sampling_steps=None,
-             traceback=False, max_iter=None):
+             traceback=False, max_iter=None, init_at_mean=False):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Parameters
@@ -614,6 +614,10 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
         maximisation implementation triggering an abandonment of rubbish
         components)
 
+    init_at_mean : bool {False}
+        If set, the walkers will be initialised around the mean of the
+        provided data set. (Not recommended for multi-component fits)
+
     Returns
     -------
     best_sample
@@ -640,7 +644,10 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
 
     # Initialise the fit
     if init_pars is None:
-        init_pars = [0,0,0,0,0,0,3.,2.,10.0]
+        init_pars = np.array([0,0,0,0,0,0,3.,2.,3.0])
+        if init_at_mean:
+            init_pars[:6] = np.mean(star_pars['xyzuvw'], axis=0)
+
 
     NPAR = len(init_pars)
     NWALKERS = 2 * NPAR
@@ -653,8 +660,10 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
 #        INIT_SDEV[-1] = 0.0
 
     if traceback:
+        # trace stars back in time
         lnprob_function = lnprobTracebackFunc
     else:
+        # project group forward through time
         lnprob_function = lnprobFunc
 
     # Whole emcee shebang

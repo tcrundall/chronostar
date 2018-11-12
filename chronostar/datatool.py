@@ -359,6 +359,17 @@ def buildMeanAndCovMatFromRow(row):
     return mean, cov_mat
 
 
+def isInAssociation(element, iterable):
+    """
+    A wrapper for 'is in' which returns false if `iterable` is None
+    """
+    if iterable is None:
+        return False
+    if type(iterable) is str:
+        return element == iterable
+    return element in iterable
+
+
 def loadDictFromTable(table, assoc_name=None):
     """
     Takes the data in the table, builds dict with array of mean and cov matrices
@@ -401,8 +412,8 @@ def loadDictFromTable(table, assoc_name=None):
     gaia_ids = []
     nrows = len(table['source_id'])
     for ix, row in enumerate(table):
-        if np.isfinite(row['U']) and (assoc_name == None or
-                                      row['Moving group'] == assoc_name):
+        if (np.isfinite(row['U']) and
+            isInAssociation(row['Moving group'], assoc_name)):
             mean, cov = buildMeanAndCovMatFromRow(row)
             xyzuvw.append(mean)
             xyzuvw_cov.append(cov)
