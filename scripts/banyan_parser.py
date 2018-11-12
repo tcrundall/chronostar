@@ -200,10 +200,10 @@ if __name__=='__main__':
     par_comp[np.where((par_comp[:, -1] > 10) & (par_comp[:, -1] < 20))]
 
     print("convert astrometric values into lsr-centric cartesian coordinates")
-
     nrows = len(gt['source_id'])
     empty_col = np.array(nrows * [np.nan])
     cart_col_names = ['X', 'Y', 'Z', 'U', 'V', 'W',
+                      'dX', 'dY', 'dZ', 'dU', 'dV', 'dW',
                       'c_XY', 'c_XZ', 'c_XU', 'c_XV', 'c_XW',
                               'c_YZ', 'c_YU', 'c_YV', 'c_YW',
                                       'c_ZU', 'c_ZV', 'c_ZW',
@@ -215,7 +215,7 @@ if __name__=='__main__':
     for row_ix, gt_row in enumerate(gt):
         dim = 6
         if row_ix%10 == 0:
-            print("{:02.4f}% done".format(row_ix / float(nrows) * 100.))
+            print("{:02.2f}% done".format(row_ix / float(nrows) * 100.))
         astr_mean, astr_cov = gc.convertRecToArray(gt_row)
         xyzuvw_mean = coord.convertAstrometryToLSRXYZUVW(astr_mean)
         xyzuvw_cov = tf.transform_cov(
@@ -228,17 +228,21 @@ if __name__=='__main__':
         for col_ix, col_name in enumerate(cart_col_names[:6]):
             gt_row[col_name] = xyzuvw_mean[col_ix]
 
-        xyzuvw_stds = np.sqrt(xyzuvw_cov[np.diag_indices(dim)])
-        correl_matrix = xyzuvw_cov / xyzuvw_stds / xyzuvw_stds.reshape(6,1)
 
-        # fill in cartesian covariance
-        for col_ix, col_name in enumerate(cart_col_names[6:]):
+        # fill in standard deviations
+        xyzuvw_stds = np.sqrt(xyzuvw_cov[np.diag_indices(dim)])
+        for col_ix, col_name in enumerate(cart_col_names[6:12]):
+            gt_row[col_name] = xyzuvw_stds[col_ix]
+
+        correl_matrix = xyzuvw_cov / xyzuvw_stds / xyzuvw_stds.reshape(6,1)
+        # fill in correlations
+        for col_ix, col_name in enumerate(cart_col_names[12:]):
             gt_row[col_name] = correl_matrix[
                 np.triu_indices(dim,k=1)[0][col_ix],
                 np.triu_indices(dim,k=1)[1][col_ix]
             ]
+            # I think I can write above line as:
+            # gt_row[col_name] = correl_matrix[np.triu_indices(dim,k=1)][col_ix]
 
-
-
-    gt.write('../data/gagne_bonafide_full_kinematics_with_lit_and_best_radial' \
+    gt.write('../data/dummy_gagne_bonafide_full_kinematics_with_lit_and_best_radial' \
                      '_velocity.fits')

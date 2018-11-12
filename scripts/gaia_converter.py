@@ -23,12 +23,12 @@ def convertRecToArray(sr):
     Inflexbile approach to read in a single row of astrometric data
     and build mean and covraiance matrix
 
+    Looks first for 'radial_velocity_best', and then for
+    'radial_velocity'
+
     Parameters
     ----------
-    sr :
-
-    :param sr:
-    :return:
+    sr : a row from table
     """
     ra = sr['ra']
     e_ra = sr['ra_error'] / 3600. / 1000.
@@ -161,7 +161,7 @@ def convertGaiaToXYZUVWDict(astr_file="gaia_dr2_ok_plx", server=False,
     logging.info("Converted many recs")
     astr_dict = {'astr_mns': means, 'astr_covs': covs}
     cv.convertMeasurementsToCartesian(
-        astr_dict=astr_dict, savefile=rdir+astr_file+"_xyzuvw.fits")
+        astr_dict=astr_dict, savefile=rdir+astr_file+"_xyzuvw.fits")!
     logging.info("Converted and saved dictionary")
     if return_dict:
         return {'xyzuvw':means, 'xyzuvw_cov':covs}

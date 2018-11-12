@@ -5,6 +5,7 @@ TODO: write tests especially for cov construction
 """
 
 from astropy.io import fits
+from astropy.table import Table
 import numpy as np
 import logging
 from scipy import stats
@@ -46,7 +47,7 @@ def loadGroups(groups_file):
     return groups
 
 
-def loadXYZUVW(xyzuvw_file):
+def loadXYZUVW(xyzuvw_file, assoc_name):
     """Load mean and covariances of stars in XYZUVW space from fits file
 
     Parameters
@@ -55,6 +56,10 @@ def loadXYZUVW(xyzuvw_file):
         Ideally *.fits, the file name of the fits file with and hdulist:
             [1] : xyzuvw
             [2] : xyzuvw covariances
+
+    assoc_name : (String)
+        If loading from the Banyan table, can include an association name
+        (see docstring for loadDictFromTable for exhaustive list)
 
     Returns
     -------
@@ -66,12 +71,17 @@ def loadXYZUVW(xyzuvw_file):
     """
     if (xyzuvw_file[-3:] != 'fit') and (xyzuvw_file[-4:] != 'fits'):
         xyzuvw_file = xyzuvw_file + ".fits"
-    # TODO Ask Mike re storing fits files as float64 (instead of '>f8')
-    xyzuvw_now = fits.getdata(xyzuvw_file, 1).\
-        astype('float64') #hdulist[1].data
-    xyzuvw_cov_now = fits.getdata(xyzuvw_file, 2)\
-        .astype('float64') #hdulist[2].data
-    xyzuvw_dict = {'xyzuvw':xyzuvw_now, 'xyzuvw_cov':xyzuvw_cov_now}
+
+    try:
+        # TODO Ask Mike re storing fits files as float64 (instead of '>f8')
+        xyzuvw_now = fits.getdata(xyzuvw_file, 1).\
+            astype('float64') #hdulist[1].data
+        xyzuvw_cov_now = fits.getdata(xyzuvw_file, 2)\
+            .astype('float64') #hdulist[2].data
+        xyzuvw_dict = {'xyzuvw':xyzuvw_now, 'xyzuvw_cov':xyzuvw_cov_now}
+    except:
+        # data stored in simply astropy table
+        return loadDictFromTable(xyzuvw_file, assoc_name=assoc_name)
     try:
         times = fits.getdata(xyzuvw_file, 3)
         xyzuvw_dict['times'] = times
@@ -305,6 +315,107 @@ def convertGaiaMeansToXYZUVW(astr_file="all_rvs_w_ok_plx", server=False):
 
     xyzuvw_mns = cc.convertManyAstrometryToLSRXYZUVW(means, mas=True)
     np.save(rdir + astr_file + "mean_xyzuvw.npy", xyzuvw_mns)
+
+
+def buildMeanAndCovMatFromRow(row):
+    """
+    Build a covariance matrix from a row
+
+    Paramters
+    ---------
+    row : astropy Table row
+        Entries: {X, Y, Z, U, V, W, dX, dY, ..., cXY, cXZ, ...}
+
+    Return
+    ------
+    cov_mat : [6,6] numpy array
+        Diagonal elements are dX^2, dY^2, ...
+        Off-diagonal elements are cXY*dX*dY, cXZ*dX*dZ, ...
+    """
+    dim = 6
+    CART_COL_NAMES = ['X', 'Y', 'Z', 'U', 'V', 'W',
+                      'dX', 'dY',   'dZ',   'dU',   'dV',   'dW',
+                            'c_XY', 'c_XZ', 'c_XU', 'c_XV', 'c_XW',
+                                    'c_YZ', 'c_YU', 'c_YV', 'c_YW',
+                                            'c_ZU', 'c_ZV', 'c_ZW',
+                                                    'c_UV', 'c_UW',
+                                                            'c_VW']
+    mean = np.zeros(dim)
+    for i, col_name in enumerate(CART_COL_NAMES[:6]):
+        mean[i] = row[col_name]
+
+    std_vec = np.zeros(dim)
+    for i, col_name in enumerate(CART_COL_NAMES[6:12]):
+        std_vec[i] = row[col_name]
+    corr_tri = np.zeros((dim,dim))
+    # Insert upper triangle (top right) correlations
+    for i, col_name in enumerate(CART_COL_NAMES[12:]):
+        corr_tri[np.triu_indices(dim,1)[0][i],np.triu_indices(dim,1)[1][i]]\
+            =row[col_name]
+    # Build correlation matrix
+    corr_mat = np.eye(6) + corr_tri + corr_tri.T
+    # Multiply through by standard deviations
+    cov_mat = corr_mat * std_vec * std_vec.reshape(6,1)
+    return mean, cov_mat
+
+
+def loadDictFromTable(table, assoc_name=None):
+    """
+    Takes the data in the table, builds dict with array of mean and cov matrices
+
+    Paramters
+    ---------
+    table : Astropy.Table (or str)
+
+    assoc_name : str
+        One of the labels in Moving group column:
+         118 Tau, 32 Orionis, AB Doradus, Carina, Carina-Near, Columba,
+         Coma Ber, Corona Australis, Hyades, IC 2391, IC 2602,
+         Lower Centaurus-Crux, Octans, Platais 8, Pleiades, TW Hya, Taurus,
+         Tucana-Horologium, Upper Centaurus Lupus, Upper CrA, Upper Scorpius,
+         Ursa Major, beta Pictoris, chi{ 1 For (Alessi 13), epsilon Cha,
+         eta Cha, rho Ophiuci
+
+    Returns
+    -------
+    dict :
+        xyzuvw : [nstars,6] array of xyzuvw means
+        xyzuvw_cov : [nstars,6,6] array of xyzuvw covariance matrices
+        file_name : str
+            if table loaded from file, the pathway is stored here
+        indices : [nstars] int array
+            the table row indices of data converted into arrays
+        gaia_ids : [nstars] int array
+            the gaia ids of stars successfully converted
+    """
+
+    star_pars = {}
+    if type(table) is str:
+        file_name = table
+        star_pars['file_name'] = file_name
+        table = Table.read(table)
+
+    xyzuvw = []
+    xyzuvw_cov = []
+    indices = []
+    gaia_ids = []
+    nrows = len(table['source_id'])
+    for ix, row in enumerate(table):
+        print(ix)
+        if np.isfinite(row['U']) and (assoc_name == None or
+                                      row['Moving group'] == assoc_name):
+            mean, cov = buildMeanAndCovMatFromRow(row)
+            xyzuvw.append(mean)
+            xyzuvw_cov.append(cov)
+            indices.append(ix)
+            gaia_ids.append(row['source_id'])
+
+    star_pars['xyzuvw']     = np.array(xyzuvw).astype(np.float64)
+    star_pars['xyzuvw_cov'] = np.array(xyzuvw_cov).astype(np.float64)
+    star_pars['indices']    = indices
+    star_pars['gaia_ids']   = gaia_ids
+    star_pars['table']      = table
+    return star_pars
 
 
 def calcHistogramDensity(x, bin_heights, bin_edges):
