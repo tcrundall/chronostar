@@ -210,18 +210,33 @@ if __name__=='__main__':
     for col_name in cart_col_names:
         gt[col_name] = empty_col
 
-    for ix, gt_row in enumerate(gt[:10]):
-        if ix%5 == 0:
-            print("{} done".format(ix))
+    for row_ix, gt_row in enumerate(gt):
+        dim = 6
+        if row_ix%50 == 0:
+            print("{:02.4f}% done".format(row_ix / float(nrows)))
         astr_mean, astr_cov = gc.convertRecToArray(gt_row)
         xyzuvw_mean = coord.convertAstrometryToLSRXYZUVW(astr_mean)
         xyzuvw_cov = tf.transform_cov(
             astr_cov,
             coord.convertAstrometryToLSRXYZUVW,
             astr_mean,
-            dim=6,
+            dim=dim,
         )
+        # fill in cartesian mean
+        for col_ix, col_name in enumerate(cart_col_names[:6]):
+            gt_row[col_name] = xyzuvw_mean[col_ix]
+
+        xyzuvw_stds = np.sqrt(xyzuvw_cov[np.diag_indices(dim)])
+        correl_matrix = xyzuvw_cov / xyzuvw_stds / xyzuvw_stds.reshape(6,1)
+
+        # fill in cartesian covariance
+        for col_ix, col_name in enumerate(cart_col_names[6:]):
+            gt_row[col_name] = correl_matrix[
+                np.triu_indices(dim,k=1)[0][col_ix],
+                np.triu_indices(dim,k=1)[1][col_ix]
+            ]
 
 
-    # gt.write('../data/gagne_bonafide_full_kinematics_with_lit_and_best_radial' \
-    #                  '_velocity.fits')
+
+    gt.write('../data/gagne_bonafide_full_kinematics_with_lit_and_best_radial' \
+                     '_velocity.fits')
