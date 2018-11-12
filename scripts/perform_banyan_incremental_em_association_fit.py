@@ -42,9 +42,7 @@ except IndexError:
           " ------------------------------------------------")
     print("Using bpmg as default...")
     ass_name = 'bpmg_cand_w_gaia_dr2_astrometry_comb_binars'
-
-print(ass_name)
-pdb.set_trace()
+print("Fitting: {}".format(ass_name))
 
 # Setting key parameters for fit
 # CORRECTION_FACTOR = 15.     # maybe don't even need this...
