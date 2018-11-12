@@ -37,6 +37,7 @@ import chronostar.traceorbit as torb
 import chronostar.converter as cv
 import chronostar.measurer as ms
 import chronostar.groupfitter as gf
+import chronostar.datatool as dt
 import chronostar.coordinate as cc
 
 INIT_WITH_TRUE_ORIGIN = True
@@ -44,7 +45,7 @@ INIT_WITH_TRUE_ORIGIN = True
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0, 'quint': 5.0}
 
 BURNIN_STEPS = 500
-SAMPLING_STEPS = 5000
+SAMPLING_STEPS = 1000
 C_TOL = 0.25
 """
 BURNIN_STEPS = 10
@@ -120,12 +121,6 @@ logging.info("{} tolerance".format(C_TOL))
 logging.info("In the directory: {}".format(rdir))
 
 ## Destination: (inspired by LCC)
-#mean_now = np.array([50., -100., 0., -10., -20., -5.])
-## !!!!!!! ^^^^^ IS WRONG!!!!!!!!
-## ^^^^^^ IS LCC IN HELIOCENTRIC COORDINATES. IN LSR COORDINATES IT IS:
-#mean_now_lsr = cc.convertHelioToLSR(np.array([50., -100., 0.,
-#                                              -10., -20., -5.]))
-# !!!!! WHICH EQUALS [50., -100., 25., 1.1, -7.76, 2.25], much smaller vels
 mean_now_lsr = np.array([50., -100., 25., 1.1, -7.76, 2.25])
 
 # Calculate appropriate starting point
@@ -179,11 +174,6 @@ for prec in precs:
         # convert XYZUVW data into astrometry
         astro_table = ms.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
                                        savefile=pdir+astro_savefile)
-        # logging.info("-- Generated astrometry table with errors:")
-        # logging.info("Parallax:        {:4} mas".format(ms.GERROR['e_Plx']))
-        # logging.info("Radial velocity: {:4} km/s".format(ms.GERROR['e_RV']))
-        # logging.info("Proper motion:   {:4} mas/yr".\
-        #              format(ms.GERROR['e_pm']))
         star_pars = cv.convertMeasurementsToCartesian(
             astro_table, savefile=pdir+xyzuvw_conv_savefile
         )
@@ -202,6 +192,8 @@ for prec in precs:
             sampling_steps=SAMPLING_STEPS, save_dir=pdir,
             init_pars=init_pars
         )
+        med_and_span = dt.calcMedAndSpan(chain)
+        np.save(pdir+'med_and_span.npy', med_and_span)
         # store in each directory, for hexplotter
         # also used as a flag to confirm this prec already fitted for
         np.save(pdir+group_savefile, origin)

@@ -760,6 +760,10 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
     final_best_ix = np.argmax(sampler.lnprobability)
     best_sample = sampler.flatchain[final_best_ix]
 
+    # displaying median and range of each paramter
+    med_and_span = dt.calcMedAndSpan(sampler.chain)
+    logging.info("Results:\n{}".format(med_and_span))
+
     return best_sample, sampler.chain, sampler.lnprobability
 
 

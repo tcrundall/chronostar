@@ -143,6 +143,48 @@ def createSubFitsFile(mask, filename):
 #         new_hdul = fits.HDUList([primary_hdu, hdu])
 #         new_hdul.writeto(filename, overwrite=True)
 
+def calcMedAndSpan(chain, perc=34, sphere=True):
+    """
+    Given a set of aligned samples, calculate the 50th, (50-perc)th and
+     (50+perc)th percentiles.
+
+    Parameters
+    ----------
+    chain : [nwalkers, nsteps, npars]
+        The chain of samples (in internal encoding)
+    perc: integer {34}
+        The percentage from the midpoint you wish to set as the error.
+        The default is to take the 16th and 84th percentile.
+    sphere: Boolean {True}
+        Currently hardcoded to take the exponent of the logged
+        standard deviations. If sphere is true the log stds are at
+        indices 6, 7. If sphere is false, the log stds are at
+        indices 6:10.
+
+    Returns
+    -------
+    _ : [npars,3] float array
+        For each paramter, there is the 50th, (50+perc)th and (50-perc)th
+        percentiles
+    """
+    npars = chain.shape[-1]  # will now also work on flatchain as input
+    flat_chain = np.reshape(chain, (-1, npars))
+
+    # conv_chain = np.copy(flat_chain)
+    # if sphere:
+    #     conv_chain[:, 6:8] = np.exp(conv_chain[:, 6:8])
+    # else:
+    #     conv_chain[:, 6:10] = np.exp(conv_chain[:, 6:10])
+
+    # return np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+    #                     zip(*np.percentile(conv_chain,
+    #                                        [50-perc,50,50+perc],
+    #                                        axis=0))))
+    return np.array(map(lambda v: (v[1], v[2], v[0]),
+                        zip(*np.percentile(flat_chain,
+                                           [50-perc, 50, 50+perc],
+                                           axis=0))))
+
 
 def convertRecToArray(sr):
     """UNTESTED"""
