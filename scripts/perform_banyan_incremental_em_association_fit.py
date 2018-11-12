@@ -37,10 +37,14 @@ try:
 except IndexError:
     print(" ---------------- INCORRECT USAGE ---------------\n"
           "  Usage: nohup mpirun -np 19 python\n"
-          "         perform_em_association_fit.py [ass_name]\n"
+          "         perform_banyan_incremental_em_association_fit.py\n"
+          "         [ass_name]\n"
           " ------------------------------------------------")
     print("Using bpmg as default...")
     ass_name = 'bpmg_cand_w_gaia_dr2_astrometry_comb_binars'
+
+print(ass_name)
+pdb.set_trace()
 
 # Setting key parameters for fit
 # CORRECTION_FACTOR = 15.     # maybe don't even need this...
@@ -58,7 +62,8 @@ else:
     mkpath(rdir)
 
 gaia_xyzuvw_file = gdir + 'gaia_dr2_mean_xyzuvw.npy'
-xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
+xyzuvw_file = '../data/gagne_bonafide_full_kinematics_with_lit_' \
+              'and_best_radial_velocity_comb_binars.fits'
 bg_ln_ols_file = rdir + 'bg_ln_ols.npy'
 
 logging.basicConfig(
@@ -89,7 +94,7 @@ print("Only one thread is master")
 
 print("Master should be working in the directory:\n{}".format(rdir))
 
-star_pars = dt.loadXYZUVW(xyzuvw_file)
+star_pars = dt.loadXYZUVW(xyzuvw_file, assoc_name=ass_name)
 
 # GET BACKGROUND LOG OVERLAP DENSITIES:
 logging.info("Acquiring background overlaps")
