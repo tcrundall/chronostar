@@ -854,8 +854,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                      format(converged))
         logging.info("---------------------------------------")
 
-        # CHECK STABILITY
-        stable_state = checkStability(star_pars, new_groups, z, bg_ln_ols)
+        # Ensure stability after sufficient iterations to settle
+        if iter_count > 10:
+            stable_state = checkStability(star_pars, new_groups, z, bg_ln_ols)
 
         # only update if the fit has improved
         if not converged:
