@@ -33,52 +33,26 @@ sys.path.insert(0, '..')
 
 # best pars: age: 5, spread: 10, v_disp: 2(?), size: 25
 """
-ages = [5, 15, 30, 50]  #Myr
-spreads = [1, 2, 5, 10] #pc
-v_disps = [1, 2, 5, 10] #km/s
-sizes = [25, 50, 100, 200] #nstars
-precs = ['perf', 'half', 'gaia', 'double']
-
-ages = [30]
-spreads = [5]
-v_disps = [2]
-sizes   = [25, 100]
-precs = ['perf', 'gaia']
-"""
-"""
 # DIFFERENT SERVERS GET DIFFERENT AGE,
-# Mash: 5
-# Malice: 15
-# Motley : 30, 50
-ages = [5, 15, 30, 50]
-spreads = [1, 5] #pc
-v_disps = [2, 10] #km/s
-sizes = [25, 100] #nstars
-precs = ['perf', 'half', 'gaia']
+# Mash: 5, 15
+# Malice: 30 
+# Motley : 50
 """
-# EVEN PARAMETERS INITED
-ages = [50] # malice will do age = 50
-spreads = [2, 10] #pc
-v_disps = [1, 5] #km/s
-sizes = [50, 200] #nstars
-precs = ['perf', 'half', 'gaia', 'double']
-"""
-# ODD PARAMETERS INITED
-ages = [5, 15, 30, 50]
-spreads = [1, 5] #pc
-v_disps = [2, 10] #km/s
-sizes = [25, 100] #nstars
-precs = ['perf', 'half', 'gaia', 'double']
-#precs = ['double']
-"""
-"""
-ages = [6, 11]
-spreads = [2] #pc
-v_disps = [1] #km/s
-sizes = [50] #nstars
-#precs = ['perf', 'half', 'gaia']
-precs = ['double']
-"""
+# BASE PARAMETER SET
+ages = [5, 15, 30, 50] # malice will do age = 50
+spreads = [1, 2] #pc
+v_disps = [1, 2] #km/s
+sizes = [25, 50, 100] #nstars
+precs = ['half', 'gaia', 'double']
+labels = ['a', 'b', 'c', 'd']
+
+# TRIAL PARAMETER SET
+ages = [5] #, 15, 30, 50] # malice will do age = 50
+spreads = [1] #, 2] #pc
+v_disps = [1] #, 2] #km/s
+sizes = [25] #, 50, 100] #nstars
+precs = ['half'] #, 'gaia', 'double']
+labels = ['a', 'b'] #, 'c', 'd']
 
 #precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
 precs_string = ' '.join(precs)
@@ -86,16 +60,17 @@ prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0, 'quint':5.0}
 
 def perform_synth_fit_wrapper(scenario):
     logging.info("Fitting: {}".format(scenario))
-    os.system("mpirun -np 4 python perform_synth_fit.py {} {} {} {} "\
-        .format(*scenario) + precs_string)
-    #os.system("python perform_synth_fit.py {} {} {} {} " \
-    #          .format(*scenario) + precs_string)
+    for label in labels:
+        logging.info("label: {}".format(label))
+        os.system("mpirun -np 4 python perform_synth_fit.py {} {} {} {} "\
+            .format(*scenario) + precs_string + " {}".format(label))
+        logging.info("--- completed: {} {}".format(scenario, label))
     logging.info("Completed: {}".format(scenario))
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='w',
-                        filename="malice_perform_many_synth_fits.log")
-    logging.info("malice is performing even fits:\nages: {}\nspreads: {}\n"
+                        filename="mash_perform_many_synth_fits.log")
+    logging.info("mash is performing fits:\nages: {}\nspreads: {}\n"
                  "v_disps: {}\nsizes: {}\nprecs: {}\n".format(ages, spreads,
                                                               v_disps, sizes,
                                                               precs))
