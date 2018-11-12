@@ -101,7 +101,7 @@ star_pars_file = '../data/{}_xyzuvw.fits'.format(assoc_name)
 if not os.path.isfile(star_pars_file):
     banyan_data = '../data/gagne_bonafide_full_kinematics_with_lit' \
                   '_and_best_radial_velocity_comb_binars.fits'
-    star_pars_file = dt.loadDictFromTable('../data/', assoc_name)
+    star_pars_file = dt.loadDictFromTable(banyan_data, assoc_name)
 rdir = '/data/mash/tcrun/em_fit/{}/'.format(assoc_name)
 if not os.path.isdir(rdir):
     rdir = '../results/em_fit/{}/'.format(assoc_name)
