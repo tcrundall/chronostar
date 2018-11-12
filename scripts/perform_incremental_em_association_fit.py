@@ -255,7 +255,7 @@ while ncomps < MAX_COMP:
         [logging.info(row[-1]) for row in prev_meds]
         logging.info('Membership distribution: {}'.format(prev_z.sum(axis=0)))
         logging.info('Final membership:')
-        logging.info('\n',np.round(prev_z*100))
+        logging.info('\n{}'.format(np.round(prev_z*100)))
         logging.info('Final lnlikelihood: {}'.format(prev_lnlike))
         logging.info('Final lnposterior:  {}'.format(prev_lnpost))
         logging.info('Final BIC: {}'.format(prev_BIC))

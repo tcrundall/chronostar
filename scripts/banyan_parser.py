@@ -172,16 +172,18 @@ if __name__=='__main__':
     """Read in banyan text file, and Marusa's fits table, insert missing
     literature rvs and update 'best rv' column"""
 
+    print("Beginning script")
+
     # Load data tables
     banyan_data = readBanyanTxtFile()
     gagne_filename = '../data/gagne_bonafide_full_kinematics_with_best_radial' \
                      '_velocity.fits'
     gt = Table.read(gagne_filename)
 
-    # Incorporate overlooked rvs compiled from the literature
+    print("Incorporate overlooked rvs compiled from the literature")
     insertLitRVs(gt, banyan_data)
 
-    # Adopt approximate masses from spectral types
+    print("Adopt approximate masses from spectral types")
     masses = np.array(
         [getMassFromSpectralType(stype) for stype in gt['Spectral type']]
     )
@@ -197,7 +199,7 @@ if __name__=='__main__':
 
     par_comp[np.where((par_comp[:, -1] > 10) & (par_comp[:, -1] < 20))]
 
-    # convert astrometric values into lsr-centric cartesian coordinates
+    print("convert astrometric values into lsr-centric cartesian coordinates")
 
     nrows = len(gt['source_id'])
     empty_col = np.array(nrows * [np.nan])
@@ -212,8 +214,8 @@ if __name__=='__main__':
 
     for row_ix, gt_row in enumerate(gt):
         dim = 6
-        if row_ix%50 == 0:
-            print("{:02.4f}% done".format(row_ix / float(nrows)))
+        if row_ix%10 == 0:
+            print("{:02.4f}% done".format(row_ix / float(nrows) * 100.))
         astr_mean, astr_cov = gc.convertRecToArray(gt_row)
         xyzuvw_mean = coord.convertAstrometryToLSRXYZUVW(astr_mean)
         xyzuvw_cov = tf.transform_cov(
