@@ -58,10 +58,14 @@ try:
     age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
     nstars = int(sys.argv[4])
     precs = sys.argv[5:]
+    if precs[-1] not in prec_val.keys():
+        label = precs.pop(-1)
+    else:
+        label = None
 except ValueError:
     print("--------------------- INCORRECT USAGE --------------------------")
     print("nohup mpirun -np 19 python perform_synth_fit.py [age] [dX]"
-          " [dV]\n     [nstars] [prec1] [prec2] ... &")
+          " [dV]\n     [nstars] [prec1] [prec2] ... [label] &")
     print("----------------------------------------------------------------")
     raise
 
@@ -71,15 +75,22 @@ if platform.system() == 'Linux': # then we are on a RSAA server
                                                             int(dX),
                                                             int(dV),
                                                             int(nstars))
+    if label:
+        rdir = rdir[:-1] + '_{}/'.format(label)
+
 else: #platform.system() == 'Darwin' # cause no one uses windows....
     rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
                                                       int(dV), int(nstars))
+    if label:
+        rdir = rdir[:-1] + '_{}/'.format(label)
 try:
     mkpath(rdir)
 except:
     # I guess you're not Tim Crundall... or on an RSAA server
     rdir = "../results/synth_fit/{}_{}_{}_{}/".format(int(age), int(dX),
                                                       int(dV), int(nstars))
+    if label:
+        rdir = rdir[:-1] + '_{}/'.format(label)
     mkpath(rdir)
 
 logging.basicConfig(
