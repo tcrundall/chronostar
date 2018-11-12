@@ -41,7 +41,7 @@ import chronostar.coordinate as cc
 
 INIT_WITH_TRUE_ORIGIN = True
 
-prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0}
+prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0, 'quint': 5.0}
 
 BURNIN_STEPS = 500
 SAMPLING_STEPS = 5000
