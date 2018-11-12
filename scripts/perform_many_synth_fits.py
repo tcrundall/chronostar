@@ -59,13 +59,13 @@ precs_string = ' '.join(precs)
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0, 'quint':5.0}
 
 def perform_synth_fit_wrapper(scenario):
-    logging.info("Fitting: {}".format(scenario))
+    logging.info("Fitting: {} ...".format(scenario))
     for label in labels:
-        logging.info("label: {}".format(label))
+        logging.info("--- {} {} ...".format(scenario, label))
         os.system("mpirun -np 4 python perform_synth_fit.py {} {} {} {} "\
             .format(*scenario) + precs_string + " {}".format(label))
-        logging.info("--- completed: {} {}".format(scenario, label))
-    logging.info("Completed: {}".format(scenario))
+        logging.info("--- ... completed: {} {}".format(scenario, label))
+    logging.info("... completed: {}".format(scenario))
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='w',
