@@ -188,7 +188,7 @@ for prec in precs:
         star_pars = cv.convertMeasurementsToCartesian(
             astro_table, savefile=pdir+xyzuvw_conv_savefile
         )
-        logging.info("Generated [{}] traceback file".format(prec))
+        logging.info("Generated [{}] measurement file".format(prec))
 
         if INIT_WITH_TRUE_ORIGIN:
             init_pars = origin.getInternalSphericalPars()
