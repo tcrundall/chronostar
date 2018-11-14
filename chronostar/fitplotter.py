@@ -107,7 +107,7 @@ def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
 
 
 def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
-             star_orbits=False,
+             star_orbits=False, origins=None,
              group_then=False, group_now=False, group_orbit=False,
              annotate=False, membership=None, true_memb=None):
     """
@@ -246,12 +246,26 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         if group_orbit:
             plotOrbit(mean_now, dim1, dim2, ax, -group.age, group_ix=i,
                       with_arrow=True, annotate=annotate)
+    if origins:
+        for origin in origins:
+            cov_then = origin.generateSphericalCovMatrix()
+            mean_then = origin.mean
+            # plot origin initial distribution
+            ax.plot(mean_then[dim1], mean_then[dim2], marker='+',
+                    color='xkcd:grey')
+            ee.plotCovEllipse(
+                cov_then[np.ix_([dim1, dim2], [dim1, dim2])],
+                mean_then[np.ix_([dim1, dim2])],
+                with_line=True,
+                ax=ax, alpha=0.1, ls='--',
+                color='xkcd:grey')
 
-        ax.set_xlabel("{} [{}]".format(labels[dim1], units[dim1]))
-        ax.set_ylabel("{} [{}]".format(labels[dim2], units[dim2]))
+    ax.set_xlabel("{} [{}]".format(labels[dim1], units[dim1]))
+    ax.set_ylabel("{} [{}]".format(labels[dim2], units[dim2]))
 
 
-def plotMultiPane(dim_pairs, star_pars, groups, save_file='dummy.pdf'):
+def plotMultiPane(dim_pairs, star_pars, groups, origins=None,
+                  save_file='dummy.pdf', title=None):
     """
     Flexible function that plots many 2D slices through data and fits
 
@@ -296,6 +310,12 @@ def plotMultiPane(dim_pairs, star_pars, groups, save_file='dummy.pdf'):
     except:  # groups is a single group instance
         groups = [groups]
 
+    if origins:
+        try:
+            len(origins)
+        except: # origins is a single group instance
+            origins = [origins]
+
     # setting up plot dimensions
     npanes = len(dim_pairs)
     rows = int(np.sqrt(npanes)) #plots are never taller than wide
@@ -307,10 +327,13 @@ def plotMultiPane(dim_pairs, star_pars, groups, save_file='dummy.pdf'):
 
     # drawing each axes
     for i, (dim1, dim2) in enumerate(dim_pairs):
-        plotPane(dim1, dim2, axs.flatten()[i], groups=groups,
+        plotPane(dim1, dim2, axs.flatten()[i], groups=groups, origins=origins,
                  star_pars=star_pars, star_orbits=False,
                  group_then=True, group_now=True, group_orbit=True,
                  annotate=False)
+
+    if title:
+        f.suptitle(title)
 
     f.savefig(save_file, bbox_inches='tight', format='pdf')
 

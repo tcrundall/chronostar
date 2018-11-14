@@ -7,15 +7,13 @@ will permit blanks to be included, should explore this
 
 import numpy as np
 import re
-from astropy.io import fits
 from astropy.table import Table
 
-import gaia_converter as gc
+from scripts.retired import gaia_converter as gc
 
 import sys
 sys.path.insert(0, '..')
 import chronostar.coordinate as coord
-import chronostar.converter as conv
 import chronostar.transform as tf
 
 def clean_row(row,i):

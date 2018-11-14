@@ -229,6 +229,85 @@ def convertRecToArray(sr):
     ])
     return mean, cov
 
+
+def convertRecToArray(sr):
+    """
+    Inflexbile approach to read in a single row of astrometric data
+    and build mean and covraiance matrix
+
+    Looks first for 'radial_velocity_best', and then for
+    'radial_velocity'
+
+    Parameters
+    ----------
+    sr : a row from table
+    """
+    ra = sr['ra']
+    e_ra = sr['ra_error'] / 3600. / 1000.
+    dec = sr['dec']
+    e_dec = sr['dec_error'] / 3600. / 1000.
+    plx = sr['parallax']
+    e_plx = sr['parallax_error']
+    pmra = sr['pmra']
+    e_pmra = sr['pmra_error']
+    pmdec = sr['pmdec']
+    e_pmdec = sr['pmdec_error']
+    try:
+        rv = sr['radial_velocity_best']
+        e_rv = sr['radial_velocity_error_best']
+    except KeyError:
+        rv = sr['radial_velocity']
+        e_rv = sr['radial_velocity_error']
+    c_ra_dec = sr['ra_dec_corr']
+    c_ra_plx = sr['ra_parallax_corr']
+    c_ra_pmra = sr['ra_pmra_corr']
+    c_ra_pmdec = sr['ra_pmdec_corr']
+    c_dec_plx = sr['dec_parallax_corr']
+    c_dec_pmra = sr['dec_pmra_corr']
+    c_dec_pmdec = sr['dec_pmdec_corr']
+    c_plx_pmra = sr['parallax_pmra_corr']
+    c_plx_pmdec = sr['parallax_pmdec_corr']
+    c_pmra_pmdec = sr['pmra_pmdec_corr']
+
+    mean = np.array((ra, dec, plx, pmra, pmdec, rv))
+    cov  = np.array([
+        [e_ra**2, c_ra_dec*e_ra*e_dec, c_ra_plx*e_ra*e_plx,
+            c_ra_pmra*e_ra*e_pmra, c_ra_pmdec*e_ra*e_pmdec, 0.],
+        [c_ra_dec*e_ra*e_dec, e_dec**2, c_dec_plx*e_dec*e_plx,
+            c_dec_pmra*e_dec*e_pmra, c_dec_pmdec*e_dec*e_pmdec, 0.],
+        [c_ra_plx*e_ra*e_plx, c_dec_plx*e_dec*e_plx, e_plx**2,
+            c_plx_pmra*e_plx*e_pmra, c_plx_pmdec*e_plx*e_pmdec, 0.],
+        [c_ra_pmra*e_ra*e_pmra, c_dec_pmra*e_dec*e_pmra,
+                                                c_plx_pmra*e_plx*e_pmra,
+             e_pmra**2, c_pmra_pmdec*e_pmra*e_pmdec, 0.],
+        [c_ra_pmdec*e_ra*e_pmdec, c_dec_pmdec*e_dec*e_pmdec,
+                                                c_plx_pmdec*e_plx*e_pmdec,
+             c_pmra_pmdec*e_pmra*e_pmdec, e_pmdec**2, 0.],
+        [0., 0., 0., 0., 0., e_rv**2]
+    ])
+    return mean, cov
+
+
+def appendCartColsToTable(table):
+    """
+    Insert empty place holder columns for cartesian values
+    """
+    nrows = len(table)
+    empty_col = np.array(nrows * [np.nan])
+    cart_col_names = ['X', 'Y', 'Z', 'U', 'V', 'W',
+                      'dX', 'dY', 'dZ', 'dU', 'dV', 'dW',
+                      'c_XY', 'c_XZ', 'c_XU', 'c_XV', 'c_XW',
+                              'c_YZ', 'c_YU', 'c_YV', 'c_YW',
+                                      'c_ZU', 'c_ZV', 'c_ZW',
+                                              'c_UV', 'c_UW',
+                                                      'c_VW']
+    units = 3*['pc'] + 3*['km/s'] + 3*['pc'] + 3*['km/s'] + 15*[None]
+    for ix, col_name in enumerate(cart_col_names):
+        table[col_name] = empty_col
+        table[col_name].unit = units[ix]
+    return
+
+
 def convertManyRecToArray(data):
     """
     Convert many Fits Records in astrometry into mean and covs (astro)

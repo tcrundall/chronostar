@@ -36,7 +36,8 @@ gaia_bp_astro_file = "../data/gaia_dr2_bp_astro.fits"
 hdul = fits.open(gaia_bp_astro_file)
 from astropy.io import fits
 hdul = fits.open(gaia_bp_astro_file)
-import gaia_converter as gc
+from scripts.retired import gaia_converter as gc
+
 hdul[1].data.shape
 hdul[1].data[0]
 hdul[1].header

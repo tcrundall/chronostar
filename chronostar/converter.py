@@ -10,6 +10,7 @@ import numpy as np
 import measurer as ms
 import coordinate as cc
 import transform as tf
+import datatool as dt
 
 try:
     import astropy.io.fits as pyfits
@@ -84,6 +85,48 @@ def saveDictAsFits(savefile, xyzuvw_dict):
     # TODO: Get Mike to help with this step
     #hl.append(pyfits.TableHDU(xyzuvw_dict['table'])) #
     hl.writeto(savefile, overwrite=True)
+
+
+def convertRowToCartesian(row, row_ix=None, nrows=None):
+    dim=6
+    cart_col_names = ['X', 'Y', 'Z', 'U', 'V', 'W',
+                      'dX', 'dY', 'dZ', 'dU', 'dV', 'dW',
+                      'c_XY', 'c_XZ', 'c_XU', 'c_XV', 'c_XW',
+                              'c_YZ', 'c_YU', 'c_YV', 'c_YW',
+                                      'c_ZU', 'c_ZV', 'c_ZW',
+                                              'c_UV', 'c_UW',
+                                                      'c_VW']
+    try:
+        if row_ix % 100 == 0:
+            print("{:010.7f}% done".format(row_ix / float(nrows) * 100.))
+    except TypeError:
+        pass
+    astr_mean, astr_cov = dt.convertRecToArray(row)
+    xyzuvw_mean = cc.convertAstrometryToLSRXYZUVW(astr_mean)
+    xyzuvw_cov = tf.transform_cov(
+        astr_cov,
+        cc.convertAstrometryToLSRXYZUVW,
+        astr_mean,
+        dim=dim,
+    )
+    # fill in cartesian mean
+    for col_ix, col_name in enumerate(cart_col_names[:6]):
+        row[col_name] = xyzuvw_mean[col_ix]
+
+    # fill in standard deviations
+    xyzuvw_stds = np.sqrt(xyzuvw_cov[np.diag_indices(dim)])
+    for col_ix, col_name in enumerate(cart_col_names[6:12]):
+        row[col_name] = xyzuvw_stds[col_ix]
+
+    correl_matrix = xyzuvw_cov / xyzuvw_stds / xyzuvw_stds.reshape(6, 1)
+    # fill in correlations
+    for col_ix, col_name in enumerate(cart_col_names[12:]):
+        row[col_name] = correl_matrix[
+            np.triu_indices(dim, k=1)[0][col_ix],
+            np.triu_indices(dim, k=1)[1][col_ix]
+        ]
+        # I think I can write above line as:
+        # row[col_name] = correl_matrix[np.triu_indices(dim,k=1)][col_ix]
 
 
 def convertMeasurementsToCartesian(t=None, loadfile='', astr_dict=None,
