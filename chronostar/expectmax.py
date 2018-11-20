@@ -453,7 +453,7 @@ def getPointsOnCircle(npoints, v_dist=20, offset=False):
     return np.vstack((us, vs)).T
 
 
-def getInitialGroups(ngroups, xyzuvw, offset=False):
+def getInitialGroups(ngroups, xyzuvw, offset=False, v_dist=10.):
     """
     Generate the parameter list with which walkers will be initialised
 
@@ -466,6 +466,8 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
     offset : (boolean {False})
         If set, the gorups are initialised in the complementary angular
         positions
+    v_dist: float
+        Radius of circle in UV plane along which groups are initialsed
 
     Returns
     -------
@@ -473,6 +475,11 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
         the parameters with which to initialise each group's emcee run
     """
     groups = []
+
+    # if only fitting one group, simply initialise walkers about the
+    # mean of the data set
+    if ngroups == 1:
+        v_dist = 0
 
     mean = np.mean(xyzuvw, axis=0)[:6]
     logging.info("Mean is\n{}".format(mean))
@@ -483,7 +490,7 @@ def getInitialGroups(ngroups, xyzuvw, offset=False):
     age = 3.
     # group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
     #                         np.log(5), 3])
-    pts = getPointsOnCircle(npoints=ngroups, v_dist=10, offset=offset)
+    pts = getPointsOnCircle(npoints=ngroups, v_dist=v_dist, offset=offset)
     logging.info("Points around circle are:\n{}".format(pts))
 
     for i in range(ngroups):
