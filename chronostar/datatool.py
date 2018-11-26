@@ -491,6 +491,10 @@ def isInAssociation(element, iterable):
     return element in iterable
 
 
+def loadTable(table):
+    return Table.read(table)
+
+
 def loadDictFromTable(table, assoc_name=None):
     """
     Takes the data in the table, builds dict with array of mean and cov matrices

@@ -65,7 +65,7 @@ for i, (group_pars_ex, weights) in enumerate(zip(all_group_pars, all_weights)):
         group_obj = syn.Group(group_par, starcount=False, internal=False,
                               sphere=True)
         lnalpha_prior = gf.lnAlphaPrior(group_obj.getInternalSphericalPars(),
-                                              None, weight)
+                                              weight)
         lnalpha_priors.append(lnalpha_prior)
         print("nstars: {:6.3f} | age: {:6.3f} | dX: {:6.3f} | dV: {:6.3f} |"
               "lnalpha_pr: {:6.3f}"\

@@ -541,6 +541,7 @@ def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False,
     Get overall likelihood for a proposed model.
 
     Evaluates each star's overlap with every component and background
+    If only fitting one group, inc_posterior does nothing
 
     Parameters
     ----------
@@ -823,6 +824,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         # LOG RESULTS OF ITERATION
         overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
                                                bg_ln_ols, inc_posterior=False)
+        # TODO This seems to be bugged... returns same value as lnlike when only
+        # fitting one group; BECAUSE WEIGHTS ARE REBALANCED
         overallLnPosterior = getOverallLnLikelihood(star_pars, new_groups,
                                                bg_ln_ols, inc_posterior=True)
         logging.info("---        Iteration results         --")

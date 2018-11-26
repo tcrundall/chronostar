@@ -111,17 +111,13 @@ def loadXYZUVW(xyzuvw_file):
 
 def calcAlpha(dX, dV, nstars):
     """
-    Assuming 20% efficiency, average star mass of 0.5 M_sun, and we only
-    have identified half the initial stars by mass.
-
-    That is, the mass of the stars identified is only 10% of the initial
-    "cloud"s mass, therefore each star, approximated as 0.5 M_sun, represents
-    5 M_sun worth of molecular gas
+    Assuming we have identified 100% of star mass, and that average
+    star mass is 1 M_sun.
 
     Calculated alpha is unitless
     """
     return ( (dV*u.km/u.s)**2 * dX*u.pc /
-              (const.G * 5 * nstars * const.M_sun) ).decompose().value
+              (const.G * nstars * const.M_sun) ).decompose().value
 
 
 def lognormal(x, mu, sig):
@@ -132,14 +128,14 @@ def lognormal(x, mu, sig):
     return 1./x * 1./(sig*np.sqrt(2*np.pi)) *\
            np.exp(-(np.log(x) - mu)**2/(2*sig**2))
 
-def lnlognormal(x, mode=3., sig=0.105):
+def lnlognormal(x, mode=3., sig=1.):
     # TODO: replace lognormal innerworkings so is called with desired mode
     mu = sig**2 + np.log(mode)
     return np.log(lognormal(x, mu, sig))
     # return (-np.log(x*sig*np.sqrt(2*np.pi)) -
     #         (np.log(x) - mu)**2 / (2*sig**2))
 
-def lnAlphaPrior(pars, z, sig=0.105):
+def lnAlphaPrior(pars, z, sig=1.):
     """
     A very approximate, gentle prior preferring super-virial distributions
 
@@ -147,11 +143,15 @@ def lnAlphaPrior(pars, z, sig=0.105):
     take the log of the result to incorporate it into the log likelihood
     evaluation.
 
+    Mode is set at 3, when `sig` is 1, this corresponds to a FWHM of 1 dex
+    (AlphaPrior(alpha=1, sig=1.) =     AlphaPrior(alpha=11,sig=1.)
+                                 = 0.5*AlphaPrior(alpha=3, sig=1.)
+
     pars: [8] float array
         X,Y,Z,U,V,W,log(dX),log(dV),age
     star_pars:
         (retired)
-    z: [nstars, ngroups] float array
+    z: [nstars] float array
         membership array
     """
     dX = np.exp(pars[6])

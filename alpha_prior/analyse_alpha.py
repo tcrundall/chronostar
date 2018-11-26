@@ -18,7 +18,7 @@ later_z = np.load(rdir+'iter15/membership.npy')
 xs = np.linspace(2, 100,10000)
 plt.clf()
 for sig in [.5, .75, 1]:
-    plt.plot(xs, gf.lnlognormal2(xs, sig=sig), label='{}'.format(sig))
+    plt.plot(xs, gf.lnlognormal(xs, sig=sig), label='{}'.format(sig))
 plt.legend(loc='best')
 plt.savefig("lnlognormal.pdf")
 
@@ -32,13 +32,8 @@ for i, (igroup, lgroup) in enumerate(zip(init_groups, later_groups)):
     ))
     print('New prior, with sig = {}'.format(sig))
     print('Init prior: {:.5} | Later prior: {:.5}'.format(
-        gf.lnAlphaPrior2(igroup.getInternalSphericalPars(), init_z[:,i], sig=sig),
-        gf.lnAlphaPrior2(lgroup.getInternalSphericalPars(), later_z[:,i], sig=sig),
-    ))
-    print('Retired prior:')
-    print('Init prior: {:.5} | Later prior: {:.5}'.format(
-        gf.lnAlphaPrior(igroup.getInternalSphericalPars(), None, init_z[:,i]),
-        gf.lnAlphaPrior(lgroup.getInternalSphericalPars(), None, later_z[:,i]),
+        gf.lnAlphaPrior(igroup.getInternalSphericalPars(), init_z[:,i], sig=sig),
+        gf.lnAlphaPrior(lgroup.getInternalSphericalPars(), later_z[:,i], sig=sig),
     ))
 
 gaia_6d_hist_file = 'gaia_6d_hist.npy'
