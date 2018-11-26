@@ -39,20 +39,12 @@ sys.path.insert(0, '..')
 # Motley : 50
 """
 # BASE PARAMETER SET
-ages = [5, 15, 30, 50] # malice will do age = 50
+ages = [30]# [5, 15]#, 30, 50] # motley does 50
 spreads = [1, 2] #pc
 v_disps = [1, 2] #km/s
 sizes = [25, 50, 100] #nstars
 precs = ['half', 'gaia', 'double']
 labels = ['a', 'b', 'c', 'd']
-
-# TRIAL PARAMETER SET
-ages = [5] #, 15, 30, 50] # malice will do age = 50
-spreads = [1] #, 2] #pc
-v_disps = [1] #, 2] #km/s
-sizes = [25] #, 50, 100] #nstars
-precs = ['half'] #, 'gaia', 'double']
-labels = ['a', 'b'] #, 'c', 'd']
 
 #precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
 precs_string = ' '.join(precs)
@@ -68,7 +60,7 @@ def perform_synth_fit_wrapper(scenario):
     logging.info("... completed: {}".format(scenario))
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, filemode='w',
+    logging.basicConfig(level=logging.INFO, filemode='a',
                         filename="mash_perform_many_synth_fits.log")
     logging.info("mash is performing fits:\nages: {}\nspreads: {}\n"
                  "v_disps: {}\nsizes: {}\nprecs: {}\n".format(ages, spreads,

@@ -482,10 +482,12 @@ def buildMeanAndCovMatFromRow(row):
 
 def isInAssociation(element, iterable):
     """
-    A wrapper for 'is in' which returns false if `iterable` is None
+    A wrapper for 'is in' which returns true if `iterable` is None
+
+    If `iterable` is None, then we accept all elements
     """
     if iterable is None:
-        return False
+        return True
     if type(iterable) is str:
         return element == iterable
     return element in iterable
@@ -537,6 +539,8 @@ def loadDictFromTable(table, assoc_name=None):
     gaia_ids = []
     nrows = len(table['source_id'])
     for ix, row in enumerate(table):
+        if nrows > 10000 and ix % 1000==0:
+            print("Done {:7} of {}".format(ix, nrows))
         if (np.isfinite(row['U']) and
             isInAssociation(row['Moving group'], assoc_name)):
             mean, cov = buildMeanAndCovMatFromRow(row)
