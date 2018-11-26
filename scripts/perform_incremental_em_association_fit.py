@@ -37,22 +37,39 @@ try:
 except IndexError:
     print(" ---------------- INCORRECT USAGE ---------------\n"
           "  Usage: nohup mpirun -np 19 python\n"
-          "         perform_em_association_fit.py [ass_name]\n"
+          "         perform_em_association_fit.py [ass_name] [label]\n"
           " ------------------------------------------------")
     print("Using bpmg as default...")
     ass_name = 'bpmg_cand_w_gaia_dr2_astrometry_comb_binars'
+
+# can optionally append a little label at the end
+try:
+    label = sys.argv[2]
+    print("Read in a label!")
+except IndexError:
+    label = None
 
 # Setting key parameters for fit
 # CORRECTION_FACTOR = 15.     # maybe don't even need this...
 
 if os.path.isdir('/data/mash/tcrun/'):
-    rdir = "/data/mash/tcrun/em_fit/{}/".format(ass_name.replace(' ','_'))
+    rdir = "/data/mash/tcrun/em_fit/{}".format(ass_name.replace(' ','_'))
+    # append optional label if provided
+    if label:
+        rdir += '_{}/'.format(label)
+    else:
+        rdir += '/'
 
     gdir = "/data/mash/tcrun/" # directory with master gaia data
     path_msg = "Storing data on mash data server"
     mkpath(rdir)
 else:
-    rdir = "../results/em_fit/{}/".format(ass_name.replace(' ','_'))
+    rdir = "../results/em_fit/{}".format(ass_name.replace(' ','_'))
+    # append optional label if provided
+    if label:
+        rdir += '_{}/'.format(label)
+    else:
+        rdir += '/'
     gdir = "../data/" # directory with master gaia data
     path_msg = "Storing data on mash data server"
     mkpath(rdir)

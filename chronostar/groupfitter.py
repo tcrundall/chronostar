@@ -128,14 +128,14 @@ def lognormal(x, mu, sig):
     return 1./x * 1./(sig*np.sqrt(2*np.pi)) *\
            np.exp(-(np.log(x) - mu)**2/(2*sig**2))
 
-def lnlognormal(x, mode=3., sig=1.):
+def lnlognormal(x, mode=3., sig=0.5):
     # TODO: replace lognormal innerworkings so is called with desired mode
     mu = sig**2 + np.log(mode)
     return np.log(lognormal(x, mu, sig))
     # return (-np.log(x*sig*np.sqrt(2*np.pi)) -
     #         (np.log(x) - mu)**2 / (2*sig**2))
 
-def lnAlphaPrior(pars, z, sig=1.):
+def lnAlphaPrior(pars, z, sig=0.5):
     """
     A very approximate, gentle prior preferring super-virial distributions
 
@@ -219,6 +219,7 @@ def lnprior(pars, star_pars, z):
 
     TODO: Incorporate star determinants
     """
+    DEFAULT_ALPHA_SIG=0.18
     # fetch maximum allowed age
     max_age = 500
 
@@ -233,7 +234,7 @@ def lnprior(pars, star_pars, z):
     if age < 0.0 or age > max_age:
         return -np.inf
 
-    return lnAlphaPrior(pars, z)
+    return lnAlphaPrior(pars, z, sig=DEFAULT_ALPHA_SIG)
 
 
 def getLogOverlaps(pars, star_pars):
