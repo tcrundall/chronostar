@@ -31,6 +31,8 @@ sys.path.insert(0, '..')
 #SAVE_DIR = '../results/tf_results/'
 #THIS_DIR = os.getcwd()
 
+ON_AVATAR = True
+
 # best pars: age: 5, spread: 10, v_disp: 2(?), size: 25
 """
 # DIFFERENT SERVERS GET DIFFERENT AGE,
@@ -39,11 +41,11 @@ sys.path.insert(0, '..')
 # Motley : 50
 """
 # BASE PARAMETER SET
-ages = [30]# [5, 15]#, 30, 50] # motley does 50
+ages = [5, 15, 30, 50, 100, 200] # motley does 50
 spreads = [1, 2] #pc
 v_disps = [1, 2] #km/s
 sizes = [25, 50, 100] #nstars
-precs = ['half', 'gaia', 'double']
+precs = ['half', 'gaia', 'double', 'quint']
 labels = ['a', 'b', 'c', 'd']
 
 #precs_string = str(precs).strip("[]").replace(',','').replace("'", '')
@@ -54,8 +56,14 @@ def perform_synth_fit_wrapper(scenario):
     logging.info("Fitting: {} ...".format(scenario))
     for label in labels:
         logging.info("--- {} {} ...".format(scenario, label))
-        os.system("mpirun -np 4 python perform_synth_fit.py {} {} {} {} "\
-            .format(*scenario) + precs_string + " {}".format(label))
+        if ON_AVATAR:
+            os.system("/pkg/linux/anaconda/bin/mpirun -np 4"
+                      " /pkg/linux/anaconda/bin/python perform_synth_fit.py"
+                      " {} {} {} {} "\
+                .format(*scenario) + precs_string + " {}".format(label))
+        else: 
+            os.system("mpirun -np 4 python perform_synth_fit.py {} {} {} {} "\
+                .format(*scenario) + precs_string + " {}".format(label))
         logging.info("--- ... completed: {} {}".format(scenario, label))
     logging.info("... completed: {}".format(scenario))
 

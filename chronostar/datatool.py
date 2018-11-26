@@ -10,11 +10,9 @@ import numpy as np
 import logging
 from scipy import stats
 import sys
-sys.path.insert(0, '..')
 
-import chronostar.converter as cv
-import chronostar.coordinate as cc
-
+import converter as cv
+import coordinate as cc
 
 def gauss(x, mu, sig):
     """
