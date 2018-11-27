@@ -219,7 +219,7 @@ def lnprior(pars, star_pars, z):
 
     TODO: Incorporate star determinants
     """
-    DEFAULT_ALPHA_SIG=0.18
+    DEFAULT_ALPHA_SIG=2.0
     # fetch maximum allowed age
     max_age = 500
 
