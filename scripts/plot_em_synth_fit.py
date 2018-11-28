@@ -97,14 +97,26 @@ def getZfromOrigins(origins, star_pars):
 
 
 assoc_name = sys.argv[1]
+try:
+    label = sys.argv[2]
+except IndexError:
+    label = None
 star_pars_file = '../data/{}_xyzuvw.fits'.format(assoc_name)
 if not os.path.isfile(star_pars_file):
     banyan_data = '../data/gagne_bonafide_full_kinematics_with_lit' \
                   '_and_best_radial_velocity_comb_binars.fits'
     star_pars_file = dt.loadDictFromTable(banyan_data, assoc_name)
-rdir = '/data/mash/tcrun/em_fit/{}/'.format(assoc_name.replace(' ','_'))
+    print("Loaded association {} from banyan data".format(assoc_name))
+    print("with total of {} stars".format(len(star_pars_file['xyzuvw'])))
+rdir_suffix = 'em_fit/{}'.format(assoc_name.replace(' ','_'))
+if label:
+    rdir_suffix += '_{}/'.format(label)
+else:
+    rdir_suffix += '/'
+rdir = '/data/mash/tcrun/' + rdir_suffix
 if not os.path.isdir(rdir):
-    rdir = '../results/em_fit/{}/'.format(assoc_name.replace(' ','_'))
+    rdir = '../results/' + rdir_suffix
+print("Operating in directory: {}".format(rdir))
 
 if os.path.isfile(rdir + 'bg_hists.npy'):
     bg_hists = np.load(rdir + 'bg_hists.npy')

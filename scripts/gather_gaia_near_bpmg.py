@@ -49,30 +49,31 @@ nearby_gaia = gaia_xyzuvw[mask]
 
 nearby_ids = gt['source_id'][mask]
 
-bp_source_ids = bp_star_pars['table']['source_id'][
-    np.where(bp_star_pars['table']['Moving group'] == 'beta Pictoris')
-]
-bp_table = bp_star_pars['table'][
-    np.where(bp_star_pars['table']['Moving group'] == 'beta Pictoris')
-]
-print("Building masks")
-intersec_ids = [id for id in nearby_ids if str(id) in bp_source_ids]
-non_intersec_ids = [id for id in nearby_ids if str(id) not in bp_source_ids]
+if False:
+    bp_source_ids = bp_star_pars['table']['source_id'][
+        np.where(bp_star_pars['table']['Moving group'] == 'beta Pictoris')
+    ]
+    bp_table = bp_star_pars['table'][
+        np.where(bp_star_pars['table']['Moving group'] == 'beta Pictoris')
+    ]
+    print("Building masks")
+    intersec_ids = [id for id in nearby_ids if str(id) in bp_source_ids]
+    non_intersec_ids = [id for id in nearby_ids if str(id) not in bp_source_ids]
 
-intersec_mask = [id not in intersec_ids for id in gt['source_id'][mask]]
+    intersec_mask = [id not in intersec_ids for id in gt['source_id'][mask]]
 
-# take all non_intersec_ids stars, build new table, appending these onto
-# "bonafide" bpmg stars
-nearby_gaia_table = gt[mask][intersec_mask]
+    # take all non_intersec_ids stars, build new table, appending these onto
+    # "bonafide" bpmg stars
+    nearby_gaia_table = gt[mask][intersec_mask]
 
-nearby_gaia_table['source_id'] = nearby_gaia_table['source_id'].astype(np.str)
+    nearby_gaia_table['source_id'] = nearby_gaia_table['source_id'].astype(np.str)
 
-print("Joining table")
-joined_table = table.vstack((bp_table, nearby_gaia_table))
-print(len(joined_table))
-#Table.write(joined_table, '../data/bpmg_gaia_all_cart_joined_xyzuvw.fits')
-Table.write(joined_table, xyzuvw_file)
-print("Table written")
+    print("Joining table")
+    joined_table = table.vstack((bp_table, nearby_gaia_table))
+    print(len(joined_table))
+    #Table.write(joined_table, '../data/bpmg_gaia_all_cart_joined_xyzuvw.fits')
+    Table.write(joined_table, xyzuvw_file)
+    print("Table written")
 
 
 # Now do the same thing but for whole BANYAN membership list

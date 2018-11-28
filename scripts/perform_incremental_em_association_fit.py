@@ -79,7 +79,7 @@ xyzuvw_file = '../data/' + ass_name + '_xyzuvw.fits'
 bg_ln_ols_file = rdir + 'bg_ln_ols.npy'
 
 logging.basicConfig(
-    level=logging.INFO, filemode='w',
+    level=logging.INFO, filemode='a',
     filename=rdir + 'em.log',
 )
 
@@ -135,7 +135,7 @@ logging.info("DONE!")
 #         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
 
 logging.info("Using data file {}".format(xyzuvw_file))
-MAX_COMP = 5
+MAX_COMP = 10
 ncomps = 1
 
 # Set up initial values of results
@@ -226,8 +226,9 @@ while ncomps < MAX_COMP:
                                                      bg_ln_ols=bg_ln_ols,
                                                      inc_posterior=True))
             BICs.append(em.calcBIC(star_pars, ncomps, lnlike))
-            logging.info("Decomp finished with\nBIC: {}\nLnlike: {}".format(
-                BICs[-1], lnlikes[-1]
+            logging.info("Decomp finished with\nBIC: {}\nLnlike: {}"
+                         "\nlnpost: {}".format(
+                BICs[-1], lnlikes[-1], lnposts[-1]
             ))
 
         # identify the best performing decomposition
@@ -235,7 +236,7 @@ while ncomps < MAX_COMP:
         new_groups, new_meds, new_z, new_lnlike, new_lnpost, new_BIC = \
             zip(best_fits, all_meds, all_zs,
                 lnlikes, lnposts, BICs)[best_split_ix]
-        logging.info("Selected {} as best decomposition".format(i))
+        logging.info("Selected {} as best decomposition".format(best_split_ix))
         logging.info("Turned\n{}".format(
             prev_groups[best_split_ix].getInternalSphericalPars()))
         logging.info("into\n{}\n&\n{}".format(

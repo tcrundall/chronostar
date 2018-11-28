@@ -41,8 +41,8 @@ ON_AVATAR = True
 # Motley : 50
 """
 # BASE PARAMETER SET
-ages = [5, 15, 30, 50, 100, 200] # motley does 50
-spreads = [1, 2] #pc
+ages = [200] # executing node by node  [5, 15, 30, 50, 100, 200] # motley does 50
+spreads = [1, 2, 5] #pc
 v_disps = [1, 2] #km/s
 sizes = [25, 50, 100] #nstars
 precs = ['half', 'gaia', 'double', 'quint']
@@ -54,23 +54,22 @@ prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0, 'quint':5.0}
 
 def perform_synth_fit_wrapper(scenario):
     logging.info("Fitting: {} ...".format(scenario))
-    for label in labels:
-        logging.info("--- {} {} ...".format(scenario, label))
-        if ON_AVATAR:
-            os.system("/pkg/linux/anaconda/bin/mpirun -np 4"
-                      " /pkg/linux/anaconda/bin/python perform_synth_fit.py"
-                      " {} {} {} {} "\
-                .format(*scenario) + precs_string + " {}".format(label))
-        else: 
-            os.system("mpirun -np 4 python perform_synth_fit.py {} {} {} {} "\
-                .format(*scenario) + precs_string + " {}".format(label))
-        logging.info("--- ... completed: {} {}".format(scenario, label))
+#    for label in labels:
+#        logging.info("--- {} {} ...".format(scenario, label))
+    if ON_AVATAR:
+        os.system("/pkg/linux/anaconda/bin/mpirun -np 4"
+                  " /pkg/linux/anaconda/bin/python perform_synth_fit.py"
+                  " {} {} {} {} "\
+            .format(*scenario[:-1]) + precs_string + " {}".format(scenario[-1]))
+    else: 
+        os.system("mpirun -np 4 python perform_synth_fit.py {} {} {} {} "\
+            .format(*scenario[:-1]) + precs_string + " {}".format(scenario[-1]))
     logging.info("... completed: {}".format(scenario))
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filemode='a',
-                        filename="mash_perform_many_synth_fits.log")
-    logging.info("mash is performing fits:\nages: {}\nspreads: {}\n"
+                        filename="avatar_{}_perform_many_synth_fits.log".format(ages[0]))
+    logging.info("avatar is performing fits:\nages: {}\nspreads: {}\n"
                  "v_disps: {}\nsizes: {}\nprecs: {}\n".format(ages, spreads,
                                                               v_disps, sizes,
                                                               precs))
@@ -80,7 +79,7 @@ if __name__ == '__main__':
     else:
         ncpus = 1
     logging.info("ncpus: {}".format(ncpus))
-    scenarios = product(ages, spreads, v_disps, sizes)
+    scenarios = product(ages, spreads, v_disps, sizes, labels)
     if ncpus > 1:
         p = Pool(ncpus)
         p.map(perform_synth_fit_wrapper, scenarios)

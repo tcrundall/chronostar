@@ -40,11 +40,11 @@ import chronostar.groupfitter as gf
 import chronostar.datatool as dt
 import chronostar.coordinate as cc
 
-INIT_WITH_TRUE_ORIGIN = True
+INIT_WITH_TRUE_ORIGIN = False
 
 prec_val = {'perf': 1e-5, 'half':0.5, 'gaia': 1.0, 'double': 2.0, 'quint': 5.0}
 
-BURNIN_STEPS = 500
+BURNIN_STEPS = 1000
 SAMPLING_STEPS = 1000
 C_TOL = 0.25
 """

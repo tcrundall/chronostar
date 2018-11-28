@@ -40,8 +40,8 @@ except IndexError:
           "         perform_banyan_incremental_em_association_fit.py\n"
           "         [ass_name]\n"
           " ------------------------------------------------")
-    print("Using bpmg as default...")
-    ass_name = 'bpmg_cand_w_gaia_dr2_astrometry_comb_binars'
+    print("Using beta Pictoris as default...")
+    ass_name = 'beta Pictoris'
 print("Fitting: {}".format(ass_name))
 
 # Setting key parameters for fit
