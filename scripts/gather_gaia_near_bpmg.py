@@ -75,6 +75,28 @@ Table.write(joined_table, xyzuvw_file)
 print("Table written")
 
 
+# Now do the same thing but for whole BANYAN membership list
+banyan_membs_source_ids = bp_star_pars['table']['source_id']
+print("Building masks")
+intersec_ids = [id for id in nearby_ids if str(id) in banyan_membs_source_ids]
+non_intersec_ids = [id for id in nearby_ids if
+                    str(id) not in banyan_membs_source_ids]
+
+intersec_mask = [id not in intersec_ids for id in gt['source_id'][mask]]
+
+# take all non_intersec_ids stars, build new table, appending these onto
+# "bonafide" bpmg stars
+nearby_gaia_table = gt[mask][intersec_mask]
+
+nearby_gaia_table['source_id'] = nearby_gaia_table['source_id'].astype(np.str)
+
+print("Joining table")
+joined_table = table.vstack((bp_star_pars['table'], nearby_gaia_table))
+print(len(joined_table))
+#Table.write(joined_table, '../data/bpmg_gaia_all_cart_joined_xyzuvw.fits')
+Table.write(joined_table, 'banyan_with_gaia_near_bpmg_xyzuvw.fits')
+print("Table written")
+
 # # plot histograms
 # labels = 'XYZUVW'
 # for i, label in enumerate(labels):
