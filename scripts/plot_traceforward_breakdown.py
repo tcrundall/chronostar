@@ -12,14 +12,16 @@ sys.path.insert(0, '..')
 import chronostar.synthesiser as syn
 import chronostar.groupfitter as gf
 import chronostar.traceorbit as torb
+import chronostar.datatool as dt
 
 rdir = "../results/synth_fit/50_2_1_50/"
-rdir = "../results/synth_fit/30_5_2_100/"
+# rdir = "../results/synth_fit/30_5_2_100/"
 
 xyzuvw_init_file = rdir + "xyzuvw_init.npy"
 
 xyzuvw_init = np.load(xyzuvw_init_file)
 origin = np.load(rdir + 'origins.npy').item()
+origin = dt.loadGroups(rdir + 'origins.npy')
 max_age = origin.age
 ntimes = int(max_age) + 1
 #ntimes = 3

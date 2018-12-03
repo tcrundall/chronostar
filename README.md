@@ -25,7 +25,34 @@ First, the swigged c implementation of the overlap integral must be built.
 Ensure you are in the main working directory (this one) and run:
 
 	python setup.py build_ext -b .
-	
+
+# Installing swig
+On mac:
+
+brew install gsl
+brew install swig (will auto install dependencie: pcre)
+
+If swig is not installed go to
+
+brew install swig
+
+sourceforge.net/ ... / swig
+and download swig (target language python)
+and follow instructions in 'INSTALL.txt'
+
+(Make sure you have pcre first)
+(Make sure you have installed gsl (gnu scientific library)
+brew install gsl
+
+e.g.
+cd [source directory]
+./configure
+make
+make install
+
+
+# Next	
+
 Next check everything is in working order. 
 
     cd tests/

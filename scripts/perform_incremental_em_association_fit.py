@@ -52,7 +52,7 @@ except IndexError:
 # Setting key parameters for fit
 # CORRECTION_FACTOR = 15.     # maybe don't even need this...
 
-if os.path.isdir('/data/mash/tcrun/'):
+if os.access('/data/mash/tcrun/', os.W_OK):
     rdir = "/data/mash/tcrun/em_fit/{}".format(ass_name.replace(' ','_'))
     # append optional label if provided
     if label:
