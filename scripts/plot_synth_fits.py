@@ -16,12 +16,12 @@ import chronostar.datatool as dt
 import chronostar.synthesiser as syn
 import chronostar.fitplotter as fp
 
-ages = [5,15,30,50,100,200]
-dxs = [1, 2]
+ages = [30] #[5,15,30,50,100,200]
+dxs = [1] #[1, 2]
 dvs = [1, 2]
-nstars = [25, 50, 100]
+nstars = [25,50]#[25, 50, 100]
 labels = 'abcd'
-precs = ['half', 'gaia', 'double', 'quint']
+precs = ['half', 'gaia', 'double']#['half', 'gaia', 'double', 'quint']
 #
 #prob_scenarios =\
 #    [[5, 1, 2, 50, 'd', 'half'],
