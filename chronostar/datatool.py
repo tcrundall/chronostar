@@ -771,6 +771,8 @@ def getKernelDensities(data, points, get_twins=False):
     """
     Build a PDF from `data`, then evaluate said pdf at `points`
 
+    Changed behaviour (4/12/2018) such that inverts Z and W of points)
+
     Parameters
     ----------
     data : [nstars, 6] array of star means (typically data/gaia_xyzuvw.npy content)
@@ -781,6 +783,9 @@ def getKernelDensities(data, points, get_twins=False):
     nstars = data.shape[0]
 
     kernel = stats.gaussian_kde(data.T)
+    points = np.copy(points)
+    points[:,2] *= -1
+    points[:,5] *= -1
 
     bg_ln_ols = np.log(nstars)+kernel.logpdf(points.T)
 
