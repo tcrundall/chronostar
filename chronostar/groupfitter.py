@@ -26,6 +26,8 @@ try:
 except ImportError:
     import pyfits as fits
 
+DEFAULT_ALPHA_SIG = 1.0
+
 def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns, nstars):
     """
     A pythonic implementation of overlap integral calculation
@@ -128,14 +130,14 @@ def lognormal(x, mu, sig):
     return 1./x * 1./(sig*np.sqrt(2*np.pi)) *\
            np.exp(-(np.log(x) - mu)**2/(2*sig**2))
 
-def lnlognormal(x, mode=3., sig=0.5):
+def lnlognormal(x, mode=3., sig=DEFAULT_ALPHA_SIG):
     # TODO: replace lognormal innerworkings so is called with desired mode
     mu = sig**2 + np.log(mode)
     return -np.log(x*sig*np.sqrt(2*np.pi)) - (np.log(x)-mu)**2/(2*sig**2)
     # return (-np.log(x*sig*np.sqrt(2*np.pi)) -
     #         (np.log(x) - mu)**2 / (2*sig**2))
 
-def lnAlphaPrior(pars, z, sig=0.5):
+def lnAlphaPrior(pars, z, sig=DEFAULT_ALPHA_SIG):
     """
     A very approximate, gentle prior preferring super-virial distributions
 
@@ -219,7 +221,6 @@ def lnprior(pars, star_pars, z):
 
     TODO: Incorporate star determinants
     """
-    DEFAULT_ALPHA_SIG=1.0
     # fetch maximum allowed age
     max_age = 500
 

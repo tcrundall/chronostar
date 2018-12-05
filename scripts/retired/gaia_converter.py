@@ -161,7 +161,7 @@ def convertGaiaToXYZUVWDict(astr_file="gaia_dr2_ok_plx", server=False,
     logging.info("Converted many recs")
     astr_dict = {'astr_mns': means, 'astr_covs': covs}
     cv.convertMeasurementsToCartesian(
-        astr_dict=astr_dict, savefile=rdir+astr_file+"_xyzuvw.fits")!
+        astr_dict=astr_dict, savefile=rdir+astr_file+"_xyzuvw.fits")
     logging.info("Converted and saved dictionary")
     if return_dict:
         return {'xyzuvw':means, 'xyzuvw_cov':covs}
