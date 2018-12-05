@@ -9,7 +9,7 @@ import numpy as np
 import re
 from astropy.table import Table
 
-from scripts.retired import gaia_converter as gc
+from retired import gaia_converter as gc
 
 import sys
 sys.path.insert(0, '..')
