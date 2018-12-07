@@ -36,6 +36,8 @@ def insertSpanIntoDict(dict, key_list, med_and_span):
 
 
 def getScenarioFromIndex(index):
+    """For investigative purposes: given an index for a realisation,
+    prints the parameter values"""
     prec_ix = int( index % len(precs) )
     label_ix = int( (index / len(precs)) % len(labels) )
     nstar_ix = int( (index / len(precs) / len(labels)) % len(nstars) )
