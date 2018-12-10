@@ -733,6 +733,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     BURNIN_STEPS = burnin
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
+    MAX_ITERS = 100
     nstars = star_pars['xyzuvw'].shape[0]
 
     logging.info("Fitting {} groups with {} burnin steps".format(ngroups,
@@ -796,7 +797,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     iter_count = 0
     converged = False
     stable_state = True         # used to track issues
-    while not converged and stable_state and iter_count < 50:
+    while not converged and stable_state and iter_count < MAX_ITERS:
         # for iter_count in range(10):
         idir = rdir+"iter{:02}/".format(iter_count)
         logging.info("\n--------------------------------------------------"
@@ -809,13 +810,13 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         # EXPECTATION
         if skip_first_e_step:
             logging.info("Using input z for first iteration")
-            z = init_z
+            z_new = init_z
             skip_first_e_step = False
         else:
-            z = expectation(star_pars, old_groups, z, bg_ln_ols,
+            z_new = expectation(star_pars, old_groups, z_old, bg_ln_ols,
                             inc_posterior=inc_posterior)
             logging.info("Membership distribution:\n{}".format(
-                z.sum(axis=0)
+                z_new.sum(axis=0)
             ))
         np.save(idir+"membership.npy", z)
 
@@ -824,7 +825,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             maximisation(star_pars, ngroups=ngroups,
                          burnin_steps=BURNIN_STEPS,
                          plot_it=True, pool=pool, convergence_tol=C_TOL,
-                         z=z, idir=idir, all_init_pars=all_init_pars,
+                         z=z_new, idir=idir, all_init_pars=all_init_pars,
                          all_init_pos=all_init_pos,
                          )
 
@@ -847,7 +848,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         converged = ( (old_overallLnLike > overallLnLike) and\
                      checkConvergence(old_best_fits=old_groups,
                                       new_chains=all_samples,
-                                      ))
+                                      ) and
+                      np.allclose(z_new, z_old, atol=1e-2)
+        )
         # old_samples = all_samples
         old_overallLnLike = overallLnLike
         logging.info("-- Convergence status: {}        --".\
@@ -856,12 +859,13 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         # Ensure stability after sufficient iterations to settle
         if iter_count > 10:
-            stable_state = checkStability(star_pars, new_groups, z, bg_ln_ols)
+            stable_state = checkStability(star_pars, new_groups, z_new, bg_ln_ols)
 
         # only update if the fit has improved
         if not converged:
             old_old_groups = old_groups
             old_groups = new_groups
+            z_old = z_new
 
         iter_count += 1
 
@@ -881,7 +885,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         final_dir = rdir+"final/"
         mkpath(final_dir)
 
-        final_z = expectation(star_pars, new_groups, z, bg_ln_ols,
+        final_z = expectation(star_pars, new_groups, z_new, bg_ln_ols,
                               inc_posterior=inc_posterior)
         np.save(final_dir+"final_membership.npy", final_z)
         final_best_fits = [None] * ngroups
@@ -895,7 +899,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             best_fit, chain, lnprob = gf.fitGroup(
                 xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS,
                 plot_it=True, pool=pool, convergence_tol=C_TOL,
-                plot_dir=final_gdir, save_dir=final_gdir, z=z[:, i],
+                plot_dir=final_gdir, save_dir=final_gdir, z=final_z[:, i],
                 init_pos=all_init_pos[i], sampling_steps=SAMPLING_STEPS,
                 max_iter=4
                 # init_pars=old_groups[i],
@@ -939,14 +943,14 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("Best fits:\n{}".format(
             [fg.getSphericalPars() for fg in final_groups]
         ))
-        logging.info("Stars per component:\n{}".format(z.sum(axis=0)))
-        logging.info("Memberships: \n{}".format((z*100).astype(np.int)))
+        logging.info("Stars per component:\n{}".format(final_z.sum(axis=0)))
+        logging.info("Memberships: \n{}".format((final_z*100).astype(np.int)))
 
-        return final_groups, np.array(final_med_errs), z
+        return final_groups, np.array(final_med_errs), final_z
 
     else: # not stable_state
         logging.info("****************************************")
         logging.info("********** BAD RUN TERMINATED **********")
         logging.info("****************************************")
-        return new_groups, -1, z
+        return new_groups, -1, z_new
 

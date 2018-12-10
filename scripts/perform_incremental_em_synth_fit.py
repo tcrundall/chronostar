@@ -215,7 +215,6 @@ if BG_DENS != 0.:
 else:
     bg_ln_ols = None
 
-
 while ncomps < MAX_COMP:
     # handle special case of one component
     if ncomps == 1:
