@@ -210,8 +210,10 @@ prev_z = None
 # Manually set background log overlaps to be equal to that of bg density
 BG_DENS = np.load(rdir + 'synth_data/bg_density.npy').item()
 nstars = len(star_pars['xyzuvw'])
-bg_ln_ols = np.log(np.zeros(nstars) + BG_DENS)
-
+if BG_DENS != 0.:
+    bg_ln_ols = np.log(np.zeros(nstars) + BG_DENS)
+else:
+    bg_ln_ols = None
 
 while ncomps < MAX_COMP:
     # handle special case of one component
