@@ -217,7 +217,8 @@ while ncomps < MAX_COMP:
             ))
 
         # identify the best performing decomposition
-        best_split_ix = np.argmax(lnposts)
+        #best_split_ix = np.argmax(lnposts)
+        best_split_ix = np.argmax(BICs)
         new_groups, new_meds, new_z, new_lnlike, new_lnpost, new_BIC = \
             zip(best_fits, all_meds, all_zs,
                 lnlikes, lnposts, BICs)[best_split_ix]
