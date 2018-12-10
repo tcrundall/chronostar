@@ -734,6 +734,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
     MAX_ITERS = 100
+    MEMB_CONV_TOL = 3e-2
     nstars = star_pars['xyzuvw'].shape[0]
 
     logging.info("Fitting {} groups with {} burnin steps".format(ngroups,
@@ -797,6 +798,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     iter_count = 0
     converged = False
     stable_state = True         # used to track issues
+    z_old = z
     while not converged and stable_state and iter_count < MAX_ITERS:
         # for iter_count in range(10):
         idir = rdir+"iter{:02}/".format(iter_count)
@@ -849,7 +851,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                      checkConvergence(old_best_fits=old_groups,
                                       new_chains=all_samples,
                                       ) and
-                      np.allclose(z_new, z_old, atol=1e-2)
+                      # np.allclose(z_new, z_old, atol=1e-2)
+                     np.allclose(z_new, z_old, atol=MEMB_CONV_TOL) # UNSURE HOW TO TUNE THIS
         )
         # old_samples = all_samples
         old_overallLnLike = overallLnLike
