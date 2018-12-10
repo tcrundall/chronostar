@@ -33,8 +33,14 @@ min_age = np.floor(np.min(pts)) - 0.5*bin_width
 nbins = int((max_age - min_age) / bin_width)
 
 # plot the same data on both axes
-ax.hist(pts, bins=nbins)
-ax2.hist(pts, bins=nbins)
+hist, edges = np.histogram(pts, bins=nbins)
+ax.bar(edges[:-1], hist, align='edge', hatch='/', edgecolor='r', color='none')
+# BUG!?!! SETTING ALPHA MAKES FACECOLOR GO TO BLACK
+# ax.bar(edges[:-1], hist, align='edge', alpha=0.2, hatch='/', edgecolor='r', color='none')
+ax.bar(edges[:-1]+0.3, hist, align='edge', hatch='+', edgecolor='b', color='none')
+ax2.bar(edges[:-1], hist, align='edge', hatch='/')
+# ax.hist(pts, bins=nbins)
+# ax2.hist(pts, bins=nbins)
 
 # zoom-in / limit the view to different portions of the data
 ax.set_xlim(5, 15)  # outliers only
@@ -72,4 +78,4 @@ ax2.plot((- d, + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
 # the diagonal lines will move accordingly, and stay right at the tips
 # of the spines they are 'breaking'
 
-plt.show()
+plt.savefig('temp_plots/broken_axes.pdf')
