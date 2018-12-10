@@ -22,6 +22,8 @@ data/temp.txt
 logs/*.txt
 *.csv
 *.dat
+avatar_scripts/*.e*
+avatar_scripts/*.o*
 
 # Log files
 *.out

@@ -36,6 +36,29 @@ def plotInitState(origins, star_pars):
                              true_memb=true_memb)
         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
 
+extra_pars = np.array([
+    #  dX,  dV, age, nstars
+    [ 10.,  5.,  3.,   50.],
+    [  7.,  3.,  7.,   30.],
+    [ 10.,  2., 10.,   40.],
+    [ 20.,  5., 13.,   80.],
+])
+ngroups = extra_pars.shape[0]
+# offsets = np.zeros((ngroups, 6))
+# four assoc notes:
+# AB and CD overlapping in ZW
+# AC overlapping in YV
+# All overlapping in XY
+# AB and AD overlapping in XU
+# CD, AD, AB overlapping in UV
+offsets = np.array([
+    #   X,  Y,  Z,  U,  V, W
+    [-10.,  0.,  0.,-10.,  0.,-10.], # yellow / blue
+    [ 10.,  0.,-10.,  0., 10., -5.], # blue   / orange
+    [  0.,-40., 80.,  5., -5., 10.], # brown  / green
+    [ 50.,  5.,  0.,  5.,-10., 10.], # orange / red
+])
+
 try:
     run_name = sys.argv[1]
 except:
@@ -85,24 +108,21 @@ logging.info("  with error fraction {}".format(ERROR))
 logging.info("  and background density {}".format(BG_DENS))
 # Set a current-day location around which synth stars will end up
 mean_now = np.array([50., -100., -0., -10., -20., -5.])
-extra_pars = np.array([
-    #dX, dV, age, nstars
-    [10., 5.,  7., 100.],
-    [ 2., 5., 10.,  20.],
-    # [ 5., 0.7, 10.,  50.],
-    # [100., 50.,  1e-5, 1000.],
-])
-ngroups = extra_pars.shape[0]
-offsets = np.zeros((ngroups, 6))
 
 logging.info("Mean (now):\n{}".format(mean_now))
 logging.info("Extra pars:\n{}".format(extra_pars))
+logging.info("Offsets:\n{}".format(offsets))
 
 try:
-    all_xyzuvw_now_perf = np.load(xyzuvw_perf_file)
-    origins = dt.loadGroups(groups_savefile)
-    star_pars = dt.loadXYZUVW(xyzuvw_conv_savefile)
-    logging.info("Loaded synth data from previous run")
+    #all_xyzuvw_now_perf = np.load(xyzuvw_perf_file)
+    np.load(xyzuvw_perf_file)
+    #origins = dt.loadGroups(groups_savefile)
+    dt.loadGroups(groups_savefile)
+    #star_pars = dt.loadXYZUVW(xyzuvw_conv_savefile)
+    dt.loadXYZUVW(xyzuvw_conv_savefile)
+    logging.info("Synth data exists! .....")
+    print("Synth data exists")
+    raise UserWarning
 except IOError:
     all_xyzuvw_init = np.zeros((0,6))
     all_xyzuvw_now_perf = np.zeros((0,6))
@@ -156,8 +176,8 @@ except IOError:
     )
     logging.info("Synthesis complete")
 
-# make sure stars are initialised as expected
-if can_plot:
-    plotInitState(origins, star_pars)
+    # make sure stars are initialised as expected
+    if can_plot:
+        plotInitState(origins, star_pars)
 
 
