@@ -746,21 +746,31 @@ def getDensity(point, data, bin_per_std=8.):
     return nstars / volume
 
 
-def getZfromOrigins(origins, star_pars):
+def getZfromOrigins(origins, star_pars=None):
     if type(origins) is str:
         origins = loadGroups(origins)
-    if type(star_pars) is str:
-        star_pars = loadXYZUVW(star_pars)
-    nstars = star_pars['xyzuvw'].shape[0]
+    try:
+        nstar_arr = np.array([o.nstars for o in origins])
+    except AttributeError:
+        nstar_arr = np.array([int(o[-1]) for o in origins])
+    nassoc_stars = np.sum(nstar_arr)
+
+    if star_pars is None:
+        using_bg = False
+        nstars = nassoc_stars
+    else:
+        if type(star_pars) is str:
+            star_pars = loadXYZUVW(star_pars)
+        nstars = star_pars['xyzuvw'].shape[0]
+        using_bg = nstars != nassoc_stars
     ngroups = len(origins)
-    nassoc_stars = np.sum([o.nstars for o in origins])
-    using_bg = nstars != nassoc_stars
     z = np.zeros((nstars, ngroups + using_bg))
     stars_so_far = 0
     # set associaiton members memberships to 1
-    for i, o in enumerate(origins):
-        z[stars_so_far:stars_so_far+o.nstars, i] = 1.
-        stars_so_far += o.nstars
+    # for i, o in enumerate(origins):
+    for i, n in enumerate(nstar_arr):
+        z[stars_so_far:stars_so_far+n, i] = 1.
+        stars_so_far += n
     # set remaining stars as members of background
     if using_bg:
         z[stars_so_far:,-1] = 1.

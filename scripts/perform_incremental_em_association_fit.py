@@ -147,6 +147,10 @@ prev_lnlike = -np.inf
 prev_z = None
 
 while ncomps < MAX_COMP:
+    if ncomps >= MAX_COMP:
+        logging.info("++++++++++++++++++++++++++++++++++++++++++++++++++")
+        logging.info("+++++++++++   REACHED MAX COMP LIMIT   +++++++++++")
+        logging.info("++++++++++++++++++++++++++++++++++++++++++++++++++")
     # handle special case of one component
     if ncomps == 1:
         logging.info("******************************************")

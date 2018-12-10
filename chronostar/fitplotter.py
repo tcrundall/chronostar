@@ -403,6 +403,7 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
         and the bin edges
     :return:
     """
+    BIN_COUNT=15
     if horizontal:
         orientation = 'horizontal'
     else:
@@ -421,7 +422,7 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     # ax.plot(xs, calcStellarPDFs(xs, dim, star_pars))
     vals, bins, _ = \
         ax.hist(sampleStellarPDFs(dim, star_pars), normed=True, histtype='step',
-                orientation=orientation)
+                orientation=orientation, bins=BIN_COUNT)
 
     xs = np.linspace(np.min(bins), np.max(bins), npoints)
     combined_gauss = np.zeros(xs.shape)

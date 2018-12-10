@@ -67,14 +67,14 @@ print("Only one thread is master")
 logging.info(path_msg)
 print("Master should be working in the directory:\n{}".format(rdir))
 
-# Setting up standard filenames
-# Partial data generation saved in results/em_fit/[run_name]/synth_data/
-sd_dir = rdir + 'synth_data/'
-mkpath(sd_dir)
-xyzuvw_perf_file     = sd_dir + 'perf_xyzuvw.npy'
-groups_savefile      = sd_dir + 'origins.npy'
-xyzuvw_init_savefile = sd_dir + 'xyzuvw_init.npy'
-astro_savefile       = sd_dir + 'astro_table.txt'
+# # Setting up standard filenames
+# # Partial data generation saved in results/em_fit/[run_name]/synth_data/
+# sd_dir = rdir + 'synth_data/'
+# mkpath(sd_dir)
+# xyzuvw_perf_file     = sd_dir + 'perf_xyzuvw.npy'
+# groups_savefile      = sd_dir + 'origins.npy'
+# xyzuvw_init_savefile = sd_dir + 'xyzuvw_init.npy'
+# astro_savefile       = sd_dir + 'astro_table.txt'
 
 # Final XYZUVW data file stored in chronostar/data/ to replicate
 # treatment of real data
@@ -82,94 +82,97 @@ xyzuvw_conv_savefile = '../data/{}_xyzuvw.fits'.format(run_name)
 
 # Calculate the initial parameters for each component that correspond
 # to the current day mean of mean_now
-logging.info("---------- Generating synthetic data...")
-ERROR = 0.5
-BG_DENS = 1.0e-7    # background density for synth bg stars
-logging.info("  with error fraction {}".format(ERROR))
-logging.info("  and background density {}".format(BG_DENS))
-# Set a current-day location around which synth stars will end up
-mean_now = np.array([50., -100., -0., -10., -20., -5.])
-extra_pars = np.array([
-    #dX, dV, age, nstars
-    [10., 0.5,  2.,  20.],
-    [ 2., 1.0,  5.,  15.],
-    # [ 5., 0.7, 10.,  50.],
-    # [100., 50.,  1e-5, 1000.],
-])
-logging.info("Mean (now):\n{}".format(mean_now))
-logging.info("Extra pars:\n{}".format(extra_pars))
-ngroups = extra_pars.shape[0]
+# logging.info("---------- Generating synthetic data...")
+# ERROR = 1.0
+# BG_DENS = 0 # 1.0e-7    # background density for synth bg stars
+# logging.info("  with error fraction {}".format(ERROR))
+# logging.info("  and background density {}".format(BG_DENS))
+# # Set a current-day location around which synth stars will end up
+# mean_now = np.array([50., -100., -0., -10., -20., -5.])
+# extra_pars = np.array([
+#     #dX, dV, age, nstars
+#     [10., 5.,  7., 100.],
+#     [ 2., 5., 10.,  20.],
+#     # [ 5., 0.7, 10.,  50.],
+#     # [100., 50.,  1e-5, 1000.],
+# ])
+# logging.info("Mean (now):\n{}".format(mean_now))
+# logging.info("Extra pars:\n{}".format(extra_pars))
+# ngroups = extra_pars.shape[0]
+#
+# try:
+#     all_xyzuvw_now_perf = np.load(xyzuvw_perf_file)
+#     origins = dt.loadGroups(groups_savefile)
+#     star_pars = dt.loadXYZUVW(xyzuvw_conv_savefile)
+#     logging.info("Loaded synth data from previous run")
+# except IOError:
+#     all_xyzuvw_init = np.zeros((0,6))
+#     all_xyzuvw_now_perf = np.zeros((0,6))
+#     origins = []
+#     for i in range(ngroups):
+#         logging.info(" generating from group {}".format(i))
+#         # MANUALLY SEPARATE CURRENT DAY DISTROS IN DIMENSION X
+#         mean_now_w_offset = mean_now.copy()
+#         mean_now_w_offset[0] += i * 50
+#
+#         mean_then = torb.traceOrbitXYZUVW(mean_now_w_offset, -extra_pars[i,-2],
+#                                           single_age=True)
+#         group_pars = np.hstack((mean_then, extra_pars[i]))
+#         xyzuvw_init, origin = syn.synthesiseXYZUVW(group_pars, sphere=True,
+#                                                    return_group=True,
+#                                                    internal=False)
+#         origins.append(origin)
+#         all_xyzuvw_init = np.vstack((all_xyzuvw_init, xyzuvw_init))
+#         xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init,
+#                                                     times=origin.age,
+#                                                     single_age=True)
+#         all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
+#
+#     # insert 'background stars' with density 1.2e-7
+#     ubound = np.max(all_xyzuvw_now_perf, axis=0)
+#     lbound = np.min(all_xyzuvw_now_perf, axis=0)
+#     margin = 0.5 * (ubound - lbound)
+#     ubound += margin
+#     lbound -= margin
+#     nbg_stars = int(BG_DENS * np.prod(ubound - lbound))
+#
+#     # centre bg stars on mean of assoc stars
+#     centre = np.mean(all_xyzuvw_now_perf, axis=0)
+#     spread = ubound - lbound
+#     bg_stars_xyzuvw_perf =\
+#         np.random.uniform(-1,1,size=(nbg_stars, 6)) * spread + centre
+#     logging.info("Using background density of {}".format(BG_DENS))
+#     logging.info("Generated {} background stars".format(nbg_stars))
+#     logging.info("Spread from {}".format(ubound))
+#     logging.info("         to {}".format(lbound))
+#
+#     all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, bg_stars_xyzuvw_perf))
+#
+#     np.save(groups_savefile, origins)
+#     np.save(xyzuvw_perf_file, all_xyzuvw_now_perf)
+#     astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, error_frac=ERROR,
+#                                    savefile=astro_savefile)
+#     star_pars = cv.convertMeasurementsToCartesian(
+#         astro_table, savefile=xyzuvw_conv_savefile,
+#     )
+#     logging.info("Synthesis complete")
+#
+#
+#
+# # make sure stars are initialised as expected
+# if can_plot:
+#     for dim1, dim2 in ('xy', 'xu', 'yv', 'zw', 'uv'):
+#         plt.clf()
+#         true_memb = dt.getZfromOrigins(origins, star_pars)
+#         fp.plotPaneWithHists(dim1,dim2,groups=origins,
+#                              weights=[origin.nstars for origin in origins],
+#                              star_pars=star_pars,
+#                              group_now=True,
+#                              membership=true_memb,
+#                              true_memb=true_memb)
+#         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
 
-try:
-    all_xyzuvw_now_perf = np.load(xyzuvw_perf_file)
-    origins = dt.loadGroups(groups_savefile)
-    star_pars = dt.loadXYZUVW(xyzuvw_conv_savefile)
-    logging.info("Loaded synth data from previous run")
-except IOError:
-    all_xyzuvw_init = np.zeros((0,6))
-    all_xyzuvw_now_perf = np.zeros((0,6))
-    origins = []
-    for i in range(ngroups):
-        logging.info(" generating from group {}".format(i))
-        # MANUALLY SEPARATE CURRENT DAY DISTROS IN DIMENSION X
-        mean_now_w_offset = mean_now.copy()
-        mean_now_w_offset[0] += i * 50
-    
-        mean_then = torb.traceOrbitXYZUVW(mean_now_w_offset, -extra_pars[i,-2],
-                                          single_age=True)
-        group_pars = np.hstack((mean_then, extra_pars[i]))
-        xyzuvw_init, origin = syn.synthesiseXYZUVW(group_pars, sphere=True,
-                                                   return_group=True,
-                                                   internal=False)
-        origins.append(origin)
-        all_xyzuvw_init = np.vstack((all_xyzuvw_init, xyzuvw_init))
-        xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init,
-                                                    times=origin.age,
-                                                    single_age=True)
-        all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
-
-    # insert 'background stars' with density 1.2e-7
-    ubound = np.max(all_xyzuvw_now_perf, axis=0)
-    lbound = np.min(all_xyzuvw_now_perf, axis=0)
-    margin = 0.5 * (ubound - lbound)
-    ubound += margin
-    lbound -= margin
-    nbg_stars = int(BG_DENS * np.prod(ubound - lbound))
-
-    # centre bg stars on mean of assoc stars
-    centre = np.mean(all_xyzuvw_now_perf, axis=0)
-    spread = ubound - lbound
-    bg_stars_xyzuvw_perf =\
-        np.random.uniform(-1,1,size=(nbg_stars, 6)) * spread + centre
-    logging.info("Using background density of {}".format(BG_DENS))
-    logging.info("Generated {} background stars".format(nbg_stars))
-    logging.info("Spread from {}".format(ubound))
-    logging.info("         to {}".format(lbound))
-
-    all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, bg_stars_xyzuvw_perf))
-
-    np.save(groups_savefile, origins)
-    np.save(xyzuvw_perf_file, all_xyzuvw_now_perf)
-    astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, error_frac=ERROR,
-                                   savefile=astro_savefile)
-    star_pars = cv.convertMeasurementsToCartesian(
-        astro_table, savefile=xyzuvw_conv_savefile,
-    )
-    logging.info("Synthesis complete")
-
-
-# make sure stars are initialised as expected
-if can_plot:
-    for dim1, dim2 in ('xy', 'xu', 'yv', 'zw', 'uv'):
-        plt.clf()
-        true_memb = dt.getZfromOrigins(origins, star_pars)
-        fp.plotPaneWithHists(dim1,dim2,groups=origins,
-                             weights=[origin.nstars for origin in origins],
-                             star_pars=star_pars,
-                             group_now=True,
-                             membership=true_memb,
-                             true_memb=true_memb)
-        plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
+star_pars = dt.loadXYZUVW(xyzuvw_conv_savefile)
 
 MAX_COMP = 5
 ncomps = 1
@@ -181,30 +184,32 @@ prev_lnpost = -np.inf
 prev_BIC = np.inf
 prev_lnlike = -np.inf
 prev_z = None
-
-# Initialise z
-nstars = star_pars['xyzuvw'].shape[0]
-nassoc_stars = np.sum([o.nstars for o in origins])
-nbg_stars = int(nstars - nassoc_stars)
-init_z = np.zeros((nstars, 2))
+#
+# # Initialise z
+# nstars = star_pars['xyzuvw'].shape[0]
+# nassoc_stars = np.sum([o.nstars for o in origins])
+# nbg_stars = int(nstars - nassoc_stars)
+# init_z = np.zeros((nstars, 2))
 
 # basing initial z on having 80% identified association members and 3
 # interlopers
-assoc_ix = np.arange(nassoc_stars)
-bg_ix = np.arange(nassoc_stars, nbg_stars + nassoc_stars)
-frac_assoc_identified = 0.8
-ninterlopers = 3
-random.shuffle(assoc_ix)
-random.shuffle(bg_ix)
-assoc_identified_ix = int(frac_assoc_identified * nassoc_stars)
-init_z[assoc_ix[:assoc_identified_ix],0] = 1.0
-init_z[bg_ix[:ninterlopers],0] = 1.0
-init_z[assoc_ix[assoc_identified_ix:],1] = 1.0
-init_z[bg_ix[ninterlopers:],1] = 1.0
-
-logging.info("Init Z:\n{}".format(init_z))
+# assoc_ix = np.arange(nassoc_stars)
+# bg_ix = np.arange(nassoc_stars, nbg_stars + nassoc_stars)
+# frac_assoc_identified = 0.8
+# ninterlopers = 3
+# random.shuffle(assoc_ix)
+# random.shuffle(bg_ix)
+# assoc_identified_ix = int(frac_assoc_identified * nassoc_stars)
+# init_z[assoc_ix[:assoc_identified_ix],0] = 1.0
+# init_z[bg_ix[:ninterlopers],0] = 1.0
+# init_z[assoc_ix[assoc_identified_ix:],1] = 1.0
+# init_z[bg_ix[ninterlopers:],1] = 1.0
+#
+# logging.info("Init Z:\n{}".format(init_z))
 
 # Manually set background log overlaps to be equal to that of bg density
+BG_DENS = np.load(rdir + 'synth_data/bg_density.npy').item()
+nstars = len(star_pars['xyzuvw'])
 bg_ln_ols = np.log(np.zeros(nstars) + BG_DENS)
 
 
@@ -225,8 +230,8 @@ while ncomps < MAX_COMP:
         except IOError:
             new_groups, new_meds, new_z =\
                 em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
-                                 bg_dens=BG_DENS, correction_factor=1.0,
-                                 init_z=init_z)
+                                 bg_dens=BG_DENS,
+                                 )
             new_groups = np.array(new_groups)
 
         new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,
@@ -297,7 +302,7 @@ while ncomps < MAX_COMP:
         new_groups, new_meds, new_z, new_lnlike, new_lnpost, new_BIC = \
             zip(best_fits, all_meds, all_zs,
                 lnlikes, lnposts, BICs)[best_split_ix]
-        logging.info("Selected {} as best decomposition".format(i))
+        logging.info("Selected {} as best decomposition".format(best_split_ix))
         logging.info("Turned\n{}".format(
             prev_groups[best_split_ix].getInternalSphericalPars()))
         logging.info("into\n{}\n&\n{}".format(

@@ -13,31 +13,43 @@ import chronostar.datatool as dt
 
 fits = [
     'synth_bpmg',
-    'test_on_motley3',
+    'test_on_motley3', # this is right.... but slightly different for some reason
+    'field_blind',
+    'four_assocs',
     # results/em_builder12 or maybe 13
 ]
 origin_stems = [
     'synth_data/origins.npy',
     'origins.npy',
+    'origins.npy',
+    'origins.npy',
 ]
 fitted_z_stems = [
     'final/final_membership.npy',
     'final/final_membership.npy',
+    'final/final_membership.npy',
+    'memberships.npy',
 ]
 med_errs_stems = [
     'final/final_med_errs.npy',
     'final/final_med_errs.npy',
+    'final/final_med_errs.npy',
+    'final_med_errs.npy',
 ]
 star_pars_files = [
     '../data/synth_bpmg_xyzuvw.fits',
     '../results/em_fit/test_on_motley3/xyzuvw_now.fits',
+    '../results/em_fit/field_blind/xyzuvw_now.fits',
+    None,
 ]
 orders = [
     [1,0],
     [1,0],
+    [0,1],
+    [3,1,0,2],
 ]
 
-use_bgs = [True, False]
+use_bgs = [False, False, False, False]
 
 for fit, orig, fit_z, merrs, sp, order, use_bg in\
     zip(fits, origin_stems, fitted_z_stems, med_errs_stems, star_pars_files,
@@ -67,19 +79,19 @@ for fit, orig, fit_z, merrs, sp, order, use_bg in\
         true_nstars = true_nstars[(order,)]
     # manually inform on presence of background or not
 
-    row_names = ['X [pc]', 'Y [pc]', 'Z [pc]',
-                 'U [$\kms$]', 'V [$\kms$]', 'W [$\kms$]',
-                 '$r_0$', '$\sigma_0$', 'age [Myr]', 'nstars']
+    row_names = ['$x_0$ [pc]', '$y_0$ [pc]', '$z_0$ [pc]',
+                 '$u_0$ [$\kms$]', '$v_0$ [$\kms$]', '$w_0$ [$\kms$]',
+                 '$\sigma_{xyz}$ [pc]', '$\sigma_{uvw} [\kms]$', 'age [Myr]', 'nstars']
 
     ncomps = len(origins)# + use_bg
 
     with open(save_file_name, 'w') as fp:
         fp.write('\\begin{tabular}{l|' + 2*(ncomps+use_bg)*'r|' + '}\n')
         fp.write('\\hline\n')
-        fp.write('& \\multicolumn{{{}}}{{c|}}{{{}}}\\\\ \n'.format(
-            (ncomps+use_bg)*2,
-            'Uniform Background',
-        ))
+        # fp.write('& \\multicolumn{{{}}}{{c|}}{{{}}}\\\\ \n'.format(
+        #     (ncomps+use_bg)*2,
+        #     'Uniform Background',
+        # ))
         for i in range(ncomps):
             fp.write('& \\multicolumn{{2}}{{c |}}{{Component {}}}'.format(chr(65+i)))
         if use_bg:
@@ -91,7 +103,7 @@ for fit, orig, fit_z, merrs, sp, order, use_bg in\
         for i, row_name in enumerate(row_names[:-1]):
             line = '{:11}'.format(row_name)
             for j in range(ncomps):
-                line += ' & ${:5.1f}$'.format(origins[j].pars[i])
+                line += ' & ${:5.1f}$'.format(origins[j].getSphericalPars()[i])
                 line += ' & ${:5.1f}^{{+{:4.1f}}}_{{-{:4.1f}}}$ '.format(
                     med_errs[j][i][0],
                     med_errs[j][i][1] - med_errs[j][i][0],
