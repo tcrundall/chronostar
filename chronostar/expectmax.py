@@ -789,8 +789,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
     np.save(rdir + "init_groups.npy", init_groups)
 
+    # Initialise values for upcoming iterations
     old_groups = init_groups
-    # old_samples = None
     all_init_pars = [init_group.getInternalSphericalPars() for init_group
                      in init_groups]
     old_overallLnLike = -np.inf
@@ -799,6 +799,27 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     converged = False
     stable_state = True         # used to track issues
     z_old = z
+
+    # Look for previous iterations and overwrite values as appropriate
+    prev_iters = True
+    iter_count = 0
+    while prev_iters:
+        try:
+            idir = rdir+"iter{:02}/".format(iter_count)
+            old_groups = np.load(idir + 'best_groups.npy')
+            z_old = np.load(idir + 'membership.npy')
+            old_overallLnLike = getOverallLnLikelihood(star_pars, old_groups,
+                                               bg_ln_ols, inc_posterior=False)
+            all_init_pars = [old_group.getInternalSphericalPars() for old_group
+                             in old_groups]
+            iter_count += 1
+        except IOError:
+            logging.info("Managed to find {} previous iterations".format(
+                iter_count
+            ))
+    prev_iters = iter_count != 0
+
+
     while not converged and stable_state and iter_count < MAX_ITERS:
         # for iter_count in range(10):
         idir = rdir+"iter{:02}/".format(iter_count)
@@ -851,8 +872,11 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                      checkConvergence(old_best_fits=old_groups,
                                       new_chains=all_samples,
                                       ) and
-                      # np.allclose(z_new, z_old, atol=1e-2)
-                     np.allclose(z_new, z_old, atol=MEMB_CONV_TOL) # UNSURE HOW TO TUNE THIS
+                     # individual star memberships don't vary too much
+                     np.allclose(z_new, z_old, atol=MEMB_CONV_TOL) and
+                     # amplitudes of components don't vary too much
+                     np.allclose(z_new.sum(axis=0), z_old.sum(axis=0), atol=0.2)
+            # UNSURE HOW TO TUNE THIS
         )
         # old_samples = all_samples
         old_overallLnLike = overallLnLike
