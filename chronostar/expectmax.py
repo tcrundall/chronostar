@@ -817,7 +817,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             logging.info("Managed to find {} previous iterations".format(
                 iter_count
             ))
-    prev_iters = iter_count != 0
+            prev_iters = False
 
 
     while not converged and stable_state and iter_count < MAX_ITERS:
