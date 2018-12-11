@@ -679,7 +679,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
                   init_groups=None, init_weights=None,
                   offset=False,  bg_hist_file='', correction_factor=1.0,
-                  inc_posterior=False, burnin=1000, bg_dens=None,
+                  inc_posterior=False, burnin=500, bg_dens=None,
                   bg_ln_ols=None):
     """
     Entry point: Fit multiple Gaussians to data set
@@ -820,7 +820,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             logging.info("Membership distribution:\n{}".format(
                 z_new.sum(axis=0)
             ))
-        np.save(idir+"membership.npy", z)
+        np.save(idir+"membership.npy", z_new)
 
         # MAXIMISE
         new_groups, all_samples, all_lnprob, all_init_pos =\
