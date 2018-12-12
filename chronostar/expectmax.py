@@ -365,12 +365,14 @@ def calcBIC(star_pars, ncomps, lnlike):
     """Calculates the Bayesian Information Criterion
 
     A simple metric to judge whether added components are worthwhile
+
+    COuld just as legitimately have n = to number of reasonably likely
+    members to provided components
     """
     nstars = len(star_pars['xyzuvw'])
     n = nstars * 7 # 6 for phase space origin and 1 for age
     k = ncomps * 8 # 6 for central estimate, 2 for dx and dv, 1 for age
     return np.log(n)*k - 2 * lnlike
-
 
 def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
                 inc_posterior=False, amp_prior=None):

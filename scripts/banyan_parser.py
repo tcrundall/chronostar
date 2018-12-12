@@ -207,6 +207,8 @@ if __name__=='__main__':
                                       'c_ZU', 'c_ZV', 'c_ZW',
                                               'c_UV', 'c_UW',
                                                       'c_VW']
+
+    # insert empty columns
     for col_name in cart_col_names:
         gt[col_name] = empty_col
 

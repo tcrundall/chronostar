@@ -20,7 +20,9 @@ from astroquery.gaia import Gaia
 #~ '''%str(tuple(tmass))
 
 # Search with Gaia IDs
-gaiaid=[5283961585534643712, 5283965296387249920]
+#gaiaid=[5283961585534643712, 5283965296387249920]
+gaiaid = np.load('../data/bpmg_sourceids.npy')
+
 query='''
 SELECT gaia.*
 FROM gaiadr2.gaia_source AS gaia
@@ -32,16 +34,18 @@ job = Gaia.launch_job_async(query, dump_to_file=True)
 # Your astropy table with results
 r = job.get_results()
 
-keys=['source_id', 'phot_bp_mean_flux','ra_pmdec_corr','ra_error','ra','pmra_error','ecl_lon','designation','l','phot_rp_mean_mag','parallax_pmdec_corr','ra_parallax_corr','pmdec_error','phot_g_mean_mag','pmra','parallax','radial_velocity','radial_velocity_error','ra_dec_corr','parallax_error','dec_pmdec_corr','dec_error','pmdec','parallax_over_error','b','ref_epoch','ra_pmra_corr','dec_parallax_corr','phot_bp_mean_mag','dec','dec_pmra_corr','pmra_pmdec_corr','parallax_pmra_corr','bp_rp','ecl_lat']
+#keys=['source_id', 'phot_bp_mean_flux','ra_pmdec_corr','ra_error','ra','pmra_error','ecl_lon','designation','l','phot_rp_mean_mag','parallax_pmdec_corr','ra_parallax_corr','pmdec_error','phot_g_mean_mag','pmra','parallax','radial_velocity','radial_velocity_error','ra_dec_corr','parallax_error','dec_pmdec_corr','dec_error','pmdec','parallax_over_error','b','ref_epoch','ra_pmra_corr','dec_parallax_corr','phot_bp_mean_mag','dec','dec_pmra_corr','pmra_pmdec_corr','parallax_pmra_corr','bp_rp','ecl_lat']
+keys=['source_id','phot_bp_mean_flux','ra_error','ra','phot_rp_mean_mag',
+      'phot_g_mean_mag','phot_bp_mean_mag','bp_rp']
 
 r2=r[keys]
 d=dict(zip(r2['source_id'], r2)) # for easier crossmatch with source_id
 
 print r2
 
-for source_id in gaiaid:
-    try:
-        g=d[source_id]
-        print source_id, g['parallax']
-    except:
-        print source_id, 'No entry found in the Gaia catalogs.'
+# for source_id in gaiaid:
+#     try:
+#         g=d[source_id]
+#         print source_id, g['parallax']
+#     except:
+#         print source_id, 'No entry found in the Gaia catalogs.'
