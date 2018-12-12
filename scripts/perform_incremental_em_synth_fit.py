@@ -174,7 +174,7 @@ xyzuvw_conv_savefile = '../data/{}_xyzuvw.fits'.format(run_name)
 
 star_pars = dt.loadXYZUVW(xyzuvw_conv_savefile)
 
-MAX_COMP = 5
+MAX_COMP = 6
 ncomps = 1
 
 # Set up initial values of results
