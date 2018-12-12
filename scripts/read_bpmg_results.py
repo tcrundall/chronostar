@@ -6,12 +6,12 @@ Gaia stars.
 """
 
 from astropy.table import Table
+from astropy.io import ascii
 import numpy as np
 import matplotlib.pyplot as plt
 
 # CHANGE FILENAME AS NEEDED
-filename = '../results/em_fit/beta_Pictoris_wgs_inv2_4A_results/final/'\
-           'beta_Pictoris_with_nearby_gaia_and_membership_probs.fits'
+filename = '../data/bpmg_w_nearby_gaia_memberships_magnitudes.fits'
 
 table = Table.read(filename)
 
@@ -25,7 +25,9 @@ bpmg_rows = table[np.where(table['Comp 0 prob'] > 0.2)]
 # name, and also by the boolean column 'Companion'
 
 # Photometry info is in columns 'phot_g_mean_mag' and 'bp_rp'
+# Parallax is in column 'parallax'
 
+# e.g. (without correcting for distance)
 plt.clf()
 plt.plot(bpmg_rows['bp_rp'], bpmg_rows['phot_g_mean_mag'], '.')
 plt.xlim(-1,5)
