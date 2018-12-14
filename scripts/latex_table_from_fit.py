@@ -13,58 +13,66 @@ import chronostar.datatool as dt
 
 fits = [
     'synth_bpmg',
-    'test_on_motley3', # this is right.... but slightly different for some reason
-    'field_blind',
+    'same_centroid',
+    # 'test_on_motley3', # this is right.... but slightly different for some reason
+    # 'field_blind',
+    'assoc_in_field',
     'four_assocs',
     # results/em_builder12 or maybe 13
 ]
-origin_stems = [
-    'synth_data/origins.npy',
-    'origins.npy',
-    'origins.npy',
-    'origins.npy',
-]
-fitted_z_stems = [
-    'final/final_membership.npy',
-    'final/final_membership.npy',
-    'final/final_membership.npy',
-    'memberships.npy',
-]
-med_errs_stems = [
-    'final/final_med_errs.npy',
-    'final/final_med_errs.npy',
-    'final/final_med_errs.npy',
-    'final_med_errs.npy',
-]
-star_pars_files = [
-    '../data/synth_bpmg_xyzuvw.fits',
-    '../results/em_fit/test_on_motley3/xyzuvw_now.fits',
-    '../results/em_fit/field_blind/xyzuvw_now.fits',
-    None,
-]
+#origin_stems = [
+#    'synth_data/origins.npy',
+#    'synth_data/origins.npy',
+#    'synth_data/origins.npy',
+#    'synth_data/origins.npy',
+#]
+#fitted_z_stems = [
+#    'final_membership.npy',
+#    'final_membership.npy',
+#    'final_membership.npy',
+#    'final_memberships.npy',
+#]
+#med_errs_stems = [
+#    'final_med_errs.npy',
+#    'final_med_errs.npy',
+#    'final_med_errs.npy',
+#    'final_med_errs.npy',
+#]
+# star_pars_files = [
+#     '../data/synth_bpmg_xyzuvw.fits',
+#     '../data/'
+#     '../results/em_fit/test_on_motley3/xyzuvw_now.fits',
+#     '../results/em_fit/field_blind/xyzuvw_now.fits',
+#     None,
+# ]
+
+suffixs = ['', '_res', '_res', '_res']
+
 orders = [
     [1,0],
     [1,0],
-    [0,1],
-    [3,1,0,2],
+    [1,0],
+    [3,2,0,1],
 ]
 
-use_bgs = [False, False, False, False]
+origin_stem = 'synth_data/origins.npy'
+fitted_z_stem = 'final_membership.npy'
+med_errs_stem = 'final_med_errs.npy'
+use_bg = False
 
-for fit, orig, fit_z, merrs, sp, order, use_bg in\
-    zip(fits, origin_stems, fitted_z_stems, med_errs_stems, star_pars_files,
-        orders, use_bgs):
+for fit, order, suffix in zip(fits, orders, suffixs):
     print(fit)
+    rdir = '../results/em_fit/{}'.format(fit) + suffix + '/'
 
+    star_pars_file = '../data/{}_xyzuvw.fits'.format(fit)
     save_file_name = '../results/tables/{}_table.tex'.format(fit)
 
-    rdir = '../results/em_fit/{}/'.format(fit)
-    origin_file = rdir + orig
-    fitted_z_file = rdir + fit_z
-    med_errs_file = rdir + merrs
+    origin_file = rdir + origin_stem
+    fitted_z_file = rdir + fitted_z_stem
+    med_errs_file = rdir + med_errs_stem
 
     origins = dt.loadGroups(origin_file)
-    true_z = dt.getZfromOrigins(origins, sp)
+    true_z = dt.getZfromOrigins(origins, star_pars_file)
     true_nstars = np.sum(true_z, axis=0)
     fitted_z = np.load(fitted_z_file)
     fitted_nstars = np.sum(fitted_z, axis=0)

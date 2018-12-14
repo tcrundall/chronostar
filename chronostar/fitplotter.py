@@ -17,8 +17,10 @@ COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']
 COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
 MARKERS = ['v', '^', '*', 'd', 'x']
-HATCHES = ['|', '/',  '+', '.', '*'] * 10
-MARK_SIZE = 10.
+HATCHES = ['|', '/',  '+', '\\', 'o', '0', '*', '.'] * 10
+# '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
+MARK_SIZE = 80.
+PT_ALPHA = 0.4
 
 def add_arrow(line, position=None, indices=None, direction='right',
               size=15, color=None):
@@ -109,7 +111,8 @@ def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
 def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
              star_orbits=False, origins=None,
              group_then=False, group_now=False, group_orbit=False,
-             annotate=False, membership=None, true_memb=None):
+             annotate=False, membership=None, true_memb=None,
+             savefile=''):
     """
     Plots a single pane capturing kinematic info in any desired 2D plane
 
@@ -138,10 +141,12 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
     Returns
     -------
     (nothing returned)
-    TODO: Extend to handle membership probabilities
     """
     labels = 'XYZUVW'
     units = 3 * ['pc'] + 3 * ['km/s']
+
+    if savefile:
+        plt.clf()
 
     # Tidying up inputs
     if ax is None:
@@ -150,46 +155,47 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         dim1 = labels.index(dim1.upper())
     if type(dim2) is not int:
         dim2 = labels.index(dim2.upper())
-    if star_pars:
-        nstars = star_pars['xyzuvw'].shape[0]
-        pt_colors = np.array(nstars * ['xkcd:red'])
-        markers = np.array(nstars * ['.'])
-        if membership is not None:
-            # LIES: Reverse order so backgroudn (if present) is assigned consistently
-            best_mship = np.argmax(membership, axis=1)
-            pt_colors = np.array(COLORS)[best_mship]
-            # assigns unique markers to "True" associations
-            # give correct and incorrect memberships a point and X respectively
-            if true_memb is not None:
-                markers = np.array(MARKERS)[np.argmax(true_memb,
-                                                      axis=1)]
-                true_bg_mask = np.where(true_memb[:,-1] == 1.)
-                markers[true_bg_mask] = '.'
-
 
     # ensure groups is iterable
     try:
         len(groups)
     except:
         groups = [groups]
-    # if type(groups) is not list: #???
-    #     groups = [groups]
 
     # plot stellar data (positions with errors and optionally traceback
     # orbits back to some ill-defined age
     if star_pars:
+        nstars = star_pars['xyzuvw'].shape[0]
+        pt_colors = np.array(nstars * ['xkcd:red'])
+        markers = np.array(nstars * ['.'])
+
+        # Incorporate fitted membership into colors of the pts
+        if membership is not None:
+            best_mship = np.argmax(membership, axis=1)
+            pt_colors = np.array(COLORS)[best_mship]
+            # Incoporate "True" membership into pt markers
+            if true_memb is not None:
+                markers = np.array(MARKERS)[np.argmax(true_memb,
+                                                      axis=1)]
+                true_bg_mask = np.where(true_memb[:,-1] == 1.)
+                markers[true_bg_mask] = '.'
+
         mns = star_pars['xyzuvw']
-        covs = star_pars['xyzuvw_cov']
-        # ax.scatter(mns[:,dim1], mns[:,dim2], marker=markers, color=pt_colors)
+        try:
+            covs = star_pars['xyzuvw_cov']
+        except KeyError:
+            covs = len(mns) * [None]
+            star_pars['xyzuvw_cov'] = covs
         for star_mn, star_cov, marker, pt_color in zip(mns, covs, markers, pt_colors):
             ax.scatter(star_mn[dim1], star_mn[dim2], s=MARK_SIZE,
-                       color=pt_color, marker=marker, alpha=0.8)
+                       color=pt_color, marker=marker, alpha=PT_ALPHA)
             # plot uncertainties
-            ee.plotCovEllipse(star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
-                              star_mn[np.ix_([dim1, dim2])],
-                              ax=ax, alpha=0.1, linewidth='0.1',
-                              color=pt_color,
-                              )
+            if star_cov is not None:
+                ee.plotCovEllipse(star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
+                                  star_mn[np.ix_([dim1, dim2])],
+                                  ax=ax, alpha=0.1, linewidth='0.1',
+                                  color=pt_color,
+                                  )
             # plot traceback orbits for as long as oldest group (if known)
             # else, 30 Myr
             if star_orbits:
@@ -210,7 +216,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         mean_then = group.mean
         # plot group initial distribution
         if group_then:
-            ax.plot(mean_then[dim1], mean_then[dim2], marker='+',
+            ax.plot(mean_then[dim1], mean_then[dim2], marker='+', alpha=0.3,
                     color=COLORS[i])
             ee.plotCovEllipse(cov_then[np.ix_([dim1,dim2], [dim1,dim2])],
                               mean_then[np.ix_([dim1,dim2])],
@@ -229,7 +235,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
                                              single_age=True)
             cov_now = tf.transform_cov(cov_then, torb.traceOrbitXYZUVW,
                                        mean_then, args=[group.age])
-            ax.plot(mean_now[dim1], mean_now[dim2], marker='+',
+            ax.plot(mean_now[dim1], mean_now[dim2], marker='+', alpha=0.3,
                    color=COLORS[i])
             ee.plotCovEllipse(cov_now[np.ix_([dim1,dim2], [dim1,dim2])],
                               mean_now[np.ix_([dim1,dim2])],
@@ -262,6 +268,9 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
 
     ax.set_xlabel("{} [{}]".format(labels[dim1], units[dim1]))
     ax.set_ylabel("{} [{}]".format(labels[dim2], units[dim2]))
+
+    if savefile:
+        plt.savefig(savefile)
 
 
 def plotMultiPane(dim_pairs, star_pars, groups, origins=None,
@@ -403,7 +412,7 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
         and the bin edges
     :return:
     """
-    BIN_COUNT=15
+    BIN_COUNT=13
     if horizontal:
         orientation = 'horizontal'
     else:
@@ -419,16 +428,22 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     npoints = 1000
     if ax is None:
         ax = plt.gca()
-    # ax.plot(xs, calcStellarPDFs(xs, dim, star_pars))
+
+    # Plot histogram of stars, accounting for uncertainties
     vals, bins, _ = \
         ax.hist(sampleStellarPDFs(dim, star_pars), normed=True, histtype='step',
                 orientation=orientation, bins=BIN_COUNT)
 
+    # Calculate and plot individual PDFs of fitted groups, with appropriate
+    # relative weighting, but normalised such that the sum of areas of all groups
+    # is 1.
+    # Simultaneously, calculate the combined PDF of fitted groups
     xs = np.linspace(np.min(bins), np.max(bins), npoints)
     combined_gauss = np.zeros(xs.shape)
     for i, (group, weight) in enumerate(zip(groups, weights)):
         mean_now = torb.traceOrbitXYZUVW(group.mean, group.age, single_age=True)
-        cov_now = tf.transform_cov(group.generateCovMatrix(), torb.traceOrbitXYZUVW,
+        cov_now = tf.transform_cov(group.generateCovMatrix(),
+                                   torb.traceOrbitXYZUVW,
                                    group.mean, args=[group.age])
         group_gauss = weight*dt.gauss(xs, mean_now[dim],
                                       np.sqrt(cov_now[dim,dim]))
@@ -443,6 +458,7 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
         else:
             ax.plot(xs, group_gauss, color=COLORS[i])
 
+    # Plot the combined PDF of fitted groups, normalised to 1
     if horizontal:
         ax.plot(combined_gauss, xs, color='black', ls='--', alpha=0.4)
     else:
@@ -454,7 +470,7 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
                       star_orbits=False,
                       group_then=False, group_now=False, group_orbit=False,
                       annotate=False, bg_hists=None, membership=None,
-                      true_memb=None):
+                      true_memb=None, savefile=''):
     """
     Plot a 2D projection of data and fit along with flanking 1D projections.
 
@@ -488,8 +504,14 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     (nothing returned)
     """
     labels = 'XYZUVW'
+    if type(membership) is str:
+        membership = np.load(membership)
     if weights is None and len(groups) > 0:
-        weights = np.ones(len(groups)) / len(groups)
+        if membership is not None:
+            weights = membership.sum(axis=0)
+        else:
+            weights = np.ones(len(groups)) / len(groups)
+
     if type(dim1) is not int:
         dim1 = labels.index(dim1.upper())
     if type(dim2) is not int:
@@ -503,10 +525,21 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     if type(bg_hists) is str:
         bg_hists = np.load(bg_hists)
 
+    # Set global plt tick params???
+    tick_params = {'direction':'in', 'top':True, 'right':True}
+    plt.tick_params(**tick_params)
+
     # Set up plot
-    fig = plt.figure(fignum)
+    fig_width = 5 #inch
+    fig_height = 5 #inch
+    fig = plt.figure(fignum, figsize=(fig_width,fig_height))
     plt.clf()
+    # gs = gridspec.GridSpec(4, 4)
     gs = gridspec.GridSpec(4, 4)
+
+    # Set up some global plot features
+    fig.set_tight_layout(tight=True)
+    plt.figure()
 
     # Plot central pane
     axcen = plt.subplot(gs[1:, :-1])
@@ -514,6 +547,9 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
              star_orbits=star_orbits, group_then=group_then,
              group_now=group_now, group_orbit=group_orbit, annotate=annotate,
              membership=membership, true_memb=true_memb)
+    plt.tick_params(**tick_params)
+    # plt.grid(gridsepc_kw={'wspace': 0, 'hspace': 0})
+    # plt.sharex(True)
 
     # Plot flanking 1D projections
     xlim = axcen.get_xlim()
@@ -522,6 +558,9 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     axtop.set_xticklabels([])
     plot1DProjection(dim1, star_pars, groups, weights, ax=axtop,
                      bg_hists=bg_hists)
+    axtop.set_ylabel('Stellar density')
+    plt.tick_params(**tick_params)
+    # axcen.set_tick_params(direction='in', top=True, right=True)
 
     ylim = axcen.get_ylim()
     axright = plt.subplot(gs[1:, -1])
@@ -529,6 +568,13 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     axright.set_yticklabels([])
     plot1DProjection(dim2, star_pars, groups, weights, ax=axright,
                      bg_hists=bg_hists, horizontal=True)
+    axright.set_xlabel('Stellar density')
+    # axcen.set_tick_params(direction='in', top=True, right=True)
+    plt.tick_params(**tick_params)
+    plt.tight_layout(pad=0.7)
+
+    if savefile:
+        plt.savefig(savefile)
 
 
 
