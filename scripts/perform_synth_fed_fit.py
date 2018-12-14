@@ -60,6 +60,10 @@ try:
     #age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
     age = float(sys.argv[1])
     precs = sys.argv[2:-1]
+    if precs[-1] not in prec_val.keys():
+        label = precs.pop(-1)
+    else:
+        label = None
 except ValueError:
     print("--------------------- INCORRECT USAGE --------------------------")
     print("nohup mpirun -np 19 python perform_synth_fit.py [age] "
@@ -182,7 +186,6 @@ except IOError:
     dx, dy, dz = np.std(xyzuvw_init[:,:3], axis=0)
     dv = np.prod(np.std(xyzuvw_init[:,3:], axis=0))**(1./3.)
     group_pars = np.hstack((mean, dx, dy, dz, dv, 0., 0., 0., age))
-    pdb.set_trace()
     origin = syn.Group(group_pars, internal=False, sphere=False, starcount=False)
     np.save(group_savefile, origin)
 
@@ -190,7 +193,6 @@ except IOError:
         torb.traceManyOrbitXYZUVW(xyzuvw_init, age, single_age=True,
                                   savefile=rdir+xyzuvw_perf_file)
 
-logging.info(mpi_msg)
 if not using_mpi:
     logging.info("MPI available! - call this with e.g. mpirun -np 19"
                  " python perform_synth_fit.py")
@@ -198,19 +200,19 @@ if not using_mpi:
 # Performing fit for each precision
 for prec in precs:
     logging.info("Fitting to prec: {}".format(prec))
-    mkpath(prec)
-    os.chdir(prec)
-    np.save(group_savefile, origin) # store in each directory, for hexplotter
+    pdir = rdir + prec + '/'
+    mkpath(pdir)
+    np.save(pdir+group_savefile, origin) # store in each directory, for hexplotter
     try:
-        res = np.load(result_file)
+        best_group = dt.loadGroups(pdir + 'final_groups.npy')
         logging.info("Precision [{}] already fitted for".format(prec))
     except IOError:
         # convert XYZUVW data into astrometry
         astro_table = ms.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
-                                       savefile=astro_savefile)
+                                       savefile=pdir+astro_savefile)
         star_pars =\
             cv.convertMeasurementsToCartesian(astro_table,
-                                              savefile=xyzuvw_conv_savefile)
+                                              savefile=pdir+xyzuvw_conv_savefile)
         logging.info("Generated [{}] traceback file".format(prec))
 
         # apply traceforward fitting (with lnprob, corner plots as side effects)
@@ -218,10 +220,11 @@ for prec in precs:
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL
         )
+        best_group = syn.Group(best_fit, sphere=True,
+                               internal=True, star_count=False)
+        np.save(pdir + 'final_groups.npy')
         #hp.dataGatherer(save_dir=prec)
 
-    finally:
-        os.chdir('..')
 
 if using_mpi:
     pool.close()
