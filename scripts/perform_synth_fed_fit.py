@@ -59,7 +59,7 @@ print("In preamble")
 try:
     #age, dX, dV = np.array(sys.argv[1:4], dtype=np.double)
     age = float(sys.argv[1])
-    precs = sys.argv[2:-1]
+    precs = sys.argv[2:]
     if precs[-1] not in prec_val.keys():
         label = precs.pop(-1)
     else:
