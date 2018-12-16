@@ -7,6 +7,7 @@ mpl.use('Agg')
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import stats
 import synthesiser as syn
 import errorellipse as ee
 import traceorbit as torb
@@ -15,7 +16,7 @@ import datatool as dt
 
 COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']
-COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
+# COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
 MARKERS = ['v', '^', '*', 'd', 'x']
 HATCHES = ['|', '/',  '+', '\\', 'o', '0', '*', '.'] * 10
 # '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
@@ -83,7 +84,7 @@ def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
     annotate: (bool) {False}, whether to include text
     """
     if group_ix is None:
-        color = 'xkcd:red'
+        color = COLORS[0]
     else:
         color = COLORS[group_ix]
 
@@ -172,7 +173,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         nstars = star_pars['xyzuvw'].shape[0]
 
         # apply default color and markers, to be overwritten if needed
-        pt_colors = np.array(nstars * ['xkcd:red'])
+        pt_colors = np.array(nstars * [COLORS[0]])
         markers = np.array(nstars * ['.'])
 
         # Incorporate fitted membership into colors of the pts
@@ -357,12 +358,11 @@ def plotMultiPane(dim_pairs, star_pars, groups, origins=None,
     f.savefig(save_file, bbox_inches='tight', format='pdf')
 
 
-def sampleStellarPDFs(dim, star_pars):
+def sampleStellarPDFs(dim, star_pars, count=100):
     """
     Sample each provided star the build histogram from samples
     """
     all_samples = np.zeros(0)
-    count = 100
     for mn, cov in zip(star_pars['xyzuvw'], star_pars['xyzuvw_cov']):
         samples = np.random.randn(count) * np.sqrt(cov[dim,dim]) + mn[dim]
         all_samples = np.append(all_samples, samples)
@@ -407,8 +407,50 @@ def evaluatePointInHist(x, hist_vals, hist_bins, normed=True):
     return bin_density
 
 
+def plotManualHistogram(data, nbins, span=None, ax=None, weight=1.0,
+                        horizontal=False):
+    if ax is None:
+        ax = plt.gca()
+    # if restricting range, ensure weighting is accounted for
+    if span:
+        inv_weight = 1./weight
+        data_mask = np.where((data > span[0]) & (data < span[1]))
+        frac_kept = len(data_mask) / float(len(data))
+        inv_weight *= frac_kept
+        inv_weight = 1./inv_weight
+        data = data[data_mask]
+    hist, edges = np.histogram(data, bins=nbins)
+    width = edges[1] - edges[0]
+
+    # import pdb; pdb.set_trace()
+    if horizontal:
+        # ax.barh(edges[:-1], width=hist*weight/width, align='edge', edgecolor='black',
+        #         color='none', height=width)
+        adjusted_hist = np.hstack((0, hist[0], hist, 0))
+        adjusted_edges = np.hstack((edges[0], edges[0], edges,
+                                    ))
+        ax.step(adjusted_hist*weight/width, adjusted_edges, where='pre',
+                c='black', alpha=0.5)
+        # ax.plot(np.max(hist)*weight/width*1.1, np.median(edges), alpha=0)
+        # xlim = ax.get_xlim()
+        # ax.set_xlim((0, xlim[1]))
+    else:
+        # ax.bar(edges[:-1], height=hist*weight/width, align='edge', edgecolor='black',
+        #        color='none', width=width)
+        adjusted_hist = np.hstack((0, hist, hist[-1], 0))
+        adjusted_edges = np.hstack((edges[0], edges, edges[-1]))
+        ax.step(adjusted_edges, adjusted_hist*weight/width, where='post',
+                c='black', alpha=0.5)
+        # ax.plot(np.median(edges), np.max(hist)*weight/width*1.1, alpha=0)
+        # ylim = ax.get_ylim()
+        # ax.set_ylim((0, ylim[1]))
+
+    return edges
+
+
 def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
-                     bg_hists=None, with_bg=False, membership=None):
+                     bg_hists=None, with_bg=False, membership=None,
+                     x_range=None, use_kernel=False, residual=False):
     """
     Given an axes object, plot the 1D projection of stellar data and fits
 
@@ -422,7 +464,7 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
         and the bin edges
     :return:
     """
-    BIN_COUNT=15
+    BIN_COUNT=16
     if horizontal:
         orientation = 'horizontal'
     else:
@@ -435,27 +477,53 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     # weights /= norm_factor
 
     star_pars_cp = star_pars
-    if membership is not None and with_bg:
-        ngroups = len(groups)
-        star_pars_cp = {}
-        not_bg_mask = np.where(np.argmax(membership, axis=1) != ngroups)
-        star_pars_cp['xyzuvw'] = star_pars['xyzuvw'][not_bg_mask]
-        star_pars_cp['xyzuvw_cov'] = star_pars['xyzuvw_cov'][not_bg_mask]
+    # if membership is not None and with_bg:
+    #     ngroups = len(groups)
+    #     star_pars_cp = {}
+    #     not_bg_mask = np.where(np.argmax(membership, axis=1) != ngroups)
+    #     star_pars_cp['xyzuvw'] = star_pars['xyzuvw'][not_bg_mask]
+    #     star_pars_cp['xyzuvw_cov'] = star_pars['xyzuvw_cov'][not_bg_mask]
 
-    npoints = 1000
+    if x_range is None:
+        x_range = [
+            np.min(star_pars['xyzuvw'][:, dim]),
+            np.max(star_pars['xyzuvw'][:, dim]),
+        ]
+        buffer = 0.1 * (x_range[1] - x_range[0])
+        x_range[0] -= buffer
+        x_range[1] += buffer
+
+    # npoints = 1000
     if ax is None:
         ax = plt.gca()
 
-    # Plot histogram of stars, accounting for uncertainties
-    vals, bins, _ = \
-        ax.hist(sampleStellarPDFs(dim, star_pars_cp), normed=False, histtype='step',
-                orientation=orientation, bins=BIN_COUNT)
+    npoints = 100
+    if use_kernel:
+        nstars = len(star_pars['xyzuvw'])
+        xs = np.linspace(x_range[0], x_range[1], npoints)
+        kernel = stats.gaussian_kde(star_pars['xyzuvw'][:,dim], bw_method=0.3)
+        if horizontal:
+            print("plotting all!")
+            ax.plot(nstars*kernel.evaluate(xs), xs, c='black', ls='--', alpha=0.5)
+        else:
+            print("plotting all!")
+            ax.plot(xs, nstars*kernel.evaluate(xs), c='black', ls='--', alpha=0.5)
+    else:
+        nsamples = 1000
+        data = sampleStellarPDFs(dim, star_pars_cp, count=nsamples)
+        bins = plotManualHistogram(data, nbins=15, span=x_range, weight=1./nsamples,
+                                   horizontal=horizontal)
+        xs = np.linspace(np.min(bins), np.max(bins), npoints)
+        # vals, bins, _ = \
+        #     ax.hist(sampleStellarPDFs(dim, star_pars_cp), normed=False, histtype='step',
+        #             orientation=orientation, bins=BIN_COUNT)
+
 
     # Calculate and plot individual PDFs of fitted groups, with appropriate
     # relative weighting, but normalised such that the sum of areas of all groups
     # is 1.
     # Simultaneously, calculate the combined PDF of fitted groups
-    xs = np.linspace(np.min(bins), np.max(bins), npoints)
+    # xs = np.linspace(np.min(bins), np.max(bins), npoints)
     combined_gauss = np.zeros(xs.shape)
     for i, (group, weight) in enumerate(zip(groups, weights)):
         print(weight)
@@ -472,15 +540,45 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
                                                bg_hists[dim][1])
             combined_gauss += hist_contrib
         if horizontal:
-            ax.plot(group_gauss, xs, color=COLORS[i])
+            ax.plot(group_gauss, xs, color=COLORS[i], alpha=0.6)
         else:
-            ax.plot(xs, group_gauss, color=COLORS[i])
+            ax.plot(xs, group_gauss, color=COLORS[i], alpha=0.6)
 
     # Plot the combined PDF of fitted groups, normalised to 1
     if horizontal:
-        ax.plot(combined_gauss, xs, color='black', ls='--', alpha=0.4)
+        ax.plot(combined_gauss, xs, color='black', alpha=0.4)
     else:
-        ax.plot(xs, combined_gauss, color='black', ls='--', alpha=0.4)
+        ax.plot(xs, combined_gauss, color='black', alpha=0.4)
+
+    # plot the difference of combined fit with histogram
+    if residual:
+        if use_kernel:
+            if horizontal:
+                print("plotting all!")
+                ax.plot(nstars*kernel.evaluate(xs) -combined_gauss, xs, c='black', alpha=0.5, ls='-.')
+            else:
+                print("plotting all!")
+                ax.plot(xs, nstars*kernel.evaluate(xs)-combined_gauss, c='black', alpha=0.5, ls='-.')
+        else:
+            # TODO: implement this...
+            pass
+            # if horizontal:
+            #     print("plotting all!")
+            #     bins = plotManualHistogram(data, nbins=bins, span=x_range,
+            #                                weight=1. / nsamples,
+            #                                horizontal=horizontal)
+            #     ax.plot(nstars*kernel.evaluate(xs) -combined_gauss, xs, c='black', alpha=0.5, ls='-.')
+            # else:
+            #     print("plotting all!")
+            #     ax.plot(xs, nstars*kernel.evaluate(xs)-combined_gauss, c='black', alpha=0.5, ls='-.')
+
+
+    if horizontal:
+        xlim = ax.get_xlim()
+        ax.set_xlim(0, xlim[1])
+    else:
+        ylim = ax.get_ylim()
+        ax.set_ylim(0, ylim[1])
 
 
 def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
@@ -489,7 +587,7 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
                       group_then=False, group_now=False, group_orbit=False,
                       annotate=False, bg_hists=None, membership=None,
                       true_memb=None, savefile='', with_bg=False,
-                      range_1=None, range_2=None):
+                      range_1=None, range_2=None, residual=False):
     """
     Plot a 2D projection of data and fit along with flanking 1D projections.
 
@@ -525,6 +623,7 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     (nothing returned)
     """
     labels = 'XYZUVW'
+    axes_units = 3*['pc'] + 3*['km/s']
     if type(membership) is str:
         membership = np.load(membership)
     if weights is None and len(groups) > 0:
@@ -582,8 +681,9 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     axtop.set_xlim(xlim)
     axtop.set_xticklabels([])
     plot1DProjection(dim1, star_pars, groups, weights, ax=axtop,
-                     bg_hists=bg_hists, with_bg=with_bg, membership=membership)
-    axtop.set_ylabel('Stellar density')
+                     bg_hists=bg_hists, with_bg=with_bg, membership=membership,
+                     residual=residual)
+    axtop.set_ylabel('Stars per {}'.format(axes_units[dim1]))
     plt.tick_params(**tick_params)
     # axcen.set_tick_params(direction='in', top=True, right=True)
 
@@ -592,8 +692,9 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     axright.set_ylim(ylim)
     axright.set_yticklabels([])
     plot1DProjection(dim2, star_pars, groups, weights, ax=axright,
-                     bg_hists=bg_hists, horizontal=True, with_bg=with_bg, membership=membership)
-    axright.set_xlabel('Stellar density')
+                     bg_hists=bg_hists, horizontal=True, with_bg=with_bg,
+                     membership=membership, residual=residual)
+    axright.set_xlabel('Stars per {}'.format(axes_units[dim2]))
     # axcen.set_tick_params(direction='in', top=True, right=True)
     plt.tick_params(**tick_params)
     plt.tight_layout(pad=0.7)
