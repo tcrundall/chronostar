@@ -20,6 +20,7 @@ MARKERS = ['v', '^', '*', 'd', 'x']
 HATCHES = ['|', '/',  '+', '\\', 'o', '0', '*', '.'] * 10
 # '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
 MARK_SIZE = 80.
+BG_MARK_SIZE = 20.
 PT_ALPHA = 0.4
 
 def add_arrow(line, position=None, indices=None, direction='right',
@@ -112,7 +113,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
              star_orbits=False, origins=None,
              group_then=False, group_now=False, group_orbit=False,
              annotate=False, membership=None, true_memb=None,
-             savefile=''):
+             savefile='', with_bg=False):
     """
     Plots a single pane capturing kinematic info in any desired 2D plane
 
@@ -137,6 +138,8 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
     group_now:  (bool) plot the group's current day distribution
     group_orbit: (bool) plot the trajectory of the group's mean
     annotate: (bool) add text describing the figure's contents
+    with_bg: (bool) treat the last column in Z as members of background, and
+            color accordingly
 
     Returns
     -------
@@ -161,24 +164,30 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         len(groups)
     except:
         groups = [groups]
+    ngroups = len(groups)
 
     # plot stellar data (positions with errors and optionally traceback
     # orbits back to some ill-defined age
     if star_pars:
         nstars = star_pars['xyzuvw'].shape[0]
+
+        # apply default color and markers, to be overwritten if needed
         pt_colors = np.array(nstars * ['xkcd:red'])
         markers = np.array(nstars * ['.'])
 
         # Incorporate fitted membership into colors of the pts
         if membership is not None:
-            best_mship = np.argmax(membership, axis=1)
-            pt_colors = np.array(COLORS)[best_mship]
+            best_mship = np.argmax(membership[:,:ngroups+with_bg], axis=1)
+            pt_colors = np.array(COLORS[:ngroups] + with_bg*['xkcd:grey'])[best_mship]
             # Incoporate "True" membership into pt markers
             if true_memb is not None:
                 markers = np.array(MARKERS)[np.argmax(true_memb,
                                                       axis=1)]
                 true_bg_mask = np.where(true_memb[:,-1] == 1.)
                 markers[true_bg_mask] = '.'
+        all_mark_size = np.array(nstars * [MARK_SIZE])
+        if with_bg:
+            all_mark_size[np.where(np.argmax(membership, axis=1) == ngroups)] = BG_MARK_SIZE
 
         mns = star_pars['xyzuvw']
         try:
@@ -186,8 +195,9 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         except KeyError:
             covs = len(mns) * [None]
             star_pars['xyzuvw_cov'] = covs
-        for star_mn, star_cov, marker, pt_color in zip(mns, covs, markers, pt_colors):
-            ax.scatter(star_mn[dim1], star_mn[dim2], s=MARK_SIZE,
+        for star_mn, star_cov, marker, pt_color, m_size in zip(mns, covs, markers, pt_colors,
+                                                               all_mark_size):
+            ax.scatter(star_mn[dim1], star_mn[dim2], s=m_size, #s=MARK_SIZE,
                        color=pt_color, marker=marker, alpha=PT_ALPHA)
             # plot uncertainties
             if star_cov is not None:
@@ -398,7 +408,7 @@ def evaluatePointInHist(x, hist_vals, hist_bins, normed=True):
 
 
 def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
-                     bg_hists=None):
+                     bg_hists=None, with_bg=False, membership=None):
     """
     Given an axes object, plot the 1D projection of stellar data and fits
 
@@ -412,7 +422,7 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
         and the bin edges
     :return:
     """
-    BIN_COUNT=13
+    BIN_COUNT=15
     if horizontal:
         orientation = 'horizontal'
     else:
@@ -420,10 +430,17 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     weights = np.array(weights).astype(np.float)
     if len(weights.shape) > 1:
         weights = weights.sum(axis=0)
-
     # Normalise weights to be unity
-    norm_factor = weights.sum()
-    weights /= norm_factor
+    # norm_factor = weights.sum()
+    # weights /= norm_factor
+
+    star_pars_cp = star_pars
+    if membership is not None and with_bg:
+        ngroups = len(groups)
+        star_pars_cp = {}
+        not_bg_mask = np.where(np.argmax(membership, axis=1) != ngroups)
+        star_pars_cp['xyzuvw'] = star_pars['xyzuvw'][not_bg_mask]
+        star_pars_cp['xyzuvw_cov'] = star_pars['xyzuvw_cov'][not_bg_mask]
 
     npoints = 1000
     if ax is None:
@@ -431,7 +448,7 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
 
     # Plot histogram of stars, accounting for uncertainties
     vals, bins, _ = \
-        ax.hist(sampleStellarPDFs(dim, star_pars), normed=True, histtype='step',
+        ax.hist(sampleStellarPDFs(dim, star_pars_cp), normed=False, histtype='step',
                 orientation=orientation, bins=BIN_COUNT)
 
     # Calculate and plot individual PDFs of fitted groups, with appropriate
@@ -441,6 +458,7 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     xs = np.linspace(np.min(bins), np.max(bins), npoints)
     combined_gauss = np.zeros(xs.shape)
     for i, (group, weight) in enumerate(zip(groups, weights)):
+        print(weight)
         mean_now = torb.traceOrbitXYZUVW(group.mean, group.age, single_age=True)
         cov_now = tf.transform_cov(group.generateCovMatrix(),
                                    torb.traceOrbitXYZUVW,
@@ -470,7 +488,8 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
                       star_orbits=False,
                       group_then=False, group_now=False, group_orbit=False,
                       annotate=False, bg_hists=None, membership=None,
-                      true_memb=None, savefile=''):
+                      true_memb=None, savefile='', with_bg=False,
+                      range_1=None, range_2=None):
     """
     Plot a 2D projection of data and fit along with flanking 1D projections.
 
@@ -498,6 +517,8 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     group_now:  (bool) plot the group's current day distribution
     group_orbit: (bool) plot the trajectory of the group's mean
     annotate: (bool) add text describing the figure's contents
+    with_bg: (bool) treat the final column of Z as background memberships
+             and color accordingly
 
     Returns
     -------
@@ -546,8 +567,12 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     plotPane(dim1, dim2, ax=axcen, groups=groups, star_pars=star_pars,
              star_orbits=star_orbits, group_then=group_then,
              group_now=group_now, group_orbit=group_orbit, annotate=annotate,
-             membership=membership, true_memb=true_memb)
+             membership=membership, true_memb=true_memb, with_bg=with_bg)
     plt.tick_params(**tick_params)
+    if range_1:
+        plt.xlim(range_1)
+    if range_2:
+        plt.ylim(range_2)
     # plt.grid(gridsepc_kw={'wspace': 0, 'hspace': 0})
     # plt.sharex(True)
 
@@ -557,7 +582,7 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     axtop.set_xlim(xlim)
     axtop.set_xticklabels([])
     plot1DProjection(dim1, star_pars, groups, weights, ax=axtop,
-                     bg_hists=bg_hists)
+                     bg_hists=bg_hists, with_bg=with_bg, membership=membership)
     axtop.set_ylabel('Stellar density')
     plt.tick_params(**tick_params)
     # axcen.set_tick_params(direction='in', top=True, right=True)
@@ -567,7 +592,7 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     axright.set_ylim(ylim)
     axright.set_yticklabels([])
     plot1DProjection(dim2, star_pars, groups, weights, ax=axright,
-                     bg_hists=bg_hists, horizontal=True)
+                     bg_hists=bg_hists, horizontal=True, with_bg=with_bg, membership=membership)
     axright.set_xlabel('Stellar density')
     # axcen.set_tick_params(direction='in', top=True, right=True)
     plt.tick_params(**tick_params)

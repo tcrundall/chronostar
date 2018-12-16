@@ -549,8 +549,8 @@ def loadDictFromTable(table, assoc_name=None):
 
     star_pars['xyzuvw']     = np.array(xyzuvw).astype(np.float64)
     star_pars['xyzuvw_cov'] = np.array(xyzuvw_cov).astype(np.float64)
-    star_pars['indices']    = indices
-    star_pars['gaia_ids']   = gaia_ids
+    star_pars['indices']    = np.array(indices)
+    star_pars['gaia_ids']   = np.array(gaia_ids)
     star_pars['table']      = table
     return star_pars
 
