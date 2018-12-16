@@ -503,10 +503,8 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
         xs = np.linspace(x_range[0], x_range[1], npoints)
         kernel = stats.gaussian_kde(star_pars['xyzuvw'][:,dim], bw_method=0.3)
         if horizontal:
-            print("plotting all!")
             ax.plot(nstars*kernel.evaluate(xs), xs, c='black', ls='--', alpha=0.5)
         else:
-            print("plotting all!")
             ax.plot(xs, nstars*kernel.evaluate(xs), c='black', ls='--', alpha=0.5)
     else:
         nsamples = 1000
@@ -526,7 +524,6 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     # xs = np.linspace(np.min(bins), np.max(bins), npoints)
     combined_gauss = np.zeros(xs.shape)
     for i, (group, weight) in enumerate(zip(groups, weights)):
-        print(weight)
         mean_now = torb.traceOrbitXYZUVW(group.mean, group.age, single_age=True)
         cov_now = tf.transform_cov(group.generateCovMatrix(),
                                    torb.traceOrbitXYZUVW,
@@ -554,22 +551,18 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     if residual:
         if use_kernel:
             if horizontal:
-                print("plotting all!")
                 ax.plot(nstars*kernel.evaluate(xs) -combined_gauss, xs, c='black', alpha=0.5, ls='-.')
             else:
-                print("plotting all!")
                 ax.plot(xs, nstars*kernel.evaluate(xs)-combined_gauss, c='black', alpha=0.5, ls='-.')
         else:
             # TODO: implement this...
             pass
             # if horizontal:
-            #     print("plotting all!")
             #     bins = plotManualHistogram(data, nbins=bins, span=x_range,
             #                                weight=1. / nsamples,
             #                                horizontal=horizontal)
             #     ax.plot(nstars*kernel.evaluate(xs) -combined_gauss, xs, c='black', alpha=0.5, ls='-.')
             # else:
-            #     print("plotting all!")
             #     ax.plot(xs, nstars*kernel.evaluate(xs)-combined_gauss, c='black', alpha=0.5, ls='-.')
 
 
