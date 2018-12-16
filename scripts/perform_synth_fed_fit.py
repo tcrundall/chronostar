@@ -218,11 +218,14 @@ for prec in precs:
         # apply traceforward fitting (with lnprob, corner plots as side effects)
         best_fit, chain, lnprob = gf.fitGroup(
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
-            pool=pool, convergence_tol=C_TOL
+            pool=pool, convergence_tol=C_TOL, plot_dir=pdir, save_dir=pdir,
+            sampling_steps=SAMPLING_STEPS
         )
         best_group = syn.Group(best_fit, sphere=True,
                                internal=True, star_count=False)
-        np.save(pdir + 'final_groups.npy')
+        np.save(pdir + 'final_best_groups.npy', best_group)
+        med_and_span = dt.calcMedAndSpan(chain)
+        np.save(pdit+'med_and_span.npy', med_and_span)
         #hp.dataGatherer(save_dir=prec)
 
 
