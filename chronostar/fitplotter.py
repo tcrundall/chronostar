@@ -18,11 +18,13 @@ COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']
 # COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
 MARKERS = ['v', '^', '*', 'd', 'x']
-HATCHES = ['|', '/',  '+', '\\', 'o', '0', '*', '.'] * 10
+HATCHES = ['|', '/',  '+', '\\', 'o', '*', 'o', '0'] * 10 #'.' just look like stars, so does '*'
+HATCHES = ['0'] * 100
 # '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
 MARK_SIZE = 80.
 BG_MARK_SIZE = 20.
 PT_ALPHA = 0.4
+BG_ALPHA = 0.3
 
 def add_arrow(line, position=None, indices=None, direction='right',
               size=15, color=None):
@@ -110,11 +112,11 @@ def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
                     color=color)
 
 
-def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
+def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
              star_orbits=False, origins=None,
              group_then=False, group_now=False, group_orbit=False,
              annotate=False, membership=None, true_memb=None,
-             savefile='', with_bg=False):
+             savefile='', with_bg=False, markers=None, group_bg=False):
     """
     Plots a single pane capturing kinematic info in any desired 2D plane
 
@@ -174,7 +176,8 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
 
         # apply default color and markers, to be overwritten if needed
         pt_colors = np.array(nstars * [COLORS[0]])
-        markers = np.array(nstars * ['.'])
+        if markers is None:
+            markers = np.array(nstars * ['.'])
 
         # Incorporate fitted membership into colors of the pts
         if membership is not None:
@@ -188,7 +191,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
                 markers[true_bg_mask] = '.'
         all_mark_size = np.array(nstars * [MARK_SIZE])
         if with_bg:
-            all_mark_size[np.where(np.argmax(membership, axis=1) == ngroups)] = BG_MARK_SIZE
+            all_mark_size[np.where(np.argmax(membership, axis=1) == ngroups-group_bg)] = BG_MARK_SIZE
 
         mns = star_pars['xyzuvw']
         try:
@@ -199,12 +202,14 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
         for star_mn, star_cov, marker, pt_color, m_size in zip(mns, covs, markers, pt_colors,
                                                                all_mark_size):
             ax.scatter(star_mn[dim1], star_mn[dim2], s=m_size, #s=MARK_SIZE,
-                       color=pt_color, marker=marker, alpha=PT_ALPHA)
+                       color=pt_color, marker=marker, alpha=PT_ALPHA,
+                       linewidth=0.0,
+                       )
             # plot uncertainties
             if star_cov is not None:
                 ee.plotCovEllipse(star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
                                   star_mn[np.ix_([dim1, dim2])],
-                                  ax=ax, alpha=0.1, linewidth='0.1',
+                                  ax=ax, alpha=0.05, linewidth='0.1',
                                   color=pt_color,
                                   )
             # plot traceback orbits for as long as oldest group (if known)
@@ -218,11 +223,6 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
 
     # plot info for each group (fitted, or true synthetic origin)
     for i, group in enumerate(groups):
-        # try:
-        #     assert isinstance(group, syn.Group) # for autocomplete when coding
-        # except:
-        #     import pdb; pdb.set_trace()
-
         cov_then = group.generateSphericalCovMatrix()
         mean_then = group.mean
         # plot group initial distribution
@@ -251,7 +251,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=[], star_pars=None,
             ee.plotCovEllipse(cov_now[np.ix_([dim1,dim2], [dim1,dim2])],
                               mean_now[np.ix_([dim1,dim2])],
                               with_line=True,
-                              ax=ax, alpha=0.3, ls='-.',
+                              ax=ax, alpha=0.4, ls='-.',
                               ec=COLORS[i], fill=False, hatch=HATCHES[i],
                               color=COLORS[i])
             if annotate:
@@ -407,8 +407,46 @@ def evaluatePointInHist(x, hist_vals, hist_bins, normed=True):
     return bin_density
 
 
-def plotManualHistogram(data, nbins, span=None, ax=None, weight=1.0,
-                        horizontal=False):
+def plotBarAsStep(bins, hist, horizontal=False, ax=None, **kwargs):
+    """
+    Plot a bar plot to resemble a step plot
+    :param bins:
+    :param hist:
+    :param horizontal:
+    :param ax:
+    :param kwargs:
+    :return:
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    # width = bins[1] - bins[0]
+    # import pdb; pdb.set_trace()
+    if horizontal:
+        # ax.barh(bins[:-1], width=hist*weight/width, align='edge', edgecolor='black',
+        #         color='none', height=width)
+        adjusted_hist = np.hstack((0, hist[0], hist, 0))
+        adjusted_bins = np.hstack((bins[0], bins[0], bins,
+                                    ))
+        ax.step(adjusted_hist, adjusted_bins, where='pre',
+                **kwargs)
+        # ax.plot(np.max(hist)*weight/width*1.1, np.median(bins), alpha=0)
+        # xlim = ax.get_xlim()
+        # ax.set_xlim((0, xlim[1]))
+    else:
+        # ax.bar(bins[:-1], height=hist*weight/width, align='edge', edgecolor='black',
+        #        color='none', width=width)
+        adjusted_hist = np.hstack((0, hist, hist[-1], 0))
+        adjusted_bins = np.hstack((bins[0], bins, bins[-1]))
+        ax.step(adjusted_bins, adjusted_hist, where='post',
+                **kwargs)
+        # ax.plot(np.median(bins), np.max(hist)*weight/width*1.1, alpha=0)
+        # ylim = ax.get_ylim()
+        # ax.set_ylim((0, ylim[1]))
+
+
+def plotManualHistogram(data, bins, span=None, ax=None, weight=1.0,
+                        horizontal=False, **kwargs):
     if ax is None:
         ax = plt.gca()
     # if restricting range, ensure weighting is accounted for
@@ -419,33 +457,15 @@ def plotManualHistogram(data, nbins, span=None, ax=None, weight=1.0,
         inv_weight *= frac_kept
         inv_weight = 1./inv_weight
         data = data[data_mask]
-    hist, edges = np.histogram(data, bins=nbins)
+    hist, edges = np.histogram(data, bins=bins)
     width = edges[1] - edges[0]
 
-    # import pdb; pdb.set_trace()
-    if horizontal:
-        # ax.barh(edges[:-1], width=hist*weight/width, align='edge', edgecolor='black',
-        #         color='none', height=width)
-        adjusted_hist = np.hstack((0, hist[0], hist, 0))
-        adjusted_edges = np.hstack((edges[0], edges[0], edges,
-                                    ))
-        ax.step(adjusted_hist*weight/width, adjusted_edges, where='pre',
-                c='black', alpha=0.5)
-        # ax.plot(np.max(hist)*weight/width*1.1, np.median(edges), alpha=0)
-        # xlim = ax.get_xlim()
-        # ax.set_xlim((0, xlim[1]))
-    else:
-        # ax.bar(edges[:-1], height=hist*weight/width, align='edge', edgecolor='black',
-        #        color='none', width=width)
-        adjusted_hist = np.hstack((0, hist, hist[-1], 0))
-        adjusted_edges = np.hstack((edges[0], edges, edges[-1]))
-        ax.step(adjusted_edges, adjusted_hist*weight/width, where='post',
-                c='black', alpha=0.5)
-        # ax.plot(np.median(edges), np.max(hist)*weight/width*1.1, alpha=0)
-        # ylim = ax.get_ylim()
-        # ax.set_ylim((0, ylim[1]))
+    scaled_hist = hist*weight/width
 
-    return edges
+    plotBarAsStep(edges, scaled_hist, horizontal=horizontal, ax=ax,
+                  **kwargs)
+
+    return scaled_hist, edges
 
 
 def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
@@ -465,24 +485,19 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     :return:
     """
     BIN_COUNT=16
-    if horizontal:
-        orientation = 'horizontal'
-    else:
-        orientation = 'vertical'
+    bg_hist_kwargs = {'c':'black', 'alpha':0.5} #, 'ls':'--'}
+    comb_group_kwargs = {'c':'black', 'alpha':0.7, 'ls':'-.'}
+    resid_kwargs = {'c':'black', 'alpha':0.5, 'linestyle':':'}
+
+    # if horizontal:
+    #     orientation = 'horizontal'
+    # else:
+    #     orientation = 'vertical'
     weights = np.array(weights).astype(np.float)
     if len(weights.shape) > 1:
         weights = weights.sum(axis=0)
-    # Normalise weights to be unity
-    # norm_factor = weights.sum()
-    # weights /= norm_factor
 
     star_pars_cp = star_pars
-    # if membership is not None and with_bg:
-    #     ngroups = len(groups)
-    #     star_pars_cp = {}
-    #     not_bg_mask = np.where(np.argmax(membership, axis=1) != ngroups)
-    #     star_pars_cp['xyzuvw'] = star_pars['xyzuvw'][not_bg_mask]
-    #     star_pars_cp['xyzuvw_cov'] = star_pars['xyzuvw_cov'][not_bg_mask]
 
     if x_range is None:
         x_range = [
@@ -493,7 +508,6 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
         x_range[0] -= buffer
         x_range[1] += buffer
 
-    # npoints = 1000
     if ax is None:
         ax = plt.gca()
 
@@ -503,14 +517,16 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
         xs = np.linspace(x_range[0], x_range[1], npoints)
         kernel = stats.gaussian_kde(star_pars['xyzuvw'][:,dim], bw_method=0.3)
         if horizontal:
-            ax.plot(nstars*kernel.evaluate(xs), xs, c='black', ls='--', alpha=0.5)
+            ax.plot(nstars*kernel.evaluate(xs), xs, **bg_hist_kwargs) #c='black', ls='--', alpha=0.5)
         else:
-            ax.plot(xs, nstars*kernel.evaluate(xs), c='black', ls='--', alpha=0.5)
+            ax.plot(xs, nstars*kernel.evaluate(xs), **bg_hist_kwargs) # c='black', ls='--', alpha=0.5)
     else:
         nsamples = 1000
         data = sampleStellarPDFs(dim, star_pars_cp, count=nsamples)
-        bins = plotManualHistogram(data, nbins=15, span=x_range, weight=1./nsamples,
-                                   horizontal=horizontal)
+        scaled_hist, bins = plotManualHistogram(
+            data, bins=BIN_COUNT, span=x_range, weight=1./nsamples,
+            horizontal=horizontal, **bg_hist_kwargs
+        )
         xs = np.linspace(np.min(bins), np.max(bins), npoints)
         # vals, bins, _ = \
         #     ax.hist(sampleStellarPDFs(dim, star_pars_cp), normed=False, histtype='step',
@@ -543,29 +559,24 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
 
     # Plot the combined PDF of fitted groups, normalised to 1
     if horizontal:
-        ax.plot(combined_gauss, xs, color='black', alpha=0.4)
+        ax.plot(combined_gauss, xs, **comb_group_kwargs) # color='black', ls='--')
     else:
-        ax.plot(xs, combined_gauss, color='black', alpha=0.4)
+        ax.plot(xs, combined_gauss, **comb_group_kwargs) # color='black', ls='--')
 
     # plot the difference of combined fit with histogram
     if residual:
         if use_kernel:
             if horizontal:
-                ax.plot(nstars*kernel.evaluate(xs) -combined_gauss, xs, c='black', alpha=0.5, ls='-.')
+                ax.plot(nstars*kernel.evaluate(xs) -combined_gauss, xs, **resid_kwargs)
             else:
-                ax.plot(xs, nstars*kernel.evaluate(xs)-combined_gauss, c='black', alpha=0.5, ls='-.')
+                ax.plot(xs, nstars*kernel.evaluate(xs)-combined_gauss, **resid_kwargs)
         else:
-            # TODO: implement this...
-            pass
-            # if horizontal:
-            #     bins = plotManualHistogram(data, nbins=bins, span=x_range,
-            #                                weight=1. / nsamples,
-            #                                horizontal=horizontal)
-            #     ax.plot(nstars*kernel.evaluate(xs) -combined_gauss, xs, c='black', alpha=0.5, ls='-.')
-            # else:
-            #     ax.plot(xs, nstars*kernel.evaluate(xs)-combined_gauss, c='black', alpha=0.5, ls='-.')
+            bin_width = bins[1] - bins[0]
+            combined_gauss_vals = np.interp(bins[:-1]+bin_width, xs, combined_gauss)
+            plotBarAsStep(bins, scaled_hist - combined_gauss_vals, horizontal=horizontal,
+                          **resid_kwargs)
 
-
+    # Ensure histograms are flush against the data axis
     if horizontal:
         xlim = ax.get_xlim()
         ax.set_xlim(0, xlim[1])
@@ -580,7 +591,8 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
                       group_then=False, group_now=False, group_orbit=False,
                       annotate=False, bg_hists=None, membership=None,
                       true_memb=None, savefile='', with_bg=False,
-                      range_1=None, range_2=None, residual=False):
+                      range_1=None, range_2=None, residual=False,
+                      markers=None, group_bg=False):
     """
     Plot a 2D projection of data and fit along with flanking 1D projections.
 
@@ -659,7 +671,8 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     plotPane(dim1, dim2, ax=axcen, groups=groups, star_pars=star_pars,
              star_orbits=star_orbits, group_then=group_then,
              group_now=group_now, group_orbit=group_orbit, annotate=annotate,
-             membership=membership, true_memb=true_memb, with_bg=with_bg)
+             membership=membership, true_memb=true_memb, with_bg=with_bg,
+             markers=markers, group_bg=group_bg,)
     plt.tick_params(**tick_params)
     if range_1:
         plt.xlim(range_1)

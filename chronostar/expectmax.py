@@ -361,16 +361,20 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
     return lnols
 
 
-def calcBIC(star_pars, ncomps, lnlike):
+def calcBIC(star_pars, ncomps, lnlike, z=None):
     """Calculates the Bayesian Information Criterion
 
     A simple metric to judge whether added components are worthwhile
 
-    COuld just as legitimately have n = to number of reasonably likely
+    Could just as legitimately have n = to number of reasonably likely
     members to provided components
+    Currenty trialing this:
     """
-    nstars = len(star_pars['xyzuvw'])
-    n = nstars * 7 # 6 for phase space origin and 1 for age
+    if z is not None:
+        nstars = np.sum(z[:,:ncomps])
+    else:
+        nstars = len(star_pars['xyzuvw'])
+    n = nstars * 6 # 6 for phase space origin (and 1 for age???)
     k = ncomps * 8 # 6 for central estimate, 2 for dx and dv, 1 for age
     return np.log(n)*k - 2 * lnlike
 
@@ -736,7 +740,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
     MAX_ITERS = 100
-    MEMB_CONV_TOL = 3e-2
+    MEMB_CONV_TOL = 0.1 # no memberships may vary by >10% to be converged.
+    AMPLITUDE_TOL = 1.0 # total sum of memberships for each component
+                        # cannot vary by more than this value to be converged
     nstars = star_pars['xyzuvw'].shape[0]
 
     logging.info("Fitting {} groups with {} burnin steps".format(ngroups,
@@ -867,7 +873,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("-- Overall posterior so far:  {} --". \
                      format(overallLnPosterior))
         logging.info("-- BIC so far: {}                --".\
-                     format(calcBIC(star_pars, ngroups, overallLnLike)))
+                     format(calcBIC(star_pars, ngroups, overallLnLike, z=z_new)))
 
         # checks if the fit ever worsens
         converged = ( (old_overallLnLike > overallLnLike) and\
@@ -877,7 +883,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                      # individual star memberships don't vary too much
                      np.allclose(z_new, z_old, atol=MEMB_CONV_TOL) and
                      # amplitudes of components don't vary too much
-                     np.allclose(z_new.sum(axis=0), z_old.sum(axis=0), atol=0.2)
+                     np.allclose(z_new.sum(axis=0), z_old.sum(axis=0),
+                                 atol=AMPLITUDE_TOL)
             # UNSURE HOW TO TUNE THIS
         )
         # old_samples = all_samples
@@ -930,7 +937,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                 plot_it=True, pool=pool, convergence_tol=C_TOL,
                 plot_dir=final_gdir, save_dir=final_gdir, z=final_z[:, i],
                 init_pos=all_init_pos[i], sampling_steps=SAMPLING_STEPS,
-                max_iter=4
+                max_iter=4,
                 # init_pars=old_groups[i],
             )
             # run with extremely large convergence tolerance to ensure it only
@@ -958,7 +965,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                                                bg_ln_ols, inc_posterior=False)
         overallLnPosterior = getOverallLnLikelihood(star_pars, new_groups,
                                                 bg_ln_ols, inc_posterior=True)
-        bic = calcBIC(star_pars, ngroups, overallLnLike)
+        bic = calcBIC(star_pars, ngroups, overallLnLike, z=final_z)
         logging.info("Final overall lnlikelihood: {}".format(overallLnLike))
         logging.info("Final overall lnposterior:  {}".format(overallLnLike))
         logging.info("Final BIC: {}".format(bic))
