@@ -14,17 +14,34 @@ import traceorbit as torb
 import transform as tf
 import datatool as dt
 
-COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
-          'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']
+COLORS = ['xkcd:blue','xkcd:red', 'xkcd:cyan', 'xkcd:shit', 'xkcd:orange',
+          'xkcd:sun yellow', 'xkcd:neon purple', 'xkcd:bright pink']
 # COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
 MARKERS = ['v', '^', '*', 'd', 'x']
 HATCHES = ['|', '/',  '+', '\\', 'o', '*', 'o', '0'] * 10 #'.' just look like stars, so does '*'
-HATCHES = ['0'] * 100
+HATCHES = ['0'] * 100 # removed hatching for now...
 # '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
-MARK_SIZE = 80.
-BG_MARK_SIZE = 20.
+MARK_SIZE = 140. #80.
+BG_MARK_SIZE = 50. #20.
 PT_ALPHA = 0.4
+COV_ALPHA = 0.2
 BG_ALPHA = 0.3
+FONTSIZE = 12
+
+MARKER_LABELS = np.array(['True {}'.format(ch) for ch in 'ABCD'])
+
+
+def set_size(w,h, ax=None):
+    """ w, h: width, height in inches """
+    if not ax: ax=plt.gca()
+    l = ax.figure.subplotpars.left
+    r = ax.figure.subplotpars.right
+    t = ax.figure.subplotpars.top
+    b = ax.figure.subplotpars.bottom
+    figw = float(w)/(r-l)
+    figh = float(h)/(t-b)
+    ax.figure.set_size_inches(figw, figh)
+
 
 def add_arrow(line, position=None, indices=None, direction='right',
               size=15, color=None):
@@ -67,7 +84,7 @@ def add_arrow(line, position=None, indices=None, direction='right',
 
 
 def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
-              with_arrow=False, annotate=False):
+              with_arrow=False, annotate=False, color=None):
     """
     For traceback use negative age
 
@@ -85,12 +102,11 @@ def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
     with_arrow: (bool) {False}, whether to include arrows along orbit
     annotate: (bool) {False}, whether to include text
     """
-    if group_ix is None:
-        color = COLORS[0]
-    else:
-        color = COLORS[group_ix]
-
-
+    if color is None:
+        if group_ix is None:
+            color = COLORS[0]
+        else:
+            color = COLORS[group_ix]
 
     # orb_alpha = 0.1
     gorb = torb.traceOrbitXYZUVW(pos_now,
@@ -113,10 +129,17 @@ def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
 
 
 def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
+             origin_star_pars=None,
              star_orbits=False, origins=None,
              group_then=False, group_now=False, group_orbit=False,
              annotate=False, membership=None, true_memb=None,
-             savefile='', with_bg=False, markers=None, group_bg=False):
+             savefile='', with_bg=False, markers=None, group_bg=False,
+             marker_labels=None, color_labels=None,
+             marker_style=None,
+             marker_legend=None, color_legend=None,
+             star_pars_label=None, origin_star_pars_label=None,
+             range_1=None, range_2=None, isotropic=True,
+             ordering=None):
     """
     Plots a single pane capturing kinematic info in any desired 2D plane
 
@@ -161,6 +184,19 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
         dim1 = labels.index(dim1.upper())
     if type(dim2) is not int:
         dim2 = labels.index(dim2.upper())
+    if type(star_pars) is str:
+        star_pars = dt.loadXYZUVW(star_pars)
+    if type(membership) is str:
+        membership = np.load(membership)
+    if type(groups) is str:
+        groups = dt.loadGroups(groups)
+    if marker_style is None:
+        marker_style = MARKERS[:]
+    # if type(origin_star_pars) is str:
+    #     origin_star_pars = dt.loadXYZUVW(origin_star_pars)
+
+    legend_pts = []
+    legend_labels = []
 
     # ensure groups is iterable
     try:
@@ -168,6 +204,8 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
     except:
         groups = [groups]
     ngroups = len(groups)
+    if ordering is None:
+        ordering = range(len(marker_style))
 
     # plot stellar data (positions with errors and optionally traceback
     # orbits back to some ill-defined age
@@ -187,8 +225,9 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
             if true_memb is not None:
                 markers = np.array(MARKERS)[np.argmax(true_memb,
                                                       axis=1)]
-                true_bg_mask = np.where(true_memb[:,-1] == 1.)
-                markers[true_bg_mask] = '.'
+                if with_bg:
+                    true_bg_mask = np.where(true_memb[:,-1] == 1.)
+                    markers[true_bg_mask] = '.'
         all_mark_size = np.array(nstars * [MARK_SIZE])
         if with_bg:
             all_mark_size[np.where(np.argmax(membership, axis=1) == ngroups-group_bg)] = BG_MARK_SIZE
@@ -199,27 +238,57 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
         except KeyError:
             covs = len(mns) * [None]
             star_pars['xyzuvw_cov'] = covs
+        st_count = 0
         for star_mn, star_cov, marker, pt_color, m_size in zip(mns, covs, markers, pt_colors,
                                                                all_mark_size):
-            ax.scatter(star_mn[dim1], star_mn[dim2], s=m_size, #s=MARK_SIZE,
-                       color=pt_color, marker=marker, alpha=PT_ALPHA,
-                       linewidth=0.0,
-                       )
+            pt = ax.scatter(star_mn[dim1], star_mn[dim2], s=m_size, #s=MARK_SIZE,
+                            color=pt_color, marker=marker, alpha=PT_ALPHA,
+                            linewidth=0.0,
+                            )
             # plot uncertainties
             if star_cov is not None:
                 ee.plotCovEllipse(star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
                                   star_mn[np.ix_([dim1, dim2])],
-                                  ax=ax, alpha=0.05, linewidth='0.1',
+                                  ax=ax, alpha=COV_ALPHA, linewidth='0.1',
                                   color=pt_color,
                                   )
             # plot traceback orbits for as long as oldest group (if known)
             # else, 30 Myr
-            if star_orbits:
+            if star_orbits and st_count%3==0:
                 try:
                     tb_limit = max([g.age for g in groups])
                 except:
                     tb_limit = 30
-                plotOrbit(star_mn, dim1, dim2, ax, end_age=-tb_limit)
+                plotOrbit(star_mn, dim1, dim2, ax, end_age=-tb_limit,
+                          color='xkcd:grey')
+            st_count += 1
+        if star_pars_label:
+            # ax.legend(numpoints=1)
+            legend_pts.append(pt)
+            legend_labels.append(star_pars_label)
+
+        if origin_star_pars is not None:
+            for star_mn, marker, pt_color, m_size in\
+                    zip(origin_star_pars['xyzuvw'],
+                        # origin_star_pars['xyzuvw_cov'],
+                        markers, pt_colors, all_mark_size):
+                pt = ax.scatter(star_mn[dim1], star_mn[dim2], s=0.5*m_size,
+                           # s=MARK_SIZE,
+                           color=pt_color, marker='s', alpha=PT_ALPHA,
+                           linewidth=0.0, #label=origin_star_pars_label,
+                           )
+                # # plot uncertainties
+                # if star_cov is not None:
+                #     ee.plotCovEllipse(
+                #         star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
+                #         star_mn[np.ix_([dim1, dim2])],
+                #         ax=ax, alpha=0.05, linewidth='0.1',
+                #         color=pt_color,
+                #         )
+            if origin_star_pars_label:
+                legend_pts.append(pt)
+                legend_labels.append(origin_star_pars_label)
+
 
     # plot info for each group (fitted, or true synthetic origin)
     for i, group in enumerate(groups):
@@ -280,8 +349,102 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
     ax.set_xlabel("{} [{}]".format(labels[dim1], units[dim1]))
     ax.set_ylabel("{} [{}]".format(labels[dim2], units[dim2]))
 
+    # NOT QUITE....
+    # if marker_legend is not None and color_legend is not None:
+    #     x_loc = np.mean(star_pars['xyzuvw'][:,dim1])
+    #     y_loc = np.mean(star_pars['xyzuvw'][:,dim2])
+    #     for label in marker_legend.keys():
+    #         ax.plot(x_loc, y_loc, color=color_legend[label],
+    #                 marker=marker_legend[label], alpha=0, label=label)
+    #     ax.legend(loc='best')
+
+    # if star_pars_label is not None:
+    #     ax.legend(numpoints=1, loc='best')
+        # ax.legend(loc='best')
+
+    # if marker_order is not None:
+    #     for label_ix, marker_ix in enumerate(marker_order):
+    #         axleg.scatter(0,0,color='black',marker=MARKERS[marker_ix],
+    #                       label=MARKER_LABELS[label_ix])
+    # #
+    # if len(legend_pts) > 0:
+    #     ax.legend(legend_pts, legend_labels)
+
+    # update fontsize
+    for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+                 ax.get_xticklabels() + ax.get_yticklabels()):
+        item.set_fontsize(FONTSIZE)
+    if ax.get_legend() is not None:
+        for item in ax.get_legend().get_texts():
+            item.set_fontsize(FONTSIZE)
+
+    # ensure we have some handle on the ranges
+    # if range_1 is None:
+    #     range_1 = ax.get_xlim()
+    # if range_2 is None:
+    #     range_2 = ax.get_ylim()
+
+    if range_1:
+        ax.set_xlim(range_1)
+    if range_2:
+        ax.set_ylim(range_2)
+
+    if isotropic:
+        # plt.gca().set_aspect('equal', adjustable='box')
+        # import pdb; pdb.set_trace()
+        ax.set_aspect('equal', adjustable='datalim')
+        # import pdb; pdb.set_trace()
+
+    if color_labels is not None:
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        for i, color_label in enumerate(color_labels):
+            ax.plot(1e10, 1e10, color=COLORS[i], label=color_label)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.legend(loc='best')
+    if marker_labels is not None:
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        # import pdb; pdb.set_trace()
+        for i, marker_label in enumerate(marker_labels):
+
+            ax.scatter(1e10, 1e10, c='black',
+                       marker=np.array(marker_style)[ordering][i],
+                       # marker=MARKERS[list(marker_labels).index(marker_label)],
+                       label=marker_label)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.legend(loc='best')
+
+    # if marker_legend is not None:
+    #     xlim = ax.get_xlim()
+    #     ylim = ax.get_ylim()
+    #     # import pdb; pdb.set_trace()
+    #     for k, v in marker_legend.items():
+    #         ax.scatter(1e10, 1e10, c='black',
+    #                    marker=v, label=k)
+    #     ax.set_xlim(xlim)
+    #     ax.set_ylim(ylim)
+    #     ax.legend(loc='best')
+
+    if color_legend is not None and marker_legend is not None:
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        # import pdb; pdb.set_trace()
+        for label in color_legend.keys():
+            ax.scatter(1e10, 1e10, c=color_legend[label],
+            marker=marker_legend[label], label=label)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.legend(loc='best')
+
     if savefile:
+        # set_size(4,2,ax)
         plt.savefig(savefile)
+    # import pdb; pdb.set_trace()
+
+    return ax.get_xlim(), ax.get_ylim()
 
 
 def plotMultiPane(dim_pairs, star_pars, groups, origins=None,
@@ -354,8 +517,8 @@ def plotMultiPane(dim_pairs, star_pars, groups, origins=None,
 
     if title:
         f.suptitle(title)
-
-    f.savefig(save_file, bbox_inches='tight', format='pdf')
+    if save_file:
+        f.savefig(save_file, format='pdf')
 
 
 def sampleStellarPDFs(dim, star_pars, count=100):
@@ -447,6 +610,17 @@ def plotBarAsStep(bins, hist, horizontal=False, ax=None, **kwargs):
 
 def plotManualHistogram(data, bins, span=None, ax=None, weight=1.0,
                         horizontal=False, **kwargs):
+    """
+    TODO: Need to work out how to get span to be correctly incorporated into histograms
+    :param data:
+    :param bins:
+    :param span:
+    :param ax:
+    :param weight:
+    :param horizontal:
+    :param kwargs:
+    :return:
+    """
     if ax is None:
         ax = plt.gca()
     # if restricting range, ensure weighting is accounted for
@@ -457,7 +631,10 @@ def plotManualHistogram(data, bins, span=None, ax=None, weight=1.0,
         inv_weight *= frac_kept
         inv_weight = 1./inv_weight
         data = data[data_mask]
-    hist, edges = np.histogram(data, bins=bins)
+
+        # if bins is just an integer,
+
+    hist, edges = np.histogram(data, bins=bins, range=span)
     width = edges[1] - edges[0]
 
     scaled_hist = hist*weight/width
@@ -484,7 +661,7 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
         and the bin edges
     :return:
     """
-    BIN_COUNT=16
+    BIN_COUNT=19
     bg_hist_kwargs = {'c':'black', 'alpha':0.5} #, 'ls':'--'}
     comb_group_kwargs = {'c':'black', 'alpha':0.7, 'ls':'-.'}
     resid_kwargs = {'c':'black', 'alpha':0.5, 'linestyle':':'}
@@ -552,16 +729,19 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
                            evaluatePointInHist(xs, bg_hists[dim][0],
                                                bg_hists[dim][1])
             combined_gauss += hist_contrib
+
         if horizontal:
             ax.plot(group_gauss, xs, color=COLORS[i], alpha=0.6)
         else:
             ax.plot(xs, group_gauss, color=COLORS[i], alpha=0.6)
 
-    # Plot the combined PDF of fitted groups, normalised to 1
-    if horizontal:
-        ax.plot(combined_gauss, xs, **comb_group_kwargs) # color='black', ls='--')
-    else:
-        ax.plot(xs, combined_gauss, **comb_group_kwargs) # color='black', ls='--')
+    # Plot the combined PDF of fitted groups
+    # only plot combined fit if theres more than one group
+    if len(groups) > 1:
+        if horizontal:
+            ax.plot(combined_gauss, xs, **comb_group_kwargs) # color='black', ls='--')
+        else:
+            ax.plot(xs, combined_gauss, **comb_group_kwargs) # color='black', ls='--')
 
     # plot the difference of combined fit with histogram
     if residual:
@@ -584,6 +764,14 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
         ylim = ax.get_ylim()
         ax.set_ylim(0, ylim[1])
 
+    # update fontsize
+    for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+                 ax.get_xticklabels() + ax.get_yticklabels()):
+        item.set_fontsize(FONTSIZE)
+    if ax.get_legend() is not None:
+        for item in ax.get_legend().get_texts():
+            item.set_fontsize(FONTSIZE)
+
 
 def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
                       star_pars=None,
@@ -592,7 +780,9 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
                       annotate=False, bg_hists=None, membership=None,
                       true_memb=None, savefile='', with_bg=False,
                       range_1=None, range_2=None, residual=False,
-                      markers=None, group_bg=False):
+                      markers=None, group_bg=False, isotropic=False,
+                      color_labels=[], marker_labels=[], marker_order=[],
+                      ordering=None):
     """
     Plot a 2D projection of data and fit along with flanking 1D projections.
 
@@ -631,8 +821,16 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     axes_units = 3*['pc'] + 3*['km/s']
     if type(membership) is str:
         membership = np.load(membership)
+    if type(star_pars) is str:
+        star_pars = dt.loadXYZUVW(star_pars)
+    # if ordering:
+    #     membership = membership[:,ordering]
+
+    # TODO: clarify what exactly you're trying to do here
     if weights is None and len(groups) > 0:
-        if membership is not None:
+        if len(groups) == 1 and not with_bg:
+            weights = np.array([len(star_pars['xyzuvw'])])
+        elif membership is not None:
             weights = membership.sum(axis=0)
         else:
             weights = np.ones(len(groups)) / len(groups)
@@ -641,8 +839,6 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
         dim1 = labels.index(dim1.upper())
     if type(dim2) is not int:
         dim2 = labels.index(dim2.upper())
-    if type(star_pars) is str:
-        star_pars = dt.loadXYZUVW(star_pars)
     if type(groups) is str:
         groups = np.load(groups)
         if len(groups.shape) == 0:
@@ -663,50 +859,78 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
     gs = gridspec.GridSpec(4, 4)
 
     # Set up some global plot features
-    fig.set_tight_layout(tight=True)
+    # fig.set_tight_layout(tight=True)
     plt.figure()
 
     # Plot central pane
     axcen = plt.subplot(gs[1:, :-1])
-    plotPane(dim1, dim2, ax=axcen, groups=groups, star_pars=star_pars,
-             star_orbits=star_orbits, group_then=group_then,
-             group_now=group_now, group_orbit=group_orbit, annotate=annotate,
-             membership=membership, true_memb=true_memb, with_bg=with_bg,
-             markers=markers, group_bg=group_bg,)
+    xlim, ylim = plotPane(
+        dim1, dim2, ax=axcen, groups=groups, star_pars=star_pars,
+        star_orbits=star_orbits, group_then=group_then,
+        group_now=group_now, group_orbit=group_orbit, annotate=annotate,
+        membership=membership, true_memb=true_memb, with_bg=with_bg,
+        markers=markers, group_bg=group_bg, isotropic=isotropic,
+        range_1=range_1, range_2=range_2, marker_labels=marker_labels,
+        color_labels=color_labels, ordering=ordering)
     plt.tick_params(**tick_params)
-    if range_1:
-        plt.xlim(range_1)
-    if range_2:
-        plt.ylim(range_2)
+    # if range_1:
+    #     plt.xlim(range_1)
+    # if range_2:
+    #     plt.ylim(range_2)
     # plt.grid(gridsepc_kw={'wspace': 0, 'hspace': 0})
     # plt.sharex(True)
 
     # Plot flanking 1D projections
-    xlim = axcen.get_xlim()
+    # xlim = axcen.get_xlim()
     axtop = plt.subplot(gs[0, :-1])
     axtop.set_xlim(xlim)
     axtop.set_xticklabels([])
     plot1DProjection(dim1, star_pars, groups, weights, ax=axtop,
                      bg_hists=bg_hists, with_bg=with_bg, membership=membership,
-                     residual=residual)
+                     residual=residual, x_range=xlim)
     axtop.set_ylabel('Stars per {}'.format(axes_units[dim1]))
     plt.tick_params(**tick_params)
     # axcen.set_tick_params(direction='in', top=True, right=True)
 
-    ylim = axcen.get_ylim()
+    # ylim = axcen.get_ylim()
     axright = plt.subplot(gs[1:, -1])
     axright.set_ylim(ylim)
     axright.set_yticklabels([])
     plot1DProjection(dim2, star_pars, groups, weights, ax=axright,
                      bg_hists=bg_hists, horizontal=True, with_bg=with_bg,
-                     membership=membership, residual=residual)
+                     membership=membership, residual=residual,
+                     x_range=ylim)
     axright.set_xlabel('Stars per {}'.format(axes_units[dim2]))
     # axcen.set_tick_params(direction='in', top=True, right=True)
     plt.tick_params(**tick_params)
-    plt.tight_layout(pad=0.7)
+    # plt.tight_layout(pad=0.7)
+
+    axleg = plt.subplot(gs[0,-1])
+    for spine in axleg.spines.values():
+        spine.set_visible(False)
+    axleg.tick_params(labelbottom='off', labelleft='off', bottom='off',
+                   left='off')
+    # import pdb; pdb.set_trace()
+
+    if False:
+        for label_ix, marker_ix in enumerate(marker_order):
+            axleg.scatter(0,0,color='black',marker=MARKERS[marker_ix],
+                          label=MARKER_LABELS[label_ix])
+        for i, color_label in enumerate(color_labels):
+            axleg.plot(0,0,color=COLORS[i],label=color_label)
+        axleg.legend(loc='best', framealpha=1.0)
+
+    # for i, marker_label in enumerate(marker_labels):
+    #     axleg.scatter(0,0,color='black',marker=MARKERS[i],label=marker_label)
+    # pt = axleg.scatter(0,0, label='Dummy')
+    # plt.legend([pt], ["Test"])
+
+    # import pdb; pdb.set_trace()
 
     if savefile:
         plt.savefig(savefile)
+
+    return xlim, ylim
 
 
 
