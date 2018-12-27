@@ -16,14 +16,21 @@ import chronostar.datatool as dt
 DIM = 6
 
 chaindirs = [
-    '../results/em_fit/beta_Pic_solo_results/',
-    '../results/em_fit/beta_Pic_results/group0/',
+    # '../results/em_fit/beta_Pic_solo_results/',
+    # '../results/em_fit/beta_Pic_results/group0/',
+    '../results/em_fit/beta_Pictoris_wgs_inv2_5B_res/'
+]
+
+labels = [
+    # 'solo',
+    # 'near_gaia',
+    '5comp',
 ]
 
 cd_chains = {}
 med_and_spans = {}
 
-for chaindir, label in zip(chaindirs, ['solo', 'near_gaia']):
+for chaindir, label in zip(chaindirs, labels):
     try:
         cd_chains[label] = np.load(chaindir + 'current_day_chain.npy')
     except IOError:

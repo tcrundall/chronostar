@@ -138,7 +138,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
              marker_style=None,
              marker_legend=None, color_legend=None,
              star_pars_label=None, origin_star_pars_label=None,
-             range_1=None, range_2=None, isotropic=True,
+             range_1=None, range_2=None, isotropic=False,
              ordering=None):
     """
     Plots a single pane capturing kinematic info in any desired 2D plane
@@ -319,7 +319,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
                    color=COLORS[i])
             ee.plotCovEllipse(cov_now[np.ix_([dim1,dim2], [dim1,dim2])],
                               mean_now[np.ix_([dim1,dim2])],
-                              with_line=True,
+                              # with_line=True,
                               ax=ax, alpha=0.4, ls='-.',
                               ec=COLORS[i], fill=False, hatch=HATCHES[i],
                               color=COLORS[i])
@@ -384,16 +384,34 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
     # if range_2 is None:
     #     range_2 = ax.get_ylim()
 
-    if range_1:
-        ax.set_xlim(range_1)
     if range_2:
         ax.set_ylim(range_2)
 
     if isotropic:
+        print("Setting isotropic for dims {} and {}".format(dim1, dim2))
         # plt.gca().set_aspect('equal', adjustable='box')
         # import pdb; pdb.set_trace()
-        ax.set_aspect('equal', adjustable='datalim')
+        plt.gca().set_aspect('equal', adjustable='datalim')
+
+        # manually calculate what the new xaxis must be...
+        figW, figH = ax.get_figure().get_size_inches()
+        xmid = (ax.get_xlim()[1] + ax.get_xlim()[0]) * 0.5
+        yspan = ax.get_ylim()[1] - ax.get_ylim()[0]
+        xspan = figW * yspan / figH
+
+        # check if this increases span
+        if xspan > ax.get_xlim()[1] - ax.get_xlim()[0]:
+            ax.set_xlim(xmid - 0.5 * xspan, xmid + 0.5 * xspan)
+        # if not, need to increase yspan
+        else:
+            ymid = (ax.get_ylim()[1] + ax.get_ylim()[0]) * 0.5
+            xspan = ax.get_xlim()[1] - ax.get_xlim()[0]
+            yspan = figH * xspan / figW
+            ax.set_ylim(ymid - 0.5*yspan, ymid + 0.5*yspan)
+
         # import pdb; pdb.set_trace()
+    elif range_1:
+        ax.set_xlim(range_1)
 
     if color_labels is not None:
         xlim = ax.get_xlim()
@@ -403,6 +421,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
         ax.legend(loc='best')
+
     if marker_labels is not None:
         xlim = ax.get_xlim()
         ylim = ax.get_ylim()
@@ -413,6 +432,9 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
                        marker=np.array(marker_style)[ordering][i],
                        # marker=MARKERS[list(marker_labels).index(marker_label)],
                        label=marker_label)
+        if with_bg:
+            ax.scatter(1e10, 1e10, c='xkcd:grey',
+                       marker='.', label='Background')
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
         ax.legend(loc='best')
@@ -443,6 +465,8 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
         # set_size(4,2,ax)
         plt.savefig(savefile)
     # import pdb; pdb.set_trace()
+
+    # return ax.get_window_extent(None).width, ax.get_window_extent(None).height
 
     return ax.get_xlim(), ax.get_ylim()
 

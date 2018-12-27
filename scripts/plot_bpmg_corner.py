@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 import corner
 
 chainfiles = [
-    '../results/em_fit/beta_Pic_solo_results/final_chain.npy',
-    '../results/em_fit/beta_Pic_results/group0/final_chain.npy',
+    # '../results/em_fit/beta_Pic_solo_results/final_chain.npy',
+    # '../results/em_fit/beta_Pic_results/group0/final_chain.npy',
+    '../results/em_fit/beta_Pictoris_wgs_inv2/final_chain.npy',
 ]
 
 labels = [
@@ -25,8 +26,18 @@ labels = [
     't [Myr]',
 ]
 
-plot_names = ['bpmg_solo_corner.pdf', 'bpmg_corner.pdf']
-rev_flags = [True, False]
+plot_names = [
+    # 'bpmg_solo_corner.pdf',
+    # 'bpmg_corner.pdf',
+    'bpmg_5B_conrer.pdf',
+]
+
+
+rev_flags = [
+    True,
+    False,
+    True,
+]
 
 for chainfile, plot_name, rev_flag in zip(chainfiles, plot_names,
                                            rev_flags):

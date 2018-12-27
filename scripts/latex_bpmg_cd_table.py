@@ -15,7 +15,8 @@ save_file_name = '../results/tables/real_bpmg_table.tex'
 
 chaindirs = [
     '../results/em_fit/beta_Pic_solo_results/',
-    '../results/em_fit/beta_Pic_results/group0/',
+    # '../results/em_fit/beta_Pic_results/group0/',
+    '../results/em_fit/beta_Pictoris_wgs_inv2_5B_res/',
 ]
 labels = [
     'solo',
@@ -27,7 +28,11 @@ cd_med_and_spans = {}
 
 for chaindir, label in zip(chaindirs, labels):
     cd_med_and_spans[label] = np.load(chaindir + 'cd_med_and_span.npy')
+    # cd_med_and_spans[label][6:8] = np.exp(cd_med_and_spans[label][6:8])
     origin_med_and_spans[label] = np.load(chaindir + 'final_med_errs.npy')
+    origin_med_and_spans[label][:,6:8] = np.exp(origin_med_and_spans[label][:,6:8])
+
+# import pdb; pdb.set_trace()
 
 row_names = [
     'x [pc]',
@@ -58,7 +63,8 @@ row_names = [
     'corr$_{uw}$',
     'corr$_{vw}$',
     'age [Myr]',
-    'nstars']
+    'nstars',
+]
 
 lb_len = max([len(label) for label in row_names])
 
@@ -69,16 +75,16 @@ with open(save_file_name, 'w') as fp:
     fp.write('\\hline\n')
     fp.write('& \\multicolumn{{{}}}{{c|}}{{{}}}'.format(
         2,
-        'BANYAN $\\beta$PMG members',
+        'BANYAN only',
     ))
     if nruns == 2:
         fp.write('& \\multicolumn{{{}}}{{c|}}{{{}}}'.format(
             2,
-            'BANYAN $\\beta$PMG members plus nearby \\textit{Gaia}',
+            'BANYAN and nearby \\textit{Gaia}',
         ))
     fp.write('\\\\\n')
 
-    fp.write('& Origin & Current Day' * (nruns) + '\\\\\n')
+    fp.write('& Origin & Current-day' * (nruns) + '\\\\\n')
     fp.write('\\hline\n')
 
     def generateStringFromEntry(entry, prec=1):

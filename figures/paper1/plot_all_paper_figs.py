@@ -7,6 +7,7 @@ one spot to facilitate quick and simple replotting as needed.
 TODO: Maybe do again, but with the range buffer lowered to 0.1 (from 0.2)
 """
 
+import corner
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
@@ -20,10 +21,12 @@ import chronostar.traceorbit as torb
 debugging_circles=False
 
 # PLOTTING FLAGS
-# PLOT_FED_STARS = False
-PLOT_FED_STARS = True
-PLOT_MUTLI_SYNTH = False
-# PLOT_MUTLI_SYNTH = True
+PLOT_CORNER = False
+# PLOT_CORNER = True
+PLOT_FED_STARS = False
+# PLOT_FED_STARS = True
+# PLOT_MUTLI_SYNTH = False
+PLOT_MUTLI_SYNTH = True
 PLOT_BPMG_REAL = False
 # PLOT_BPMG_REAL = True
 PLOT_FAILURE = False
@@ -39,6 +42,9 @@ acronyms = {
     # 'TW Hya':'TWA',
     'Upper Centaurus Lupus':'UCL',
 }
+
+def displayRanges(ranges):
+    print([ranges[dim][1] - ranges[dim][0] for dim in (0,1,2,3,4,5)])
 
 def calcRanges(star_pars, sep_axes=False, scale=True):
     """Simple function to calculate span in each dimension of stars with
@@ -67,6 +73,8 @@ def calcRanges(star_pars, sep_axes=False, scale=True):
         if scale:
             scaleRanges(xranges, dims=(0,1,2))
             scaleRanges(xranges, dims=(3,4,5))
+            scaleRanges(yranges, dims=(0,1,2))
+            scaleRanges(yranges, dims=(3,4,5))
         return xranges, yranges
     else:
         if scale:
@@ -92,6 +100,39 @@ def scaleRanges(ranges, dims=(0,1,2)):
         ranges[dim][0] = midpoint - 0.5 * max_pos_span
 
 LABELS = 'xyzuvw'
+
+if PLOT_CORNER:
+    chain_file = '../../results/em_fit/beta_Pictoris_wgs_inv2_5B_res/'\
+                        'final_chain.npy'
+    plot_name = 'bpmg_5B_corner.pdf'
+    axis_labels = [
+        'X [pc]',
+        'Y [pc]',
+        'Z [pc]',
+        'U [km/s]',
+        'V [km/s]',
+        'W [km/s]',
+        r'$\sigma_{xyz}$ [pc]',
+        r'$\sigma_{uvw}$ [km/s]',
+        't [Myr]',
+    ]
+    print("Plotting {}".format(plot_name))
+    chain = np.load(chain_file).reshape(-1,9)
+    chain[:,6:8] = np.exp(chain[:,6:8])
+    # plt.tick_params(direction='in')
+    fig = corner.corner(
+        chain,
+        labels=axis_labels,
+        # reverse=True,
+        label_kwargs={'fontsize':'xx-large'},
+        max_n_ticks=4,
+    )
+    print("Applying tick parameters")
+    for ax in fig.axes:
+        ax.tick_params(direction='in', labelsize='x-large', top=True,
+                       right=True)
+    print("... saving")
+    plt.savefig(plot_name)
 
 if PLOT_BPMG_REAL:
     for iteration in ['5B']: #, '6C']:
@@ -185,7 +226,7 @@ if PLOT_BPMG_REAL:
                 #     nearby_range[1] = temp_range
                 scaleRanges(x_nearby_ranges, (0,1,2))
                 scaleRanges(x_nearby_ranges, (3,4,5))
-                scaleRanges(y_nearby_ranges, (0,1,2))
+                # scaleRanges(y_nearby_ranges, (0,1,2))
                 scaleRanges(y_nearby_ranges, (3,4,5))
 
         # Only include stars that, if they weren't bg, they'd most likely be BPMG
@@ -193,7 +234,7 @@ if PLOT_BPMG_REAL:
             fit_name = 'bpmg_candidates'
             # extract_group_ix = [0,2]
             extract_group_ixs_by_iteration = {
-                '5B':[0],
+                '5B':[0,3],
                 '6C':[0,2],
             }
             extract_group_ix = extract_group_ixs_by_iteration[iteration]
@@ -213,14 +254,16 @@ if PLOT_BPMG_REAL:
             z = z[:,(extract_group_ix+[-1]),]
 
             # bpmg_range = calcRanges(bpmg_star_pars)
+            # import pdb; pdb.set_trace()
 
             for dim1, dim2 in DEFAULT_DIMS: #[(0,1), (0,3), (1,4)]: #, (2,5)]: #, 'yv', 'zw']:
                 # force the XY plot to have same scales
                 # if dim1==0 and dim2==1 and debugging_circles:
                 #     temp_range = bpmg_range[1]
                 #     bpmg_range[1] = [-120,80]
+                # import pdb; pdb.set_trace()
 
-                fp.plotPane(
+                dim1_range, dim2_range = fp.plotPane(
                     dim1,
                     dim2,
                     groups=groups[extract_group_ix],
@@ -241,7 +284,7 @@ if PLOT_BPMG_REAL:
                     marker_style=marker_style,
                     marker_labels=marker_label if dim1==2 else None,
                     color_labels=[r'Fitted $\beta$PMG'] if dim1==2 else None,
-                    isotropic=(int(dim1/3) == int(dim2/3))
+                    # isotropic=(int(dim1/3) == int(dim2/3))
                 )
                 # # undo forced change
                 # if dim1 == 0 and dim2 == 1 and debugging_circles:
@@ -348,8 +391,8 @@ if PLOT_FED_STARS:
         )
         scaleRanges(fed_xranges, (0, 1, 2))
         scaleRanges(fed_xranges, (3, 4, 5))
-        scaleRanges(fed_yranges, (0, 1, 2))
-        scaleRanges(fed_yranges, (3, 4, 5))
+        # scaleRanges(fed_yranges, (0, 1, 2))
+        # scaleRanges(fed_yranges, (3, 4, 5))
         # scaleRanges(fed_xranges, (0,1,2))
         # scaleRanges(fed_xranges, (3,4,5))
 
@@ -391,6 +434,13 @@ if PLOT_MUTLI_SYNTH:
         'same_centroid':[1, 0],
     }
 
+    legend_proj = {
+        'synth_bpmg':(0,3),
+        'assoc_in_field':(2,5),
+        'four_assocs':(2,5),
+        'same_centroid':(2,5),
+    }
+
     MARKER_LABELS = np.array(['True {}'.format(ch) for ch in 'ABCD'])
 
     for synth_fit in synth_fits:
@@ -405,15 +455,17 @@ if PLOT_MUTLI_SYNTH:
         origins_file = rdir + 'synth_data/origins.npy'
         true_memb = dt.getZfromOrigins(origins_file, star_pars_file)
         ranges = calcRanges(dt.loadXYZUVW(star_pars_file))
-        xaxis_ranges, yaxis_ranges =  calcRanges(dt.loadXYZUVW(star_pars_file),
-                                                 sep_axes=True)
+        xaxis_ranges, yaxis_ranges = calcRanges(dt.loadXYZUVW(star_pars_file),
+                                                 sep_axes=True, scale=True)
         # yaxis_ranges = {}
         # for key in ranges.keys():
         #     xaxis_ranges[key] = ranges[key][:]
         #     yaxis_ranges[key] = ranges[key][:]
 
+
         for dim1, dim2 in DEFAULT_DIMS: #planes[synth_fit]:
             print("   - {} and {}".format(dim1, dim2))
+            # import pdb; pdb.set_trace()
             xaxis_ranges[dim1], yaxis_ranges[dim2] = fp.plotPaneWithHists(
                 dim1,
                 dim2,
@@ -430,16 +482,20 @@ if PLOT_MUTLI_SYNTH:
                 isotropic=(int(dim1/3) == int(dim2/3)),
                 range_1=xaxis_ranges[dim1],
                 range_2=yaxis_ranges[dim2],
-                color_labels=COLOR_LABELS[:len(groups)] if dim1 == 2 else None,
+                color_labels=COLOR_LABELS[:len(groups)]
+                        if (dim1, dim2) == legend_proj[synth_fit]
+                        else None,
                 marker_labels=MARKER_LABELS[:len(groups)] #[ordering[synth_fit]]
-                              if dim1 == 2 else None,
+                        if (dim1, dim2) == legend_proj[synth_fit]
+                        else None,
                 ordering=ordering[synth_fit],
                 marker_order=ordering[synth_fit],
             )
+            # import pdb; pdb.set_trace()
             scaleRanges(xaxis_ranges, (0, 1, 2))
             scaleRanges(xaxis_ranges, (3, 4, 5))
-            scaleRanges(yaxis_ranges, (0, 1, 2))
-            scaleRanges(yaxis_ranges, (3, 4, 5))
+            # scaleRanges(yaxis_ranges, (0, 1, 2))
+            # scaleRanges(yaxis_ranges, (3, 4, 5))
 
 
 if PLOT_FAILURE:

@@ -23,6 +23,15 @@ from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
 
+import sys
+sys.path.insert(0, '..')
+
+def gauss(x, mu, sig):
+    """
+    Evaluates a 1D gaussian at `x` given mean `mu` and std `sig`
+    """
+    return 1./(sig*np.sqrt(2*np.pi)) * np.exp(-(x - mu)**2 / (2.*sig**2))
+
 def insertSpanIntoDict(dict, key_list, med_and_span):
     """
     Inserts array `med_and_span` into the appropriate sub-dictionary, building
@@ -57,9 +66,11 @@ def breakAxes(ax1, ax2, ymin=None, ymax=None): #, horizontal=True):
     """
     Given two axes objects, paint as if a single plot with broken axes in
     x (Currently hardcoded for only x direction)
+
+    Can optionally provide the ylimits.
     """
 
-    # line up y axes
+    # line up y axes across two axes objects
     if ymin is None:
         ymin = np.min((ax1.get_ylim()[0], ax2.get_ylim()[0]))
     if ymax is None:
@@ -87,7 +98,8 @@ def breakAxes(ax1, ax2, ymin=None, ymax=None): #, horizontal=True):
     ax2.plot((-d, +d), (-d, +d), **kwargs)  # bottom-left diagonal
     ax2.plot((- d, + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
 
-def plotAgeHistsByPrec(ax1, ax2, age, precs, bad_hists, bad_edges, hists, edges):
+def plotAgeHistsByPrec(ax1, ax2, age, precs, bad_hists, bad_edges, hists, edges,
+                       weight=1.):
     alpha=0.7
     ax2.tick_params(direction='in', top=True)#, right=True)
     for prec in precs:
@@ -95,71 +107,55 @@ def plotAgeHistsByPrec(ax1, ax2, age, precs, bad_hists, bad_edges, hists, edges)
         # center = (edges[age][prec][:-1] + edges[age][prec][1:]) / 2
         ax2.bar(
             edges[age][prec][:-1],
-            hists[age][prec],
+            hists[age][prec]*weight,
             width=width,
             align='edge',
             alpha=alpha,
             hatch=patterns[precs.index(prec)],
             color='none',
             edgecolor=list(plt.rcParams['axes.prop_cycle'])[precs.index(prec)]['color'],# plt.rcParams['axes.prop_cycle'][precs.index(prec)],
+            label=prec_labels[prec],
         )
-    ax2.text(0.75, 0.85, r"$t_{{true}} =${:2} Myr".format(age),
-                    fontsize=8,
-                    horizontalalignment='center',
-                    verticalalignment='center',
+
+    # scale of plot is different if not using broken axis
+    if bad_hists is not None:
+        xpos = 0.96
+    else:
+        xpos = 0.98
+    ax2.text(xpos, 0.92, r"$t_{{true}} =${:2} Myr".format(age),
+                    fontsize=10,
+                    horizontalalignment='right',
+                    verticalalignment='top',
                     transform=ax2.transAxes
                     )
 
-    ax1.tick_params(direction='in', top=True, left=True)
-    for prec in precs:
-        ax1.bar(
-            bad_edges[age][prec][:-1],
-            bad_hists[age][prec],
-            width=width,
-            alpha=alpha,
-            align='edge',
-            hatch=patterns[precs.index(prec)],
-            color='none',
-            edgecolor=list(plt.rcParams['axes.prop_cycle'])[precs.index(prec)]['color'], #plt.rcParams['axes.prop_cycle'][precs.index(prec)],
-            label=prec_labels[prec]
-        )
+    if bad_hists is not None:
+        ax1.tick_params(direction='in', top=True, left=True)
+        for prec in precs:
+            ax1.bar(
+                bad_edges[age][prec][:-1],
+                bad_hists[age][prec],
+                width=width,
+                alpha=alpha,
+                align='edge',
+                hatch=patterns[precs.index(prec)],
+                color='none',
+                edgecolor=list(plt.rcParams['axes.prop_cycle'])[precs.index(prec)]['color'], #plt.rcParams['axes.prop_cycle'][precs.index(prec)],
+                label=prec_labels[prec],
+            )
+        breakAxes(ax1, ax2, ymin=0., ymax=1.25)
+    else:
+        ax2.tick_params(right=True)
+        ax2.set_ylim(0,1.25)
 
-    breakAxes(ax1, ax2, ymin=0., ymax=1.25)
-
-def calcNumpyHists(ages, precs, data, bad_mask, good_mask):
+def calcNumpyHists(ages, precs, data, good_mask, bad_mask, info):
     """
     Calculates normalised, standardised (re: bin placement) histograms
     of data
     """
-    # get bounds
-    all_bad_raw = np.hstack(
-        [raw_resids_by_age[age][bad_vanilla_mask[age]] for age in ages])
-    max_bad_raw = np.max(all_bad_raw)
-    min_bad_raw = np.min(all_bad_raw)
-
-    all_good_raw = np.hstack(
-        [raw_resids_by_age[age][vanilla_mask[age]] for age in ages])
-    max_good_raw = np.max(all_good_raw)
-    min_good_raw = np.min(all_good_raw)
-
-    # all_bad_norm = np.hstack(
-    #     [norm_resids_by_age[age][bad_vanilla_mask[age]] for age in ages])
-    # max_bad_norm = np.max(all_bad_norm)
-    # min_bad_norm = np.min(all_bad_norm)
-    #
-    # all_good_norm = np.hstack(
-    #     [norm_resids_by_age[age][vanilla_mask[age]] for age in ages])
-    # max_good_norm = np.max(all_good_norm)
-    # min_good_norm = np.min(all_good_norm)
-
     max_raw_res = max(
         [max(abs(raw_resids_by_age[age][vanilla_mask[age]])) for age in ages])
-    # max_norm_res = max(
-    #     [max(abs(norm_resids_by_age[age][vanilla_mask[age]])) for age in ages])
     raw_span = [-max_raw_res, max_raw_res]
-    # norm_span = [-max_norm_res, max_norm_res]
-    # spans = {'raw': raw_span, 'norm': norm_span}
-    # raw_
 
     # get histograms through numpy beforehand (for scaling reasons)
     hists = {}
@@ -174,36 +170,38 @@ def calcNumpyHists(ages, precs, data, bad_mask, good_mask):
         bad_edges[age] = {}
         for prec in precs:
             hists[age][prec], edges[age][prec] = np.histogram(
-                data[info][age][prec][data_mask[age][prec]],
+                data[info][age][prec][good_mask[age][prec]],
                 bins=19,
                 range=raw_span,
             )
-            bad_hists[age][prec], bad_edges[age][prec] = np.histogram(
-                data[info][age][prec][bad_data_mask[age][prec]],
-                bins=19,
-                range=np.array(raw_span) - 19
-            )
+            if bad_mask is not None:
+                bad_hists[age][prec], bad_edges[age][prec] = np.histogram(
+                    data[info][age][prec][bad_mask[age][prec]],
+                    bins=19,
+                    range=np.array(raw_span) - 19
+                )
         max_bin_height[age] = np.max([hists[age][prec] for prec in precs])
         for prec in precs:
             hists[age][prec] = hists[age][prec] / float(max_bin_height[age])
-            bad_hists[age][prec] = bad_hists[age][prec] / float(max_bin_height[age])
-    return hists, edges, bad_hists, bad_edges
+            if bad_mask is not None:
+                bad_hists[age][prec] = bad_hists[age][prec] / float(max_bin_height[age])
+    if bad_mask is None:
+        return hists, edges
+    else:
+        return hists, edges, bad_hists, bad_edges
 
 
-if __name__ == '__main__':
-    rdir = '../results/synth_fit/med_2paper1_runs/'
+def buildMasterDict(ages, dxs, dvs, nstars, labels, precs):
+    """
+    Builds a dictionary of all simulations and their results
 
-    ages = [5,15,30,50,100]#,200]
-    dxs = [1, 2, 5]
-    dvs = [1, 2]
-    nstars = [25, 50, 100]
-    labels = 'abcd'
-    precs = ['half', 'gaia', 'double']#, 'quint']
-
+    Dictionary has the form:
+        master_dict[ages][dxs][dvs][nstars][labels][precs]
+            [[dx, dv, age], (raw)
+             [dx, dv, age]] (normed)
+    """
     scenarios = product(ages, dxs, dvs, nstars, labels)
-
     master_dict = {}
-
     for scenario in scenarios:
         for prec in precs:
             sdir = rdir + '{}_{}_{}_{}_{}/'.format(*scenario) + '{}/'.format(prec)
@@ -213,45 +211,58 @@ if __name__ == '__main__':
             med_and_errs = np.zeros((med_and_spans.shape[0], 2))
             med_and_errs[:,0] = med_and_spans[:,0]
             med_and_errs[:,1] = 0.5*(med_and_spans[:,1] - med_and_spans[:,2])
-            raw_resids = med_and_spans[6:9,0] -\
+            # import pdb; pdb.set_trace()
+            raw_resids = med_and_spans[6:9,0] - \
                          np.array((scenario[1], scenario[2], scenario[0]))
             norm_resids = raw_resids / med_and_errs[6:9,1]
             resids = np.vstack((raw_resids, norm_resids))
             insertSpanIntoDict(master_dict, list(scenario) + [prec], resids)
+    return master_dict
 
-    raw_resids_by_age = {}
+def buildSpecialDicts(master_dict, ages, dxs, dvs, nstars, labels, precs,
+                      normed=False):
+    resids_by_age = {}
     for age in ages:
-        raw_resids_by_age[age] = np.array(
-            [master_dict[age][dx][dv][nstar][label][prec][0, -1] for dx in dxs for dv
+        resids_by_age[age] = np.array(
+            [master_dict[age][dx][dv][nstar][label][prec][int(normed), -1] for dx in dxs for dv
              in dvs for nstar in nstars for label in labels for prec in precs]
         )
-    raw_resids_by_age_prec = {}
+    resids_by_age_prec = {}
     for age in ages:
-        raw_resids_by_age_prec[age] = {}
+        resids_by_age_prec[age] = {}
         for prec in precs:
-            raw_resids_by_age_prec[age][prec] = np.array(
-                [master_dict[age][dx][dv][nstar][label][prec][0, -1] for dx in dxs
+            resids_by_age_prec[age][prec] = np.array(
+                [master_dict[age][dx][dv][nstar][label][prec][int(normed), -1] for dx in dxs
                  for dv in dvs for nstar in nstars for label in labels]
             )
+    return resids_by_age, resids_by_age_prec
 
-    norm_resids_by_age = {}
-    for age in ages:
-        norm_resids_by_age[age] = np.array(
-            [master_dict[age][dx][dv][nstar][label][prec][1, -1] for dx in dxs for dv
-             in dvs for nstar in nstars for label in labels for prec in precs]
-        )
-    norm_resids_by_age_prec = {}
-    for age in ages:
-        norm_resids_by_age_prec[age] = {}
-        for prec in precs:
-            norm_resids_by_age_prec[age][prec] = np.array(
-                [master_dict[age][dx][dv][nstar][label][prec][1, -1] for dx in dxs
-                 for dv in dvs for nstar in nstars for label in labels]
-            )
+def getAreaUnderCurve(xs, ys):
+    """Calculate the area under a curve using simple right hand rectangle
+    method"""
+    dx = xs[1] - xs[0]
+    area = np.sum(ys) * dx
+    return area
 
 
+ages = [5,15,30,50,100]#,200]
+dxs = [1, 2, 5]
+dvs = [1, 2]
+nstars = [25, 50, 100]
+labels = 'abcd'
+precs = ['half', 'gaia', 'double']#, 'quint']
 
-    # xlabels = {'raw':'Age offset [Myr]', 'norm':'Normalised residual'}
+if __name__ == '__main__':
+    rdir = '../results/synth_fit/med_2paper1_runs/'
+
+    master_dict = buildMasterDict(ages, dxs, dvs, nstars, labels, precs)
+    raw_resids_by_age, raw_resids_by_age_prec = buildSpecialDicts(
+        master_dict, ages, dxs, dvs, nstars, labels, precs, normed=False,
+    )
+    norm_resids_by_age, norm_resids_by_age_prec = buildSpecialDicts(
+        master_dict, ages, dxs, dvs, nstars, labels, precs, normed=True,
+    )
+
     xlabels = {
         'raw':'$t_{\\rm fitted} - t_{\\rm true}$',
         'norm':'Normalised residual'
@@ -275,23 +286,7 @@ if __name__ == '__main__':
             bad_data_mask[age][prec] = np.where(abs(data['raw'][age][prec]) >= 15)[0]
 
 
-    #
-    # raw_bin_width = 0.5
-    # nraw_bins = int(( (max_good_raw + 0.5*raw_bin_width) -
-    #                  (min_bad_norm-0.5*raw_bin_width)
-    #                  )/raw_bin_width)
-    # raw_bins = np.linspace(min_bad_norm-0.5*raw_bin_width,
-    #                        max_good_raw + 0.5*raw_bin_width, nraw_bins,
-    #                        endpoint=True)
-
-    # import pdb; pdb.set_trace()
-
-    # norm_bin_width = 1.
-
-    # max_raw_res = max([max(abs(val)) for val in raw_resids_by_age.values()])
     max_raw_res = max([max(abs(raw_resids_by_age[age][vanilla_mask[age]])) for age in ages])
-    # max_raw_res = max([max(abs(raw_resids_by_age[age][vanilla_mask[age]]/float(age))) for age in ages])
-    # max_norm_res = max([max(abs(val)) for val in norm_resids_by_age.values()])
     max_norm_res = max([max(abs(norm_resids_by_age[age][vanilla_mask[age]])) for age in ages])
     raw_span = [-max_raw_res, max_raw_res]
     norm_span = [-max_norm_res, max_norm_res]
@@ -304,7 +299,8 @@ if __name__ == '__main__':
         'gaia':r'$\eta = 1.0$',
         'double':r'$\eta = 2.0$',
     }
-    # break down hists by measurement error
+
+    # Plot hists of raw offset with broken axis
     for info in ['raw']: #'['raw', 'norm']:
         f, axes = plt.subplots(
             len(ages),
@@ -318,7 +314,7 @@ if __name__ == '__main__':
 
         # Construct normalised, standard (e.g. bin widths etc) histograms
         hists, edges, bad_hists, bad_edges =\
-            calcNumpyHists(ages, precs, data, bad_data_mask, data_mask)
+            calcNumpyHists(ages, precs, data, data_mask, bad_data_mask, info=info)
 
         # Plot each histogram
         for i, age in enumerate(ages):
@@ -331,53 +327,75 @@ if __name__ == '__main__':
         f.set_tight_layout(tight=True)
         f.savefig('temp_plots/multi_all_{}_step.pdf'.format(info))
 
-    print("Removed runs:")
-    for age in ages:
-        print("{:02}: {}".format(age, len(bad_vanilla_mask[age])))
+    # plot normalised histograms, excluding the failed fits (bad data)
+    f, axes = plt.subplots(
+        len(ages),
+        1,
+        gridspec_kw={'hspace': 0},
+        figsize=(5, len(ages))
+    )
+    axes[-1].set_xlabel(xlabels[info])
+    hists, edges = \
+        calcNumpyHists(ages, precs, data, data_mask, bad_mask=None, info='norm')
 
-    print("With mean offsets:")
-    for age in ages:
-        mean_offset = np.mean(vanilla_data['raw'][age][bad_vanilla_mask[age]])
-        print("{:3}: {}".format(age, mean_offset))
+    # generate pts for a unit variance Gaussian with a max value of 1 at peak
+    xs = np.linspace(np.min(edges[5]['half']), np.max(edges[5]['half']),
+                     100)
+    ys = gauss(xs, mu=0., sig=1.)
+    gauss_area = getAreaUnderCurve(xs, ys)
+    ref_area_under_hist = getAreaUnderCurve(edges[5]['half'][:-1],
+                                            hists[5]['half'])
+    scaled_ys = ys[:]*ref_area_under_hist/gauss_area
+    for i, age in enumerate(ages):
+        area_under_hist = getAreaUnderCurve(edges[age]['half'][:-1],
+                                            hists[age]['half'])
+        axes[i].plot(xs, scaled_ys, c='xkcd:black', ls='--')
+        plotAgeHistsByPrec(None, axes[i], age, precs, bad_hists=None,
+                           bad_edges=None,
+                           hists=hists,
+                           edges=edges,
+                           weight=ref_area_under_hist/area_under_hist,
+                           )
 
-    print("Specifically:")
-    for age in ages:
-        print("--- {:3} ---".format(age))
-        for ix in bad_vanilla_mask[age]:
-            getScenarioFromIndex(ix)
+    # Set primary axes labels and save
+    axes[0].legend(loc=2, fontsize='small')
+    axes[2].set_ylabel('Relative frequency [arbitrary units]')
+    f.set_tight_layout(tight=True)
+    f.savefig('temp_plots/multi_all_{}_step.pdf'.format('norm'))
 
+    if False:
+        print("Removed runs:")
+        for age in ages:
+            print("{:02}: {}".format(age, len(bad_vanilla_mask[age])))
 
-    # all_raw = np.array(raw_resids_by_age.values())
-    all_raw = np.hstack([raw_resids_by_age[age][vanilla_mask[age]] for age in ages])
-    nfits = len(all_raw.flatten())
-    raw_thresh = 0.5
-    ngood_raw = np.where((all_raw > -raw_thresh) & (all_raw < raw_thresh))[0].shape[0]
-    perc_good_raw = ngood_raw * 100./ nfits
-    print("Percentage fits within {} Myr: {:.2f}%".format(raw_thresh, perc_good_raw))
+        print("With mean offsets:")
+        for age in ages:
+            mean_offset = np.mean(vanilla_data['raw'][age][bad_vanilla_mask[age]])
+            print("{:3}: {}".format(age, mean_offset))
 
-    # all_norm = np.array(norm_resids_by_age.values())
-    all_norm = np.hstack([norm_resids_by_age[age][vanilla_mask[age]] for age in ages])
-    norm_med = np.median(all_norm)
-    #ngood_norm_twosig = np.where((all_norm-norm_med > -2) & (all_norm-norm_med < 2))[0].shape[0]
-    ngood_norm_twosig = np.where((all_norm > -2) & (all_norm < 2))[0].shape[0]
-    #ngood_norm_threesig = np.where((all_norm-norm_med > -3) & (all_norm-norm_med < 3))[0].shape[0]
-    ngood_norm_threesig = np.where((all_norm > -3) & (all_norm < 3))[0].shape[0]
-    perc_good_norm_twosig = ngood_norm_twosig * 100. / nfits
-    perc_good_norm_threesig = ngood_norm_threesig * 100. / nfits
+        print("Specifically:")
+        for age in ages:
+            print("--- {:3} ---".format(age))
+            for ix in bad_vanilla_mask[age]:
+                getScenarioFromIndex(ix)
 
-    print("Percentage fits within 2 sigma: {:.2f}%".format(perc_good_norm_twosig))
-    print("Percentage fits within 3 sigma: {:.2f}%".format(perc_good_norm_threesig))
+        # all_raw = np.array(raw_resids_by_age.values())
+        all_raw = np.hstack([raw_resids_by_age[age][vanilla_mask[age]] for age in ages])
+        nfits = len(all_raw.flatten())
+        raw_thresh = 0.5
+        ngood_raw = np.where((all_raw > -raw_thresh) & (all_raw < raw_thresh))[0].shape[0]
+        perc_good_raw = ngood_raw * 100./ nfits
+        print("Percentage fits within {} Myr: {:.2f}%".format(raw_thresh, perc_good_raw))
 
-    # for age in ages:
-    #     plt.clf()
-    #     plt.hist(raw_resids_by_age[age])
-    #     plt.title(age)
-    #     plt.xlabel('Age offsets [Myr]')
-    #     plt.savefig('temp_plots/multi_raw_hist_{}.pdf'.format(age))
-    #
-    # for age in ages:
-    #     plt.clf()
-    #     plt.hist(norm_resids_by_age[age])
-    #     plt.title(age)
-    #     plt.xlabel(r'Normalised residuals offsets [$\sigma$]')
-    #     plt.savefig('temp_plots/multi_norm_hist_{}.pdf'.format(age))
+        # all_norm = np.array(norm_resids_by_age.values())
+        all_norm = np.hstack([norm_resids_by_age[age][vanilla_mask[age]] for age in ages])
+        norm_med = np.median(all_norm)
+        #ngood_norm_twosig = np.where((all_norm-norm_med > -2) & (all_norm-norm_med < 2))[0].shape[0]
+        ngood_norm_twosig = np.where((all_norm > -2) & (all_norm < 2))[0].shape[0]
+        #ngood_norm_threesig = np.where((all_norm-norm_med > -3) & (all_norm-norm_med < 3))[0].shape[0]
+        ngood_norm_threesig = np.where((all_norm > -3) & (all_norm < 3))[0].shape[0]
+        perc_good_norm_twosig = ngood_norm_twosig * 100. / nfits
+        perc_good_norm_threesig = ngood_norm_threesig * 100. / nfits
+
+        print("Percentage fits within 2 sigma: {:.2f}%".format(perc_good_norm_twosig))
+        print("Percentage fits within 3 sigma: {:.2f}%".format(perc_good_norm_threesig))

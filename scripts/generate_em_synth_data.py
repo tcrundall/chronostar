@@ -147,7 +147,7 @@ except IOError:
                                                     single_age=True)
         all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
 
-    # insert 'background stars' with density 1.2e-7
+    # insert 'background stars' with density `BG_DENS` [pc km/s]^-3
     ubound = np.max(all_xyzuvw_now_perf, axis=0)
     lbound = np.min(all_xyzuvw_now_perf, axis=0)
     margin = 0.5 * (ubound - lbound)
