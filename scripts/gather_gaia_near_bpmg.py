@@ -36,6 +36,8 @@ span = kin_max - kin_min
 upper_boundary = kin_max + MARGIN*span
 lower_boundary = kin_min - MARGIN*span
 
+assert False
+
 # get gaia stars within box
 gaia_xyzuvw_file = "../data/gaia_dr2_mean_xyzuvw.npy"
 gaia_xyzuvw = np.load(gaia_xyzuvw_file)

@@ -21,12 +21,12 @@ import chronostar.traceorbit as torb
 debugging_circles=False
 
 # PLOTTING FLAGS
-PLOT_CORNER = False
-# PLOT_CORNER = True
+# PLOT_CORNER = False
+PLOT_CORNER = True
 PLOT_FED_STARS = False
 # PLOT_FED_STARS = True
-# PLOT_MUTLI_SYNTH = False
-PLOT_MUTLI_SYNTH = True
+PLOT_MUTLI_SYNTH = False
+# PLOT_MUTLI_SYNTH = True
 PLOT_BPMG_REAL = False
 # PLOT_BPMG_REAL = True
 PLOT_FAILURE = False
@@ -102,37 +102,43 @@ def scaleRanges(ranges, dims=(0,1,2)):
 LABELS = 'xyzuvw'
 
 if PLOT_CORNER:
-    chain_file = '../../results/em_fit/beta_Pictoris_wgs_inv2_5B_res/'\
-                        'final_chain.npy'
-    plot_name = 'bpmg_5B_corner.pdf'
-    axis_labels = [
-        'X [pc]',
-        'Y [pc]',
-        'Z [pc]',
-        'U [km/s]',
-        'V [km/s]',
-        'W [km/s]',
-        r'$\sigma_{xyz}$ [pc]',
-        r'$\sigma_{uvw}$ [km/s]',
-        't [Myr]',
+    chain_files = [
+        '../../results/em_fit/beta_Pictoris_wgs_inv2_5B_res/final_chain.npy',
+        '../../results/em_fit/beta_Pictoris_wgs_inv2_5B_tuc-hor_res/final_chain.npy',
     ]
-    print("Plotting {}".format(plot_name))
-    chain = np.load(chain_file).reshape(-1,9)
-    chain[:,6:8] = np.exp(chain[:,6:8])
-    # plt.tick_params(direction='in')
-    fig = corner.corner(
-        chain,
-        labels=axis_labels,
-        # reverse=True,
-        label_kwargs={'fontsize':'xx-large'},
-        max_n_ticks=4,
-    )
-    print("Applying tick parameters")
-    for ax in fig.axes:
-        ax.tick_params(direction='in', labelsize='x-large', top=True,
-                       right=True)
-    print("... saving")
-    plt.savefig(plot_name)
+    plot_names = [
+        'bpmg_5B_corner.pdf',
+        'tuc-hor_5B_corner.pdf',
+    ]
+    for chain_file, plot_name in zip(chain_files, plot_names):
+        axis_labels = [
+            'X [pc]',
+            'Y [pc]',
+            'Z [pc]',
+            'U [km/s]',
+            'V [km/s]',
+            'W [km/s]',
+            r'$\sigma_{xyz}$ [pc]',
+            r'$\sigma_{uvw}$ [km/s]',
+            't [Myr]',
+        ]
+        print("Plotting {}".format(plot_name))
+        chain = np.load(chain_file).reshape(-1,9)
+        chain[:,6:8] = np.exp(chain[:,6:8])
+        # plt.tick_params(direction='in')
+        fig = corner.corner(
+            chain,
+            labels=axis_labels,
+            # reverse=True,
+            label_kwargs={'fontsize':'xx-large'},
+            max_n_ticks=4,
+        )
+        print("Applying tick parameters")
+        for ax in fig.axes:
+            ax.tick_params(direction='in', labelsize='x-large', top=True,
+                           right=True)
+        print("... saving")
+        plt.savefig(plot_name)
 
 if PLOT_BPMG_REAL:
     for iteration in ['5B']: #, '6C']:

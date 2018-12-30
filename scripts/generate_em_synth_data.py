@@ -36,13 +36,19 @@ def plotInitState(origins, star_pars):
                              true_memb=true_memb)
         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1, dim2))
 
+# extra_pars = np.array([
+#     #  dX,  dV, age, nstars
+#     [ 10.,  5.,  3.,   50.],
+#     [  7.,  3.,  7.,   30.],
+#     [ 10.,  2., 10.,   40.],
+#     [ 20.,  5., 13.,   80.],
+# ])
 extra_pars = np.array([
     #  dX,  dV, age, nstars
-    [ 10.,  5.,  3.,   50.],
-    [  7.,  3.,  7.,   30.],
-    [ 10.,  2., 10.,   40.],
-    [ 20.,  5., 13.,   80.],
+    [ 10.,  0.5,  2.,   20.],
+    [  2.,  1.,  5.,   15],
 ])
+
 ngroups = extra_pars.shape[0]
 # offsets = np.zeros((ngroups, 6))
 # four assoc notes:
@@ -51,12 +57,18 @@ ngroups = extra_pars.shape[0]
 # All overlapping in XY
 # AB and AD overlapping in XU
 # CD, AD, AB overlapping in UV
+# offsets = np.array([
+#     #   X,  Y,  Z,  U,  V, W
+#     [-10.,  0.,  0.,-10.,  0.,-10.], # yellow / blue
+#     [ 10.,  0.,-10.,  0., 10., -5.], # blue   / orange
+#     [  0.,-40., 80.,  5., -5., 10.], # brown  / green
+#     [ 50.,  5.,  0.,  5.,-10., 10.], # orange / red
+# ])
+
 offsets = np.array([
     #   X,  Y,  Z,  U,  V, W
-    [-10.,  0.,  0.,-10.,  0.,-10.], # yellow / blue
-    [ 10.,  0.,-10.,  0., 10., -5.], # blue   / orange
-    [  0.,-40., 80.,  5., -5., 10.], # brown  / green
-    [ 50.,  5.,  0.,  5.,-10., 10.], # orange / red
+    [50.,  0.,  0., 0.,  0., 0.],
+    [ 0.,  0.,  0., 0.,  0., 0.],
 ])
 
 try:

@@ -18,7 +18,8 @@ DIM = 6
 chaindirs = [
     # '../results/em_fit/beta_Pic_solo_results/',
     # '../results/em_fit/beta_Pic_results/group0/',
-    '../results/em_fit/beta_Pictoris_wgs_inv2_5B_res/'
+    # '../results/em_fit/beta_Pictoris_wgs_inv2_5B_res/',
+    '../results/em_fit/beta_Pictoris_wgs_inv2_5B_tuc-hor_res/',
 ]
 
 labels = [
