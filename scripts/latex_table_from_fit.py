@@ -12,7 +12,7 @@ sys.path.insert(0, '..')
 import chronostar.datatool as dt
 
 fits = [
-    'synth_bpmg',
+    'synth_bpmg2',
     'same_centroid',
     # 'test_on_motley3', # this is right.... but slightly different for some reason
     # 'field_blind',
@@ -46,7 +46,7 @@ fits = [
 #     None,
 # ]
 
-suffixs = ['', '_res', '_res', '_res']
+suffixs = ['_res', '_res', '_res', '_res']
 
 orders = [
     [1,0],

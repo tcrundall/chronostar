@@ -14,10 +14,11 @@ import traceorbit as torb
 import transform as tf
 import datatool as dt
 
-COLORS = ['xkcd:blue','xkcd:red', 'xkcd:cyan', 'xkcd:shit', 'xkcd:orange',
+COLORS = ['xkcd:blue','xkcd:red', 'xkcd:tangerine', 'xkcd:shit', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:neon purple', 'xkcd:bright pink']
 # COLORS = plt.rcParams['axes.prop_cycle'].by_key()['color']
-MARKERS = ['v', '^', '*', 'd', 'x']
+MARKERS = ['^', 's', 'd', '*', 'x']
+# MARKERS = ('s', 'p', 'D', 'X', 'H', 'D')
 HATCHES = ['|', '/',  '+', '\\', 'o', '*', 'o', '0'] * 10 #'.' just look like stars, so does '*'
 HATCHES = ['0'] * 100 # removed hatching for now...
 # '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*'}
@@ -139,7 +140,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
              marker_legend=None, color_legend=None,
              star_pars_label=None, origin_star_pars_label=None,
              range_1=None, range_2=None, isotropic=False,
-             ordering=None):
+             ordering=None, no_bg_covs=False):
     """
     Plots a single pane capturing kinematic info in any desired 2D plane
 
@@ -166,6 +167,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
     annotate: (bool) add text describing the figure's contents
     with_bg: (bool) treat the last column in Z as members of background, and
             color accordingly
+    no_bg_covs: (bool) ignore covariance matrices of stars fitted to background
 
     Returns
     -------
@@ -229,12 +231,19 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
                     true_bg_mask = np.where(true_memb[:,-1] == 1.)
                     markers[true_bg_mask] = '.'
         all_mark_size = np.array(nstars * [MARK_SIZE])
+
+        # group_bg handles case where background is fitted to by final component
         if with_bg:
             all_mark_size[np.where(np.argmax(membership, axis=1) == ngroups-group_bg)] = BG_MARK_SIZE
 
         mns = star_pars['xyzuvw']
         try:
-            covs = star_pars['xyzuvw_cov']
+            covs = np.copy(star_pars['xyzuvw_cov'])
+            # replace background cov matrices with None so as to avoid plotting
+            if with_bg and no_bg_covs:
+                print("Discarding background cov-mats")
+                # import pdb; pdb.set_trace()
+                covs[np.where(np.argmax(membership, axis=1) == ngroups-group_bg)] = None
         except KeyError:
             covs = len(mns) * [None]
             star_pars['xyzuvw_cov'] = covs
@@ -806,7 +815,7 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
                       range_1=None, range_2=None, residual=False,
                       markers=None, group_bg=False, isotropic=False,
                       color_labels=[], marker_labels=[], marker_order=[],
-                      ordering=None):
+                      ordering=None, no_bg_covs=False):
     """
     Plot a 2D projection of data and fit along with flanking 1D projections.
 
@@ -895,7 +904,7 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
         membership=membership, true_memb=true_memb, with_bg=with_bg,
         markers=markers, group_bg=group_bg, isotropic=isotropic,
         range_1=range_1, range_2=range_2, marker_labels=marker_labels,
-        color_labels=color_labels, ordering=ordering)
+        color_labels=color_labels, ordering=ordering, no_bg_covs=no_bg_covs)
     plt.tick_params(**tick_params)
     # if range_1:
     #     plt.xlim(range_1)

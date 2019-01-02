@@ -21,12 +21,14 @@ import chronostar.traceorbit as torb
 debugging_circles=False
 
 # PLOTTING FLAGS
-# PLOT_CORNER = False
-PLOT_CORNER = True
+PLOT_CORNER = False
+# PLOT_CORNER = True
 PLOT_FED_STARS = False
 # PLOT_FED_STARS = True
-PLOT_MUTLI_SYNTH = False
-# PLOT_MUTLI_SYNTH = True
+# PLOT_MUTLI_SYNTH = False
+PLOT_MUTLI_SYNTH = True
+# PLOT_SYNTH_BPMG2 = False
+PLOT_SYNTH_BPMG2 = True
 PLOT_BPMG_REAL = False
 # PLOT_BPMG_REAL = True
 PLOT_FAILURE = False
@@ -402,49 +404,56 @@ if PLOT_FED_STARS:
         # scaleRanges(fed_xranges, (0,1,2))
         # scaleRanges(fed_xranges, (3,4,5))
 
+
 # plotting Multi-component synth fits
 if PLOT_MUTLI_SYNTH:
     print("Plotting synth plots")
     synth_fits = [
-        'synth_bpmg',
+        # 'synth_bpmg',
         'four_assocs',
         'assoc_in_field',
         'same_centroid',
+        # 'synth_bpmg2',
     ]
 
     rdir_suffix = {
-        'synth_bpmg':'',
+        # 'synth_bpmg':'',
         'four_assocs':'_res',
         'assoc_in_field':'_res',
         'same_centroid':'_res',
+        'synth_bpmg2':'_res',
     }
 
     planes = {
-        'synth_bpmg':['xu', 'zw'], #['xu', 'zw', 'xy']#, 'yz'],
+        # 'synth_bpmg':['xu', 'zw'], #['xu', 'zw', 'xy']#, 'yz'],
         'four_assocs':['xu', 'zw'], #['xy', 'yv'],
         'assoc_in_field':['xu', 'zw'], #['uv', 'xu'],
         'same_centroid':['xu', 'zw'], #['xu', 'yv'],
+        'synth_bpmg2':['xu', 'zw'], #['xu', 'zw', 'xy']#, 'yz'],
     }
 
     with_bg = {
-        'synth_bpmg':True,
+        # 'synth_bpmg':True,
         'four_assocs':False,
         'assoc_in_field':False,
         'same_centroid':False,
+        'synth_bpmg2':True,
     }
 
     ordering = {
-        'synth_bpmg':[1, 0],
+        # 'synth_bpmg':[1, 0],
         'assoc_in_field':[1, 0],
         'four_assocs':[3, 2, 0, 1],
         'same_centroid':[1, 0],
+        'synth_bpmg2':[1, 0],
     }
 
     legend_proj = {
-        'synth_bpmg':(0,3),
+        # 'synth_bpmg':(0,3),
         'assoc_in_field':(2,5),
         'four_assocs':(2,5),
         'same_centroid':(2,5),
+        'synth_bpmg2':(0,3),
     }
 
     MARKER_LABELS = np.array(['True {}'.format(ch) for ch in 'ABCD'])
@@ -496,6 +505,92 @@ if PLOT_MUTLI_SYNTH:
                         else None,
                 ordering=ordering[synth_fit],
                 marker_order=ordering[synth_fit],
+                no_bg_covs=with_bg[synth_fit],
+            )
+            # import pdb; pdb.set_trace()
+            scaleRanges(xaxis_ranges, (0, 1, 2))
+            scaleRanges(xaxis_ranges, (3, 4, 5))
+            # scaleRanges(yaxis_ranges, (0, 1, 2))
+            # scaleRanges(yaxis_ranges, (3, 4, 5))
+
+
+# plotting Multi-component synth fits
+if PLOT_SYNTH_BPMG2:
+    print("Plotting synth plots")
+    synth_fits = [
+        'synth_bpmg2',
+    ]
+
+    rdir_suffix = {
+        'synth_bpmg2':'_res',
+    }
+
+    planes = {
+        'synth_bpmg2':['xu', 'zw'], #['xu', 'zw', 'xy']#, 'yz'],
+    }
+
+    with_bg = {
+        'synth_bpmg2':True,
+    }
+
+    ordering = {
+        'synth_bpmg2':[1, 0],
+    }
+
+    legend_proj = {
+        'synth_bpmg2':(0,3),
+    }
+
+    MARKER_LABELS = np.array(['True {}'.format(ch) for ch in 'ABCD'])
+
+    for synth_fit in synth_fits[-1:]:
+        print(" - plotting {}".format(synth_fit))
+        rdir = '../../results/em_fit/{}{}/'.format(synth_fit,
+                                                   rdir_suffix[synth_fit])
+        groups_file = rdir + 'final_best_groups.npy'
+        # star_pars_file = rdir + '{}_xyzuvw.fits'.format(synth_fit)
+        groups = dt.loadGroups(groups_file)
+        star_pars_file = '../../data/{}_xyzuvw.fits'.format(synth_fit)
+        memb_file = rdir + 'final_membership.npy'
+        origins_file = rdir + 'synth_data/origins.npy'
+        true_memb = dt.getZfromOrigins(origins_file, star_pars_file)
+        ranges = calcRanges(dt.loadXYZUVW(star_pars_file))
+        xaxis_ranges, yaxis_ranges = calcRanges(dt.loadXYZUVW(star_pars_file),
+                                                 sep_axes=True, scale=True)
+        # yaxis_ranges = {}
+        # for key in ranges.keys():
+        #     xaxis_ranges[key] = ranges[key][:]
+        #     yaxis_ranges[key] = ranges[key][:]
+
+
+        for dim1, dim2 in DEFAULT_DIMS: #planes[synth_fit]:
+            print("   - {} and {}".format(dim1, dim2))
+            # import pdb; pdb.set_trace()
+            xaxis_ranges[dim1], yaxis_ranges[dim2] = fp.plotPane(
+                dim1,
+                dim2,
+                groups=groups_file,
+                star_pars=star_pars_file,
+                group_now=True,
+                membership=memb_file,
+                true_memb=true_memb,
+                savefile='{}_{}{}.pdf'.format(synth_fit,
+                                              LABELS[dim1],
+                                              LABELS[dim2]),
+                with_bg=with_bg[synth_fit],
+                group_bg=(synth_fit == 'assoc_in_field'),
+                isotropic=(int(dim1/3) == int(dim2/3)),
+                range_1=xaxis_ranges[dim1],
+                range_2=yaxis_ranges[dim2],
+                color_labels=COLOR_LABELS[:len(groups)]
+                        if (dim1, dim2) == legend_proj[synth_fit]
+                        else None,
+                marker_labels=MARKER_LABELS[:len(groups)] #[ordering[synth_fit]]
+                        if (dim1, dim2) == legend_proj[synth_fit]
+                        else None,
+                ordering=ordering[synth_fit],
+                # marker_order=ordering[synth_fit],
+                no_bg_covs=with_bg[synth_fit],
             )
             # import pdb; pdb.set_trace()
             scaleRanges(xaxis_ranges, (0, 1, 2))
