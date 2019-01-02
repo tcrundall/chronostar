@@ -45,8 +45,8 @@ def plotInitState(origins, star_pars):
 # ])
 extra_pars = np.array([
     #  dX,  dV, age, nstars
-    [ 10.,  0.5,  2.,   20.],
-    [  2.,  1.,  5.,   15],
+    [ 10.,  1.,  12., 50.],
+    [ 10.,  0.7, 25., 40],
 ])
 
 ngroups = extra_pars.shape[0]
@@ -113,7 +113,7 @@ xyzuvw_conv_savefile = '../data/{}_xyzuvw.fits'.format(run_name)
 # to the current day mean of mean_now
 logging.info("---------- Generating synthetic data...")
 ERROR = 1.0
-BG_DENS = 0 # 1.0e-7    # background density for synth bg stars
+BG_DENS = 1.0e-7    # background density for synth bg stars
 np.save(bg_savefile, BG_DENS)
 
 logging.info("  with error fraction {}".format(ERROR))
@@ -168,14 +168,15 @@ except IOError:
     nbg_stars = int(BG_DENS * np.prod(ubound - lbound))
 
     # centre bg stars on mean of assoc stars
-    centre = np.mean(all_xyzuvw_now_perf, axis=0)
-    spread = ubound - lbound
+    # centre = np.mean(all_xyzuvw_now_perf, axis=0)
+    # centre = 0.5 * (ubound + lbound)
+    # spread = ubound - lbound
     bg_stars_xyzuvw_perf =\
-        np.random.uniform(-1,1,size=(nbg_stars, 6)) * spread + centre
+        np.random.uniform(lbound,ubound,size=(nbg_stars, 6))
     logging.info("Using background density of {}".format(BG_DENS))
     logging.info("Generated {} background stars".format(nbg_stars))
-    logging.info("Spread from {}".format(ubound))
-    logging.info("         to {}".format(lbound))
+    logging.info("Spread from {}".format(lbound))
+    logging.info("         to {}".format(ubound))
 
     all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, bg_stars_xyzuvw_perf))
 
