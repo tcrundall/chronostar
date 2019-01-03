@@ -264,8 +264,9 @@ if __name__ == '__main__':
     )
 
     xlabels = {
-        'raw':'$t_{\\rm fitted} - t_{\\rm true}$',
-        'norm':'Normalised residual'
+        'raw':'$t_{\\rm fitted} - t_{\\rm true}$ [Myr]',
+        'norm':'$(t_{\\rm fitted} - t_{\\rm true})/\sigma_{\\rm fitted}$',
+        # 'norm':'Normalised residual'
     }
     #data = {'raw':raw_resids_by_age, 'norm':norm_resids_by_age}
     data = {'raw':raw_resids_by_age_prec, 'norm':norm_resids_by_age_prec}
@@ -334,7 +335,7 @@ if __name__ == '__main__':
         gridspec_kw={'hspace': 0},
         figsize=(5, len(ages))
     )
-    axes[-1].set_xlabel(xlabels[info])
+    axes[-1].set_xlabel(xlabels['norm'])
     hists, edges = \
         calcNumpyHists(ages, precs, data, data_mask, bad_mask=None, info='norm')
 

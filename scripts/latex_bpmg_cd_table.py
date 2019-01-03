@@ -14,15 +14,24 @@ import chronostar.datatool as dt
 save_file_name = '../results/tables/real_bpmg_table.tex'
 
 chaindirs = [
-    '../results/em_fit/beta_Pic_solo_results/',
+    # '../results/em_fit/beta_Pic_solo_results/',
     # '../results/em_fit/beta_Pic_results/group0/',
     '../results/em_fit/beta_Pictoris_wgs_inv2_5B_res/',
+    '../results/em_fit/beta_Pictoris_wgs_inv2_5B_tuc-hor_res/',
 ]
 labels = [
-    'solo',
-    'near_gaia',
+    # 'solo',
+    # 'near_gaia',
+    'bpmg',
+    'tuc-hor',
 ]
 
+comp_ix = {
+    'bpmg':0,
+    'tuc-hor':3,
+}
+
+zs = {}
 origin_med_and_spans = {}
 cd_med_and_spans = {}
 
@@ -31,6 +40,9 @@ for chaindir, label in zip(chaindirs, labels):
     # cd_med_and_spans[label][6:8] = np.exp(cd_med_and_spans[label][6:8])
     origin_med_and_spans[label] = np.load(chaindir + 'final_med_errs.npy')
     origin_med_and_spans[label][:,6:8] = np.exp(origin_med_and_spans[label][:,6:8])
+    zs[label] = np.load(chaindir + '/final_membership.npy')
+
+
 
 # import pdb; pdb.set_trace()
 
@@ -75,34 +87,43 @@ with open(save_file_name, 'w') as fp:
     fp.write('\\hline\n')
     fp.write('& \\multicolumn{{{}}}{{c|}}{{{}}}'.format(
         2,
-        'BANYAN only',
+        r'$\beta$PMG',
     ))
     if nruns == 2:
         fp.write('& \\multicolumn{{{}}}{{c|}}{{{}}}'.format(
             2,
-            'BANYAN and nearby \\textit{Gaia}',
+            'Partial Tuc-Hor',
         ))
     fp.write('\\\\\n')
 
-    fp.write('& Origin & Current-day' * (nruns) + '\\\\\n')
+    fp.write('& Origin & Current' * (nruns) + '\\\\\n')
     fp.write('\\hline\n')
 
-    def generateStringFromEntry(entry, prec=1):
+    def generateStringFromEntry(entry, prec=1, no_uncert=False):
         """
         Entry is a list(like) of three values. The 50th, 84th and 16th percentile
         of a parameter.
         """
         prec = str(prec)
-        string_template = ' & ${:6.' + prec + 'f}^{{+{:4.'+prec+'f}}}_{{-{:4.'+prec+'f}}}$ '
-        latex_form = string_template.format(
-                entry[0], entry[1] - entry[0], entry[0] - entry[2],
-            )
+        if not no_uncert:
+            # increase precision until uncertainties have at least 1 sig fig
+            while float(('{:.' + prec + 'f}').format(entry[1] - entry[0])) == 0.0:
+                prec = str(int(prec) + 1)
+            string_template = ' & ${:6.' + prec + 'f}^{{+{:4.'+prec+'f}}}_{{-{:4.'+prec+'f}}}$ '
+            latex_form = string_template.format(
+                    entry[0], entry[1] - entry[0], entry[0] - entry[2],
+                )
+        else:
+            string_template = ' & ${:6.' + prec + 'f}$ '
+            latex_form = string_template.format(entry)
         return latex_form
 
     for i, row_name in enumerate(row_names[:6]):
         line = '{:20}'.format(row_name)
         for label in labels:
-            line += generateStringFromEntry(origin_med_and_spans[label][0][i])
+            line += generateStringFromEntry(
+                origin_med_and_spans[label][comp_ix[label]][i]
+            )
             line += generateStringFromEntry(cd_med_and_spans[label][i])
         line += '\\\\\n'
         fp.write(line)
@@ -110,59 +131,42 @@ with open(save_file_name, 'w') as fp:
     for i, row_name in enumerate(row_names[6:12]):
         line = '{:20}'.format(row_name)
         for label in labels:
-            line += generateStringFromEntry(origin_med_and_spans[label][0][6+int(i/3)])
-            line += generateStringFromEntry(cd_med_and_spans[label][6+i])
+            line += generateStringFromEntry(
+                origin_med_and_spans[label][comp_ix[label]][6+int(i/3)], prec=1
+            )
+            line += generateStringFromEntry(cd_med_and_spans[label][6+i], prec=1)
         line += '\\\\\n'
         fp.write(line)
 
-    for i, row_name in enumerate(row_names[12:27]):
+    corrs = False
+    if corrs:
+        for i, row_name in enumerate(row_names[12:27]):
+            line = '{:20}'.format(row_name)
+            for label in labels:
+                line += '& 0 '
+                line += generateStringFromEntry(cd_med_and_spans[label][12+i], prec=3)
+            line += '\\\\\n'
+            fp.write(line)
+
+    for i, row_name in enumerate(row_names[27:28]):
         line = '{:20}'.format(row_name)
         for label in labels:
             line += '& 0 '
-            line += generateStringFromEntry(cd_med_and_spans[label][12+i], prec=3)
+            line += generateStringFromEntry(
+                origin_med_and_spans[label][comp_ix[label],-1], prec=1)
         line += '\\\\\n'
         fp.write(line)
 
-    #
-    # for i, row_name in enumerate(row_names[:-1]):
-    #     line = '{:11}'.format(row_name)
-    #     for j in range(ncomps):
-    #         line += ' & ${:5.1f}$'.format(origins[j].pars[i])
-    #         line += ' & ${:5.1f}^{{+{:4.1f}}}_{{-{:4.1f}}}$ '.format(
-    #             med_errs[j][i][0],
-    #             med_errs[j][i][1] - med_errs[j][i][0],
-    #             med_errs[j][i][0] - med_errs[j][i][2],
-    #         )
-    #     if use_bg:
-    #         line += ' & - & -'
-    #     line += '\\\\\n'
-    #     fp.write(line)
-    # line = '{:11}'.format(row_names[-1])
-    # for j in range(ncomps):
-    #     line += '& {:3} '.format(int(true_nstars[j]))
-    #     line += '& {:4.2f} '.format(fitted_nstars[j])
-    # if use_bg:
-    #     line += ' & {} & {:4.2f}'.format(true_nstars[-1], fitted_nstars[-1])
-    # line += ' \\\\\n'
-    # fp.write(line)
+    for i, row_name in enumerate(row_names[28:29]):
+        line = '{:20}'.format(row_name)
+        for label in labels:
+            line += '& 0 '
+            nstars = zs[label][:,comp_ix[label]].sum()
+            line += generateStringFromEntry(nstars, prec=1, no_uncert=True)
+        line += '\\\\\n'
+        fp.write(line)
+
+
     fp.write('\\hline\n')
     fp.write('\\end{tabular}\n')
-    #
-    #
-    # # fp.write('& \\multicolumn\{{}\}\{c |\}\{{}\}\n'.format(ncomps*3, 'synth bpmg'))
-    # # for comp_ix in range(ncomps):
-    # #     &  \multicolumn
-    # #     {2}
-    # #     {c |}
-    # #     {Component
-    # #     A}
-    # #     &  \multicolumn
-    # #     {2}
-    # #     {c |}
-    # #     {Component
-    # #     B}
-    # #     &  \multicolumn
-    # #     {2}
-    # #     {c |}
-    # #     {Component
-    # #     C}
+
