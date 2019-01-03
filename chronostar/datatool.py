@@ -539,8 +539,8 @@ def loadDictFromTable(table, assoc_name=None):
     for ix, row in enumerate(table):
         if nrows > 10000 and ix % 1000==0:
             print("Done {:7} of {}".format(ix, nrows))
-        if (np.isfinite(row['U']) and
-            isInAssociation(row['Moving group'], assoc_name)):
+        if np.isfinite(row['U']): #and
+            # isInAssociation(row['Moving group'], assoc_name)):
             mean, cov = buildMeanAndCovMatFromRow(row)
             xyzuvw.append(mean)
             xyzuvw_cov.append(cov)
