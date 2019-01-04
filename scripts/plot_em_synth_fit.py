@@ -132,6 +132,7 @@ true_memb = None
 if is_synth_fit:
     origins = np.load(rdir + 'synth_data/origins.npy')
     true_memb = getZfromOrigins(origins, star_pars_file)
+    with_bg = len(origins) < true_memb.shape[1]
     assert true_memb.shape[0] == dt.loadXYZUVW(star_pars_file)['xyzuvw'].shape[0]
     if len(origins.shape) == 0:
         origins = np.array(origins.item())
@@ -139,8 +140,10 @@ if is_synth_fit:
     for dim1, dim2 in ('xy', 'uv', 'xu', 'yv', 'zw', 'xw'):
         plt.clf()
         fp.plotPaneWithHists(dim1, dim2, star_pars=star_pars_file,
-                             groups=origins,
-                             weights=weights, group_now=True)
+                             groups=origins, weights=weights,
+                             group_now=True, with_bg=with_bg,
+                             no_bg_covs=with_bg,
+                             )
         plt.savefig(rdir + 'pre_plot_{}{}.pdf'.format(dim1,dim2))
 
 # Now choose if handling incremental fit or plain fit
