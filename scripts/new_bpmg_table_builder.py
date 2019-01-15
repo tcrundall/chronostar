@@ -87,7 +87,8 @@ def readSimIds():
 
 rdir = '../results/em_fit/beta_Pictoris_wgs_inv2_5B_res/'
 final_memb_file = rdir + 'final_membership.npy'
-bp_star_pars_file = '../data/beta_Pictoris_with_gaia_small_xyzuvw.fits'
+# bp_star_pars_file = '../data/beta_Pictoris_with_gaia_small_xyzuvw.fits'
+bp_star_pars_file = '../data/bpmg_w_nearby_gaia_memberships_magnitudes.fits'
 gagne_star_pars_file = '../data/gagne_bonafide_full_kinematics_with_lit_and' \
                        '_best_radial_velocity_comb_binars.fits'
 
@@ -143,29 +144,6 @@ for row in bp_sp['table']:
 
 # APPLY BPMG MEMBERSHIP STATUS
 
-# INCLUDE PHOTOMETRY INTO TABLE
-
-#
-
-# now find which stars are missing
-
-# # failed_banyan_mask = np.where(np.isnan(bp_sp['table']['U']))
-# failed_banyan_mask = np.where(np.isnan(gg_sp['table']['ra']))
-
-# Table.write(
-#     gg_sp['table'],
-#     '../data/gagne_bonafide_full_kinematics_with_lit_and_best_radial_'
-#     'velocity_comb_binars_with_banyan_radec.fits',
-#     overwrite=True,
-# )
-#
-# comp_a = bp_sp['table'][np.array(bp_sp['indices'])\
-#     [np.where(np.argmax(z, axis=1) == 0)]]
-#
-# comp_d = bp_sp['table'][np.array(bp_sp['indices'])\
-#     [np.where(np.argmax(z, axis=1) == 3)]]
-
-# new_bpmg = comp_a[np.where(comp_a['Moving group'] != 'beta Pictoris')]
 
 # Gaia DR2 ids for stars allocated to BPMG by most recent BANYAN paper (XII)
 new_banyan_membs = np.array([
