@@ -25,12 +25,12 @@ PLOT_CORNER = False
 # PLOT_CORNER = True
 PLOT_FED_STARS = False
 # PLOT_FED_STARS = True
-# PLOT_MUTLI_SYNTH = False
-PLOT_MUTLI_SYNTH = True
-# PLOT_SYNTH_BPMG2 = False
-PLOT_SYNTH_BPMG2 = True
-PLOT_BPMG_REAL = False
-# PLOT_BPMG_REAL = True
+PLOT_MUTLI_SYNTH = False
+# PLOT_MUTLI_SYNTH = True
+PLOT_SYNTH_BPMG2 = False
+# PLOT_SYNTH_BPMG2 = True
+# PLOT_BPMG_REAL = False
+PLOT_BPMG_REAL = True
 PLOT_FAILURE = False
 
 DEFAULT_DIMS = ((0,1), (0,3), (1,4), (2,5))
@@ -190,18 +190,28 @@ if PLOT_BPMG_REAL:
 
         # First do all, then just do possible membs of BPMG
         if True:
-        # if False:
             x_nearby_ranges, y_nearby_ranges =\
                 calcRanges(star_pars, sep_axes=True, scale=False)
-            nearby_star_pars = {}
-            for key in ['xyzuvw', 'xyzuvw_cov']:
-                nearby_star_pars[key] = np.copy(star_pars[key])
+            # nearby_star_pars = {}
+            # for key in ['xyzuvw', 'xyzuvw_cov']:
+            #     nearby_star_pars[key] = np.copy(star_pars[key])
+            #
+            # # Replace cov matrices with None for bg stars
+            # nearby_star_pars['xyzuvw_cov'][
+            #     np.where(z.argmax(axis=1)==z.shape[1]-1)
+            # ] = None
 
-            # Replace cov matrices with None for bg stars
-            nearby_star_pars['xyzuvw_cov'][
-                np.where(z.argmax(axis=1)==z.shape[1]-1)
-            ] = None
-            # import pdb; pdb.set_trace()
+            # Set to None all covariance matrices not part of BPMG or THOR
+            bpmg_ix = 0
+            thor_ix = 3
+            bg_mask = np.where(np.logical_not(
+                np.isin(np.argmax(z, axis=1), [bpmg_ix,thor_ix])
+            ))
+            nearby_star_pars = {}
+            nearby_star_pars['xyzuvw'] = star_pars['xyzuvw']
+            nearby_star_pars['xyzuvw_cov'] = np.copy(star_pars['xyzuvw_cov'])
+            nearby_star_pars['xyzuvw_cov'][bg_mask] = None
+            nearby_star_pars['indices'] = np.array(star_pars['indices'])
 
             for dim1, dim2 in DEFAULT_DIMS: #[(0,1), (0,3), (1,4), (2,5)]: #, 'yv', 'zw']:
                 # # force the XY plot to have same scales
@@ -238,65 +248,66 @@ if PLOT_BPMG_REAL:
                 scaleRanges(y_nearby_ranges, (3,4,5))
 
         # Only include stars that, if they weren't bg, they'd most likely be BPMG
-        if iteration == '5B':
-            fit_name = 'bpmg_candidates'
-            # extract_group_ix = [0,2]
-            extract_group_ixs_by_iteration = {
-                '5B':[0,3],
-                '6C':[0,2],
-            }
-            extract_group_ix = extract_group_ixs_by_iteration[iteration]
-            # bpmg_mask = np.where(z[:,extract_group_ix]>0.1)
-            bpmg_star_pars = {}
-            # bpmg_mask = np.where(np.isin(np.argmax(z[:,:-1], axis=1), extract_group_ix))# == extract_group_ix)
-            bpmg_mask = np.where(np.isin(np.argmax(z, axis=1), extract_group_ix))# == extract_group_ix)
-            bg_mask = np.where(np.logical_not(
-                np.isin(np.argmax(z, axis=1), extract_group_ix)
-            ))
-            bpmg_star_pars['xyzuvw'] = star_pars['xyzuvw'] #[bpmg_mask]
-            bpmg_star_pars['xyzuvw_cov'] = np.copy(star_pars['xyzuvw_cov']) #[bpmg_mask]
-            bpmg_star_pars['xyzuvw_cov'][bg_mask] = None
-            bpmg_star_pars['indices'] = np.array(star_pars['indices']) #[bpmg_mask]
+        if False:
+            if iteration == '5B':
+                fit_name = 'bpmg_candidates'
+                # extract_group_ix = [0,2]
+                extract_group_ixs_by_iteration = {
+                    '5B':[0,3],
+                    '6C':[0,2],
+                }
+                extract_group_ix = extract_group_ixs_by_iteration[iteration]
+                # bpmg_mask = np.where(z[:,extract_group_ix]>0.1)
+                bpmg_star_pars = {}
+                # bpmg_mask = np.where(np.isin(np.argmax(z[:,:-1], axis=1), extract_group_ix))# == extract_group_ix)
+                bpmg_mask = np.where(np.isin(np.argmax(z, axis=1), extract_group_ix))# == extract_group_ix)
+                bg_mask = np.where(np.logical_not(
+                    np.isin(np.argmax(z, axis=1), extract_group_ix)
+                ))
+                bpmg_star_pars['xyzuvw'] = star_pars['xyzuvw'] #[bpmg_mask]
+                bpmg_star_pars['xyzuvw_cov'] = np.copy(star_pars['xyzuvw_cov']) #[bpmg_mask]
+                bpmg_star_pars['xyzuvw_cov'][bg_mask] = None
+                bpmg_star_pars['indices'] = np.array(star_pars['indices']) #[bpmg_mask]
 
-            # z = z[bpmg_mask]#, (0,-1),]
-            z = z[:,(extract_group_ix+[-1]),]
+                # z = z[bpmg_mask]#, (0,-1),]
+                z = z[:,(extract_group_ix+[-1]),]
 
-            # bpmg_range = calcRanges(bpmg_star_pars)
-            # import pdb; pdb.set_trace()
-
-            for dim1, dim2 in DEFAULT_DIMS: #[(0,1), (0,3), (1,4)]: #, (2,5)]: #, 'yv', 'zw']:
-                # force the XY plot to have same scales
-                # if dim1==0 and dim2==1 and debugging_circles:
-                #     temp_range = bpmg_range[1]
-                #     bpmg_range[1] = [-120,80]
+                # bpmg_range = calcRanges(bpmg_star_pars)
                 # import pdb; pdb.set_trace()
 
-                dim1_range, dim2_range = fp.plotPane(
-                    dim1,
-                    dim2,
-                    groups=groups[extract_group_ix],
-                    star_pars=bpmg_star_pars,
-                    group_now=True,
-                    membership=z,
-                    savefile='{}_{}_{}{}.pdf'.format(fit_name,
-                                                     iteration,
-                                                     LABELS[dim1],
-                                                     LABELS[dim2]),
-                    with_bg=True,
-                    # range_1=bpmg_range[dim1],
-                    range_1=x_nearby_ranges[dim1],
-                    # range_2=bpmg_range[dim2],
-                    range_2=y_nearby_ranges[dim2],
-                    # residual=True,
-                    markers=banyan_markers,
-                    marker_style=marker_style,
-                    marker_labels=marker_label if dim1==2 else None,
-                    color_labels=[r'Fitted $\beta$PMG'] if dim1==2 else None,
-                    # isotropic=(int(dim1/3) == int(dim2/3))
-                )
-                # # undo forced change
-                # if dim1 == 0 and dim2 == 1 and debugging_circles:
-                #     bpmg_range[1] = temp_range
+                for dim1, dim2 in DEFAULT_DIMS: #[(0,1), (0,3), (1,4)]: #, (2,5)]: #, 'yv', 'zw']:
+                    # force the XY plot to have same scales
+                    # if dim1==0 and dim2==1 and debugging_circles:
+                    #     temp_range = bpmg_range[1]
+                    #     bpmg_range[1] = [-120,80]
+                    # import pdb; pdb.set_trace()
+
+                    dim1_range, dim2_range = fp.plotPane(
+                        dim1,
+                        dim2,
+                        groups=groups[extract_group_ix],
+                        star_pars=bpmg_star_pars,
+                        group_now=True,
+                        membership=z,
+                        savefile='{}_{}_{}{}.pdf'.format(fit_name,
+                                                         iteration,
+                                                         LABELS[dim1],
+                                                         LABELS[dim2]),
+                        with_bg=True,
+                        # range_1=bpmg_range[dim1],
+                        range_1=x_nearby_ranges[dim1],
+                        # range_2=bpmg_range[dim2],
+                        range_2=y_nearby_ranges[dim2],
+                        # residual=True,
+                        markers=banyan_markers,
+                        marker_style=marker_style,
+                        marker_labels=marker_label if dim1==2 else None,
+                        color_labels=[r'Fitted $\beta$PMG'] if dim1==2 else None,
+                        # isotropic=(int(dim1/3) == int(dim2/3))
+                    )
+                    # # undo forced change
+                    # if dim1 == 0 and dim2 == 1 and debugging_circles:
+                    #     bpmg_range[1] = temp_range
 
         # To ensure consistency, we now plot the BANYAN bpmg stars only,
         # and use the ragnes from previous plot

@@ -136,7 +136,11 @@ logging.info("DONE!")
 
 logging.info("Using data file {}".format(xyzuvw_file))
 MAX_COMP = 10
-ncomps = 1
+ncomps = 1 # 5
+
+# init_groups = [
+#   group1, group2, group3, group4, group5,
+# ]
 
 # Set up initial values of results
 prev_groups = None

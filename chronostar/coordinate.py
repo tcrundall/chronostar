@@ -30,6 +30,38 @@ modern_gc_to_eq = np.linalg.inv(modern_eq_to_gc)
 gc_to_eq = np.linalg.inv(eq_to_gc)
 
 
+def convertRAtoDeg(hh, mm, ss):
+    """
+    Convert measurement of right ascension in hh:mm:ss to
+    decimal degrees
+    """
+    try:
+        if isinstance(hh, str):
+            hh = float(hh)
+        if isinstance(mm, str):
+            mm = float(mm)
+        if isinstance(ss, str):
+            ss = float(ss)
+        rahh = hh + mm / 60. + ss / 3600.
+    except:
+        import pdb; pdb.set_trace()
+    return rahh * 360. / 24.
+
+
+def convertDEtoDeg(deg, arcm, arcs):
+    """
+    Convert measurement of declination in deg arcmin, arcsec to
+    decimal degrees
+    """
+    if isinstance(deg, str):
+        deg = float(deg)
+    if isinstance(arcm, str):
+        arcm = float(arcm)
+    if isinstance(arcs, str):
+        arcs = float(arcs)
+    return deg + arcm / 60. + arcs / 3600.
+
+
 def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
     """
     Using the RA (a) DEC (d) of Galactic north, and theta, generate matrix

@@ -54,6 +54,7 @@ def readBanyanTxtFile():
 
     data_cleaned = [clean_row(row, i) for (i, row) in enumerate(data_raw) if
                     i > NHEADER_ROWS]
+    fp.close()
     return data_cleaned
 
 
