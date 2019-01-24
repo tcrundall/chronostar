@@ -16,82 +16,93 @@ FONTSIZE = 12
 MARKSIZE = 150
 NOT_BG_ALPHA = 0.6
 BG_ALPHA = 0.3
-filename = '../data/bpmg_w_nearby_gaia_memberships_magnitudes.fits'
+# filename = '../data/bpmg_w_nearby_gaia_memberships_magnitudes.fits'
+filename = '../data/beta_Pictoris_with_gaia_small_everything.fits'
+cmd_filename = '../data/MIST_iso_5c47c57b3d6e7.iso.cmd'
 
+# EXTRACT MIST ISOCHRONES
 table = Table.read(filename)
+cmd = Table.read(cmd_filename, format='ascii.commented_header',
+                 header_start=-1)
+cmd_young_age = 7.3
+cmd_young = cmd[np.where(cmd['log10_isochrone_age_yr'] == cmd_young_age)]
+cmd_old_age = 9.
+cmd_old = cmd[np.where(cmd['log10_isochrone_age_yr'] == cmd_old_age)]
 
-# Probabilities for component n are in columns
-# 'Comp [n] prob'
-# e.g. beta Pictoris is contained in component 0 so
-bpmg_rows = table[np.where(table['Comp 0 prob'] > THRESHOLD)]
-nearby_gaia = table[np.where(table['Comp 0 prob'] < THRESHOLD)]
-# extracts all (primary) with 20% probability of belonging to Chronostar's BPMG
+# CALCULATE ABSOLUTE MAGNITUDES
+# parallax is in [mas]
+table['abs_g_mag'] = table['phot_g_mean_mag'] \
+                 + 5*(np.log10(1e-3*table['parallax'])+1)
 
-# multiple star systmes are denoted by having a '|' at the beginning of their
-# name, and also by the boolean column 'Companion'
 
-# Photometry info is in columns 'phot_g_mean_mag' and 'bp_rp'
-# Parallax is in column 'parallax'
-
-xs = (1.5, 3)
-ys = (7.5,10.)
-m = (ys[1] - ys[0]) / (xs[1] - xs[0])
-c = ys[0] - m * xs[0]
+# PARTITION DATASET INTO BPMG MEMBERS AND BACKGROUND AS DETERMINED BY CHRONOSTAR
+bpmg_rows = table[np.where(table['comp_A'] > THRESHOLD)]
+nearby_gaia = table[np.where(table['comp_A'] < THRESHOLD)]
 
 def line_eq(x):
+    """
+    Line equation for photometric rejects
+    """
+    xs = (1.5, 3)
+    ys = (7.5,10.)
+    m = (ys[1] - ys[0]) / (xs[1] - xs[0])
+    c = ys[0] - m * xs[0]
     return m*x + c
 
-# paramterising Marusa's main sequence fit
-fitpar= [
-    0.17954163,
-    -2.48748376,
-    12.9279348,
-    -31.35434182,
-    38.31330583,
-    -12.25864507,
-]
-poly=np.poly1d(fitpar)
-all_xs = np.linspace(1.0,2.5,100)
+# # paramterising Marusa's main sequence fit
+# fitpar= [
+#     0.17954163,
+#     -2.48748376,
+#     12.9279348,
+#     -31.35434182,
+#     38.31330583,
+#     -12.25864507,
+# ]
+# poly=np.poly1d(fitpar)
+# all_xs = np.linspace(1.0,2.5,100)
 
-abs_mag = bpmg_rows['phot_g_mean_mag']\
-          + 5*(np.log10(1e-3*bpmg_rows['parallax'])+1)
-
-# find Chronostar membeers which are photometerically inconsistent
-main_seq_stars = np.where(line_eq(bpmg_rows['bp_rp']) < abs_mag)
-nearby_abs_mag = nearby_gaia['phot_g_mean_mag'] \
-                 + 5*(np.log10(1e-3*nearby_gaia['parallax'])+1)
-print(bpmg_rows[main_seq_stars]['source_id'])
+# IDENTIFY PHOTOMETRICALLY INCONSISTENT BPMG STARS
+main_seq_stars = np.where(line_eq(bpmg_rows['bp_rp']) < bpmg_rows['abs_g_mag'])
 
 non_banyan_mask = np.where(nearby_gaia['Moving group'] != 'beta Pictoris')
 banyan_mask = np.where(nearby_gaia['Moving group'] == 'beta Pictoris')
 
-# e.g. (without correcting for distance)
+# ---------- PLOTTING ----------
 fig, ax = plt.subplots()
+
+# Plotting isochrones
+ax.plot(cmd_young['Gaia_BP_DR2Rev'] - cmd_young['Gaia_RP_DR2Rev'],
+        cmd_young['Gaia_G_DR2Rev'],
+        label='20 Myr', color='yellow', linewidth=3., ls='--')
+ax.plot(cmd_old['Gaia_BP_DR2Rev'] - cmd_old['Gaia_RP_DR2Rev'],
+        cmd_old['Gaia_G_DR2Rev'],
+        label='1 Gyr', color='orange', linewidth=3., ls='--')
+
+# plotting background gaia stars
 ax.scatter(nearby_gaia['bp_rp'][non_banyan_mask],
-           nearby_abs_mag[non_banyan_mask], c='black', alpha=BG_ALPHA,
+           nearby_gaia['abs_g_mag'][non_banyan_mask],
+           c='black',
+           alpha=BG_ALPHA,
            marker='.',
-           label='Nearby Gaia', linewidths=0.1, s=0.4*MARKSIZE)
-#ax.savefig('temp_plots/all_photometry.pdf')
+           label='Nearby Gaia',
+           linewidths=0.1,
+           s=0.4*MARKSIZE)
 
-ax.plot(all_xs, poly(all_xs), label='Main sequence', color='orange', linewidth=3., ls = '--')
 
-
-ax.scatter(bpmg_rows['bp_rp'][:35], abs_mag[:35], s=MARKSIZE,  marker='.',
+ax.scatter(bpmg_rows['bp_rp'][:35], bpmg_rows['abs_g_mag'][:35], s=MARKSIZE,  marker='.',
            c='blue', label=r'Confirmed BANYAN $\beta$PMG',
            alpha=NOT_BG_ALPHA, linewidths=0.1)
 
-ax.scatter(bpmg_rows['bp_rp'][35:], abs_mag[35:], c='blue',
+ax.scatter(bpmg_rows['bp_rp'][35:], bpmg_rows['abs_g_mag'][35:], c='blue',
            marker='^',
            label=r'New $\mathbf{Chronostar}$ $\beta$PMG', alpha=NOT_BG_ALPHA,
            s=MARKSIZE, linewidths=0.1)
-ax.scatter(bpmg_rows['bp_rp'][main_seq_stars], abs_mag[main_seq_stars],
+ax.scatter(bpmg_rows['bp_rp'][main_seq_stars], bpmg_rows['abs_g_mag'][main_seq_stars],
            marker='^',
            c='red', label='Photometric outliers', linewidths=0.1, s=MARKSIZE)
-ax.scatter(nearby_gaia['bp_rp'][banyan_mask], nearby_abs_mag[banyan_mask],
+ax.scatter(nearby_gaia['bp_rp'][banyan_mask], nearby_gaia['abs_g_mag'][banyan_mask],
            c='magenta', alpha=NOT_BG_ALPHA, marker='.', s=MARKSIZE,
            label='Rejected BANYAN', linewidths=0.1,)
-#ax.plot(xs, ys, c='red', ls='--')
-# ax.xlim(-1,6)
 
 ax.set_xlim(0,4)
 ax.set_ylim(12,-0.5)

@@ -366,3 +366,5 @@ remaining = comp_total - banyan_total - follow_total - shkol_total - phot_total
 print()
 print('Remaining: {}'.format(remaining))
 
+# TODO: maybe go through and count systematically the unique stars, for comparison
+
