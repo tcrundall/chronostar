@@ -1,5 +1,5 @@
 # Chronostar
-A stellar orbit traceback code
+A stellar orbit traceback code - *work in progress*
 
 In this repository, we will try to prototype some orbital traceback calculations.
 
