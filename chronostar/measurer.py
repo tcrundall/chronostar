@@ -14,7 +14,7 @@ import logging
 import numpy as np
 import pickle
 
-import coordinate as cc
+import chronostar.coordinate as cc
 
 ## BRIGHT STARS
 #GERROR = {

@@ -30,32 +30,32 @@ def convertRecToArray(sr):
     ----------
     sr : a row from table
     """
-    ra = sr['ra']
-    e_ra = sr['ra_error'] / 3600. / 1000.
-    dec = sr['dec']
-    e_dec = sr['dec_error'] / 3600. / 1000.
-    plx = sr['parallax']
-    e_plx = sr['parallax_error']
-    pmra = sr['pmra']
-    e_pmra = sr['pmra_error']
-    pmdec = sr['pmdec']
-    e_pmdec = sr['pmdec_error']
+    ra = float(sr['ra'])
+    e_ra = float(sr['ra_error']) / 3600. / 1000.
+    dec = float(sr['dec'])
+    e_dec = float(sr['dec_error']) / 3600. / 1000.
+    plx = float(sr['parallax'])
+    e_plx = float(sr['parallax_error'])
+    pmra = float(sr['pmra'])
+    e_pmra = float(sr['pmra_error'])
+    pmdec = float(sr['pmdec'])
+    e_pmdec = float(sr['pmdec_error'])
     try:
-        rv = sr['radial_velocity_best']
-        e_rv = sr['radial_velocity_error_best']
+        rv = float(sr['radial_velocity_best'])
+        e_rv = float(sr['radial_velocity_error_best'])
     except KeyError:
-        rv = sr['radial_velocity']
-        e_rv = sr['radial_velocity_error']
-    c_ra_dec = sr['ra_dec_corr']
-    c_ra_plx = sr['ra_parallax_corr']
-    c_ra_pmra = sr['ra_pmra_corr']
-    c_ra_pmdec = sr['ra_pmdec_corr']
-    c_dec_plx = sr['dec_parallax_corr']
-    c_dec_pmra = sr['dec_pmra_corr']
-    c_dec_pmdec = sr['dec_pmdec_corr']
-    c_plx_pmra = sr['parallax_pmra_corr']
-    c_plx_pmdec = sr['parallax_pmdec_corr']
-    c_pmra_pmdec = sr['pmra_pmdec_corr']
+        rv = float(sr['radial_velocity'])
+        e_rv = float(sr['radial_velocity_error'])
+    c_ra_dec = float(sr['ra_dec_corr'])
+    c_ra_plx = float(sr['ra_parallax_corr'])
+    c_ra_pmra = float(sr['ra_pmra_corr'])
+    c_ra_pmdec = float(sr['ra_pmdec_corr'])
+    c_dec_plx = float(sr['dec_parallax_corr'])
+    c_dec_pmra = float(sr['dec_pmra_corr'])
+    c_dec_pmdec = float(sr['dec_pmdec_corr'])
+    c_plx_pmra = float(sr['parallax_pmra_corr'])
+    c_plx_pmdec = float(sr['parallax_pmdec_corr'])
+    c_pmra_pmdec = float(sr['pmra_pmdec_corr'])
 
     mean = np.array((ra, dec, plx, pmra, pmdec, rv))
     cov  = np.array([

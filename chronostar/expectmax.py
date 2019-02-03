@@ -485,8 +485,59 @@ def getInitialGroups(ngroups, xyzuvw, offset=False, v_dist=10.):
     logging.info("Mean is\n{}".format(mean))
 #    meanXYZ = np.array([0.,0.,0.])
 #    meanW = 0.
-    dx = 50.
-    dv = 5.
+    dx = 1000.
+    dv = 50.
+    age = 3.
+    # group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
+    #                         np.log(5), 3])
+    pts = getPointsOnCircle(npoints=ngroups, v_dist=v_dist, offset=offset)
+    logging.info("Points around circle are:\n{}".format(pts))
+
+    for i in range(ngroups):
+        mean_w_offset = np.copy(mean)
+        mean_w_offset[3:5] += pts[i]
+        logging.info("Group {} has init UV of ({},{})".\
+                    format(i, mean_w_offset[3], mean_w_offset[4]))
+        group_pars = np.hstack((mean_w_offset, dx, dv, age))
+        group = syn.Group(group_pars, sphere=True, starcount=False)
+        groups.append(group)
+
+    return groups
+
+def getInitialGroupsBoxes(ngroups, xyzuvw, offset=False, v_dist=10.):
+    """
+    Generate the parameter list with which walkers will be initialised
+
+    Parameters
+    ----------
+    ngroups: int
+        number of groups
+    xyzuvw: [nstars, 6] array
+        the mean measurement of stars
+    offset : (boolean {False})
+        If set, the gorups are initialised in the complementary angular
+        positions
+    v_dist: float
+        Radius of circle in UV plane along which groups are initialsed
+
+    Returns
+    -------
+    groups: [ngroups] synthesiser.Group object list
+        the parameters with which to initialise each group's emcee run
+    """
+    groups = []
+
+    # if only fitting one group, simply initialise walkers about the
+    # mean of the data set
+    if ngroups == 1:
+        v_dist = 0
+
+    mean = np.mean(xyzuvw, axis=0)[:6]
+    logging.info("Mean is\n{}".format(mean))
+#    meanXYZ = np.array([0.,0.,0.])
+#    meanW = 0.
+    dx = 1000.
+    dv = 50.
     age = 3.
     # group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
     #                         np.log(5), 3])
@@ -580,12 +631,17 @@ def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False,
 
 def maximisation(star_pars, ngroups, z, burnin_steps, idir,
                  all_init_pars, all_init_pos=None, plot_it=False, pool=None,
-                 convergence_tol=0.25):
+                 convergence_tol=0.25, ignore_dead_comps=False):
     """
     Performs the 'maximisation' step of the EM algorithm
 
     all_init_pars must be given in 'internal' form, that is the standard
     deviations must be provided in log form.
+
+    Parameters
+    ----------
+    ignore_dead_comps : bool {False}
+        if componennts have fewer than 2(?) expected members, skip them
 
     :param star_pars:
     :param ngroups:
@@ -599,6 +655,8 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
     :param convergence_tol:
     :return:
     """
+    DEATH_THRESHOLD = 2.1
+
     new_groups = []
     all_samples = []
     all_lnprob = []
@@ -609,23 +667,40 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
         logging.info("........................................")
         logging.info("          Fitting group {}".format(i))
         logging.info("........................................")
+
+        # --- MARUSA TO EDIT -----
+        # IF GROUP IS FAILURE, SKIP
+        # nstarspergroup = np.sum(z[:,i])
+
+        # Might need Tim to do this... since unclear how to store 'placeholder blanks' values
+
         gdir = idir + "group{}/".format(i)
         mkpath(gdir)
         # pdb.set_trace()
-        best_fit, chain, lnprob = gf.fitGroup(
-            xyzuvw_dict=star_pars, burnin_steps=burnin_steps,
-            plot_it=plot_it, pool=pool, convergence_tol=convergence_tol,
-            plot_dir=gdir, save_dir=gdir, z=z[:, i],
-            init_pos=all_init_pos[i],
-            init_pars=all_init_pars[i],
-        )
-        logging.info("Finished fit")
-        logging.info("Best group (internal) pars:\n{}".format(best_fit))
-        new_group = syn.Group(best_fit, sphere=True, internal=True,
-                              starcount=False)
+        if np.sum(z[:,i]) < DEATH_THRESHOLD:
+            new_group = None
+            lnprob = None
+            bset_fit = all_init_pars[i]
+            final_pos = all_init_pos[i]
+            logging.info("Skipped component {} with nstars {}".format(i, np.sum(z[:,i])))
+        else:
+            best_fit, chain, lnprob = gf.fitGroup(
+                xyzuvw_dict=star_pars, burnin_steps=burnin_steps,
+                plot_it=plot_it, pool=pool, convergence_tol=convergence_tol,
+                plot_dir=gdir, save_dir=gdir, z=z[:, i],
+                init_pos=all_init_pos[i],
+                init_pars=all_init_pars[i],
+            )
+            logging.info("Finished fit")
+            logging.info("Best group (internal) pars:\n{}".format(best_fit))
+
+            final_pos = chain[:, -1, :]
+
         logging.info("With age of: {:.3} +- {:.3} Myr".\
                      format(np.median(chain[:,:,-1]), np.std(chain[:,:,-1])))
         # pdb.set_trace()
+        new_group = syn.Group(best_fit, sphere=True, internal=True,
+                              starcount=False)
         new_groups.append(new_group)
         np.save(gdir + "best_group_fit.npy", new_group)
         np.save(gdir + 'final_chain.npy', chain)
@@ -634,7 +709,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
         all_lnprob.append(lnprob)
 
         # record the final position of the walkers for each group
-        all_init_pos[i] = chain[:, -1, :]
+        all_init_pos[i] = final_pos
 
     np.save(idir + 'best_groups.npy', new_groups)
     return new_groups, all_samples, all_lnprob, all_init_pos
@@ -680,7 +755,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   init_groups=None, init_weights=None,
                   offset=False,  bg_hist_file='', correction_factor=1.0,
                   inc_posterior=False, burnin=1000, bg_dens=None,
-                  bg_ln_ols=None):
+                  bg_ln_ols=None, ignore_dead_comps=False):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -715,6 +790,10 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         the faintest BPMG star
     bg_hist_file: string
         direct path to histogram file being used to inform background
+    ignore_dead_comps: bool {False}
+        order groupfitter to skip maximising if component has less than...
+        2(?) expected members
+
 
     Return
     ------
@@ -826,6 +905,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                          plot_it=True, pool=pool, convergence_tol=C_TOL,
                          z=z, idir=idir, all_init_pars=all_init_pars,
                          all_init_pos=all_init_pos,
+                         ignore_dead_comps=ignore_dead_comps,
                          )
 
         # LOG RESULTS OF ITERATION
