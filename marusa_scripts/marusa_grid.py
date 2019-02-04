@@ -111,9 +111,23 @@ for x1, x2 in zip(grid_x[:-1], grid_x[1:]):
             else:
                 init_z = np.vstack((init_z, mask.astype(int)))
 # Add a column for the background
-init_z = np.vstack((init_z, np.zeros(len(xyzuvw))))
+
 init_z=init_z.T
 
 print(np.sum(init_z, axis=0))
 
 print('init_z successful!! Yey')
+
+# Delete components with no stars
+nc=np.sum(init_z, axis=0)
+mask=nc>1
+print(nc)
+print(nc[mask])
+#print(init_z[mask])
+#print(len(init_z[mask]))
+print(nc.shape)
+init_z=init_z[:,mask]
+init_z=init_z.T
+init_z = np.vstack((init_z, np.zeros(len(xyzuvw))))
+init_z=init_z.T
+print(init_z)
