@@ -485,8 +485,8 @@ def getInitialGroups(ngroups, xyzuvw, offset=False, v_dist=10.):
     logging.info("Mean is\n{}".format(mean))
 #    meanXYZ = np.array([0.,0.,0.])
 #    meanW = 0.
-    dx = 50.
-    dv = 5.
+    dx = 100.
+    dv = 15.
     age = 3.
     # group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
     #                         np.log(5), 3])

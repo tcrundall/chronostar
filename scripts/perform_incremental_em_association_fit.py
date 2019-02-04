@@ -121,7 +121,7 @@ try:
     logging.info("Loaded bg_ln_ols from file")
 except (IOError, AssertionError):
     print("in except")
-    bg_ln_ols = dt.getKernelDensities(gaia_xyzuvw_file, star_pars['xyzuvw'])
+    bg_ln_ols = dt.getKernelDensities(gaia_xyzuvw_file, star_pars['xyzuvw'], amp_scale=0.001)
     np.save(bg_ln_ols_file, bg_ln_ols)
 print("continuing")
 logging.info("DONE!")
