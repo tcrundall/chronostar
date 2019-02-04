@@ -626,7 +626,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
         gdir = idir + "group{}/".format(i)
         mkpath(gdir)
         # pdb.set_trace()
-        if np.sum(z[:,i]) < DEATH_THRESHOLD:
+        if ignore_dead_comps and (np.sum(z[:,i]) < DEATH_THRESHOLD):
             new_group = None
             lnprob = None
             bset_fit = all_init_pars[i]
