@@ -140,6 +140,11 @@ for x1, x2 in zip(grid_x[:-1], grid_x[1:]):
 init_z = np.vstack((init_z, np.zeros(len(xyzuvw))))
 init_z=init_z.T
 
+
+# ERASE FIRST COLUMN FOR TESTING REASONS
+init_z[:,-1][np.where(init_z[:,0]>0.5)] = 1.0
+init_z[:,0] = 0.
+
 print('init_z successful!! Yey')
 # --------------------------------------------------------------------------
 # Perform one EM fit
