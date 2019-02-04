@@ -124,7 +124,7 @@ ncomps=(len(grid_x)-1)*(len(grid_y)-1)*(len(grid_z)-1)
 print('ncomps: %d'%ncomps)
 
 # Create init_z
-#init_z=[]
+init_z=[]
 for x1, x2 in zip(grid_x[:-1], grid_x[1:]):
     for y1, y2 in zip(grid_y[:-1], grid_y[1:]):
         for z1, z2 in zip(grid_z[:-1], grid_z[1:]):
