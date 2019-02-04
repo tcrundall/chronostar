@@ -115,13 +115,14 @@ logging.info("DONE!")
 # --------------------------------------------------------------------------
 
 # Grid
-grid_x = [-10000, -40, -10, 10, 40, 10000]
-grid_y = [-10000, -10, 10, 10000]
-grid_z = [-10000, 0, 10000]
+grid_x = np.linspace(-10000, 10000, 7) #[-10000, -60, -20, 20, 60, 10000]
+grid_y = np.linspace(-10000, 10000, 7)
+grid_z = np.linspace(-10000, 10000, 5)
 xyzuvw = star_pars['xyzuvw']
 
 ncomps=(len(grid_x)-1)*(len(grid_y)-1)*(len(grid_z)-1)
 print('ncomps: %d'%ncomps)
+print('nstars/ncomps: %d'%(float(len(xyzuvw)))/float(ncomps))
 
 # Create init_z
 init_z=[]
@@ -139,6 +140,8 @@ for x1, x2 in zip(grid_x[:-1], grid_x[1:]):
 # Add a column for the background
 init_z = np.vstack((init_z, np.zeros(len(xyzuvw))))
 init_z=init_z.T
+
+print(np.sum(init_z, axis=0))
 
 print('init_z successful!! Yey')
 # --------------------------------------------------------------------------
