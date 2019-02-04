@@ -153,6 +153,10 @@ init_z = np.vstack((init_z, np.zeros(len(xyzuvw))))
 init_z=init_z.T
 
 print(np.sum(init_z, axis=0))
+
+ncomps=len(np.sum(init_z, axis=0))-1
+print('ncomps: %d'%ncomps)
+
 print('%d components'%(len(np.sum(init_z, axis=0))-1))
 print('init_z successful!! Yey')
 # --------------------------------------------------------------------------
