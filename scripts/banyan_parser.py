@@ -242,5 +242,8 @@ if __name__=='__main__':
             # I think I can write above line as:
             # gt_row[col_name] = correl_matrix[np.triu_indices(dim,k=1)][col_ix]
 
-    gt.write('../data/dummy_gagne_bonafide_full_kinematics_with_lit_and_best_radial' \
-                     '_velocity.fits')
+    try:
+        gt.write('../data/dummy_gagne_bonafide_full_kinematics_with_lit_and_best_radial' \
+                         '_velocity.fits')
+    except:
+        gt.write('../data/save_by_the_bell.fits')

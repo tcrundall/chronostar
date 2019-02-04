@@ -485,59 +485,8 @@ def getInitialGroups(ngroups, xyzuvw, offset=False, v_dist=10.):
     logging.info("Mean is\n{}".format(mean))
 #    meanXYZ = np.array([0.,0.,0.])
 #    meanW = 0.
-    dx = 1000.
-    dv = 50.
-    age = 3.
-    # group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
-    #                         np.log(5), 3])
-    pts = getPointsOnCircle(npoints=ngroups, v_dist=v_dist, offset=offset)
-    logging.info("Points around circle are:\n{}".format(pts))
-
-    for i in range(ngroups):
-        mean_w_offset = np.copy(mean)
-        mean_w_offset[3:5] += pts[i]
-        logging.info("Group {} has init UV of ({},{})".\
-                    format(i, mean_w_offset[3], mean_w_offset[4]))
-        group_pars = np.hstack((mean_w_offset, dx, dv, age))
-        group = syn.Group(group_pars, sphere=True, starcount=False)
-        groups.append(group)
-
-    return groups
-
-def getInitialGroupsBoxes(ngroups, xyzuvw, offset=False, v_dist=10.):
-    """
-    Generate the parameter list with which walkers will be initialised
-
-    Parameters
-    ----------
-    ngroups: int
-        number of groups
-    xyzuvw: [nstars, 6] array
-        the mean measurement of stars
-    offset : (boolean {False})
-        If set, the gorups are initialised in the complementary angular
-        positions
-    v_dist: float
-        Radius of circle in UV plane along which groups are initialsed
-
-    Returns
-    -------
-    groups: [ngroups] synthesiser.Group object list
-        the parameters with which to initialise each group's emcee run
-    """
-    groups = []
-
-    # if only fitting one group, simply initialise walkers about the
-    # mean of the data set
-    if ngroups == 1:
-        v_dist = 0
-
-    mean = np.mean(xyzuvw, axis=0)[:6]
-    logging.info("Mean is\n{}".format(mean))
-#    meanXYZ = np.array([0.,0.,0.])
-#    meanW = 0.
-    dx = 1000.
-    dv = 50.
+    dx = 100.
+    dv = 15.
     age = 3.
     # group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
     #                         np.log(5), 3])

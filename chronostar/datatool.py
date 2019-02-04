@@ -798,5 +798,3 @@ def getKernelDensities(data, points, get_twins=False, amp_scale=1.0):
         return bg_ln_ols, twin_bg_ln_ols
     else:
         return bg_ln_ols
-
-    
