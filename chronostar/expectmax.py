@@ -427,6 +427,7 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
         z[i] = calcMembershipProbs(lnols[i])
     if np.isnan(z).any():
         logging.info("!!!!!! AT LEAST ONE MEMBERSHIP IS 'NAN' !!!!!!")
+        z[np.where(np.isnan(z))] = 0.
         # import pdb; pdb.set_trace()
     return z
 
@@ -626,10 +627,10 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
         gdir = idir + "group{}/".format(i)
         mkpath(gdir)
         # pdb.set_trace()
+        # If component has too few stars, skip fit, and use previous best walker
         if ignore_dead_comps and (np.sum(z[:,i]) < DEATH_THRESHOLD):
-            new_group = None
             lnprob = None
-            bset_fit = all_init_pars[i]
+            best_fit = all_init_pars[i,0]
             final_pos = all_init_pos[i]
             logging.info("Skipped component {} with nstars {}".format(i, np.sum(z[:,i])))
         else:
@@ -645,8 +646,8 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
 
             final_pos = chain[:, -1, :]
 
-        logging.info("With age of: {:.3} +- {:.3} Myr".\
-                     format(np.median(chain[:,:,-1]), np.std(chain[:,:,-1])))
+            logging.info("With age of: {:.3} +- {:.3} Myr".\
+                        format(np.median(chain[:,:,-1]), np.std(chain[:,:,-1])))
         # pdb.set_trace()
         new_group = syn.Group(best_fit, sphere=True, internal=True,
                               starcount=False)
