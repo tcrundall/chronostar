@@ -75,46 +75,16 @@ except:
     using_mpi = False
     pool=None
 
-if using_mpi:
-    if not pool.is_master():
-        print("One thread is going to sleep")
-        # Wait for instructions from the master process.
-        pool.wait()
-        sys.exit(0)
-print("Only one thread is master")
 
-#logging.info(path_msg)
-
-print("Master should be working in the directory:\n{}".format(rdir))
 
 star_pars = dt.loadXYZUVW(xyzuvw_file)
 
-# --------------------------------------------------------------------------
-# Calculate background overlap
-# --------------------------------------------------------------------------
-# GET BACKGROUND LOG OVERLAP DENSITIES:
-logging.info("Acquiring background overlaps")
-try:
-    print("In try")
-    logging.info("Calculating background overlaps")
-    logging.info(" -- this step employs scipy's kernel density estimator")
-    logging.info(" -- so could take a few minutes...")
-    bg_ln_ols = np.load(bg_ln_ols_file)
-    print("could load")
-    assert len(bg_ln_ols) == len(star_pars['xyzuvw'])
-    logging.info("Loaded bg_ln_ols from file")
-except (IOError, AssertionError):
-    print("in except")
-    bg_ln_ols = dt.getKernelDensities(gaia_xyzuvw_file, star_pars['xyzuvw'], amp_scale=0.1)
-    np.save(bg_ln_ols_file, bg_ln_ols)
-print("continuing")
-logging.info("DONE!")
+np.set_printoptions(suppress=True)
 
 # --------------------------------------------------------------------------
 # Get grid-based Z membership
 # --------------------------------------------------------------------------
 
-# Grid
 # Grid
 xyzuvw = star_pars['xyzuvw']
 dmin=np.min(xyzuvw, axis=0)-1
@@ -140,72 +110,26 @@ for u1, u2 in zip(grid_u[:-1], grid_u[1:]):
                 init_z = mask.astype(int)
             else:
                 init_z = np.vstack((init_z, mask.astype(int)))
+# Add a column for the background
+
 init_z=init_z.T
+
+print(np.sum(init_z, axis=0))
+
+print('init_z successful!! Yey')
 
 # Delete components with no stars
 nc=np.sum(init_z, axis=0)
 mask=nc>1
+print(nc)
+print(nc[mask])
+#print(init_z[mask])
+#print(len(init_z[mask]))
+print(nc.shape)
 init_z=init_z[:,mask]
-
-# Add a column for the background
 init_z=init_z.T
 init_z = np.vstack((init_z, np.zeros(len(xyzuvw))))
 init_z=init_z.T
-
+print(init_z)
 print(np.sum(init_z, axis=0))
-print('%d components'%(len(np.sum(init_z, axis=0))-1))
-print('init_z successful!! Yey')
-# --------------------------------------------------------------------------
-# Perform one EM fit
-# --------------------------------------------------------------------------
-logging.info("Using data file {}".format(xyzuvw_file))
-logging.info("Everything loaded, about to fit with {} components"\
-    .format(NGROUPS))
-final_groups, final_med_errs, z = em.fitManyGroups(star_pars, ncomps, bg_ln_ols=bg_ln_ols,
-                 rdir=rdir, pool=pool, init_z=init_z, ignore_dead_comps=True)
-
-
-# --------------------------------------------------------------------------
-# Repeat EM fit but killing components with too few members
-# --------------------------------------------------------------------------
-# e.g. maybe < 3 expected star count
-# take results from entire past EM fit
-
-
-#
-# init_origin = False
-# origins = None
-# if NGROUPS == 1:
-#     init_origin = True
-#     nstars = star_means.shape[0]
-#     bp_mean = np.mean(star_means, axis=0)
-#     bp_cov = np.cov(star_means.T)
-#     bp_dx = np.sqrt(np.min([bp_cov[0,0], bp_cov[1,1], bp_cov[2,2]]))
-#     bp_dv = np.sqrt(np.min([bp_cov[3,3], bp_cov[4,4], bp_cov[5,5]]))
-#     bp_age = 0.5
-#     bp_pars = np.hstack((bp_mean, bp_dx, bp_dv, bp_age, nstars))
-#     bp_group = syn.Group(bp_pars)
-#     origins = [bp_group]
-#
-# #go through and compare overlap with groups with
-# #background overlap
-# #
-# #bp_pars = np.array([
-# #   2.98170398e+01,  4.43573995e+01,  2.29251498e+01, -9.65731744e-01,
-# #   -3.42827894e+00, -3.99928052e-02 , 2.63084094e+00,  1.05302890e-01,
-# #   1.59367119e+01, nstars
-# #])
-# #bp_group = syn.Group(bp_pars)
-# #
-# # --------------------------------------------------------------------------
-# # Run fit
-# # --------------------------------------------------------------------------
-# logging.info("Using data file {}".format(xyzuvw_file))
-# logging.info("Everything loaded, about to fit with {} components"\
-#     .format(NGROUPS))
-# em.fitManyGroups(star_pars, NGROUPS,
-#                  rdir=rdir, pool=pool, offset=True, bg_hist_file=bg_hist_file,
-#                  origins=origins, init_with_origin=init_origin, init_z=init_z
-#                  )
-if using_mpi:
-    pool.close()
+print(len(np.sum(init_z, axis=0)))

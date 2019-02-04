@@ -660,6 +660,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
             success_mask.append(i)
 
             # record the final position of the walkers for each group
+            # TODO: TIM TO FIX IMPENDING BUG HERE
             all_init_pos[i] = final_pos
 
     np.save(idir + 'best_groups.npy', new_groups)
