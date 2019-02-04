@@ -837,6 +837,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         # EXPECTATION
         if skip_first_e_step:
             logging.info("Using input z for first iteration")
+            logging.info("z: {}".format(init_z.sum(axis=0)))
             z = init_z
             skip_first_e_step = False
         else:
