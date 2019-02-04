@@ -164,7 +164,7 @@ print('init_z successful!! Yey')
 # --------------------------------------------------------------------------
 logging.info("Using data file {}".format(xyzuvw_file))
 logging.info("Everything loaded, about to fit with {} components"\
-    .format(NGROUPS))
+    .format(ncomps))
 final_groups, final_med_errs, z = em.fitManyGroups(star_pars, ncomps, bg_ln_ols=bg_ln_ols,
                  rdir=rdir, pool=pool, init_z=init_z, ignore_dead_comps=True)
 
