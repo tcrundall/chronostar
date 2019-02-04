@@ -136,6 +136,8 @@ for x1, x2 in zip(grid_x[:-1], grid_x[1:]):
                 init_z = mask.astype(int)
             else:
                 init_z = np.vstack((init_z, mask.astype(int)))
+# Add a column for the background
+init_z = np.vstack((init_z, np.zeros(len(xyzuvw))))
 init_z=init_z.T
 
 print('init_z successful!! Yey')
