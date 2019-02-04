@@ -114,8 +114,7 @@ logging.info("DONE!")
 # Get grid-based Z membership
 # --------------------------------------------------------------------------
 
-# Grid
-# Grid
+# Grid based on the velocity space
 xyzuvw = star_pars['xyzuvw']
 dmin=np.min(xyzuvw, axis=0)-1
 dmax=np.max(xyzuvw, axis=0)+1
