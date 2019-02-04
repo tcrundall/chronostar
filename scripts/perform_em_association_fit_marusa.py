@@ -138,7 +138,7 @@ for x1, x2 in zip(grid_x[:-1], grid_x[1:]):
                 init_z = np.vstack((init_z, mask.astype(int)))
 init_z=init_z.T
 
-
+print('init_z successful!! Yey')
 # --------------------------------------------------------------------------
 # Perform one EM fit
 # --------------------------------------------------------------------------
