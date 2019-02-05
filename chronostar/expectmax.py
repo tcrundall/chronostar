@@ -632,7 +632,6 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
         # If component has too few stars, skip fit, and use previous best walker
         if ignore_dead_comps and (np.sum(z[:,i]) < DEATH_THRESHOLD):
             logging.info("Skipped component {} with nstars {}".format(i, np.sum(z[:,i])))
-            success_mask.remove(i)
         else:
             best_fit, chain, lnprob = gf.fitGroup(
                 xyzuvw_dict=star_pars, burnin_steps=burnin_steps,
