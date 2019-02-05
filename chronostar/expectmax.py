@@ -610,8 +610,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
     new_groups = []
     all_samples = []
     all_lnprob = []
-    # success_mask = np.array(ngroups*[True])
-    success_mask = list(np.arange(ngroups))
+    success_mask = []
     if all_init_pos is None:
         all_init_pos = ngroups * [None]
 
