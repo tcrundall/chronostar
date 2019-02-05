@@ -863,7 +863,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                          )
 
         # update number of groups to reflect any loss of dead components
-        ngroups = len(success_mask[0])
+        ngroups = len(success_mask)
         logging.info("The following groups survived: {}".format(success_mask))
 
         # apply success mask to z, somewhat awkward cause need to preserve
