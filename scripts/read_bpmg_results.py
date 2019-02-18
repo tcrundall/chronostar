@@ -67,7 +67,7 @@ poly=np.poly1d(fitpar)
 all_xs = np.linspace(1.0,2.5,100)
 
 # IDENTIFY PHOTOMETRICALLY INCONSISTENT BPMG STARS
-main_seq_stars = np.where(line_eq(bpmg_rows['bp_rp']) < bpmg_rows['abs_g_mag'])
+main_seq_stars = np.where((line_eq(bpmg_rows['bp_rp']) < bpmg_rows['abs_g_mag']) | (bpmg_rows['abs_g_mag'] < 1.5))
 
 non_banyan_mask = np.where(nearby_gaia['Moving group'] != 'beta Pictoris')
 banyan_mask = np.where(nearby_gaia['Moving group'] == 'beta Pictoris')

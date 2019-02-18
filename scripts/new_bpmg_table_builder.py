@@ -283,20 +283,22 @@ if __name__ == '__main__':
     def line_eq(x):
         return m*x + c
 
-    THRESHOLD = 0.2
+    THRESHOLD = 0.5
     bpmg_rows = bp_sp['table'][np.where(bp_sp['table']['Comp 0 prob'] > THRESHOLD)]
     bpmg_ixs = np.where(bp_sp['table']['comp_A'] > THRESHOLD)
     # abs_mag = bpmg_rows['phot_g_mean_mag']\
     #           + 5*(np.log10(1e-3*bpmg_rows['parallax'])+1)
 
 
-    # find Chronostar membeers which are photometerically inconsistent
+    # find Chronostar members which are photometerically inconsistent
     main_seq_stars = np.where((bp_sp['table']['comp_A'] > THRESHOLD) & (line_eq(bp_sp['table']['bp_rp']) < bp_sp['table']['abs_g_mag']))
+    too_bright_stars = np.where((bp_sp['table']['comp_A'] > THRESHOLD) &
+                                (bp_sp['table']['abs_g_mag'] < 1.5))
 
     bp_sp['table']['phot_consist'] = short_empty_column
     bp_sp['table']['phot_consist'][bpmg_ixs] = 'Y'
     bp_sp['table']['phot_consist'][main_seq_stars] = 'N'
-
+    bp_sp['table']['phot_consist'][too_bright_stars] = 'N'
 
     # Triple check (by 2MASS identifier) that no 'new' members featured in the
     # BANYAN list
