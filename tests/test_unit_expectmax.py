@@ -87,8 +87,5 @@ def test_expectation():
                        old_z=old_z)
     strong_bg_overlap = np.where(lnols < bg_ln_ols)
 
-    try:
-        assert (z[strong_bg_overlap, 1] > 0.5).all()
-    except:
-        import pdb; pdb.set_trace()
+    assert (z[strong_bg_overlap, 1] > 0.5).all()
 
