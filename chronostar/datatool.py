@@ -14,8 +14,6 @@ import sys
 import converter as cv
 import coordinate as cc
 
-
-
 def gauss(x, mu, sig):
     """
     Evaluates a 1D gaussian at `x` given mean `mu` and std `sig`
@@ -489,8 +487,8 @@ def isInAssociation(element, iterable):
     if iterable is None:
         return True
     if type(iterable) is str:
-        return element == iterable
-    return element in iterable
+        return element['Moving group'] == iterable
+    return element['Moving group'] in iterable
 
 
 def loadTable(table):
@@ -541,8 +539,8 @@ def loadDictFromTable(table, assoc_name=None):
     for ix, row in enumerate(table):
         if nrows > 10000 and ix % 1000==0:
             print("Done {:7} of {}".format(ix, nrows))
-        if np.isfinite(row['U']): #and
-            # isInAssociation(row['Moving group'], assoc_name)):
+        if (np.isfinite(row['U']) and
+            isInAssociation(row, assoc_name)):
             mean, cov = buildMeanAndCovMatFromRow(row)
             xyzuvw.append(mean)
             xyzuvw_cov.append(cov)
@@ -779,7 +777,7 @@ def getZfromOrigins(origins, star_pars=None):
     return z
 
 
-def getKernelDensities(data, points, get_twins=False):
+def getKernelDensities(data, points, get_twins=False, amp_scale=1.0):
     """
     Build a PDF from `data`, then evaluate said pdf at `points`
 
@@ -792,7 +790,7 @@ def getKernelDensities(data, points, get_twins=False):
     """
     if type(data) is str:
         data = np.load(data)
-    nstars = data.shape[0]
+    nstars = amp_scale * data.shape[0]
 
     kernel = stats.gaussian_kde(data.T)
     points = np.copy(points)

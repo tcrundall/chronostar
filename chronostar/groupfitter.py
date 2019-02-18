@@ -68,6 +68,8 @@ def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns, nstars):
 def loadXYZUVW(xyzuvw_file):
     """Load mean and covariances of stars in XYZUVW space from fits file
 
+    (If fails, auto uses getDictFromTable
+
     Parameters
     ----------
     xyzuvw_file : (String)

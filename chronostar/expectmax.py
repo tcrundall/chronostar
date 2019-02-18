@@ -378,6 +378,7 @@ def calcBIC(star_pars, ncomps, lnlike, z=None):
     k = ncomps * 8 # 6 for central estimate, 2 for dx and dv, 1 for age
     return np.log(n)*k - 2 * lnlike
 
+
 def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
                 inc_posterior=False, amp_prior=None):
     """Calculate membership probabilities given fits to each group
@@ -433,6 +434,7 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
         z[i] = calcMembershipProbs(lnols[i])
     if np.isnan(z).any():
         logging.info("!!!!!! AT LEAST ONE MEMBERSHIP IS 'NAN' !!!!!!")
+        z[np.where(np.isnan(z))] = 0.
         # import pdb; pdb.set_trace()
     return z
 
@@ -491,8 +493,8 @@ def getInitialGroups(ngroups, xyzuvw, offset=False, v_dist=10.):
     logging.info("Mean is\n{}".format(mean))
 #    meanXYZ = np.array([0.,0.,0.])
 #    meanW = 0.
-    dx = 50.
-    dv = 5.
+    dx = 100.
+    dv = 15.
     age = 3.
     # group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
     #                         np.log(5), 3])
@@ -586,12 +588,17 @@ def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False,
 
 def maximisation(star_pars, ngroups, z, burnin_steps, idir,
                  all_init_pars, all_init_pos=None, plot_it=False, pool=None,
-                 convergence_tol=0.25):
+                 convergence_tol=0.25, ignore_dead_comps=False):
     """
     Performs the 'maximisation' step of the EM algorithm
 
     all_init_pars must be given in 'internal' form, that is the standard
     deviations must be provided in log form.
+
+    Parameters
+    ----------
+    ignore_dead_comps : bool {False}
+        if componennts have fewer than 2(?) expected members, skip them
 
     :param star_pars:
     :param ngroups:
@@ -605,9 +612,12 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
     :param convergence_tol:
     :return:
     """
+    DEATH_THRESHOLD = 2.1
+
     new_groups = []
     all_samples = []
     all_lnprob = []
+    success_mask = []
     if all_init_pos is None:
         all_init_pos = ngroups * [None]
 
@@ -618,32 +628,43 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
         gdir = idir + "group{}/".format(i)
         mkpath(gdir)
         # pdb.set_trace()
-        best_fit, chain, lnprob = gf.fitGroup(
-            xyzuvw_dict=star_pars, burnin_steps=burnin_steps,
-            plot_it=plot_it, pool=pool, convergence_tol=convergence_tol,
-            plot_dir=gdir, save_dir=gdir, z=z[:, i],
-            init_pos=all_init_pos[i],
-            init_pars=all_init_pars[i],
-        )
-        logging.info("Finished fit")
-        logging.info("Best group (internal) pars:\n{}".format(best_fit))
-        new_group = syn.Group(best_fit, sphere=True, internal=True,
-                              starcount=False)
-        logging.info("With age of: {:.3} +- {:.3} Myr".\
-                     format(np.median(chain[:,:,-1]), np.std(chain[:,:,-1])))
-        # pdb.set_trace()
-        new_groups.append(new_group)
-        np.save(gdir + "best_group_fit.npy", new_group)
-        np.save(gdir + 'final_chain.npy', chain)
-        np.save(gdir + 'final_lnprob.npy', lnprob)
-        all_samples.append(chain)
-        all_lnprob.append(lnprob)
+        # If component has too few stars, skip fit, and use previous best walker
+        if ignore_dead_comps and (np.sum(z[:,i]) < DEATH_THRESHOLD):
+            logging.info("Skipped component {} with nstars {}".format(i, np.sum(z[:,i])))
+        else:
+            best_fit, chain, lnprob = gf.fitGroup(
+                xyzuvw_dict=star_pars, burnin_steps=burnin_steps,
+                plot_it=plot_it, pool=pool, convergence_tol=convergence_tol,
+                plot_dir=gdir, save_dir=gdir, z=z[:, i],
+                init_pos=all_init_pos[i],
+                init_pars=all_init_pars[i],
+            )
+            logging.info("Finished fit")
+            logging.info("Best group (internal) pars:\n{}".format(best_fit))
 
-        # record the final position of the walkers for each group
-        all_init_pos[i] = chain[:, -1, :]
+            final_pos = chain[:, -1, :]
+
+            logging.info("With age of: {:.3} +- {:.3} Myr".\
+                        format(np.median(chain[:,:,-1]), np.std(chain[:,:,-1])))
+            new_group = syn.Group(best_fit, sphere=True, internal=True,
+                                  starcount=False)
+            new_groups.append(new_group)
+            np.save(gdir + "best_group_fit.npy", new_group)
+            np.save(gdir + 'final_chain.npy', chain)
+            np.save(gdir + 'final_lnprob.npy', lnprob)
+            all_samples.append(chain)
+            all_lnprob.append(lnprob)
+
+            success_mask.append(i)
+
+            # record the final position of the walkers for each group
+            # TODO: TIM TO FIX IMPENDING BUG HERE
+            all_init_pos[i] = final_pos
 
     np.save(idir + 'best_groups.npy', new_groups)
-    return new_groups, all_samples, all_lnprob, all_init_pos
+
+    return new_groups, all_samples, all_lnprob, all_init_pos,\
+           np.array(success_mask)
 
 
 def checkStability(star_pars, best_groups, z, bg_ln_ols=None):
@@ -685,8 +706,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                   origins=None, pool=None, init_with_origin=False,
                   init_groups=None, init_weights=None,
                   offset=False,  bg_hist_file='', correction_factor=1.0,
-                  inc_posterior=False, burnin=500, bg_dens=None,
-                  bg_ln_ols=None):
+                  inc_posterior=False, burnin=1000, bg_dens=None,
+                  bg_ln_ols=None, ignore_dead_comps=False):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -721,6 +742,10 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         the faintest BPMG star
     bg_hist_file: string
         direct path to histogram file being used to inform background
+    ignore_dead_comps: bool {False}
+        order groupfitter to skip maximising if component has less than...
+        2(?) expected members
+
 
     Return
     ------
@@ -740,7 +765,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     SAMPLING_STEPS = 5000
     C_TOL = 0.5
     MAX_ITERS = 100
-    MEMB_CONV_TOL = 0.1 # no memberships may vary by >10% to be converged.
+    # MEMB_CONV_TOL = 0.1 # no memberships may vary by >10% to be converged.
     AMPLITUDE_TOL = 1.0 # total sum of memberships for each component
                         # cannot vary by more than this value to be converged
     nstars = star_pars['xyzuvw'].shape[0]
@@ -841,6 +866,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         # EXPECTATION
         if skip_first_e_step:
             logging.info("Using input z for first iteration")
+            logging.info("z: {}".format(init_z.sum(axis=0)))
             z_new = init_z
             skip_first_e_step = False
         else:
@@ -852,21 +878,37 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         np.save(idir+"membership.npy", z_new)
 
         # MAXIMISE
-        new_groups, all_samples, all_lnprob, all_init_pos =\
+        #  use `success_mask` to account for groups skipped due to brokenness
+        new_groups, all_samples, all_lnprob, all_init_pos, success_mask =\
             maximisation(star_pars, ngroups=ngroups,
                          burnin_steps=BURNIN_STEPS,
                          plot_it=True, pool=pool, convergence_tol=C_TOL,
                          z=z_new, idir=idir, all_init_pars=all_init_pars,
                          all_init_pos=all_init_pos,
+                         ignore_dead_comps=ignore_dead_comps,
                          )
 
+        # update number of groups to reflect any loss of dead components
+        ngroups = len(success_mask)
+        logging.info("The following groups survived: {}".format(success_mask))
+
+        # apply success mask to z, somewhat awkward cause need to preserve
+        # final column (for background overlaps) if present
+        if use_background:
+            z = np.hstack((z[:,success_mask], z[:,-1][:,np.newaxis]))
+        else:
+            z = z[:,success_mask]
+
         # LOG RESULTS OF ITERATION
-        overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
+        overallLnLike = getOverallLnLikelihood(star_pars,
+                                               new_groups,
                                                bg_ln_ols, inc_posterior=False)
         # TODO This seems to be bugged... returns same value as lnlike when only
         # fitting one group; BECAUSE WEIGHTS ARE REBALANCED
-        overallLnPosterior = getOverallLnLikelihood(star_pars, new_groups,
-                                               bg_ln_ols, inc_posterior=True)
+        overallLnPosterior = getOverallLnLikelihood(star_pars,
+                                                    new_groups,
+                                                    bg_ln_ols,
+                                                    inc_posterior=True)
         logging.info("---        Iteration results         --")
         logging.info("-- Overall likelihood so far: {} --".\
                      format(overallLnLike))
@@ -877,11 +919,11 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         # checks if the fit ever worsens
         converged = ( (old_overallLnLike > overallLnLike) and\
-                     checkConvergence(old_best_fits=old_groups,
+                     checkConvergence(old_best_fits=old_groups[success_mask],
                                       new_chains=all_samples,
                                       ) and
                      # individual star memberships don't vary too much
-                     np.allclose(z_new, z_old, atol=MEMB_CONV_TOL) and
+                     # np.allclose(z_new, z_old, atol=MEMB_CONV_TOL) and
                      # amplitudes of components don't vary too much
                      np.allclose(z_new.sum(axis=0), z_old.sum(axis=0),
                                  atol=AMPLITUDE_TOL)
@@ -899,7 +941,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         # only update if the fit has improved
         if not converged:
-            old_old_groups = old_groups
+            # old_old_groups = old_groups
             old_groups = new_groups
             z_old = z_new
 
@@ -937,7 +979,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                 plot_it=True, pool=pool, convergence_tol=C_TOL,
                 plot_dir=final_gdir, save_dir=final_gdir, z=final_z[:, i],
                 init_pos=all_init_pos[i], sampling_steps=SAMPLING_STEPS,
-                max_iter=4,
+                # max_iter=4 # Todo: why max_iter? (19/02)
                 # init_pars=old_groups[i],
             )
             # run with extremely large convergence tolerance to ensure it only

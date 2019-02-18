@@ -121,7 +121,7 @@ try:
     logging.info("Loaded bg_ln_ols from file")
 except (IOError, AssertionError):
     print("in except")
-    bg_ln_ols = dt.getKernelDensities(gaia_xyzuvw_file, star_pars['xyzuvw'])
+    bg_ln_ols = dt.getKernelDensities(gaia_xyzuvw_file, star_pars['xyzuvw'], amp_scale=0.001)
     np.save(bg_ln_ols_file, bg_ln_ols)
 print("continuing")
 logging.info("DONE!")
@@ -171,7 +171,7 @@ while ncomps < MAX_COMP:
         except IOError:
             new_groups, new_meds, new_z = \
                 em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
-                                 bg_ln_ols=bg_ln_ols)
+                                 bg_ln_ols=bg_ln_ols) # kill component here
             new_groups = np.array(new_groups)
 
         new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,
