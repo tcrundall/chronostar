@@ -57,9 +57,15 @@ def correctness(group_icov, group_mean, group_icov_det, star_icovs,
         star_means, star_icov_dets, nstars)
 
 
+    # Using swig-numpy module with multiple stars per call and log results
+    group_cov = np.linalg.inv(group_icov)
+    star_covs = np.zeros(star_icovs.shape)
+    for i in range(nstars):
+        star_covs[i] = np.linalg.inv(star_icovs[i])
     swig_np_ms_lnols = overlap.get_lnoverlaps(
-        group_icov, group_mean, group_icov_det, star_icovs,
-        star_means, star_icov_dets, nstars)
+        group_cov, group_mean, star_covs,
+        star_means, nstars
+    )
 
     # Compare with various implementations of calculating one star at a time
     for i in range(nstars):
@@ -79,10 +85,10 @@ def correctness(group_icov, group_mean, group_icov_det, star_icovs,
             group_icov, group_mean, group_icov_det, star_icovs[i],
             star_means[i], star_icov_dets[i])
 
-        # Using swig module (input passed as numpy arrays, output in log)
-        swig_np_lnols = overlap.get_lnoverlap(
-            group_icov, group_mean, group_icov_det, star_icovs[i],
-            star_means[i], star_icov_dets[i])
+        # # Using swig module (input passed as numpy arrays, output in log)
+        # swig_np_lnol = overlap.get_lnoverlap(
+        #     group_icov, group_mean, group_icov_det, star_icovs[i],
+        #     star_means[i], star_icov_dets[i])
 
         assert np.isclose(numpy_ols, swig_np_ms_ols[i], rtol=1e-8)
         assert np.isclose(numpy_ols, swig_ols, rtol=1e-8)
@@ -228,7 +234,7 @@ star_means = np.array(
  [ 17.58529809,-25.56197368,-20.64041645, -0.86932298, -6.32809279,
    -6.419595  ]] )
 
-nstars = 2
+nstars = star_icovs.shape[0]
 
 print("Testing correctnesss")
 correctness(group_icov, group_mean, group_icov_det, star_icovs,
