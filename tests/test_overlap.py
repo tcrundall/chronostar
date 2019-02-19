@@ -58,7 +58,6 @@ def co1(A_cov, a, B_cov, b):
     # the determinants of the sum of positive definite matrices is
     # greater than the sum of their determinants
     if (ApB_det < 0) | (B_det < 0):
-        pdb.set_trace()
         return -np.inf
 
     # Solve for c

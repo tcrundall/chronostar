@@ -6,7 +6,7 @@ import numpy as np
 import sys
 
 import astropy.units as u
-#from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord
 
 #from galpy.util import bovy_coords
 import logging
@@ -15,16 +15,23 @@ sys.path.insert(0,'..')
 
 import chronostar.coordinate as cc
 
+# Cartesian position and velocity of the sun with respect to the LSR
+# as reported by Schoenrich et al.
 XYZUVWSOLARNOW_pc = np.array([0., 0., 25., 11.1, 12.24, 7.25])
 
 def test_calcEQToGCMatrix():
     """
-    Check the implementation of Johnson and Soderblom 1987
+    Compare generated matrices with those reported by
+    Johnson and Soderblom (1987)
+
+
     """
     old_a_ngp = 192.25 * u.degree
     old_d_ngp = 27.4 * u.degree
     old_th = 123 * u.degree
 
+    # Matrix copied from paper to take sky positions and parallax
+    # to heliocentric Galactic cartesian coordinates
     js1987 = np.array([
         [-0.06699, -0.87276, -0.48354],
         [0.49273, -0.45035, 0.74458],
@@ -32,13 +39,16 @@ def test_calcEQToGCMatrix():
     ])
 
     assert np.allclose(
-        js1987, cc.calcEQToGCMatrix(old_a_ngp,old_d_ngp,old_th),
+        js1987,
+        cc.calcEQToGCMatrix(old_a_ngp,old_d_ngp,old_th),
         rtol=1e-4
     )
 
-    js1987_inv = cc.calcGCToEQMatrix(old_a_ngp,old_d_ngp,old_th)
+    js1987_inv = np.linalg.inv(js1987)
     assert np.allclose(
-        js1987_inv, np.linalg.inv(js1987), rtol=1e-4
+        js1987_inv,
+        cc.calcGCToEQMatrix(old_a_ngp,old_d_ngp,old_th),
+        rtol=1e-4
     )
 
     assert np.allclose(
@@ -90,12 +100,12 @@ def test_convertEquatorialToGalactic():
 
 def test_famousPositions():
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
-    # galactic north
+    # galactic north pole in two coordinate systems
     gnp_eq = (192.8595, 27.1283)
     gnp_gc = (0,90)
 
-    # testing gnp_eq --> gnp_gc is tricky, since latitude=90 is degenerative
-    # w.r.t longitude
+    # testing gnp_eq --> gnp_gc is tricky, since there is a degeneracy,
+    # so only compare the second coordinate
     assert np.allclose(
         cc.convertEquatorialToGalactic(*gnp_eq)[1],
         gnp_gc[1], rtol=1e-4
@@ -152,13 +162,23 @@ def test_convertHelioXYZUVWToAstrometry():
     assert np.allclose(calculated_xyzuvw_bp_helio, xyzuvw_bp_helio, rtol=1e-2)
 
 def test_convertAstrometryToLSRXYZUVW():
+    """Check edge case of nearby sun, also compare with output of astropy"""
     # pick an astrometry which should be right near the sun
     sun_astro = (0., 90., 1e15, 0.,0.,0.)
     sun_xyzuvw_lsr = (0., 0., 25., 11.1, 12.24, 7.25)
-
     assert np.allclose(
         cc.convertAstrometryToLSRXYZUVW(sun_astro), sun_xyzuvw_lsr
     )
+
+    # TODO: compare astropy coordinates
+    # will do this when upgraded to python 3
+    star_astros = np.array([
+        [86.82, -51.067, 51.44, 4.65, 83.1, 20],        # beta Pic
+        [165.466, -34.705, 18.62, -66.19, -13.9, 13.4], # TW Hya
+        [82.187, -65.45, 65.93, 33.16, 150.83, 32.4],   # AB Dor
+        [100.94, -71.977, 17.17, 6.17, 61.15, 20.7]     # HIP 32235
+    ])
+
 
 def test_origin():
     """Checks that the sun can be put in without breaking angle calculations"""
@@ -168,6 +188,7 @@ def test_origin():
 
 
 def test_convertLSRXYZUVWToAstrometry():
+    """Checks Beta Pictoris is accurately handled"""
     astr_bp = [ # astrometry from wikiepdia
         86.82125, #deg
         -51.0664, #deg
@@ -177,7 +198,7 @@ def test_convertLSRXYZUVWToAstrometry():
         20.0      #km/s
     ]
     xyzuvw_bp_helio = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
-    xyzuvw_bp_lsr =  xyzuvw_bp_helio + XYZUVWSOLARNOW_pc
+    xyzuvw_bp_lsr = cc.convertHelioToLSR(xyzuvw_bp_helio)
 
     calculated_astr_bp = cc.convertLSRXYZUVWToAstrometry(xyzuvw_bp_lsr)
     assert np.allclose(astr_bp, calculated_astr_bp, rtol=1e-2)
@@ -191,6 +212,7 @@ def test_convertLSRXYZUVWToAstrometry():
         calculated_astr_bp2
     )
     assert np.allclose(calculated_xyzuvw_bp_lsr2, xyzuvw_bp_lsr)
+
 
 def test_convertManyLSRXYZUVWToAstrometry():
     return

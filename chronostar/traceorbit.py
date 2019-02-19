@@ -138,9 +138,11 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     Parameters
     ----------
     xyzuvw : [pc,pc,pc,km/s,km/s,km/s]
-    times : [ntimes] float array
+    times : (float) or ([ntimes] float array)
         Myr - time of 0.0 must be present in the array. Times need not be
         spread linearly.
+    single_age: (bool) {True}
+        Set this flag if only providing a single age to trace to
 
     Returns
     -------

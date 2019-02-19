@@ -7,9 +7,11 @@ sys.path.insert(0, '..')
 import chronostar.synthesiser as syn
 LOGGINGLEVEL = logging.DEBUG
 
+TEMP_SAVE_DIR = 'temp_data/'
+
 def testGroupGeneration():
     logging.basicConfig(level=LOGGINGLEVEL,
-                        filename="logs/test_synthesiser.log")
+                        filename="temp_logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 50.]
     myGroup = syn.Group(pars, sphere=True)
     assert myGroup.age == pars[-2]
@@ -19,7 +21,7 @@ def testGroupGeneration():
 
 def testStarGenerate():
     logging.basicConfig(level=LOGGINGLEVEL,
-                        filename="logs/test_synthesiser.log")
+                        filename="temp_logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100000.]
     init_xyzuvw = syn.synthesiseXYZUVW(pars, sphere=True)
     myGroup = syn.Group(pars, sphere=True)
@@ -45,7 +47,7 @@ def testInternalPars():
 
 def testEllipticalGeneration():
     logging.basicConfig(level=LOGGINGLEVEL,
-                        filename="logs/test_synthesiser.log")
+                        filename="temp_logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 15., 5., 5., 0.0, 0.0, 0.0, 20.,
             100000.]
     init_xyzuvw = syn.synthesiseXYZUVW(pars, sphere=False)
@@ -68,9 +70,9 @@ def testEllipticalGeneration():
 
 def testSaveFiles():
     logging.basicConfig(level=LOGGINGLEVEL,
-                        filename="logs/test_synthesiser.log")
-    xyzuvw_savefile = 'temp_xyzuvw.npy'
-    group_savefile = 'temp_group.npy'
+                        filename="temp_logs/test_synthesiser.log")
+    xyzuvw_savefile = TEMP_SAVE_DIR+'temp_xyzuvw.npy'
+    group_savefile = TEMP_SAVE_DIR+'temp_group.npy'
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100.]
     xyzuvw_init, group = syn.synthesiseXYZUVW(
         pars, return_group=True, xyzuvw_savefile=xyzuvw_savefile,

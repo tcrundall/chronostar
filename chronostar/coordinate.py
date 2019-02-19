@@ -64,14 +64,15 @@ def convertDEtoDeg(deg, arcm, arcs):
 
 def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
     """
+    Generate matrix to transform cartesian points determined by equatorial
+    coordinates to cartesian points determined by Galactic coordinates
+
     Using the RA (a) DEC (d) of Galactic north, and theta, generate matrix
     Default values are from J2000
-
-    tested
     """
     try:
         assert a.unit == 'deg'
-    except (AttributeError, AssertionError):
+    except AttributeError:
         a = a * un.deg
         d = d * un.deg
         th = th * un.deg
@@ -139,6 +140,17 @@ def convertCartesianToAngles(x,y,z,return_dist=False, value=False):
 def convertEquatorialToGalactic(theta, phi, value=True):
     """
     Convert equatorial (ra, dec) to galactic (longitude, latitude)
+
+    Parameters
+    ----------
+    theta: (float) right ascension in degrees
+    phi:   (float) declination in degrees
+    value: (bool) {True} Set flag if output desired as raw float (as opposed
+                         to an astropy unit object)
+
+    Output
+    ------
+    pos_gc: (float, float) Galactic coordinates l and b, in degrees
     """
     logging.debug("Converting eq ({}, {}) to gc: ".format(theta, phi))
     try:
@@ -161,6 +173,17 @@ def convertEquatorialToGalactic(theta, phi, value=True):
 def convertGalacticToEquatorial(theta, phi, value=True):
     """
     Convert galactic (longitude, latitude) to equatorial (ra, dec)
+
+    Parameters
+    ----------
+    theta: (float) galactic l in degrees
+    phi:   (float) galactic b in degrees
+    value: (bool) {True} Set flag if output desired as raw float (as opposed
+                         to an astropy unit object)
+
+    Output
+    ------
+    pos_gc: (float, float) Equatorial coordinates RA and DEC, in degrees
     """
     logging.debug("Converting gc ({}, {}) to eq:".format(theta, phi))
     try:
@@ -183,6 +206,8 @@ def convertGalacticToEquatorial(theta, phi, value=True):
 def calcPMCoordinateMatrix(a, d):
     """
     Generate a coordinate matrix for calculating proper motions
+
+    This is matrix `A` in Johnson & Soderblom (1987)
     """
     try:
         assert a.unit == 'deg'
@@ -234,7 +259,7 @@ def convertPMToHelioSpaceVelocity(a, d, pi, mu_a, mu_d, rv):
     astr_vels = np.array([
         rv,
         K * mu_a / pi,
-        K * mu_d / pi
+        K * mu_d / pi,
     ])
     space_vels = np.dot(B, astr_vels)
     return space_vels
