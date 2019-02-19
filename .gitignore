@@ -8,6 +8,7 @@ logs/*
 *.pkl
 *.npy
 *.txt
+*.cmd
 
 # Temp files
 data/synth_log.txt
