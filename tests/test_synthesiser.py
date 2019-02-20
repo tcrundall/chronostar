@@ -10,6 +10,9 @@ LOGGINGLEVEL = logging.DEBUG
 TEMP_SAVE_DIR = 'temp_data/'
 
 def testGroupGeneration():
+    """Basic sanity checks for generation of Group objects from parameter
+    input
+    """
     logging.basicConfig(level=LOGGINGLEVEL,
                         filename="temp_logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 50.]
@@ -20,21 +23,24 @@ def testGroupGeneration():
     assert np.max(np.linalg.eigvalsh(scmat)) == np.max(pars[6:8])**2
 
 def testStarGenerate():
+    """Check that stars generated from parameter input are distributed
+    correctly"""
     logging.basicConfig(level=LOGGINGLEVEL,
                         filename="temp_logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100000.]
     init_xyzuvw = syn.synthesiseXYZUVW(pars, sphere=True)
     myGroup = syn.Group(pars, sphere=True)
     fitted_cov = np.cov(init_xyzuvw.T)
-    fitted_dx = mstats.gmean((
-        fitted_cov[0,0], fitted_cov[1,1], fitted_cov[2,2]
-    ))
     np.set_printoptions(suppress=True, precision=4)
     assert np.allclose(fitted_cov, myGroup.generateSphericalCovMatrix(),
                        atol=2),\
         "\n{}\ndoesn't equal\n{}".format(
             fitted_cov, myGroup.generateSphericalCovMatrix()
         )
+    fitted_dx = np.sqrt(mstats.gmean((
+        fitted_cov[0,0], fitted_cov[1,1], fitted_cov[2,2]
+    )))
+    assert np.isclose(pars[6], fitted_dx, rtol=1e-2)
 
 def testInternalPars():
     log_dx = 0.

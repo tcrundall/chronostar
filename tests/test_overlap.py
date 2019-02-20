@@ -20,24 +20,40 @@ def co2(A, a, B, b):
     This is an alternative derivation of the overlap integral between
     two multivariate gaussians. This is the version implemented
     in the swigged C module.
-    """
 
+    Parameters
+    ----------
+    A : (n x n) np.float array
+        Covariance matrix of first Gaussian distribution
+    a : (n) np.float array
+        Mean of first Gaussian distribution
+    B : (n x n) np.float array
+        Covariance matrix of second Gaussian distribution
+    b : (n) np.float array
+        Mean of second Gaussian distribution
+    """
     ApB = (A + B)
     ApB_det = np.linalg.det(ApB)
-
     ApB_i = np.linalg.inv(ApB)
-
-    # amn_m_bmn = a_mn - b_mn
-
     overlap = np.exp(-0.5 * (np.dot(a - b, np.dot(ApB_i, a - b))))
     overlap *= 1.0 / ((2 * np.pi) ** 3.0 * np.sqrt(ApB_det) )
-
     return overlap
 
 
 def co1(A_cov, a, B_cov, b):
     """
     The original python function written by Mike yeaaaaarrss ago
+
+    Parameters
+    ----------
+    A_cov : (n x n) np.float array
+        Covariance matrix of first Gaussian distribution
+    a : (n) np.float array
+        Mean of first Gaussian distribution
+    B_cov : (n x n) np.float array
+        Covariance matrix of second Gaussian distribution
+    b : (n) np.float array
+        Mean of second Gaussian distribution
     """
     A = np.linalg.inv(A_cov)
     B = np.linalg.inv(B_cov)
@@ -71,8 +87,15 @@ def co1(A_cov, a, B_cov, b):
 
 
 def test_pythonFuncs():
-    xyzuvw_file = "../data/fed_stars_20_xyzuvw.fits"
-    xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
+    """
+    TODO: remove the requirements of file, have data stored in file?
+    """
+    try:
+        xyzuvw_file = "../data/fed_stars_20_xyzuvw.fits"
+        xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
+    except IOError:
+        print("Required data file missing")
+        assert False
 
     star_means = xyzuvw_dict['xyzuvw']
     star_covs = xyzuvw_dict['xyzuvw_cov']

@@ -1,3 +1,10 @@
+"""
+Test the measurer module.
+
+Checks the incorporated measurement uncertainties behave as expected, which
+is normally distributed about the mean (true) with std of the defined
+uncertainty
+"""
 import numpy as np
 import sys
 sys.path.insert(0, '..')
@@ -6,13 +13,13 @@ import chronostar.coordinate as cc
 
 def test_measureXYZUVW():
     """
-    Measures beta pic NSTARS times, confirms spread in measurement
+    Measures beta pic `NMEASURES`, confirms spread in measurement
     is consistent with error
     """
-    NSTARS = 1000
+    NMEASURES = 1000
     xyzuvw_bp_helio = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
     xyzuvw = cc.convertHelioToLSR(xyzuvw_bp_helio)
-    xyzuvws = np.tile(xyzuvw, (NSTARS, 1))
+    xyzuvws = np.tile(xyzuvw, (NMEASURES, 1))
 
     ref_errors = np.array([
         0., 0., ms.GERROR['e_Plx'], ms.GERROR['e_pm'],

@@ -54,13 +54,13 @@ def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns, nstars):
     for st_cov, st_mn in zip(st_covs, st_mns):
         res = 0
         #res += 6 * np.log(2*np.pi)
-        res -= 3 * np.log(2*np.pi)
-        res -= 0.5 * np.log(np.linalg.det(g_cov + st_cov))
+        res -= 6 * np.log(2*np.pi)
+        res -= np.log(np.linalg.det(g_cov + st_cov))
         stmg_mn = st_mn - g_mn
         stpg_cov = st_cov + g_cov
         logging.debug("ApB:\n{}".format(stpg_cov))
-        res -= 0.5 * np.dot(stmg_mn.T,
-                            np.dot(np.linalg.inv(stpg_cov), stmg_mn))
+        res -= np.dot(stmg_mn.T, np.dot(np.linalg.inv(stpg_cov), stmg_mn))
+        res *= 0.5
         lnols.append(res)
     return np.array(lnols)
 
