@@ -1,7 +1,6 @@
 from __future__ import print_function, division
 
 import numpy as np
-import pdb
 import sys
 sys.path.insert(0,'..')
 
@@ -40,7 +39,6 @@ def test_calcMembershipProbs():
     Even basicer. Checks that differing overlaps are
     correctly mapped to memberships.
     """
-
     # case 1
     star_ols = [10, 10]
     assert np.allclose([.5,.5], em.calcMembershipProbs(np.log(star_ols)))

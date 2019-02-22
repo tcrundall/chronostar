@@ -119,6 +119,8 @@ def calcAlpha(dX, dV, nstars):
     star mass is 1 M_sun.
 
     Calculated alpha is unitless
+
+    TODO: Astropy slows things down a very much lot. Remove it!
     """
     return ( (dV*u.km/u.s)**2 * dX*u.pc /
               (const.G * nstars * const.M_sun) ).decompose().value
@@ -556,6 +558,10 @@ def fitGroup(xyzuvw_dict=None, xyzuvw_file='', z=None, burnin_steps=1000,
              plot_dir='', save_dir='', init_pars=None, sampling_steps=None,
              traceback=False, max_iter=None, init_at_mean=False):
     """Fits a single gaussian to a weighted set of traceback orbits.
+
+    Stores the final sampling chain and lnprob in `save_dir`, but also
+    returns the best fit (walker step corresponding to maximum lnprob),
+    sampling chain and lnprob.
 
     Parameters
     ----------

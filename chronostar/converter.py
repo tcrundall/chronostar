@@ -48,8 +48,6 @@ def convertAstrErrsToCovs(err_arr):
     return astr_covs
 
 
-
-
 def transformAstrCovsToCartesian(astr_covs, astr_arr):
     """
     Converts a covariance matrix from astrometric coords to LSR XYZUVW

@@ -9,7 +9,6 @@ from astropy.table import Table
 import numpy as np
 import logging
 from scipy import stats
-import sys
 
 import converter as cv
 import coordinate as cc
@@ -571,161 +570,6 @@ def calcHistogramDensity(x, bin_heights, bin_edges):
     return bin_heights[x_ix] / bin_area
 
 
-def collapseHistogram(bin_heights, dim):
-    """
-    Collapse a multi dimensional histogram into a single dimension
-
-    Say you have a 6D histogram, but want the 1D projection onto
-    the X axis, simply call this function with `dim=0`
-    Uses string trickery and einstein sum notation to pick the
-    dimension to retain
-
-
-    Parameters
-    ----------
-    bin_heights: `dims`*[nbins] array
-        an array of length `dims` with shape (nbins, nbins, ..., nbins)
-        first output of np.histogramdd
-    dim: integer
-        the dimension which to collapse onto
-    """
-    dims = len(bin_heights.shape)
-
-    # generates `dims` length string 'ijkl...'
-    indices = ''.join([chr(105+i) for i in range(dims)])
-
-    # reduce-sum each axis except the `dim`th axis
-    summed_heights = np.einsum('{}->{}'.format(indices, indices[dim]),
-                               bin_heights)
-    return summed_heights
-
-
-def sampleHistogram(bin_heights, bin_edges, lower_bound, upper_bound,
-                    npoints=10):
-    """
-    Hard coded to return 1D projection to x
-    """
-    # x_vals = np.linspace(lower_bound[0], upper_bound[0], npoints, endpoint=False)
-    # step_sizes = (upper_bound - lower_bound)/(npoints-1)
-    # # y = lower_bound[1]
-    # heights = []
-    densities = []
-    pts = []
-    # TODO: Consider step size not accurate, need npoitns + 1 or something
-    # TODO: still not right.. make sure not counting "empty" bins...
-    for x in np.linspace(lower_bound[0], upper_bound[0], npoints, endpoint=False):
-        print('x: ', x)
-        for y in np.linspace(lower_bound[1], upper_bound[1], npoints, endpoint=False):
-            print('y: ', y)
-            for z in np.linspace(lower_bound[2], upper_bound[2], npoints, endpoint=False):
-                for u in np.linspace(lower_bound[3], upper_bound[3], npoints, endpoint=False):
-                    for v in np.linspace(lower_bound[4], upper_bound[4], npoints, endpoint=False):
-                        for w in np.linspace(lower_bound[5], upper_bound[5], npoints, endpoint=False):
-                            pt = [x,y,z,u,v,w]
-                            pts.append(pt)
-                            density = calcHistogramDensity(pt,
-                                                           bin_heights,
-                                                           bin_edges)
-                            densities.append(density)
-                            # only product by area of remaining dimensions
-                            # height += density * np.prod(step_sizes[1:])
-        # heights.append(height)
-
-    return np.array(pts), np.array(densities)
-
-def integrateHistogram2(bin_heights, bin_edges, lower_bound, upper_bound,
-                       dim):
-    """
-    Hard coded to return 1D projection to x
-    """
-    npoints = 10
-    dims = len(lower_bound)
-    pts, densities = sampleHistogram(bin_heights, bin_edges, lower_bound,
-                                     upper_bound, npoints=npoints)
-    new_bin_edges = np.linspace(lower_bound[dim], upper_bound[dim], npoints,
-                                endpoint=False)
-    step_sizes = (upper_bound - lower_bound) / (npoints)
-
-    new_bin_heights = []
-    for ledge in new_bin_edges:
-        height = np.sum(densities[np.where(pts[:,dim] == ledge)])
-        new_bin_heights.append(height * np.prod(step_sizes) / step_sizes[dim])
-
-    return np.array(new_bin_heights), np.array(new_bin_edges)
-
-    #
-    # xs, ys, zs, us, vs, ws =\
-    #     np.meshgrid(np.arange(lower_bound[0], upper_bound[0], npoints),
-    #                 np.arange(lower_bound[1], upper_bound[1], npoints),
-    #                 np.arange(lower_bound[2], upper_bound[2], npoints),
-    #                 np.arange(lower_bound[3], upper_bound[3], npoints),
-    #                 np.arange(lower_bound[4], upper_bound[4], npoints),
-    #                 np.arange(lower_bound[5], upper_bound[5], npoints),
-    #                 )
-    # np.mgrid[lower_bound[0]:upper_bound[0]:10j,
-    #         lower_bound[1]:upper_bound[1]:10j,
-    #         lower_bound[2]:upper_bound[2]:10j,
-    #         lower_bound[3]:upper_bound[3]:10j,
-    #         lower_bound[4]:upper_bound[4]:10j,
-    #         lower_bound[5]:upper_bound[5]:10j]
-    #
-    #
-    # x_vals = np.linspace(lower_bound[0], upper_bound[0], npoints)
-    # step_sizes = (upper_bound - lower_bound)/(npoints-1)
-    # y = lower_bound[1]
-    # heights = []
-    # # TODO: Consider step size not accurate, need npoitns + 1 or something
-    # # TODO: still not right.. make sure not counting "empty" bins...
-    # for x in x_vals:
-    #     height = 0
-    #     for y in np.linspace(lower_bound[1], upper_bound[1], npoints):
-    #         for z in np.linspace(lower_bound[2], upper_bound[2], npoints):
-    #             for u in np.linspace(lower_bound[3], upper_bound[3], npoints):
-    #                 for v in np.linspace(lower_bound[4], upper_bound[4], npoints):
-    #                     for w in np.linspace(lower_bound[5], upper_bound[5], npoints):
-    #                         density = calcHistogramDensity([x,y,z,u,v,w],
-    #                                                        bin_heights,
-    #                                                        bin_edges)
-    #                         # only product by area of remaining dimensions
-    #                         height += density * np.prod(step_sizes[1:])
-    #     heights.append(height)
-    # return x_vals, heights
-
-
-def samplePoints(bin_heights, bin_edges, lower_bound, upper_bound):
-    """
-    Montecarlo sample points within range of bounds,
-    :param bin_heights:
-    :param bin_edges:
-    :param lower_bound:
-    :param upper_bound:
-    :return:
-    """
-
-
-def sampleAndBuild1DHist(bin_heights, bin_edges, lower_bound, upper_bound,
-                         dim):
-    """
-    Monte carlo sample master histogram within bounds, then project to 1D
-
-    :param bin_heights:
-    :param bin_edges:
-    :param lower_bound:
-    :param upper_bound:
-    :param dim:
-    :return:
-    new_bin_heights
-    new_bin_edges
-    """
-    ndims = len(bin_heights.shape)
-    nsamples = 10**6
-    samples = samplePoints(bin_heights, bin_edges, lower_bound, upper_bound)
-    sample_hist = np.histogramdd(samples)
-
-    #TODO: normalise by nsamples_survived, and renormalise by star count
-    return collapseHistogram(sample_hist[0], dim), sample_hist[1][dim]
-
-
 def getDensity(point, data, bin_per_std=8.):
     """
     Given a point in 6D space, and some data distributed in said space,
@@ -747,6 +591,23 @@ def getDensity(point, data, bin_per_std=8.):
 
 
 def getZfromOrigins(origins, star_pars=None):
+    """
+    A simple utility function, reconstruct the true Z from origins for plotting.
+
+    If a background was used, then `star_pars` must be provided, with
+    stars listed in the order they were generated. The order of generation
+    must follow that of the origins order.
+
+    Parameters
+    ----------
+    origins: [ngroups] list of Group objects -or-
+             [ngroups] list of parameters (any Chronostar form) -or-
+             filename to stored Groups
+        a list of groups (as synthesiser.Group objects or in parametrisation)
+        that were used to generate synthetic stars.
+    star_pars: dict -or- filename to stored dict - {None}
+
+    """
     if type(origins) is str:
         origins = loadGroups(origins)
     try:
@@ -755,19 +616,25 @@ def getZfromOrigins(origins, star_pars=None):
         nstar_arr = np.array([int(o[-1]) for o in origins])
     nassoc_stars = np.sum(nstar_arr)
 
+    # Determine how many stars came from background.
+    # If we don't have star_pars then there's no way of determining how many
+    # stars were drawn from a background, so we assume there were none.
     if star_pars is None:
         using_bg = False
         nstars = nassoc_stars
+    # If number of provided stars exceeds that of groups, then must have
+    # come from background
     else:
         if type(star_pars) is str:
             star_pars = loadXYZUVW(star_pars)
         nstars = star_pars['xyzuvw'].shape[0]
         using_bg = nstars != nassoc_stars
+
+    # Build the membership array, `z`
+    # set association members memberships to 1
     ngroups = len(origins)
     z = np.zeros((nstars, ngroups + using_bg))
     stars_so_far = 0
-    # set associaiton members memberships to 1
-    # for i, o in enumerate(origins):
     for i, n in enumerate(nstar_arr):
         z[stars_so_far:stars_so_far+n, i] = 1.
         stars_so_far += n

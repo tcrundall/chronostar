@@ -122,7 +122,13 @@ def test_famousPositions():
     assert np.allclose(cc.convertGalacticToEquatorial(*bp_gc), bp_eq)
 
 def test_convertPMToSpaceVelocity():
-    astr_bp = [ # astrometry from wikiepdia
+    """
+    Check conversion of proper motion + radial velocity to UVW.
+
+    Use famous star Beta Pictoris
+    """
+    # astrometry from wikiepdia
+    astr_bp_ref = [
         86.82125, #deg
         -51.0664, #deg
         0.05144,  #as
@@ -130,17 +136,19 @@ def test_convertPMToSpaceVelocity():
         0.0831,   #as/yr
         20.0      #km/s
     ]
-
     # kinematics (from Mamajek & Bell 2014)
-    xyzuvw_bp = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
-    uvw = cc.convertPMToHelioSpaceVelocity(*astr_bp)
-    assert np.allclose(uvw, xyzuvw_bp[3:], rtol=1e-2)
+    xyzuvw_bp_ref = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
 
-    pos_uvw_bp = np.hstack((astr_bp[:3], xyzuvw_bp[3:]))
+    # check UVW
+    uvw = cc.convertPMToHelioSpaceVelocity(*astr_bp_ref)
+    assert np.allclose(xyzuvw_bp_ref[3:], uvw, rtol=1e-2)
+
+    # check pmrv conversion given position, parallax and (heliocentric) UVW
+    pos_uvw_bp = np.hstack((astr_bp_ref[:3], xyzuvw_bp_ref[3:]))
     logging.debug("Input: {}".format(pos_uvw_bp))
     logging.debug("Input: {} {} {} {} {} {}".format(*pos_uvw_bp))
     pms_bp = cc.convertHelioSpaceVelocityToPM(*pos_uvw_bp)
-    assert np.allclose(pms_bp, astr_bp[3:], rtol=1e-1)
+    assert np.allclose(astr_bp_ref[3:], pms_bp, rtol=1e-1)
 
 def test_convertHelioXYZUVWToAstrometry():
     astr_bp = [ # astrometry from wikiepdia

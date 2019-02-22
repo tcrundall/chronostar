@@ -68,7 +68,7 @@ def plotCovEllipse(cov, pos, nstd=2, ax=None, with_line=False, **kwargs):
 
     ax.add_patch(ellip)
 
-    # THEN just fucking plot an invisible line across the ellipse.
+    # THEN just f***ing plot an invisible line across the ellipse.
     if with_line:
         # brute forcing axes limits so they contain ellipse patch
         # maybe a cleaner way of doing this, but I couldn't work it out

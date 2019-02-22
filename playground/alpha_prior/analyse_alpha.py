@@ -8,6 +8,21 @@ import chronostar.groupfitter as gf
 import chronostar.synthesiser as syn
 import chronostar.datatool as dt
 
+def calcHistogramDensity(x, bin_heights, bin_edges):
+    """
+    Calculates the density of a pdf characterised by a histogram at point x
+    """
+    # Check if handling 1D histogram
+    if len(bin_heights.shape) == 1:
+        raise UserWarning
+    dims = len(bin_heights.shape)
+    bin_widths = [bins[1] - bins[0] for bins in bin_edges]
+    bin_area = np.prod(bin_widths)
+
+    x_ix = tuple([np.digitize(x[dim], bin_edges[dim]) - 1
+                  for dim in range(dims)])
+    return bin_heights[x_ix] / bin_area
+
 
 rdir = 'example_comps/'
 init_groups = dt.loadGroups(rdir+'iter00/best_groups.npy')
@@ -70,10 +85,10 @@ except IOError:
 
 
 ref_mean = init_groups[0].mean
-print("Typical density {}".format(dt.calcHistogramDensity(
+print("Typical density {}".format(calcHistogramDensity(
     ref_mean, gaia_6d_hist[0], gaia_6d_hist[1]
 )))
-print("Typical sensitive density {}".format(dt.calcHistogramDensity(
+print("Typical sensitive density {}".format(calcHistogramDensity(
     ref_mean, near_g6d_hist[0], near_g6d_hist[1]
 )))
 

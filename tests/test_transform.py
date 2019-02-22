@@ -6,13 +6,26 @@ sys.path.insert(0, '..')
 import chronostar.transform as tf
 
 def convertPolarToCartesian(pos):
+    """Take a point in polar space to cartesian space"""
     r, theta = pos
     x = r * np.cos(theta)
     y = r * np.sin(theta)
     return np.array([x, y])
 
 def convertManyPolarToCartesian(points):
-    """input, [npoints,2] array """
+    """
+    Take many points in polar space and take to cartesian space
+
+    Parameters
+    ----------
+    points : [n, 2] array
+        Array of polar points (r,theta)
+
+    Returns
+    -------
+    result : [n,2] array
+        Array of cartesian points (x,y)
+    """
     rs, thetas = points.T
     xs = rs * np.cos(thetas)
     ys = rs * np.sin(thetas)

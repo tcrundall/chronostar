@@ -1,3 +1,9 @@
+"""
+Module to handle various coordinate transformations.
+
+TODO: Currently uses astropy units. Very slow. Remove and simply apply tests
+"""
+
 import logging
 import numpy as np
 import astropy.units as un
@@ -34,17 +40,28 @@ def convertRAtoDeg(hh, mm, ss):
     """
     Convert measurement of right ascension in hh:mm:ss to
     decimal degrees
+
+    Parameters
+    ----------
+    hh : int -or- string -or- float
+        hours component of right ascension
+    mm : int -or- string -or- float
+        minutes component of right ascension
+    ss : int -or- string -or- float
+        seconds component of right ascension
+
+    Returns
+    -------
+    result : float
+        Right ascension in degrees
     """
-    try:
-        if isinstance(hh, str):
-            hh = float(hh)
-        if isinstance(mm, str):
-            mm = float(mm)
-        if isinstance(ss, str):
-            ss = float(ss)
-        rahh = hh + mm / 60. + ss / 3600.
-    except:
-        import pdb; pdb.set_trace()
+    if isinstance(hh, str):
+        hh = float(hh)
+    if isinstance(mm, str):
+        mm = float(mm)
+    if isinstance(ss, str):
+        ss = float(ss)
+    rahh = hh + mm / 60. + ss / 3600.
     return rahh * 360. / 24.
 
 
@@ -52,6 +69,20 @@ def convertDEtoDeg(deg, arcm, arcs):
     """
     Convert measurement of declination in deg arcmin, arcsec to
     decimal degrees
+
+    Parameters
+    ----------
+    deg : int -or- string -or- float
+        degrees value
+    arcm : int -or- string -or- float
+        arc minute value
+    arcs : int -or- string -or- float
+        arc second value
+
+    Returns
+    -------
+    result : float
+        declination in degrees
     """
     if isinstance(deg, str):
         deg = float(deg)
@@ -69,6 +100,20 @@ def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
 
     Using the RA (a) DEC (d) of Galactic north, and theta, generate matrix
     Default values are from J2000
+
+    Parameters
+    ----------
+    a : float (deg)
+        right ascension of the north galactic pole
+    d : float (deg)
+        declination of the north galactic pole
+    th : float (deg)
+        position angle of the North Celestial Pole relative to the great
+        semicircle passing through the NGP and zero Galactic longitude
+
+    Returns
+    -------
+    res : [3x3] array
     """
     try:
         assert a.unit == 'deg'
@@ -97,7 +142,23 @@ def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
 
 def calcGCToEQMatrix(a=192.8595, d=27.1283, th=122.9319):
     """
-    Tested
+    Generate a matrix that takes Galactic coordinates to equatorial
+
+    This is simply the inverse of the EQ to GC matrix
+
+    Parameters
+    ----------
+    a : float (deg)
+        right ascension of the north galactic pole
+    d : float (deg)
+        declination of the north galactic pole
+    th : float (deg)
+        position angle of the North Celestial Pole relative to the great
+        semicircle passing through the NGP and zero Galactic longitude
+
+    Returns
+    -------
+    result : [6x6] array
     """
     return np.linalg.inv(calcEQToGCMatrix(a, d, th))
 
@@ -121,7 +182,11 @@ def convertAnglesToCartesian(theta, phi, radius=1.0):
 
 
 def convertCartesianToAngles(x,y,z,return_dist=False, value=False):
-    """Tested"""
+    """Tested
+
+    TODO: This takes up 10% of a run
+    Uses astropy angles which slows everything down
+    """
     dist = np.sqrt(x**2 + y**2 + z**2)
     if dist == 0.0:
         z += 1e-10 #HACK allowing sun (who has dist=0) to be inserted
@@ -274,7 +339,7 @@ def convertHelioSpaceVelocityToPM(a, d, pi, u, v, w):
     d : (deg) declination
     pi : (as) parallax
     u : (km/s) heliocentric velocity towards galactic centre
-    v : (km/s) heliocentric velocity towards in direction of orbit
+    v : (km/s) heliocentric velocity towards in direction of circular orbit
     w : (km/s) heliocentric velocity towards galactic north
 
     Returns
@@ -362,20 +427,55 @@ def convertAstrometryToHelioXYZUVW(a, d, pi, mu_a, mu_d, rv):
 
 
 def convertLSRToHelio(xyzuvw_lsr, kpc=False):
-    """Assumes position is in pc unless stated otherwise"""
+    """
+    Convert cartesian xyzuvw position from LSR-centred to helio-centred
+
+    Assumes position is in pc unless stated otherwise
+
+    Parameters
+    ----------
+    xyzuvw_lsr : [6] array
+        3 position [pc] and 3 velocity with respect to the local standard
+        of rest
+    kpc : bool {False}
+        If set, then treats input units of position as kpc (as opposed to pc)
+        and outputs in kpc.
+        Use this flag if inputing position into Galpy!!!
+
+    Returns
+    -------
+    result : [6] array
+        3 position [pc] (or [kpc] if `kpc` set to True)
+        and 3 velocity with respect to the sun
+    """
     XYZUVWSOLARNOW = np.array([0., 0., 25., 11.1, 12.24, 7.25])
+    XYZUVWSOLARNOW_KPC = np.array([0., 0., 0.025, 11.1, 12.24, 7.25])
     if kpc:
-        xyzuvw_lsr = np.copy(xyzuvw_lsr)
-        xyzuvw_lsr[:3] *= 1e3
-        res = (xyzuvw_lsr - XYZUVWSOLARNOW)
-        res[:3] *= 1e-3
+        res = xyzuvw_lsr - XYZUVWSOLARNOW_KPC
         return res
 
     return xyzuvw_lsr - XYZUVWSOLARNOW
 
 
 def convertHelioToLSR(xyzuvw_helio, kpc=False):
-    """Assumes position is in pc unless stated otherwise"""
+    """
+    Convert cartesian xyzuvw position from helio-centred to LSR-centred
+
+    Assumes position is in pc unless stated otherwise
+
+    Parameters
+    ----------
+    xyzuvw_helio : [6] array
+        3 position [pc] and 3 velocity with respect to the the sun
+    kpc : bool {False}
+        If set, then treats input units of position as kpc (as opposed to pc)
+
+    Returns
+    -------
+    result : [6] array
+        3 position [pc] (or [kpc] if `kpc` set to True)
+        and 3 velocity with respect to the local standard of rest
+    """
     XYZUVWSOLARNOW = np.array([0., 0., 25., 11.1, 12.24, 7.25])
     XYZUVWSOLARNOW_KPC = np.array([0., 0., 0.025, 11.1, 12.24, 7.25])
     if kpc:

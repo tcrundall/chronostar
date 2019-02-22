@@ -135,6 +135,8 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     Positive times --> traceforward
     Negative times --> traceback
 
+    TODO: Primary source of inefficiencies, 1366.2 (s)
+
     Parameters
     ----------
     xyzuvw : [pc,pc,pc,km/s,km/s,km/s]
@@ -159,28 +161,34 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
 
     xyzuvw_start = np.copy(xyzuvw_start)
     xyzuvw_start[:3] *= 1e-3
+    # profiling:   3 (s)
     bovy_times = convertMyrToBovyTime(times)
-    logging.debug("Tracing up to {} Myr".format(times[-1]))
-    logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
-    logging.debug("Initial lsr start: {}".format(xyzuvw_start))
+    # logging.debug("Tracing up to {} Myr".format(times[-1]))
+    # logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
+    # logging.debug("Initial lsr start: {}".format(xyzuvw_start))
 
+    # profiling:   9 (s)
     xyzuvw_helio = cc.convertLSRToHelio(xyzuvw_start, kpc=True)
-    logging.debug("Initial helio start: {}".format(xyzuvw_helio))
-    logging.debug("Galpy vector: {}".format(xyzuvw_helio))
+    # logging.debug("Initial helio start: {}".format(xyzuvw_helio))
+    # logging.debug("Galpy vector: {}".format(xyzuvw_helio))
 
+    # profiling: 141 (s)
     l,b,dist = cc.convertCartesianToAngles(
         *xyzuvw_helio[:3], return_dist=True, value=True
     )
     vxvv = [l,b,dist,xyzuvw_helio[3],xyzuvw_helio[4],xyzuvw_helio[5]]
-    logging.debug("vxvv: {}".format(vxvv))
+    # logging.debug("vxvv: {}".format(vxvv))
+    # profiling:  67 (s)
     o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich')
 
+    # profiling: 546 (s)
     o.integrate(bovy_times,mp,method='odeint')
     data_gp = o.getOrbit()
+    # profiling:  32 (s)
     xyzuvw = convertGalpyCoordsToXYZUVW(data_gp, bovy_times)
 
-    logging.debug("Started orbit at {}".format(xyzuvw[0]))
-    logging.debug("Finished orbit at {}".format(xyzuvw[-1]))
+    # logging.debug("Started orbit at {}".format(xyzuvw[0]))
+    # logging.debug("Finished orbit at {}".format(xyzuvw[-1]))
 
     if single_age:
         return xyzuvw[-1]
