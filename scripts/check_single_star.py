@@ -11,6 +11,7 @@ import chronostar.datatool as dt
 import chronostar.converter as cv
 import chronostar.coordinate as cc
 import chronostar.groupfitter as gf
+import chronostar.expectmax as em
 
 filename = '../data/2M0249-05.fits'
 star_tab = Table.read(filename)
@@ -21,11 +22,20 @@ gaia_xyzuvw_file = '../data/gaia_dr2_mean_xyzuvw.npy'
 
 if np.isnan(star_tab['radial_velocity']):
     print("Its nan")
-    star_tab['radial_velocity'] = 50.
-    star_tab['radial_velocity_error'] = 100.
+    # from Shkolnik 2017
+    # star_tab['radial_velocity'] = 14.4
+    # star_tab['radial_velocity_error'] = 0.4
+
+    star_tab['radial_velocity'] = 16.44
+    star_tab['radial_velocity_error'] = 1.
 
 if np.isnan(star_tab['radial_velocity']):
     print("Its nan")
+
+# extend proper motion uncertainty
+star_tab['pmra_error'] *= 100.
+star_tab['pmdec_error'] *= 100.
+# star_tab['radial_velocity_error'] *= 10
 
 astr_mean, astr_cov = dt.convertRecToArray(star_tab[0])
 
@@ -38,9 +48,11 @@ ln_bg_ols = dt.getKernelDensities(gaia_xyzuvw_file, [xyzuvw])
 
 star_pars = {'xyzuvw':np.array([xyzuvw]),
              'xyzuvw_cov':np.array([xyzuvw_cov])}
+nbp_stars = 100
+ln_bp_ols = np.log(nbp_stars) + gf.getLogOverlaps(beta_fit.getInternalSphericalPars(), star_pars)
 
-ln_bp_ols = gf.getLogOverlaps(beta_fit.getInternalSphericalPars(), star_pars)
+combined_lnols = np.hstack((ln_bp_ols, ln_bg_ols))
 
-print(ln_bg_ols)
-print(ln_bp_ols)
+membership_probs = em.calcMembershipProbs(combined_lnols)
+print(membership_probs)
 
