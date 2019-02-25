@@ -28,7 +28,7 @@ except ImportError:
 
 DEFAULT_ALPHA_SIG = 1.0
 
-def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns, nstars):
+def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns):
     """
     A pythonic implementation of overlap integral calculation
 
@@ -42,8 +42,6 @@ def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns, nstars):
         covariance matrices of the stars
     st_mns : ([nstars, 6], float array)
         means of the stars
-    nstars : int
-        number of stars
 
     Returns
     -------
@@ -108,11 +106,6 @@ def loadXYZUVW(xyzuvw_file):
     return xyzuvw_dict
 
 
-#def lognormal(x, mu=1.05, sig=0.105):
-#    coeff = 1. / (x * sig * np.sqrt(2*np.pi))
-#    expon = - (np.log(x)-mu)**2 / (2*sig**2)
-#    return coeff * np.exp(expon)
-
 def calcAlpha(dX, dV, nstars):
     """
     Assuming we have identified 100% of star mass, and that average
@@ -134,12 +127,12 @@ def lognormal(x, mu, sig):
     return 1./x * 1./(sig*np.sqrt(2*np.pi)) *\
            np.exp(-(np.log(x) - mu)**2/(2*sig**2))
 
+
 def lnlognormal(x, mode=3., sig=DEFAULT_ALPHA_SIG):
     # TODO: replace lognormal innerworkings so is called with desired mode
     mu = sig**2 + np.log(mode)
     return -np.log(x*sig*np.sqrt(2*np.pi)) - (np.log(x)-mu)**2/(2*sig**2)
-    # return (-np.log(x*sig*np.sqrt(2*np.pi)) -
-    #         (np.log(x) - mu)**2 / (2*sig**2))
+
 
 def lnAlphaPrior(pars, z, sig=DEFAULT_ALPHA_SIG):
     """
@@ -169,40 +162,6 @@ def lnAlphaPrior(pars, z, sig=DEFAULT_ALPHA_SIG):
     # TODO: just rework mu and sig to give desired
     # mode and shape
     return lnlognormal(alpha, sig=sig)
-
-#
-# def lnlognormal(x, mu=1.05, sig=0.105):
-#     # TODO: replace lognormal innerworkings so is called with desired mode
-#     # mu = sigma**2 + np.log(mode)
-#     # return np.log(lognormal(x, mu, sig)
-#     return (-np.log(x*sig*np.sqrt(2*np.pi)) -
-#             (np.log(x) - mu)**2 / (2*sig**2))
-
-
-# def lnAlphaPrior(pars, star_pars, z):
-#     """
-#     A very approximate, gentle prior preferring super-virial distributions
-#
-#     Since alpha is strictly positive, we use a lognormal prior. We then
-#     take the log of the result to incorporate it into the log likelihood
-#     evaluation.
-#
-#     pars: [8] float array
-#         X,Y,Z,U,V,W,log(dX),log(dV),age
-#     star_pars:
-#         (retired)
-#     z: [nstars, ngroups] float array
-#         membership array
-#     """
-#     dX = np.exp(pars[6])
-#     dV = np.exp(pars[7])
-#     #nstars = star_pars['xyzuvw'].shape[0]
-#     nstars = np.sum(z)
-#     alpha = calcAlpha(dX, dV, nstars)
-#     # taking the 10th root to make plot gentle
-#     # TODO: just rework mu and sig to give desired
-#     # mode and shape
-#     return lnlognormal(alpha) * 0.01
 
 
 def lnprior(pars, star_pars, z):
@@ -268,7 +227,7 @@ def getLogOverlaps(pars, star_pars):
 
     # Trace group pars forward to now
     mean_now = torb.traceOrbitXYZUVW(g.mean, g.age, True)
-    cov_now = tf.transform_cov(
+    cov_now = tf.transformCovMat(
         cov_then, torb.traceOrbitXYZUVW, g.mean, dim=6, args=(g.age, True)
     )
 

@@ -334,10 +334,10 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
     covs['fitted_then'] = np.array([best_group.generateCovMatrix()])
     covs['fitted_now']  =\
         np.array([
-            tf.transform_cov(covs['fitted_then'][0], torb.traceOrbitXYZUVW,
-                             means['fitted_then'][0],
-                             args=(best_group.age,True)
-                             )
+            tf.transformCovMat(covs['fitted_then'][0], torb.traceOrbitXYZUVW,
+                               means['fitted_then'][0],
+                               args=(best_group.age,True)
+                               )
         ])
 
     plot_hexplot(star_pars, means, covs, chain, iter_count=0,
@@ -497,10 +497,10 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
                                               best_group.age,
                                               single_age=True)
         fitted_now_cov =\
-            tf.transform_cov(fitted_then_covs[group_ix],
-                             torb.traceOrbitXYZUVW,
-                             fitted_then_mns[group_ix],
-                             args=(best_group.age,))
+            tf.transformCovMat(fitted_then_covs[group_ix],
+                               torb.traceOrbitXYZUVW,
+                               fitted_then_mns[group_ix],
+                               args=(best_group.age,))
         fitted_now_mns.append(fitted_now_mn)
         fitted_now_covs.append(fitted_now_cov)
 

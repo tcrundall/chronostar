@@ -322,8 +322,8 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
         if group_now:
             mean_now = torb.traceOrbitXYZUVW(mean_then, group.age,
                                              single_age=True)
-            cov_now = tf.transform_cov(cov_then, torb.traceOrbitXYZUVW,
-                                       mean_then, args=[group.age])
+            cov_now = tf.transformCovMat(cov_then, torb.traceOrbitXYZUVW,
+                                         mean_then, args=[group.age])
             ax.plot(mean_now[dim1], mean_now[dim2], marker='+', alpha=0.3,
                    color=COLORS[i])
             ee.plotCovEllipse(cov_now[np.ix_([dim1,dim2], [dim1,dim2])],
@@ -751,9 +751,9 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     combined_gauss = np.zeros(xs.shape)
     for i, (group, weight) in enumerate(zip(groups, weights)):
         mean_now = torb.traceOrbitXYZUVW(group.mean, group.age, single_age=True)
-        cov_now = tf.transform_cov(group.generateCovMatrix(),
-                                   torb.traceOrbitXYZUVW,
-                                   group.mean, args=[group.age])
+        cov_now = tf.transformCovMat(group.generateCovMatrix(),
+                                     torb.traceOrbitXYZUVW,
+                                     group.mean, args=[group.age])
         group_gauss = weight*dt.gauss(xs, mean_now[dim],
                                       np.sqrt(cov_now[dim,dim]))
         combined_gauss += group_gauss

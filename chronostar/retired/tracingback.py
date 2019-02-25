@@ -526,7 +526,7 @@ def traceforward_group(mean, cov, age):
             the cov matrix at current day
     """
     new_mean = trace_forward(mean, age)
-    new_cov = tf.transform_cov(
+    new_cov = tf.transformCovMat(
         cov, trace_forward, mean, dim=6, args=(age,)
     )
     return new_mean, new_cov

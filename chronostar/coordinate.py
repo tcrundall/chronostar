@@ -6,18 +6,17 @@ TODO: Currently uses astropy units. Very slow. Remove and simply apply tests
 
 import logging
 import numpy as np
-import astropy.units as un
 
-a_o = 192.8595 * un.degree
-b_ncp = d_o = 27.1283 * un.degree
-l_ncp = l_o = 122.9319 * un.degree
-
-old_a_ngp = 192.25 * un.degree
-old_d_ngp = 27.4 * un.degree
-old_th = 123 * un.degree
-
-a_ngp = 192.25 * un.degree
-d_ngp = 27.4 * un.degree
+# a_o = 192.8595 * un.degree
+# b_ncp = d_o = 27.1283 * un.degree
+# l_ncp = l_o = 122.9319 * un.degree
+#
+# old_a_ngp = 192.25 * un.degree
+# old_d_ngp = 27.4 * un.degree
+# old_th = 123 * un.degree
+#
+# a_ngp = 192.25 * un.degree
+# d_ngp = 27.4 * un.degree
 
 eq_to_gc = np.array([
     [-0.06699, -0.87276, -0.48354],
@@ -93,7 +92,7 @@ def convertDEtoDeg(deg, arcm, arcs):
     return deg + arcm / 60. + arcs / 3600.
 
 
-def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
+def calcEQToGCMatrix(a_deg=192.8595, d_deg=27.1283, th_deg=122.9319):
     """
     Generate matrix to transform cartesian points determined by equatorial
     coordinates to cartesian points determined by Galactic coordinates
@@ -103,11 +102,11 @@ def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
 
     Parameters
     ----------
-    a : float (deg)
+    a_deg : float (deg)
         right ascension of the north galactic pole
-    d : float (deg)
+    d_deg : float (deg)
         declination of the north galactic pole
-    th : float (deg)
+    th_deg : float (deg)
         position angle of the North Celestial Pole relative to the great
         semicircle passing through the NGP and zero Galactic longitude
 
@@ -115,32 +114,30 @@ def calcEQToGCMatrix(a=192.8595, d=27.1283, th=122.9319):
     -------
     res : [3x3] array
     """
-    try:
-        assert a.unit == 'deg'
-    except AttributeError:
-        a = a * un.deg
-        d = d * un.deg
-        th = th * un.deg
+    assert isinstance(a_deg, (int, float, np.float32, np.float64))
+    a_rad = a_deg*np.pi/180
+    d_rad = d_deg*np.pi/180
+    th_rad = th_deg*np.pi/180
     first_t = np.array([
-        [np.cos(a),  np.sin(a), 0],
-        [np.sin(a), -np.cos(a), 0],
+        [np.cos(a_rad),  np.sin(a_rad), 0],
+        [np.sin(a_rad), -np.cos(a_rad), 0],
         [        0,          0, 1] 
     ])
 
     second_t = np.array([
-        [-np.sin(d),  0, np.cos(d)],
+        [-np.sin(d_rad),  0, np.cos(d_rad)],
         [         0, -1,         0],
-        [np.cos(d),   0, np.sin(d)]
+        [np.cos(d_rad),   0, np.sin(d_rad)]
     ])
     third_t = np.array([
-        [np.cos(th),  np.sin(th), 0],
-        [np.sin(th), -np.cos(th), 0],
+        [np.cos(th_rad),  np.sin(th_rad), 0],
+        [np.sin(th_rad), -np.cos(th_rad), 0],
         [         0,           0, 1]
     ])
     return np.dot(third_t, np.dot(second_t, first_t))
 
 
-def calcGCToEQMatrix(a=192.8595, d=27.1283, th=122.9319):
+def calcGCToEQMatrix(a_deg=192.8595, d_deg=27.1283, th_deg=122.9319):
     """
     Generate a matrix that takes Galactic coordinates to equatorial
 
@@ -148,11 +145,11 @@ def calcGCToEQMatrix(a=192.8595, d=27.1283, th=122.9319):
 
     Parameters
     ----------
-    a : float (deg)
+    a_deg : float (deg)
         right ascension of the north galactic pole
-    d : float (deg)
+    d_deg : float (deg)
         declination of the north galactic pole
-    th : float (deg)
+    th_deg : float (deg)
         position angle of the North Celestial Pole relative to the great
         semicircle passing through the NGP and zero Galactic longitude
 
@@ -160,28 +157,26 @@ def calcGCToEQMatrix(a=192.8595, d=27.1283, th=122.9319):
     -------
     result : [6x6] array
     """
-    return np.linalg.inv(calcEQToGCMatrix(a, d, th))
+    return np.linalg.inv(calcEQToGCMatrix(a_deg, d_deg, th_deg))
 
 
-def convertAnglesToCartesian(theta, phi, radius=1.0):
+def convertAnglesToCartesian(theta_deg, phi_deg, radius=1.0):
     """
     theta   : angle (as astropy degrees) about the north pole (longitude, RA)
     phi : angle (as astropy degrees) from the plane (lattitude, dec))
 
     Tested
     """
-    try:
-        assert theta.unit == 'deg'
-    except (AttributeError, AssertionError):
-        theta = theta * un.deg
-        phi = phi * un.deg
-    x = radius * np.cos(phi)*np.cos(theta)
-    y = radius * np.cos(phi)*np.sin(theta)
-    z = radius * np.sin(phi)
+    assert isinstance(theta_deg, (int, float, np.float32, np.float64))
+    theta_rad = theta_deg*np.pi/180.
+    phi_rad = phi_deg*np.pi/180
+    x = radius * np.cos(phi_rad)*np.cos(theta_rad)
+    y = radius * np.cos(phi_rad)*np.sin(theta_rad)
+    z = radius * np.sin(phi_rad)
     return np.array((x,y,z))
 
 
-def convertCartesianToAngles(x,y,z,return_dist=False, value=False):
+def convertCartesianToAngles(x,y,z,return_dist=False):
     """Tested
 
     TODO: This takes up 10% of a run
@@ -191,18 +186,15 @@ def convertCartesianToAngles(x,y,z,return_dist=False, value=False):
     if dist == 0.0:
         z += 1e-10 #HACK allowing sun (who has dist=0) to be inserted
         dist = np.sqrt(x**2 + y**2 + z**2)
-    phi = (np.arcsin(z/dist)*un.rad).to('deg')
-    theta = np.mod((np.arctan2(y/dist,x/dist)*un.rad).to('deg'), 360*un.deg)
-    if value:
-        phi = phi.value
-        theta = theta.value
+    phi_deg = np.arcsin(z/dist)*180./np.pi
+    theta_deg = np.mod((np.arctan2(y/dist,x/dist))*180./np.pi, 360.)
     if return_dist:
-        return theta, phi, dist
+        return theta_deg, phi_deg, dist
     else:
-        return theta, phi
+        return theta_deg, phi_deg
 
 
-def convertEquatorialToGalactic(theta, phi, value=True):
+def convertEquatorialToGalactic(theta_deg, phi_deg):
     """
     Convert equatorial (ra, dec) to galactic (longitude, latitude)
 
@@ -217,25 +209,18 @@ def convertEquatorialToGalactic(theta, phi, value=True):
     ------
     pos_gc: (float, float) Galactic coordinates l and b, in degrees
     """
-    logging.debug("Converting eq ({}, {}) to gc: ".format(theta, phi))
-    try:
-        assert theta.unit == 'deg'
-    except (AttributeError, AssertionError):
-        theta = theta * un.deg
-        phi = phi * un.deg
-    cart_eq = convertAnglesToCartesian(theta, phi)
+    logging.debug("Converting eq ({}, {}) to gc: ".format(theta_deg, phi_deg))
+    assert isinstance(theta_deg, (int, float, np.float32, np.float64))
+    cart_eq = convertAnglesToCartesian(theta_deg, phi_deg)
     logging.debug("Cartesian eq coords: {}".format(cart_eq))
     eq_to_gc = calcEQToGCMatrix()
     cart_gc = np.dot(eq_to_gc, cart_eq)
     logging.debug("Cartesian gc coords: {}".format(cart_gc))
-    pos_gc = convertCartesianToAngles(*cart_gc)
-    if value:
-        return [a.value for a in pos_gc]
-    else:
-        return pos_gc
+    pos_gc_deg = convertCartesianToAngles(*cart_gc)
+    return pos_gc_deg
 
 
-def convertGalacticToEquatorial(theta, phi, value=True):
+def convertGalacticToEquatorial(theta_deg, phi_deg, value=True):
     """
     Convert galactic (longitude, latitude) to equatorial (ra, dec)
 
@@ -250,57 +235,51 @@ def convertGalacticToEquatorial(theta, phi, value=True):
     ------
     pos_gc: (float, float) Equatorial coordinates RA and DEC, in degrees
     """
-    logging.debug("Converting gc ({}, {}) to eq:".format(theta, phi))
+    logging.debug("Converting gc ({}, {}) to eq:".format(theta_deg, phi_deg))
     try:
-        assert theta.unit == 'deg'
-    except (AttributeError, AssertionError):
-        theta = theta * un.deg
-        phi = phi * un.deg
-    cart_gc = convertAnglesToCartesian(theta, phi)
+        assert isinstance(theta_deg, (int, float, np.float32, np.float64))
+    except AssertionError:
+        print(type(theta_deg))
+        AssertionError
+    cart_gc = convertAnglesToCartesian(theta_deg, phi_deg)
     logging.debug("Cartesian eq coords: {}".format(cart_gc))
     gc_to_eq = calcGCToEQMatrix()
     cart_eq = np.dot(gc_to_eq, cart_gc)
     logging.debug("Cartesian gc coords: {}".format(cart_eq))
-    pos_eq = convertCartesianToAngles(*cart_eq)
-    if value:
-        return [a.value for a in pos_eq]
-    else:
-        return pos_eq
+    pos_eq_deg = convertCartesianToAngles(*cart_eq)
+    return pos_eq_deg
 
 
-def calcPMCoordinateMatrix(a, d):
+def calcPMCoordinateMatrix(a_deg, d_deg):
     """
     Generate a coordinate matrix for calculating proper motions
 
     This is matrix `A` in Johnson & Soderblom (1987)
     """
-    try:
-        assert a.unit == 'deg'
-    except (AttributeError, AssertionError):
-        a = a * un.deg
-        d = d * un.deg
+    a_rad = a_deg*np.pi/180.
+    d_rad = d_deg*np.pi/180.
 
     first_t = np.array([
-        [ np.cos(d),  0, -np.sin(d)],
+        [ np.cos(d_rad),  0, -np.sin(d_rad)],
         [         0, -1,          0],
-        [-np.sin(d),  0, -np.cos(d)]
+        [-np.sin(d_rad),  0, -np.cos(d_rad)]
     ])
     second_t = np.array([
-        [np.cos(a),  np.sin(a), 0],
-        [np.sin(a), -np.cos(a), 0],
+        [np.cos(a_rad),  np.sin(a_rad), 0],
+        [np.sin(a_rad), -np.cos(a_rad), 0],
         [        0,         0, -1],
     ])
     return np.dot(second_t, first_t)
 
 
-def convertPMToHelioSpaceVelocity(a, d, pi, mu_a, mu_d, rv):
+def convertPMToHelioSpaceVelocity(a_deg, d_deg, pi, mu_a, mu_d, rv):
     """
     Convert proper motions to space velocities
 
     Paramters
     ---------
-    a : (deg) right ascension in equatorial coordinates
-    d : (deg) declination in equatorial coordinates
+    a_deg : (deg) right ascension in equatorial coordinates
+    d_deg : (deg) declination in equatorial coordinates
     pi : (arcsec) parallax
     mu_a : (arcsec/yr) proper motion in right ascension
     mu_d : (arcsec/yr) proper motion in declination
@@ -310,15 +289,11 @@ def convertPMToHelioSpaceVelocity(a, d, pi, mu_a, mu_d, rv):
     -------
     UVW : [3] array
     """
-    try:
-        assert a.unit == 'deg'
-    except (AttributeError, AssertionError):
-        a = a * un.deg
-        d = d * un.deg
+    assert isinstance(a_deg, (int, float, np.float32, np.float64))
 
     B = np.dot(
         calcEQToGCMatrix(),
-        calcPMCoordinateMatrix(a, d),
+        calcPMCoordinateMatrix(a_deg, d_deg),
     )
     K = 4.74057 #(km/s) / (1AU/yr)
     astr_vels = np.array([
@@ -330,13 +305,13 @@ def convertPMToHelioSpaceVelocity(a, d, pi, mu_a, mu_d, rv):
     return space_vels
 
 
-def convertHelioSpaceVelocityToPM(a, d, pi, u, v, w):
+def convertHelioSpaceVelocityToPM(a_deg, d_deg, pi, u, v, w):
     """Take the position and space velocities, return proper motions and rv
 
     Paramters
     ---------
-    a : (deg) right ascension
-    d : (deg) declination
+    a_deg : (deg) right ascension
+    d_deg : (deg) declination
     pi : (as) parallax
     u : (km/s) heliocentric velocity towards galactic centre
     v : (km/s) heliocentric velocity towards in direction of circular orbit
@@ -348,14 +323,7 @@ def convertHelioSpaceVelocityToPM(a, d, pi, u, v, w):
     mu_d : (as/yr) proper motion in declination
     rv : (km/s) line of sight velocity
     """
-    try:
-        assert a.unit == 'deg'
-    except (AttributeError, AssertionError):
-        logging.debug("a is {}".format(a))
-        logging.debug("u is {}".format(u))
-        a = a * un.deg
-        d = d * un.deg
-
+    assert isinstance(a_deg, (int, float, np.float32, np.float64))
     logging.debug("Parallax is {} as which is a distance of {} pc".format(
         pi, 1./pi
     ))
@@ -364,7 +332,7 @@ def convertHelioSpaceVelocityToPM(a, d, pi, u, v, w):
 
     B_inv = np.linalg.inv(np.dot(
         calcEQToGCMatrix(),
-        calcPMCoordinateMatrix(a,d)
+        calcPMCoordinateMatrix(a_deg,d_deg)
     ))
     sky_vels = np.dot(B_inv, space_vels) # now in km/s
     K = 4.74057 #(km/s) / (AU/yr)
@@ -386,41 +354,41 @@ def convertHelioXYZUVWToAstrometry(xyzuvw_helio):
 
     Returns
     -------
-    a : (deg) right ascention
-    d : (deg) declination
+    a_deg : (deg) right ascention
+    d_deg : (deg) declination
     pi : (as) parallax
     mu_a : (as/yr) proper motion in right ascension
     mu_d : (as/yr) proper motion in declination
     rv : (km/s) line of sight velocity
     """
     x, y, z, u, v, w = xyzuvw_helio
-    l, b, dist = convertCartesianToAngles(x,y,z,return_dist=True)
-    logging.debug("l,b,Distance is {}, {}, {} pc".format(l, b, dist))
-    a, d = convertGalacticToEquatorial(l, b)
+    l_deg, b_deg, dist = convertCartesianToAngles(x,y,z,return_dist=True)
+    logging.debug("l,b,Distance is {}, {}, {} pc".format(l_deg, b_deg, dist))
+    a_deg, d_deg = convertGalacticToEquatorial(l_deg, b_deg)
     pi = 1./dist
-    mu_a, mu_d, rv = convertHelioSpaceVelocityToPM(a, d, pi, u, v, w)
-    return a, d, pi, mu_a, mu_d, rv
+    mu_a, mu_d, rv = convertHelioSpaceVelocityToPM(a_deg, d_deg, pi, u, v, w)
+    return a_deg, d_deg, pi, mu_a, mu_d, rv
 
 
-def convertAstrometryToHelioXYZUVW(a, d, pi, mu_a, mu_d, rv):
+def convertAstrometryToHelioXYZUVW(a_deg, d_deg, pi, mu_a, mu_d, rv):
     """
     Converts astrometry to heliocentric XYZUVW values
 
     Parameters
     ----------
-    a : (deg) right ascention
-    d : (deg) declination
+    a_deg : (deg) right ascention
+    d_deg : (deg) declination
     pi : (as) parallax
     mu_a : (as/yr) proper motion in right ascension
     mu_d : (as/yr) proper motion in declination
     rv : (km/s) line of sight velocity
     """
     logging.debug("Input:\nra {}\ndec {}\nparallax {}\nmu_ra {}\nmu_de {}\n"
-                  "rv {}".format(a, d, pi, mu_a, mu_d, rv))
+                  "rv {}".format(a_deg, d_deg, pi, mu_a, mu_d, rv))
     dist = 1/pi #pc
-    l, b = convertEquatorialToGalactic(a, d)
-    x, y, z = convertAnglesToCartesian(l, b, radius=dist)
-    u, v, w = convertPMToHelioSpaceVelocity(a, d, pi, mu_a, mu_d, rv)
+    l_deg, b_deg = convertEquatorialToGalactic(a_deg, d_deg)
+    x, y, z = convertAnglesToCartesian(l_deg, b_deg, radius=dist)
+    u, v, w = convertPMToHelioSpaceVelocity(a_deg, d_deg, pi, mu_a, mu_d, rv)
     xyzuvw_helio = np.array([x,y,z,u,v,w])
     logging.debug("XYZUVW heliocentric is : {}".format(xyzuvw_helio))
     return xyzuvw_helio

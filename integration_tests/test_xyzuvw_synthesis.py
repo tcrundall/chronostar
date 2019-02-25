@@ -132,8 +132,8 @@ for prec in precs:
 
             # plot then
             mn_then = torb.traceOrbitXYZUVW(mn, -age)
-            cov_then = tf.transform_cov(cov, torb.traceOrbitXYZUVW, mn,
-                                        args=(-age,))
+            cov_then = tf.transformCovMat(cov, torb.traceOrbitXYZUVW, mn,
+                                          args=(-age,))
 
             ee.plotCovEllipse(cov_then[:2,:2],mn_then[:2],
                               nstd=2,alpha=0.03,color='r')

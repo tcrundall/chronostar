@@ -89,7 +89,7 @@ xyzuvw = star_pars['xyzuvw']
 then_cov_true = utils.generate_cov(utils.internalise_pars(group_pars_old_style))
 then_cov_simple = tfgf.generate_cov(group_pars_in)
 then_cov_fitted = tfgf.generate_cov(best_fit)
-now_cov_fitted = tf.transform_cov(then_cov_fitted, tb.trace_forward,
+now_cov_fitted = tf.transformCovMat(then_cov_fitted, tb.trace_forward,
                                   best_fit[0:6], dim=6, args=(best_fit[-1],))
 now_mean_fitted = tb.trace_forward(best_fit[:6], best_fit[-1])
 

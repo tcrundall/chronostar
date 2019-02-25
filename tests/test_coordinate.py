@@ -5,7 +5,6 @@ between various coordinate systems
 import numpy as np
 import sys
 
-import astropy.units as u
 from astropy.coordinates import SkyCoord
 
 #from galpy.util import bovy_coords
@@ -26,9 +25,9 @@ def test_calcEQToGCMatrix():
 
 
     """
-    old_a_ngp = 192.25 * u.degree
-    old_d_ngp = 27.4 * u.degree
-    old_th = 123 * u.degree
+    old_a_ngp = 192.25
+    old_d_ngp = 27.4
+    old_th = 123.
 
     # Matrix copied from paper to take sky positions and parallax
     # to heliocentric Galactic cartesian coordinates
@@ -81,8 +80,8 @@ def test_CartesianAngleConversions():
     for sphere_pos, cart in zip(sphere_pos_list, cart_list):
         cart = cc.convertAnglesToCartesian(*sphere_pos)
         sphere_pos2 = cc.convertCartesianToAngles(*cart)
-        assert np.allclose(sphere_pos,
-                           [c.value for c in sphere_pos2])
+        assert np.allclose(sphere_pos, sphere_pos2)
+
 
 def test_convertEquatorialToGalactic():
     """Take equatorial coords to galactic and back"""
@@ -94,8 +93,8 @@ def test_convertEquatorialToGalactic():
         (100, -60)
     ]
     for pos_ncp in pos_ncp_list:
-        pos_ncp_gc = cc.convertEquatorialToGalactic(*pos_ncp, value=False)
-        pos_ncp2 = cc.convertGalacticToEquatorial(*pos_ncp_gc, value=True)
+        pos_ncp_gc = cc.convertEquatorialToGalactic(*pos_ncp)
+        pos_ncp2 = cc.convertGalacticToEquatorial(*pos_ncp_gc)
         assert np.allclose(pos_ncp, pos_ncp2)
 
 def test_famousPositions():

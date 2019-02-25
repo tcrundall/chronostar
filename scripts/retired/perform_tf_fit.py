@@ -225,9 +225,9 @@ for prec in precs:
             tb.trace_forward(best_fit[:6], best_fit[-1])
         ])
         covs['fitted_now'] = np.array([
-            tf.transform_cov(covs['fitted_then'][0], tb.trace_forward,
-                             means['fitted_then'][0], dim=6,
-                             args=(best_fit[-1],))
+            tf.transformCovMat(covs['fitted_then'][0], tb.trace_forward,
+                               means['fitted_then'][0], dim=6,
+                               args=(best_fit[-1],))
         ])
         np.save('covs.npy', covs)
         np.save('means.npy', means)

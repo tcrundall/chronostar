@@ -71,10 +71,10 @@ for ncomps in range(1,4):
             g.generateSphericalCovMatrix() for g in groups
         ])
         covs['fitted_now'] = np.array([
-                tf.transform_cov(covs['fitted_then'][0], torb.traceOrbitXYZUVW,
-                                 means['fitted_then'][0],
-                                 args=(g.age,True)
-                                 )
+                tf.transformCovMat(covs['fitted_then'][0], torb.traceOrbitXYZUVW,
+                                   means['fitted_then'][0],
+                                   args=(g.age,True)
+                                   )
             for g in groups
             ])
         hp.plotNewQuad(star_pars, means, covs, None, 'final',

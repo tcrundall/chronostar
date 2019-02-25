@@ -19,7 +19,7 @@ def test_traceOrbitWithTransform():
     cov_then = g.generateCovMatrix()
 
     mean_now = torb.traceOrbitXYZUVW(g.mean, g.age, True)
-    cov_now = tf.transform_cov(
+    cov_now = tf.transformCovMat(
         cov_then, torb.traceOrbitXYZUVW, g.mean, dim=6, args=(g.age, True)
     )
 

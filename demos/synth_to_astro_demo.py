@@ -53,7 +53,7 @@ if plot_it:
 
 xyzuvw_covs = np.zeros((nstars,6,6))
 for ix in range(nstars):
-    xyzuvw_covs[ix] = tf.transform_cov(
+    xyzuvw_covs[ix] = tf.transformCovMat(
         astr_covs[ix], cc.convertAstrometryToLSRXYZUVW, astr_arr[ix], dim=6
     )
 

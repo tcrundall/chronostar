@@ -97,14 +97,14 @@ def measureXYZUVW(xyzuvws, error_frac, savefile=''):
 
     Parameters
     ----------
-    xyzuvws : ([nstars, 6] float array) A list of stars in rh cartesian
+    xyzuvws : [nstars, 6] float array
+        A list of stars in rh cartesian
         coordinate system, centred on and co-rotating with the local standard
         of rest
         [pc, pc, pc, km/s, km/s, km/s]
-    error_frac : (0 - inf float) Parametrisation of Gaia-like uncertainty. 0.
-        is perfect precision, 1.0 is simplified best Gaia uncertainty.
-        Gaia uncertainty is taken to be: e_plx=0.04 mas, e_rv=0.3 km/s,
-        e_pm=0.06 mas/yr
+    error_frac : float
+        Parametrisation of Gaia-like uncertainty. 0 is perfect precision,
+        1.0 is simplified best Gaia uncertainty.
     savefile : string {''}
         if not empty, the astrometry table will be saved to the given
         file name

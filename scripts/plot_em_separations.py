@@ -30,10 +30,10 @@ final_groups = np.load(final_groups_file)
 xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
 
 
-ass_cov_now = tf.transform_cov(final_groups[0].generateCovMatrix(),
-                               torb.traceOrbitXYZUVW,
-                               final_groups[0].mean,
-                               args=(final_groups[0].age,))
+ass_cov_now = tf.transformCovMat(final_groups[0].generateCovMatrix(),
+                                 torb.traceOrbitXYZUVW,
+                                 final_groups[0].mean,
+                                 args=(final_groups[0].age,))
 ass_mn_now = torb.traceOrbitXYZUVW(final_groups[0].mean,
                                    final_groups[0].age)
 simple_cov_now = np.copy(ass_cov_now)

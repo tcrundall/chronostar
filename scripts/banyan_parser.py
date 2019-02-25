@@ -219,7 +219,7 @@ if __name__=='__main__':
             print("{:02.2f}% done".format(row_ix / float(nrows) * 100.))
         astr_mean, astr_cov = gc.convertRecToArray(gt_row)
         xyzuvw_mean = coord.convertAstrometryToLSRXYZUVW(astr_mean)
-        xyzuvw_cov = tf.transform_cov(
+        xyzuvw_cov = tf.transformCovMat(
             astr_cov,
             coord.convertAstrometryToLSRXYZUVW,
             astr_mean,

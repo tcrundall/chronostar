@@ -65,7 +65,7 @@ def transformAstrCovsToCartesian(astr_covs, astr_arr):
     nstars = astr_arr.shape[0]
     xyzuvw_covs = np.zeros((nstars, 6, 6))
     for ix in range(nstars):
-        xyzuvw_covs[ix] = tf.transform_cov(
+        xyzuvw_covs[ix] = tf.transformCovMat(
             astr_covs[ix], cc.convertAstrometryToLSRXYZUVW, astr_arr[ix],
             dim=6
         )
@@ -101,7 +101,7 @@ def convertRowToCartesian(row, row_ix=None, nrows=None):
         pass
     astr_mean, astr_cov = dt.convertRecToArray(row)
     xyzuvw_mean = cc.convertAstrometryToLSRXYZUVW(astr_mean)
-    xyzuvw_cov = tf.transform_cov(
+    xyzuvw_cov = tf.transformCovMat(
         astr_cov,
         cc.convertAstrometryToLSRXYZUVW,
         astr_mean,

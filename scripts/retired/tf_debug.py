@@ -13,4 +13,4 @@ mean = [-80, 80, 50, 10, -20, -5]
 
 age = 10.
 
-new_cov = tf.transform_cov(cov, trace_forward, mean, dim=6, args=(age,))
+new_cov = tf.transformCovMat(cov, trace_forward, mean, dim=6, args=(age,))

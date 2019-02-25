@@ -271,11 +271,11 @@ def generateTracebackFile(star_pars_now, times, savefile=''):
                 covs[star_ix, time_ix] = star_pars_now['xyzuvw_cov'][star_ix]
             else:
                 covs[star_ix, time_ix] =\
-                    tf.transform_cov(cov=star_pars_now['xyzuvw_cov'][star_ix],
-                                     trans_func=traceOrbitXYZUVW,
-                                     loc=star_pars_now['xyzuvw'][star_ix],
-                                     args=(times[time_ix],)
-                                     )
+                    tf.transformCovMat(cov=star_pars_now['xyzuvw_cov'][star_ix],
+                                       trans_func=traceOrbitXYZUVW,
+                                       loc=star_pars_now['xyzuvw'][star_ix],
+                                       args=(times[time_ix],)
+                                       )
     logging.debug("Successfully traced covs")
     star_pars_all = {'xyzuvw':means,
                      'xyzuvw_cov':covs,

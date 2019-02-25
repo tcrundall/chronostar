@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 """
 A suite of useful functions for partitioning the gaia data
+
 TODO: write tests especially for cov construction
 """
 
@@ -13,17 +14,49 @@ from scipy import stats
 import converter as cv
 import coordinate as cc
 
+
 def gauss(x, mu, sig):
     """
     Evaluates a 1D gaussian at `x` given mean `mu` and std `sig`
+
+    Parameters
+    ----------
+    x : float
+        point at which to evaluate Gaussian
+    mu : float
+        mean of Gaussian
+    sig : float
+        standard deviation of Gaussian
+
+    Returns
+    -------
+    result : float
+        evaluation of 1D Gaussian at `x`
     """
     return 1./(sig*np.sqrt(2*np.pi)) * np.exp(-(x - mu)**2 / (2.*sig**2))
 
+
 def mvGauss(x, mean, cov_matrix, amp=1.):
     """
-    Evaluates a 6D gaussian at `x` given a mean, covariance matrix and amplitude
+    Evaluates a 'dim' dimension gaussian at `x` given a mean,
+    covariance matrix and amplitude
+
+    Parameters
+    ----------
+    x : [dim] float array
+        point at which to evaluate multivariate Gaussian
+    mean : [dim] float array
+        mean of the multivariate Gaussian
+    cov_matrix : [dim, dim] array
+        covariance matrix of the multivariate Gaussian
+    amp : float {1.}
+        amplitude of the multivariate Gaussian
+
+    Returns
+    -------
+    result : float
+        evaluation of the multivariate gaussian at point `x`
     """
-    dim = 6.
     coeff = np.linalg.det(cov_matrix * 2*np.pi)**(-0.5)
     inv_cm = np.linalg.inv(cov_matrix)
     expon = -0.5 * np.dot(
@@ -32,11 +65,24 @@ def mvGauss(x, mean, cov_matrix, amp=1.):
     )
     return amp * coeff * np.exp(expon)
 
+
 def loadGroups(groups_file):
     """A simple utility function to standardise loading of group savefiles
 
-    :param groups_file:
-    :return:
+    Ensures consistency by returning groups as an array of synthesiser.Group
+    objects, even if only one Group object is loaded.
+
+    Parameters
+    ----------
+    groups_file : string
+        Path to savefile of file. File must be result of np.save(groups)
+        where 'groups' is either a list (or a single instance) of
+        synthesiser.Group objects
+
+    Returns
+    -------
+    groups : [synthesiser.Group]
+        A list of Group objects
     """
     groups = np.load(groups_file)
     if len(groups.shape) == 0:
@@ -46,6 +92,9 @@ def loadGroups(groups_file):
 
 def loadXYZUVW(xyzuvw_file, assoc_name=None):
     """Load mean and covariances of stars in XYZUVW space from fits file
+
+    TODO: Streamline for astropy table usage
+    TODO: port fits HDUL to separate, dedicated function
 
     Parameters
     ----------
@@ -140,18 +189,21 @@ def createSubFitsFile(mask, filename):
 #         new_hdul = fits.HDUList([primary_hdu, hdu])
 #         new_hdul.writeto(filename, overwrite=True)
 
-def calcMedAndSpan(chain, perc=34, sphere=True):
+def calcMedAndSpan(chain, perc=34, intern_to_extern=False, sphere=True):
     """
     Given a set of aligned samples, calculate the 50th, (50-perc)th and
      (50+perc)th percentiles.
 
     Parameters
     ----------
-    chain : [nwalkers, nsteps, npars]
+    chain : [nwalkers, nsteps, npars] array -or- [nwalkers*nsteps, npars] array
         The chain of samples (in internal encoding)
     perc: integer {34}
         The percentage from the midpoint you wish to set as the error.
         The default is to take the 16th and 84th percentile.
+    intern_to_extern : boolean {False}
+        Set to true if chain has dx and dv provided in log form and output
+        is desired to have dx and dv in linear form
     sphere: Boolean {True}
         Currently hardcoded to take the exponent of the logged
         standard deviations. If sphere is true the log stds are at
@@ -160,23 +212,21 @@ def calcMedAndSpan(chain, perc=34, sphere=True):
 
     Returns
     -------
-    _ : [npars,3] float array
-        For each paramter, there is the 50th, (50+perc)th and (50-perc)th
+    result : [npars,3] float array
+        For each parameter, there is the 50th, (50+perc)th and (50-perc)th
         percentiles
     """
     npars = chain.shape[-1]  # will now also work on flatchain as input
     flat_chain = np.reshape(chain, (-1, npars))
 
-    # conv_chain = np.copy(flat_chain)
-    # if sphere:
-    #     conv_chain[:, 6:8] = np.exp(conv_chain[:, 6:8])
-    # else:
-    #     conv_chain[:, 6:10] = np.exp(conv_chain[:, 6:10])
+    if intern_to_extern:
+        # take the exponent of the log(dx) and log(dv) values
+        flat_chain = np.copy(flat_chain)
+        if sphere:
+            flat_chain[:, 6:8] = np.exp(flat_chain[:, 6:8])
+        else:
+            flat_chain[:, 6:10] = np.exp(flat_chain[:, 6:10])
 
-    # return np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-    #                     zip(*np.percentile(conv_chain,
-    #                                        [50-perc,50,50+perc],
-    #                                        axis=0))))
     return np.array(map(lambda v: (v[1], v[2], v[0]),
                         zip(*np.percentile(flat_chain,
                                            [50-perc, 50, 50+perc],
@@ -184,7 +234,35 @@ def calcMedAndSpan(chain, perc=34, sphere=True):
 
 
 def convertRecToArray(sr):
-    """UNTESTED"""
+    """
+    Take a single row from astrometry table and build covariance matrix
+
+    Builds a central estimate (mean) and covariance matrix with field order:
+    ra, dec, parallax, proper-motion ra, proper-motion dec, radial velocity.
+    Currently hardcoded to handle gaia column default names, and cannot handle
+    absent correlation values. Looks first for 'radial_velocity_best', and then
+    for 'radial_velocity'.
+
+    TODO: Establish whether robustness checks occur here or earlier
+
+    Parameters
+    ----------
+    sr : table row
+        A single row from astrometric table with columns:
+        'ra', 'ra_error', 'dec', 'dec_error', 'parallax', 'parallax_error',
+        'pmra', 'pmra_error', 'pmdec', 'pmdec_error',
+        'ra_dec_corr', 'ra_parallax_corr', 'ra_pmra_corr',
+        'ra_pmdec_corr', 'dec_parallax_corr', 'dec_pmra_corr',
+        'dec_pmdec_corr', 'parallax_pmra_corr', 'parallax_pmdec_corr',
+        'pmra_pmdec_corr',
+
+    Returns
+    -------
+    mean : [6] float array
+        central estimate of full 6D stellar astrometry for single star
+    cov : [6, 6] float array
+        covariance matrix of full 6D stellar astrometry for single star
+    """
     ra = sr['ra']
     e_ra = sr['ra_error'] / 3600. / 1000.
     dec = sr['dec']
@@ -195,8 +273,6 @@ def convertRecToArray(sr):
     e_pmra = sr['pmra_error']
     pmdec = sr['pmdec']
     e_pmdec = sr['pmdec_error']
-    rv = sr['radial_velocity']
-    e_rv = sr['radial_velocity_error']
     c_ra_dec = sr['ra_dec_corr']
     c_ra_plx = sr['ra_parallax_corr']
     c_ra_pmra = sr['ra_pmra_corr']
@@ -208,63 +284,12 @@ def convertRecToArray(sr):
     c_plx_pmdec = sr['parallax_pmdec_corr']
     c_pmra_pmdec = sr['pmra_pmdec_corr']
 
-    mean = np.array((ra, dec, plx, pmra, pmdec, rv))
-    cov  = np.array([
-        [e_ra**2, c_ra_dec*e_ra*e_dec, c_ra_plx*e_ra*e_plx,
-            c_ra_pmra*e_ra*e_pmra, c_ra_pmdec*e_ra*e_pmdec, 0.],
-        [c_ra_dec*e_ra*e_dec, e_dec**2, c_dec_plx*e_dec*e_plx,
-            c_dec_pmra*e_dec*e_pmra, c_dec_pmdec*e_dec*e_pmdec, 0.],
-        [c_ra_plx*e_ra*e_plx, c_dec_plx*e_dec*e_plx, e_plx**2,
-            c_plx_pmra*e_plx*e_pmra, c_plx_pmdec*e_plx*e_pmdec, 0.],
-        [c_ra_pmra*e_ra*e_pmra, c_dec_pmra*e_dec*e_pmra,
-                                                c_plx_pmra*e_plx*e_pmra,
-             e_pmra**2, c_pmra_pmdec*e_pmra*e_pmdec, 0.],
-        [c_ra_pmdec*e_ra*e_pmdec, c_dec_pmdec*e_dec*e_pmdec,
-                                                c_plx_pmdec*e_plx*e_pmdec,
-             c_pmra_pmdec*e_pmra*e_pmdec, e_pmdec**2, 0.],
-        [0., 0., 0., 0., 0., e_rv**2]
-    ])
-    return mean, cov
-
-
-def convertRecToArray(sr):
-    """
-    Inflexbile approach to read in a single row of astrometric data
-    and build mean and covraiance matrix
-
-    Looks first for 'radial_velocity_best', and then for
-    'radial_velocity'
-
-    Parameters
-    ----------
-    sr : a row from table
-    """
-    ra = sr['ra']
-    e_ra = sr['ra_error'] / 3600. / 1000.
-    dec = sr['dec']
-    e_dec = sr['dec_error'] / 3600. / 1000.
-    plx = sr['parallax']
-    e_plx = sr['parallax_error']
-    pmra = sr['pmra']
-    e_pmra = sr['pmra_error']
-    pmdec = sr['pmdec']
-    e_pmdec = sr['pmdec_error']
     try:
         rv = sr['radial_velocity_best']
         e_rv = sr['radial_velocity_error_best']
     except KeyError:
         rv = sr['radial_velocity']
         e_rv = sr['radial_velocity_error']
-    c_ra_dec = sr['ra_dec_corr']
-    c_ra_plx = sr['ra_parallax_corr']
-    c_ra_pmra = sr['ra_pmra_corr']
-    c_ra_pmdec = sr['ra_pmdec_corr']
-    c_dec_plx = sr['dec_parallax_corr']
-    c_dec_pmra = sr['dec_pmra_corr']
-    c_dec_pmdec = sr['dec_pmdec_corr']
-    c_plx_pmra = sr['parallax_pmra_corr']
-    c_plx_pmdec = sr['parallax_pmdec_corr']
-    c_pmra_pmdec = sr['pmra_pmdec_corr']
 
     mean = np.array((ra, dec, plx, pmra, pmdec, rv))
     cov  = np.array([
@@ -288,17 +313,27 @@ def convertRecToArray(sr):
 def appendCartColsToTable(table):
     """
     Insert empty place holder columns for cartesian values
+
+    Parameters
+    ----------
+    table : astropy.table.Table object
+        Modifies table in place by appending empty columns for cartesian
+        values. Default values in column are `np.nan`.
+
+    Returns
+    -------
+    None
     """
     nrows = len(table)
     empty_col = np.array(nrows * [np.nan])
-    cart_col_names = ['X', 'Y', 'Z', 'U', 'V', 'W',
-                      'dX', 'dY', 'dZ', 'dU', 'dV', 'dW',
+    cart_col_names = ['X', 'dX', 'Y', 'dY', 'Z', 'dZ',
+                      'U', 'dU', 'V', 'dV', 'W', 'dW',
                       'c_XY', 'c_XZ', 'c_XU', 'c_XV', 'c_XW',
                               'c_YZ', 'c_YU', 'c_YV', 'c_YW',
                                       'c_ZU', 'c_ZV', 'c_ZW',
                                               'c_UV', 'c_UW',
                                                       'c_VW']
-    units = 3*['pc'] + 3*['km/s'] + 3*['pc'] + 3*['km/s'] + 15*[None]
+    units = 6*['pc'] + 6*['km/s'] + 15*[None]
     for ix, col_name in enumerate(cart_col_names):
         table[col_name] = empty_col
         table[col_name].unit = units[ix]
@@ -537,7 +572,8 @@ def loadDictFromTable(table, assoc_name=None):
     nrows = len(table['source_id'])
     for ix, row in enumerate(table):
         if nrows > 10000 and ix % 1000==0:
-            print("Done {:7} of {}".format(ix, nrows))
+            print("Done {:7} of {} | {:.2}%".format(ix, nrows,
+                                                    float(ix)/nrows*100))
         if (np.isfinite(row['U']) and
             isInAssociation(row, assoc_name)):
             mean, cov = buildMeanAndCovMatFromRow(row)
