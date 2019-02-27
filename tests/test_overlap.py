@@ -112,7 +112,7 @@ def test_pythonFuncs():
         co2s.append(co2(group_cov, group_mean, scov, smn))
     co1s = np.array(co1s)
     co2s = np.array(co2s)
-    co3s = np.exp(p_lno(group_cov, group_mean, star_covs, star_means, nstars))
+    co3s = np.exp(p_lno(group_cov, group_mean, star_covs, star_means))
     assert np.allclose(co1s, co2s)
     assert np.allclose(co2s, co3s)
     assert np.allclose(co1s, co3s)
@@ -126,7 +126,7 @@ def test_pythonFuncs():
         co2s.append(co2(star_covs[15], star_means[15], scov, smn))
     co1s = np.array(co1s)
     co2s = np.array(co2s)
-    lnos = p_lno(star_covs[15], star_means[15], star_covs, star_means, 1)
+    lnos = p_lno(star_covs[15], star_means[15], star_covs, star_means)
     co3s = np.exp(lnos)
     assert np.allclose(co1s, co2s)
     assert np.allclose(co2s, co3s)
@@ -147,7 +147,7 @@ def test_swigImplementation():
     gmn = np.mean(star_means, axis=0)
     gcov = np.cov(star_means.T)
 
-    p_lnos = p_lno(gcov, gmn, star_covs, star_means, nstars)
+    p_lnos = p_lno(gcov, gmn, star_covs, star_means)
     c_lnos = c_lno(gcov, gmn, star_covs, star_means, nstars)
 
     assert np.allclose(p_lnos, c_lnos)

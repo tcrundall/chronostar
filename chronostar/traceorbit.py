@@ -173,9 +173,7 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     # logging.debug("Galpy vector: {}".format(xyzuvw_helio))
 
     # profiling: 141 (s)
-    l,b,dist = cc.convertCartesianToAngles(
-        *xyzuvw_helio[:3], return_dist=True, value=True
-    )
+    l,b,dist = cc.convertCartesianToAngles(*xyzuvw_helio[:3], return_dist=True)
     vxvv = [l,b,dist,xyzuvw_helio[3],xyzuvw_helio[4],xyzuvw_helio[5]]
     # logging.debug("vxvv: {}".format(vxvv))
     # profiling:  67 (s)
