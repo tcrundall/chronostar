@@ -1,4 +1,7 @@
 from __future__ import division, print_function
+
+import chronostar.fitplotter
+
 """
 Confirm reasonable deviation in XYZUVW due to synthetic measurement error
 """
@@ -127,16 +130,16 @@ for prec in precs:
 #                 )
         for (mn, cov) in zip(star_pars['xyzuvw'],star_pars['xyzuvw_cov']):
             # plot now
-            ee.plotCovEllipse(cov[:2,:2],mn[:2],
-                              nstd=2,alpha=0.1,color='b')
+            chronostar.fitplotter.plotCovEllipse(cov[:2, :2], mn[:2],
+                                                 nstd=2, alpha=0.1, color='b')
 
             # plot then
             mn_then = torb.traceOrbitXYZUVW(mn, -age)
             cov_then = tf.transformCovMat(cov, torb.traceOrbitXYZUVW, mn,
                                           args=(-age,))
 
-            ee.plotCovEllipse(cov_then[:2,:2],mn_then[:2],
-                              nstd=2,alpha=0.03,color='r')
+            chronostar.fitplotter.plotCovEllipse(cov_then[:2, :2], mn_then[:2],
+                                                 nstd=2, alpha=0.03, color='r')
 
         times = np.linspace(0,-age,int(age)+1)
         tracedback_xyzuvws = torb.traceManyOrbitXYZUVW(star_pars['xyzuvw'],

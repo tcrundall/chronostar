@@ -9,17 +9,9 @@ todo:
 from __future__ import print_function, division
 
 import pdb
-import sys
 from distutils.dir_util import mkpath
 import logging
 import numpy as np
-import os
-import pickle
-import random
-
-import chronostar.synthesiser as syn
-import chronostar.traceorbit as torb
-
 try:
     import matplotlib as mpl
     # prevents displaying plots from generation from tasks in background
@@ -27,10 +19,11 @@ try:
     import matplotlib.pyplot as plt
 except ImportError:
     print("Warning: matplotlib not imported")
-    pass
 
-import chronostar.transform as tf
+import synthesiser as syn
+import traceorbit as torb
 import groupfitter as gf
+
 
 def ix_fst(array, ix):
     """Helper function to index array by first axis that could be None"""

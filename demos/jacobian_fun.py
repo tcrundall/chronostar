@@ -2,6 +2,9 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+
+import chronostar.fitplotter
+
 sys.path.insert(0, '..')
 
 #from chronostar.retired.tracingback import trace_forward
@@ -123,7 +126,7 @@ if __name__ == '__main__':
         plt.clf()
         plt.plot(stars[:,0], stars[:,1], 'b.')
         #plt.hist2d(stars[:,0], stars[:,1], bins=20)
-        ee.plotCovEllipse(cov[:2, :2], mean, color='b', alpha=0.3)
+        chronostar.fitplotter.plotCovEllipse(cov[:2, :2], mean, color='b', alpha=0.3)
 
     new_stars = np.zeros(stars.shape)
     new_stars = torb.traceManyOrbitXYZUVW(stars, np.array(0, age))
@@ -150,7 +153,7 @@ def stop():
 
         plt.xlim(upper, lower)
         plt.ylim(lower, upper)
-        ee.plotCovEllipse(
+        chronostar.fitplotter.plotCovEllipse(
             new_cov[:2,:2], new_mean, color='r', alpha=0.1
         )
         plt.savefig("temp_plots/trace_forward{}.png".format(cnt))

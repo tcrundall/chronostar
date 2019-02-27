@@ -4,6 +4,9 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+
+import chronostar.fitplotter
+
 sys.path.insert(0, '..')
 
 import chronostar.synthesiser as syn
@@ -48,7 +51,7 @@ logging.info("Mean of retrieved stars: {}".format(np.mean(xyzuvw_now, axis=0)))
 if plot_it:
     plt.clf()
     plt.plot(xyzuvw_now[:,1], xyzuvw_now[:,2], '.')
-    ee.plotCovEllipse(group.generateEllipticalCovMatrix()[1:3,1:3],
+    chronostar.fitplotter.plotCovEllipse(group.generateEllipticalCovMatrix()[1:3, 1:3],
                       group.mean[1:3], with_line=True)
 
 xyzuvw_covs = np.zeros((nstars,6,6))
@@ -59,5 +62,5 @@ for ix in range(nstars):
 
 if plot_it:
     for ix in range(nstars):
-        ee.plotCovEllipse(xyzuvw_covs[ix,1:3,1:3], xyzuvw_now[ix,1:3], color='blue')
+        chronostar.fitplotter.plotCovEllipse(xyzuvw_covs[ix, 1:3, 1:3], xyzuvw_now[ix, 1:3], color='blue')
     plt.savefig("temp_plots/demo_run.png")

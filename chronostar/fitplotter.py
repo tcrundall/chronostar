@@ -3,6 +3,9 @@ Provides many functions that aid plotting of stellar data sets and their fits
 """
 
 import matplotlib as mpl
+from matplotlib import pyplot as plt
+from matplotlib.patches import Ellipse
+
 mpl.use('Agg')
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
@@ -127,6 +130,67 @@ def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
                     (gorb[int(ntimes / 2), dim1],
                      gorb[int(ntimes / 2), dim2]),
                     color=color)
+
+
+def plotCovEllipse(cov, pos, nstd=2, ax=None, with_line=False, **kwargs):
+    """
+    Plots an `nstd` sigma error ellipse based on the specified covariance
+    matrix (`cov`). Additional keyword arguments are passed on to the
+    ellipse patch artist.
+    Parameters
+    ----------
+        cov : The 2x2 covariance matrix to base the ellipse on
+        pos : The location of the center of the ellipse. Expects a 2-element
+            sequence of [x0, y0].
+        nstd : The radius of the ellipse in numbers of standard deviations.
+            Defaults to 2 standard deviations.
+        ax : The axis that the ellipse will be plotted on. Defaults to the
+            current axis.
+        Additional keyword arguments are pass on to the ellipse patch.
+    Returns
+    -------
+        A matplotlib ellipse artist
+    """
+
+    def eigsorted(cov):
+        vals, vecs = np.linalg.eigh(cov)
+        order = vals.argsort()[::-1]
+        return vals[order], vecs[:, order]
+
+    if ax is None:
+        ax = plt.gca()
+
+    # largest eigenvalue is first
+    vals, vecs = eigsorted(cov)
+    theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
+
+    # Width and height are "full" widths, not radius
+    width, height = 2 * nstd * np.sqrt(vals)
+    ellip = Ellipse(xy=pos, width=width, height=height, angle=theta, **kwargs)
+
+    if 'alpha' not in kwargs.keys():
+        ellip.set_alpha(0.3)
+    if 'color' not in kwargs.keys():# and 'c' not in kwargs.keys():
+        ellip.set_facecolor('red')
+
+    ax.add_patch(ellip)
+
+    # THEN just f***ing plot an invisible line across the ellipse.
+    if with_line:
+        # brute forcing axes limits so they contain ellipse patch
+        # maybe a cleaner way of doing this, but I couldn't work it out
+        x_extent = 0.5*(abs(width*np.cos(np.radians(theta))) +
+                        abs(height*np.sin(np.radians(theta))))
+        y_extent = 0.5*(abs(width*np.sin(np.radians(theta))) +
+                        abs(height*np.cos(np.radians(theta))))
+
+        lx = pos[0] - x_extent
+        ux = pos[0] + x_extent
+        ly = pos[1] - y_extent
+        uy = pos[1] + y_extent
+        ax.plot((lx, ux), (ly, uy), alpha=0.)
+
+    return ellip
 
 
 def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
@@ -256,11 +320,11 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
                             )
             # plot uncertainties
             if star_cov is not None:
-                ee.plotCovEllipse(star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
-                                  star_mn[np.ix_([dim1, dim2])],
-                                  ax=ax, alpha=COV_ALPHA, linewidth='0.1',
-                                  color=pt_color,
-                                  )
+                plotCovEllipse(star_cov[np.ix_([dim1, dim2], [dim1, dim2])],
+                               star_mn[np.ix_([dim1, dim2])],
+                               ax=ax, alpha=COV_ALPHA, linewidth='0.1',
+                               color=pt_color,
+                               )
             # plot traceback orbits for as long as oldest group (if known)
             # else, 30 Myr
             if star_orbits and st_count%3==0:
@@ -307,11 +371,11 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
         if group_then:
             ax.plot(mean_then[dim1], mean_then[dim2], marker='+', alpha=0.3,
                     color=COLORS[i])
-            ee.plotCovEllipse(cov_then[np.ix_([dim1,dim2], [dim1,dim2])],
-                              mean_then[np.ix_([dim1,dim2])],
-                              with_line=True,
-                              ax=ax, alpha=0.3, ls='--',
-                              color=COLORS[i])
+            plotCovEllipse(cov_then[np.ix_([dim1, dim2], [dim1, dim2])],
+                           mean_then[np.ix_([dim1,dim2])],
+                           with_line=True,
+                           ax=ax, alpha=0.3, ls='--',
+                           color=COLORS[i])
             if annotate:
                 ax.annotate(r'$\mathbf{\mu}_0, \mathbf{\Sigma}_0$',
                             (mean_then[dim1],
@@ -326,12 +390,12 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
                                          mean_then, args=[group.age])
             ax.plot(mean_now[dim1], mean_now[dim2], marker='+', alpha=0.3,
                    color=COLORS[i])
-            ee.plotCovEllipse(cov_now[np.ix_([dim1,dim2], [dim1,dim2])],
-                              mean_now[np.ix_([dim1,dim2])],
-                              # with_line=True,
-                              ax=ax, alpha=0.4, ls='-.',
-                              ec=COLORS[i], fill=False, hatch=HATCHES[i],
-                              color=COLORS[i])
+            plotCovEllipse(cov_now[np.ix_([dim1, dim2], [dim1, dim2])],
+                           mean_now[np.ix_([dim1,dim2])],
+                           # with_line=True,
+                           ax=ax, alpha=0.4, ls='-.',
+                           ec=COLORS[i], fill=False, hatch=HATCHES[i],
+                           color=COLORS[i])
             if annotate:
                 ax.annotate(r'$\mathbf{\mu}_c, \mathbf{\Sigma}_c$',
                             (mean_now[dim1],mean_now[dim2]),
@@ -348,7 +412,7 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
             # plot origin initial distribution
             ax.plot(mean_then[dim1], mean_then[dim2], marker='+',
                     color='xkcd:grey')
-            ee.plotCovEllipse(
+            plotCovEllipse(
                 cov_then[np.ix_([dim1, dim2], [dim1, dim2])],
                 mean_then[np.ix_([dim1, dim2])],
                 with_line=True,
@@ -965,5 +1029,25 @@ def plotPaneWithHists(dim1, dim2, fignum=None, groups=[], weights=None,
 
     return xlim, ylim
 
+
+def plotPointCov(points, nstd=2, ax=None, **kwargs):
+    """
+    Plots an `nstd` sigma ellipse based on the mean and covariance of a point
+    "cloud" (points, an Nx2 array).
+    Parameters
+    ----------
+        points : An Nx2 array of the data points.
+        nstd : The radius of the ellipse in numbers of standard deviations.
+            Defaults to 2 standard deviations.
+        ax : The axis that the ellipse will be plotted on. Defaults to the
+            current axis.
+        Additional keyword arguments are pass on to the ellipse patch.
+    Returns
+    -------
+        A matplotlib ellipse artist
+    """
+    pos = points.mean(axis=0)
+    cov = np.cov(points, rowvar=False)
+    return plotCovEllipse(cov, pos, nstd, ax, **kwargs)
 
 

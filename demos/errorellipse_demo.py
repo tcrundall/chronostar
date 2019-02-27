@@ -2,6 +2,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+
+import chronostar.fitplotter
+
 sys.path.insert(0, '..')
 
 import chronostar.errorellipse as ee
@@ -12,7 +15,7 @@ points = np.random.multivariate_normal(
 # Plot the raw points...
 fig, ax = plt.subplots(1, 1)
 x, y = points.T
-el = ee.plotPointCov(points, nstd=3)#, ax=ax)
+el = chronostar.fitplotter.plotPointCov(points, nstd=3)#, ax=ax)
 plt.plot(x, y, 'ro')
 
 # Plot a transparent 3 standard deviation covariance ellipse
@@ -22,8 +25,8 @@ fig.savefig("temp_plots/error_ellipse_default.png")
 # Notice how the plot bounds include entire ellipse
 plt.clf()
 fig2, ax2 = plt.subplots(1, 1)
-el = ee.plotPointCov(points, nstd=3, ax=ax2, with_line=True, alpha=0.2,
-                     color='green')
+el = chronostar.fitplotter.plotPointCov(points, nstd=3, ax=ax2, with_line=True, alpha=0.2,
+                                        color='green')
 fig2.savefig("temp_plots/error_ellipse_solo.png")
 
 

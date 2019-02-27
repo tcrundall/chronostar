@@ -1,9 +1,15 @@
-from __future__ import print_function, division
 """
 A suite of useful functions for partitioning the gaia data
 
+Look here for all your table reading needs.
+
+Also includes a class for abstracting the parametrisation of a Gaussian
+origin.
+
 TODO: write tests especially for cov construction
 """
+
+from __future__ import print_function, division
 
 from astropy.io import fits
 from astropy.table import Table
@@ -141,6 +147,29 @@ def loadXYZUVW(xyzuvw_file, assoc_name=None):
     logging.info("Floats stored in format {}".\
                  format(xyzuvw_dict['xyzuvw'].dtype))
     return xyzuvw_dict
+
+
+def getBestSample(chain, lnprob):
+    """
+    Finds the sample with the highest lnprob
+
+    Parameters
+    ----------
+    chain : [nsteps, nwalkers, npars] float array
+        A chain of walkers from an emcee sampling run
+    lnprob : [nsteps, nwalkers] float array
+        An array of log probabilities from an emcee sampling run
+
+    Returns
+    -------
+    result : [9] -or- [15] array
+        The (internal) parameters describing the best fitting sample
+    """
+    npars = chain.shape[-1]
+    best_ix = np.argmax(lnprob)
+    flat_chain = chain.reshape(-1, npars)
+    return flat_chain[best_ix]
+
 
 def createSubFitsFile(mask, filename):
     """
@@ -417,6 +446,7 @@ def convertManyRecToArray(data):
     covs[:,:2,:] /= 3600000.
 
     return means, covs
+
 
 def convertGaiaToXYZUVWDict(astr_file="../data/gaia_dr2_ok_plx.fits",
                             server=False,

@@ -9,8 +9,11 @@ from astropy.io import fits
 
 import chronostar.errorellipse as ee
 import chronostar.analyser as al
+
+import chronostar.fitplotter
 import chronostar.traceorbit as torb
 import chronostar.transform as tf
+import chronostar.datatool as dt
 import chronostar.synthesiser as syn
 
 COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
@@ -77,7 +80,7 @@ def plot_then(star_pars, means, covs, ngroups, iter_count, ax, dim1, dim2):
         if origins_inc:
             #import pdb; pdb.set_trace()
             try:
-                ee.plotCovEllipse(
+                chronostar.fitplotter.plotCovEllipse(
                     covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                     means['origin_then'][i][np.ix_([dim1,dim2])],
                     with_line=True,
@@ -95,7 +98,7 @@ def plot_then(star_pars, means, covs, ngroups, iter_count, ax, dim1, dim2):
             ax.plot(means['fitted_then'][i][dim1],
                     means['fitted_then'][i][dim2],
                     color=COLORS[i], marker='x', alpha=1)
-            ee.plotCovEllipse(
+            chronostar.fitplotter.plotCovEllipse(
                 covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['fitted_then'][i][np.ix_([dim1,dim2])],
                 with_line=True,
@@ -130,21 +133,21 @@ def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
                     color=COLORS[i], alpha=0.6)
             for mn, cov in zip(xyzuvw[mask], xyzuvw_cov[mask]):
                 try:
-                    ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
-                                      mn[np.ix_([dim1,dim2])],
-                                      ax=ax, color=COLORS[i], alpha=0.1)
+                    chronostar.fitplotter.plotCovEllipse(cov[np.ix_([dim1, dim2], [dim1, dim2])],
+                                                         mn[np.ix_([dim1,dim2])],
+                                                         ax=ax, color=COLORS[i], alpha=0.1)
                 except IndexError:
                     pass
     else:
         ax.plot(xyzuvw[:, dim1], xyzuvw[:, dim2], 'b.')
         for mn, cov in zip(xyzuvw, xyzuvw_cov):
-            ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
-                                mn[np.ix_([dim1,dim2])],
-                                ax=ax, color='b', alpha=0.1)
+            chronostar.fitplotter.plotCovEllipse(cov[np.ix_([dim1, dim2], [dim1, dim2])],
+                                                 mn[np.ix_([dim1,dim2])],
+                                                 ax=ax, color='b', alpha=0.1)
     for i in range(ngroups):
         try:
             #pdb.set_trace()
-            ee.plotCovEllipse(
+            chronostar.fitplotter.plotCovEllipse(
                 covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['fitted_now'][i][np.ix_([dim1,dim2])],
                 with_line=True,
@@ -177,13 +180,13 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
     xyzuvw_cov = star_pars['xyzuvw_cov']
     ax.plot(xyzuvw[:, dim1], xyzuvw[:, dim2], 'b.')
     for mn, cov in zip(xyzuvw, xyzuvw_cov):
-        ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
-                            mn[np.ix_([dim1,dim2])],
-                            ax=ax, color='b', alpha=0.1)
+        chronostar.fitplotter.plotCovEllipse(cov[np.ix_([dim1, dim2], [dim1, dim2])],
+                                             mn[np.ix_([dim1,dim2])],
+                                             ax=ax, color='b', alpha=0.1)
     for i in range(ngroups):
         if origins_inc:
             #import pdb; pdb.set_trace()
-            ee.plotCovEllipse(
+            chronostar.fitplotter.plotCovEllipse(
                 covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['origin_then'][i][np.ix_([dim1,dim2])],
                 with_line=True,
@@ -198,13 +201,13 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
         ax.plot(means['fitted_then'][i][dim1],
                 means['fitted_then'][i][dim2],
                 color=COLORS[i], marker='x', alpha=1)
-        ee.plotCovEllipse(
+        chronostar.fitplotter.plotCovEllipse(
             covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_then'][i][np.ix_([dim1,dim2])],
             with_line=True,
             ax=ax, color=COLORS[i], alpha=0.3, ls='-.', #hatch='/',
         )
-        ee.plotCovEllipse(
+        chronostar.fitplotter.plotCovEllipse(
             covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_now'][i][np.ix_([dim1,dim2])],
             with_line=True,
@@ -315,7 +318,9 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
     chain = np.load(chain_file)
     chain = np.array([chain])
     lnprob = np.load(lnprob_file)
-    best_group = al.getBestSample(chain, lnprob)
+    best_sample = dt.getBestSample(chain, lnprob)
+    best_group = syn.Group(best_sample, internal=True,
+                           sphere=len(best_sample) == 9)
 
     star_pars['xyzuvw'] = fits.getdata(xyzuvw_file, 1)
     star_pars['xyzuvw_cov'] = fits.getdata(xyzuvw_file, 2)

@@ -4,6 +4,9 @@ Simple script producing a diagram that demos how fits will be initialised
 from __future__ import division, print_function
 
 import matplotlib as mpl
+
+import chronostar.fitplotter
+
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
@@ -64,7 +67,7 @@ for offset in offset_opts:
 
     for i in range(ngroups):
         comp_groups[i] = syn.Group(init_comps[i], internal=True, starcount=False)
-        ee.plotCovEllipse(comp_groups[i].generateCovMatrix()[3:5, 3:5],
+        chronostar.fitplotter.plotCovEllipse(comp_groups[i].generateCovMatrix()[3:5, 3:5],
                           comp_groups[i].mean[3:5], with_line=True, color=color)
     plt.xlabel('U [km/s]')
     plt.ylabel('V [km/s]')

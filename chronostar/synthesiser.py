@@ -1,6 +1,9 @@
 """
 synthesiser
 
+Used to generate realistic data for one (or many) synthetic association(s)
+with multiple starburst events along with a background as desired.
+
 From a parametrised gaussian distribution, generate the starting
 XYZUVW values for a given number of stars
 
