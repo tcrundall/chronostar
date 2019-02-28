@@ -16,7 +16,7 @@ from emcee.utils import MPIPool
 sys.path.insert(0, '..')
 import chronostar.expectmax as em
 import chronostar.groupfitter as gf
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.datatool as dt
 
 

@@ -17,7 +17,7 @@ import random
 import sys
 from emcee.utils import MPIPool
 sys.path.insert(0, '..')
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
 import chronostar.converter as cv
 import chronostar.measurer as ms

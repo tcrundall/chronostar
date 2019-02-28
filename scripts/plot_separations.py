@@ -1,4 +1,7 @@
 from __future__ import division, print_function
+
+import chronostar.synthdata
+
 """
 Simple script generating some orbital traceback plots, represented
 as separation from mean.
@@ -31,7 +34,7 @@ precs = ['perf', 'half', 'gaia', 'double']
 prec_val = {'perf':1e-5, 'half':0.5, 'gaia':1.0, 'double':2.0}
 
 for prec in precs:
-    astro_table = ms.measureXYZUVW(perf_xyzuvw_now, prec_val[prec])
+    astro_table = chronostar.synthdata.measureXYZUVW(perf_xyzuvw_now, prec_val[prec])
     xyzuvw_dict = cv.convertMeasurementsToCartesian(astro_table)
     # for each star, sample its possible phase properties... 10 times?
     tp.plotSeparation(xyzuvw_dict['xyzuvw'], times, prec=prec)

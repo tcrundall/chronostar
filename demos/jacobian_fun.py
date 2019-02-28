@@ -10,7 +10,7 @@ sys.path.insert(0, '..')
 #from chronostar.retired.tracingback import trace_forward
 #from chronostar.retired import utils
 import chronostar.traceorbit as torb
-from chronostar.synthesiser import Group
+from chronostar.component import Component
 import chronostar.errorellipse as ee
 import chronostar.transform as tf
 
@@ -115,7 +115,7 @@ if __name__ == '__main__':
         [0,0,0,0,10,0,10, 1, 1, .1, 0., 0., 0., 1000, nstars],
     ]
 
-    my_group = Group(dummy_groups[0], sphere=False)
+    my_group = Component(dummy_groups[0], form=False)
 
     #for cnt, dummy_group_pars_ex in enumerate(dummy_groups):
     mean = my_group.mean

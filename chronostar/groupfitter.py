@@ -8,6 +8,9 @@ import astropy.constants as const
 import astropy.units as u
 import emcee
 import logging
+
+import chronostar.component
+
 try:
     import matplotlib.pyplot as plt
     plt_avail = True
@@ -18,7 +21,7 @@ import pdb
 import transform as tf
 from _overlap import get_lnoverlaps
 import traceorbit as torb
-import synthesiser as syn
+import synthdata as syn
 import datatool as dt
 
 try:
@@ -222,7 +225,7 @@ def getLogOverlaps(pars, star_pars):
             the covariance of each star in XYZUVW space
     """
     # convert pars into covariance matrix with our Group class
-    g = syn.Group(pars, internal=True)
+    g = chronostar.component.Component(pars, internal=True)
     cov_then = g.generateCovMatrix()
 
     # Trace group pars forward to now
@@ -410,7 +413,7 @@ def lnlikeTraceback(pars, star_pars, z, return_lnols=False):
         the logarithm of the likelihood of the fit
     """
     # convert pars into covariance matrix
-    g = syn.Group(pars, internal=True)
+    g = chronostar.component.Component(pars, internal=True)
     mean_then = g.mean
     cov_then = g.generateCovMatrix()
     age = g.age

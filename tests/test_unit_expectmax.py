@@ -4,7 +4,7 @@ import numpy as np
 import sys
 sys.path.insert(0,'..')
 
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.measurer as ms
 import chronostar.converter as cv
 import chronostar.groupfitter as gf
@@ -68,9 +68,10 @@ def test_expectation():
     old_z[nass_stars:, 1] = 1.
 
     age = 1e-5
-    ass_pars = np.array([0, 0, 0, 0, 0, 0, 5., 2., age, nass_stars])
-    ass_xyzuvw_init, ass_group =\
-        syn.synthesiseXYZUVW(ass_pars, return_group=True, internal=False)
+    ass_pars = np.array([0, 0, 0, 0, 0, 0, 5., 2., age])
+    ass_xyzuvw_init, ass_group = \
+        syn.synthesiseXYZUVW(ass_pars, nstars=nass_stars, return_group=True,
+                             internal=False)
     field_xyzuvw_init = np.random.uniform(-15, 15, (nfield, 6))
 
     all_xyzuvw_init = np.vstack((ass_xyzuvw_init, field_xyzuvw_init))

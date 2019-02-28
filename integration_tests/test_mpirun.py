@@ -3,13 +3,16 @@ import logging
 import numpy as np
 import sys
 
+import chronostar.component
+import chronostar.synthdata
+
 sys.path.insert(0,'..')
 
 import chronostar.groupfitter as gf
 import chronostar.converter as cv
 import chronostar.measurer as ms
 import chronostar.traceorbit as torb
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 
 def test_mpirun():
     logging.basicConfig(level=logging.INFO, filename='logs/mpirun.log')
@@ -40,14 +43,14 @@ def test_mpirun():
 
     pars = np.array([0., 0., 0., 0., 0., 0., 0., 0., 1e-8, 100])
     error_frac = 1.0
-    xyzuvw_init, group = syn.synthesiseXYZUVW(
-        pars, return_group=True, internal=True, group_savefile=group_savefile,
-        xyzuvw_savefile=xyzuvw_init_savefile
-    )
+    xyzuvw_init, group = syn.synthesiseXYZUVW(pars, return_group=True,
+                                              xyzuvw_savefile=xyzuvw_init_savefile,
+                                              group_savefile=group_savefile,
+                                              internal=True)
     xyzuvw_now = torb.traceManyOrbitXYZUVW(xyzuvw_init, group.age,
                                            single_age=True)
-    astro_table = ms.measureXYZUVW(xyzuvw_now, error_frac,
-                                   savefile=astro_savefile)
+    astro_table = chronostar.synthdata.measureXYZUVW(xyzuvw_now, error_frac,
+                                                     savefile=astro_savefile)
     star_pars = cv.convertMeasurementsToCartesian(astro_table,
                                                   savefile=xyzuvw_conv_savefile)
 
@@ -57,7 +60,7 @@ def test_mpirun():
         save_dir='temp_data/'
     )
 
-    best_fit_group = syn.Group(best_fit, internal=True)
+    best_fit_group = chronostar.component.Component(best_fit, internal=True)
 
     assert np.allclose(best_fit_group.mean, group.mean, atol=0.5)
     assert np.allclose(best_fit_group.age, group.age, atol=0.5)

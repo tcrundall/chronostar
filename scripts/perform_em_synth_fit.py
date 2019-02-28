@@ -3,6 +3,7 @@
 """
 TODO: THIS SCRIPT IS A PILE OF GARBAGE. REALLY NEED TO REVIEW THIS
 """
+import chronostar.synthdata
 
 try:
     import matplotlib as mpl
@@ -17,7 +18,7 @@ import numpy as np
 import sys
 from emcee.utils import MPIPool
 sys.path.insert(0, '..')
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
 import chronostar.converter as cv
 import chronostar.measurer as ms
@@ -121,8 +122,8 @@ logging.info(" done")
 logging.info("Saving synthetic data...")
 np.save(rdir+groups_savefile, origins)
 np.save(rdir+xyzuvw_perf_file, all_xyzuvw_now_perf)
-astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
-                               savefile=rdir+astro_savefile)
+astro_table = chronostar.synthdata.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
+                                                 savefile=rdir+astro_savefile)
 
 star_pars = cv.convertMeasurementsToCartesian(
     astro_table, savefile=rdir+xyzuvw_conv_savefile,

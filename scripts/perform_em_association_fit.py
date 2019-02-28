@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+import chronostar.component
 
 try:
     import matplotlib as mpl
@@ -16,7 +17,7 @@ from emcee.utils import MPIPool
 sys.path.insert(0, '..')
 import chronostar.expectmax as em
 import chronostar.groupfitter as gf
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 
 
 try:
@@ -134,7 +135,7 @@ if NGROUPS == 1:
     bp_dv = np.sqrt(np.min([bp_cov[3,3], bp_cov[4,4], bp_cov[5,5]]))
     bp_age = 0.5
     bp_pars = np.hstack((bp_mean, bp_dx, bp_dv, bp_age, nstars))
-    bp_group = syn.Group(bp_pars)
+    bp_group = chronostar.component.Component(bp_pars)
     origins = [bp_group]
 
 #go through and compare overlap with groups with

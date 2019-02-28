@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 
 import chronostar.fitplotter
+import chronostar.synthdata
 
 """
 Confirm reasonable deviation in XYZUVW due to synthetic measurement error
@@ -18,7 +19,7 @@ from astropy.table import Table
 
 sys.path.insert(0, '..')
 
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.measurer as ms
 import chronostar.converter as cv
 import chronostar.traceorbit as torb
@@ -47,9 +48,8 @@ mean_then = torb.traceOrbitXYZUVW(mean_now, -age)
 group_pars = np.hstack((mean_then, dX, dV, age, nstars))
 
 xyzuvw_init, origin = \
-    syn.synthesiseXYZUVW(group_pars, sphere=True,
+    syn.synthesiseXYZUVW(group_pars, form='sphere', return_group=True,
                          xyzuvw_savefile=rdir + xyzuvw_init_savefile,
-                         return_group=True,
                          group_savefile=rdir + group_savefile)
 
 # Sanity check, test stars traceback to approximately origin
@@ -84,8 +84,8 @@ print("Mean of stars now matches origin seed: {}".format(
 ))
 perf_astro_filename = rdir + 'perf_astro_table.txt'
 perf_xyzuvw_conv_savefile = rdir + 'perf_xyzuvw_now.fits'
-perf_astro_table = ms.measureXYZUVW(xyzuvw_now_perf, prec_val['perf'],
-                                    savefile=perf_astro_filename)
+perf_astro_table = chronostar.synthdata.measureXYZUVW(xyzuvw_now_perf, prec_val['perf'],
+                                                      savefile=perf_astro_filename)
 perf_star_pars = cv.convertMeasurementsToCartesian(
     perf_astro_table, savefile=perf_xyzuvw_conv_savefile
 )
@@ -98,8 +98,8 @@ for prec in precs:
                  '.', label='perf now' )
         astro_savefile = rdir + prec + "_astro_table.txt"
         xyzuvw_conv_savefile = rdir + prec + "_xyzuvw_now.fits"
-        astro_table = ms.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
-                                       savefile=astro_savefile)
+        astro_table = chronostar.synthdata.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
+                                                         savefile=astro_savefile)
 
         # confirm deviation from perfect astrometry is consistent
         rv_diff = astro_table['rv'] - perf_astro_table['rv']

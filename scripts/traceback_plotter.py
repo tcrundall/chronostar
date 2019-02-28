@@ -1,5 +1,7 @@
 from __future__ import division, print_function
 
+import chronostar.synthdata
+
 """
 Reproduces the traceback plots seen all through the literature
 """
@@ -57,7 +59,7 @@ for scen in scenarios:
             #xyzuvw_file = res_dir + scen + "_xyzuvw_init.npy"
             xyzuvw_file = res_dir + scen + "_perf_xyzuvw.npy"
             init_xyzuvw = np.load(xyzuvw_file)
-            astr_table = ms.measureXYZUVW(init_xyzuvw, prec_val[prec])
+            astr_table = chronostar.synthdata.measureXYZUVW(init_xyzuvw, prec_val[prec])
             cv.convertMeasurementsToCartesian(t=astr_table,
                                               savefile=fits_file)
 

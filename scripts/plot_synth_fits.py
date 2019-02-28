@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 
+import chronostar.component
+
 """
 Plot a bunch of synth fits
 """
@@ -13,7 +15,7 @@ from shutil import copyfile
 sys.path.insert(0, '..')
 
 import chronostar.datatool as dt
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.fitplotter as fp
 
 ages = [30] #[5,15,30,50,100,200]
@@ -151,7 +153,7 @@ for scenario in product(ages, dxs, dvs, nstars, labels, precs):
             chain = np.load(chain_file).reshape(-1,9)
             lnprob = np.load(lnprob_file)
             best_pars = chain[np.argmax(lnprob_file)]
-            best_fit = syn.Group(best_pars, internal=True, starcount=False)
+            best_fit = chronostar.component.Component(best_pars, internal=True)
             origins = dt.loadGroups(origins_file)
 
             star_pars = dt.loadXYZUVW(star_pars_file)

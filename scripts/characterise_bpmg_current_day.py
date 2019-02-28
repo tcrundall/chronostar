@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 
+import chronostar.component
+
 """
 Takes the chains of fit to BPMG origin, and converts to chains of
 parametrisation of corresponding current-day fits to BPMG
@@ -8,7 +10,7 @@ parametrisation of corresponding current-day fits to BPMG
 import numpy as np
 import sys
 sys.path.insert(0, '..')
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.transform as tf
 import chronostar.traceorbit as torb
 import chronostar.datatool as dt
@@ -44,7 +46,7 @@ for chaindir, label in zip(chaindirs, labels):
             if sample_ix % 100 == 0:
                 print("Done {:6} of {}".format(sample_ix, current_day_chain.shape[0]))
             mean = sample[:6]
-            group = syn.Group(sample, internal=True, starcount=False)
+            group = chronostar.component.Component(sample, internal=True)
 
             cd_mean = torb.traceOrbitXYZUVW(group.mean, group.age)
             cd_cov = tf.transformCovMat(group.generateSphericalCovMatrix(), torb.traceOrbitXYZUVW,

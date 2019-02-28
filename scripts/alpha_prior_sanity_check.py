@@ -6,9 +6,12 @@ from __future__ import print_function, division
 
 import numpy as np
 import sys
+
+import chronostar.component
+
 sys.path.insert(0, '..')
 
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.groupfitter as gf
 import chronostar.expectmax as em
 
@@ -62,8 +65,8 @@ for i, (group_pars_ex, weights) in enumerate(zip(all_group_pars, all_weights)):
     print("Likelihood from overlaps: {:8.4f}".format(overallLnLikes[i]))
     print("BIC: {:8.4f}".format(BICs[i]))
     for group_par, weight in zip(group_pars_ex, weights):
-        group_obj = syn.Group(group_par, starcount=False, internal=False,
-                              sphere=True)
+        group_obj = chronostar.component.Component(group_par, form=True,
+                                                   internal=False)
         lnalpha_prior = gf.lnAlphaPrior(group_obj.getInternalSphericalPars(),
                                               weight)
         lnalpha_priors.append(lnalpha_prior)
@@ -89,9 +92,10 @@ final_groups = np.load(rdir + "final_groups.npy")
 for i in range(len(three_group_pars_ex)):
     spec_comp_stars_mask = np.where(final_z[:,i] > .5)
     spec_comp_star_pars = {'xyzuvw':star_pars['xyzuvw'][spec_comp_stars_mask],
-                          'xyzuvw_cov':star_pars['xyzuvw_cov'][spec_comp_stars_mask]}
-    spec_comp_group = syn.Group(three_group_pars_ex[1], starcount=False,
-                               internal=False)
+                          'xyzuvw_cov':star_pars['xyzuvw_cov'][
+                              spec_comp_stars_mask]}
+    spec_comp_group = chronostar.component.Component(three_group_pars_ex[1],
+                                                     internal=False)
 
     spec_ln_bg_ols = em.backgroundLogOverlaps(spec_comp_star_pars['xyzuvw'], bg_hists,
                                          correction_factor=1.)

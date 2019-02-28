@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, '..')
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
 import chronostar.measurer as ms
 import chronostar.converter as cv

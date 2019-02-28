@@ -15,7 +15,7 @@ import time
 import sys
 sys.path.insert(0, '..')
 import chronostar.expectmax as em
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 
 
 #def plot_cov_ellipse(cov, pos, volume=.5, ax=None, fc='none', ec=[0, 0, 0], a=1,

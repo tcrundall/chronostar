@@ -14,7 +14,7 @@ import sys
 from astropy.io import fits
 
 sys.path.insert(0, '..')
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
 import chronostar.transform as tf
 import chronostar.datatool as dt

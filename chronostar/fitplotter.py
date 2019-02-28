@@ -11,7 +11,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
-import synthesiser as syn
+import synthdata as syn
 import errorellipse as ee
 import traceorbit as torb
 import transform as tf

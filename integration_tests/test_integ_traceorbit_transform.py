@@ -1,11 +1,14 @@
 import logging
 import numpy as np
 import sys
+
+import chronostar.component
+
 sys.path.insert(0, '..')
 
 import chronostar.transform as tf
 import chronostar.traceorbit as torb
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 
 
 def test_traceOrbitWithTransform():
@@ -15,7 +18,7 @@ def test_traceOrbitWithTransform():
     """
     logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     pars = np.array([0.,0.,0.,0.,0.,0.,0.,0.,1e-8])
-    g = syn.Group(pars, internal=True)
+    g = chronostar.component.Component(pars, internal=True)
     cov_then = g.generateCovMatrix()
 
     mean_now = torb.traceOrbitXYZUVW(g.mean, g.age, True)

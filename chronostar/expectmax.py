@@ -12,6 +12,9 @@ import pdb
 from distutils.dir_util import mkpath
 import logging
 import numpy as np
+
+import chronostar.component
+
 try:
     import matplotlib as mpl
     # prevents displaying plots from generation from tasks in background
@@ -20,7 +23,7 @@ try:
 except ImportError:
     print("Warning: matplotlib not imported")
 
-import synthesiser as syn
+import synthdata as syn
 import traceorbit as torb
 import groupfitter as gf
 
@@ -500,7 +503,7 @@ def getInitialGroups(ngroups, xyzuvw, offset=False, v_dist=10.):
         logging.info("Group {} has init UV of ({},{})".\
                     format(i, mean_w_offset[3], mean_w_offset[4]))
         group_pars = np.hstack((mean_w_offset, dx, dv, age))
-        group = syn.Group(group_pars, sphere=True, starcount=False)
+        group = chronostar.component.Component(group_pars, form='sphere')
         groups.append(group)
 
     return groups
@@ -536,8 +539,9 @@ def decomposeGroup(group, young_age=None, old_age=None, age_offset=4):
     for age in ages:
         mean_then = torb.traceOrbitXYZUVW(mean_now, -age, single_age=True)
         group_pars_int = np.hstack((mean_then, internal_pars[6:8], age))
-        sub_groups.append(syn.Group(group_pars_int, sphere=True,
-                                    internal=True, starcount=False))
+        sub_groups.append(
+            chronostar.component.Component(group_pars_int, form='sphere',
+                                           internal=True))
     all_init_pars = [sg.getInternalSphericalPars() for sg in sub_groups]
 
     return all_init_pars, sub_groups
@@ -639,8 +643,8 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
 
             logging.info("With age of: {:.3} +- {:.3} Myr".\
                         format(np.median(chain[:,:,-1]), np.std(chain[:,:,-1])))
-            new_group = syn.Group(best_fit, sphere=True, internal=True,
-                                  starcount=False)
+            new_group = chronostar.component.Component(best_fit, form='sphere',
+                                                       internal=True)
             new_groups.append(new_group)
             np.save(gdir + "best_group_fit.npy", new_group)
             np.save(gdir + 'final_chain.npy', chain)
@@ -988,8 +992,8 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
 
         final_groups = np.array(
-            [syn.Group(final_best_fit, sphere=True, internal=True,
-                       starcount=False)
+            [chronostar.component.Component(final_best_fit, form='sphere',
+                                            internal=True)
              for final_best_fit in final_best_fits]
         )
         np.save(final_dir+'final_groups.npy', final_groups)

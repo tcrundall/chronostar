@@ -7,7 +7,7 @@ import os
 import sys
 sys.path.insert(0, '..')
 import chronostar.datatool as dt
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 
 def loadFinalResults(fdir):
     fgroups = dt.loadGroups(fdir + 'final_groups.npy')

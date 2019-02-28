@@ -13,6 +13,9 @@ where nthreads is the number of threads to be passed into emcee run
 """
 from __future__ import division, print_function
 
+import chronostar.component
+import chronostar.synthdata
+
 try:
     # prevents displaying plots from generation from tasks in background
     import matplotlib as mpl
@@ -32,7 +35,7 @@ from emcee.utils import MPIPool
 import sys
 sys.path.insert(0, '..')
 
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
 import chronostar.converter as cv
 import chronostar.measurer as ms
@@ -186,7 +189,8 @@ except IOError:
     dx, dy, dz = np.std(xyzuvw_init[:,:3], axis=0)
     dv = np.prod(np.std(xyzuvw_init[:,3:], axis=0))**(1./3.)
     group_pars = np.hstack((mean, dx, dy, dz, dv, 0., 0., 0., age))
-    origin = syn.Group(group_pars, internal=False, sphere=False, starcount=False)
+    origin = chronostar.component.Component(group_pars, form=False,
+                                            internal=False)
     np.save(group_savefile, origin)
 
     xyzuvw_now_perf =\
@@ -208,8 +212,8 @@ for prec in precs:
         logging.info("Precision [{}] already fitted for".format(prec))
     except IOError:
         # convert XYZUVW data into astrometry
-        astro_table = ms.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
-                                       savefile=pdir+astro_savefile)
+        astro_table = chronostar.synthdata.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
+                                                         savefile=pdir+astro_savefile)
         star_pars =\
             cv.convertMeasurementsToCartesian(astro_table,
                                               savefile=pdir+xyzuvw_conv_savefile)
@@ -221,8 +225,8 @@ for prec in precs:
             pool=pool, convergence_tol=C_TOL, plot_dir=pdir, save_dir=pdir,
             sampling_steps=SAMPLING_STEPS
         )
-        best_group = syn.Group(best_fit, sphere=True,
-                               internal=True, star_count=False)
+        best_group = chronostar.component.Component(best_fit, form=True,
+                                                    internal=True)
         np.save(pdir + 'final_best_groups.npy', best_group)
         med_and_span = dt.calcMedAndSpan(chain)
         np.save(pdit+'med_and_span.npy', med_and_span)

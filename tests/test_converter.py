@@ -4,11 +4,13 @@ from astropy.io import fits
 import pdb
 import sys
 
+import chronostar.synthdata
+
 sys.path.insert(0, '..')
 
 import chronostar.converter as cv
 import chronostar.coordinate as cc
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.transform as tf
 import chronostar.traceorbit as to
 import chronostar.measurer as ms
@@ -44,10 +46,10 @@ def test_converter():
 
     # Generate 100 synthetic stars centred at LSR with dX = dV = 1
     group_pars = [0., 0., 0., 0., 0., 0., 1., 1., AGE, 100]
-    xyzuvw_init, group = syn.synthesiseXYZUVW(
-        group_pars, sphere=True, xyzuvw_savefile=xyzuvw_init_savefile,
-        group_savefile=group_savefile, return_group=True
-    )
+    xyzuvw_init, group = syn.synthesiseXYZUVW(group_pars, form='sphere',
+                                              return_group=True,
+                                              xyzuvw_savefile=xyzuvw_init_savefile,
+                                              group_savefile=group_savefile)
 
     # Traceforward by a negligible time step
     xyzuvw_now_true = to.traceManyOrbitXYZUVW(xyzuvw_init, group.age,
@@ -55,7 +57,7 @@ def test_converter():
 
     # Measure with Gaia-ish uncertainty
     # ms.measureXYZUVW(xyzuvw_now_true, 1.0, astro_savefile)
-    ms.measureXYZUVW(xyzuvw_now_true, 0.1, astro_savefile)
+    chronostar.synthdata.measureXYZUVW(xyzuvw_now_true, 0.1, astro_savefile)
     cv.convertMeasurementsToCartesian(loadfile=astro_savefile,
                                       savefile=xyzuvw_conv_savefile)
 

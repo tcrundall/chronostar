@@ -7,6 +7,9 @@ uncertainty
 """
 import numpy as np
 import sys
+
+import chronostar.synthdata
+
 sys.path.insert(0, '..')
 import chronostar.measurer as ms
 import chronostar.coordinate as cc
@@ -25,6 +28,6 @@ def test_measureXYZUVW():
         0., 0., ms.GERROR['e_Plx'], ms.GERROR['e_pm'],
         ms.GERROR['e_pm'], ms.GERROR['e_RV']
     ])
-    astro_table = ms.measureXYZUVW(xyzuvws, 1.0)
+    astro_table = chronostar.synthdata.measureXYZUVW(xyzuvws, 1.0)
     measured_vals, errors = ms.convertTableToArray(astro_table)
     assert np.allclose(ref_errors, np.std(measured_vals, axis=0), rtol=2e-1)

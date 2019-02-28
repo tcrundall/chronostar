@@ -12,8 +12,11 @@ import logging
 import numpy as np
 import pstats
 import sys
+
+import chronostar.synthdata
+
 sys.path.insert(0, '..')
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.measurer as ms
 import chronostar.converter as cv
 import chronostar.groupfitter as gf
@@ -28,12 +31,12 @@ if __name__ == '__main__':
 
     pars = np.array([0., 0., 0., 0., 0., 0., 0., 0., 1e-8, 100])
     error_frac = 1
-    xyzuvw_init, group = syn.synthesiseXYZUVW(
-        pars, return_group=True, internal=True, group_savefile=group_savefile,
-        xyzuvw_savefile=xyzuvw_init_savefile
-    )
-    astro_table = ms.measureXYZUVW(xyzuvw_init, error_frac,
-                                   savefile=astro_savefile)
+    xyzuvw_init, group = syn.synthesiseXYZUVW(pars, return_group=True,
+                                              xyzuvw_savefile=xyzuvw_init_savefile,
+                                              group_savefile=group_savefile,
+                                              internal=True)
+    astro_table = chronostar.synthdata.measureXYZUVW(xyzuvw_init, error_frac,
+                                                     savefile=astro_savefile)
     star_pars = cv.convertMeasurementsToCartesian(astro_table,
                                                   savefile=xyzuvw_conv_savefile)
 

@@ -1,4 +1,6 @@
 # coding: utf-8
+import chronostar.component
+
 get_ipython().magic(u'cd field_blind/')
 get_ipython().magic(u'run ../debug.py')
 get_ipython().magic(u'ls final/')
@@ -60,8 +62,8 @@ dx_now
 approx_group_now_pars = np.hstack((ass_mn_now, dx_now, dv_now, 1e-5))
 approx_group_now_pars
 approx_group_now = syn.Group(approx_group_now_pars)
-import chronostar.synthesiser as syn
-approx_group_now = syn.Group(approx_group_now_pars)
+import chronostar.synthdata as syn
+approx_group_now = chronostar.component.Component(approx_group_now_pars)
 approx_group_now.generateCovMatrix()
 ass_cov_now
 gf.lnlike(approx_group_now.generateInternalSphericalPars(),

@@ -5,7 +5,7 @@ import numpy as np
 import sys
 sys.path.insert(0, '..')
 import chronostar.groupfitter as gf
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.datatool as dt
 
 def calcHistogramDensity(x, bin_heights, bin_edges):

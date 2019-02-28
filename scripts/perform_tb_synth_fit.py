@@ -14,6 +14,8 @@ where nthreads is the number of threads to be passed into emcee run
 """
 from __future__ import division, print_function
 
+import chronostar.synthdata
+
 try:
     # prevents displaying plots from generation from tasks in background
     import matplotlib as mpl
@@ -33,7 +35,7 @@ from emcee.utils import MPIPool
 
 sys.path.insert(0, '..')
 
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
 import chronostar.converter as cv
 import chronostar.measurer as ms
@@ -150,11 +152,10 @@ except IOError:
 
     # synthesise perfect XYZUVW data
     logging.info("Synthesising data")
-    xyzuvw_init, origin =\
-        syn.synthesiseXYZUVW(group_pars, sphere=True,
-                             xyzuvw_savefile=rdir+xyzuvw_init_savefile,
-                             return_group=True,
-                             group_savefile=rdir+group_savefile)
+    xyzuvw_init, origin = \
+        syn.synthesiseXYZUVW(group_pars, form='sphere', return_group=True,
+                             xyzuvw_savefile=rdir + xyzuvw_init_savefile,
+                             group_savefile=rdir + group_savefile)
     logging.info("Origin has values\n"
                  "\tage:     {}\n"
                  "\tsph_dX:  {}\n"
@@ -176,8 +177,8 @@ for prec in precs:
         logging.info("Precision [{}] already fitted for".format(prec))
     except IOError:
         # convert XYZUVW data into astrometry
-        astro_table = ms.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
-                                       savefile=pdir+astro_savefile)
+        astro_table = chronostar.synthdata.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
+                                                         savefile=pdir+astro_savefile)
         # logging.info("-- Generated astrometry table with errors:")
         # logging.info("Parallax:       {:4} mas".format(ms.GERROR['e_Plx']))
         # logging.info("Radial velocity:{:4} km/s".format(ms.GERROR['e_RV']))

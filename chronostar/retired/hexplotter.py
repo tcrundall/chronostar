@@ -10,11 +10,12 @@ from astropy.io import fits
 import chronostar.errorellipse as ee
 import chronostar.analyser as al
 
+import chronostar.component
 import chronostar.fitplotter
 import chronostar.traceorbit as torb
 import chronostar.transform as tf
 import chronostar.datatool as dt
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 
 COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']*12
@@ -319,8 +320,9 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
     chain = np.array([chain])
     lnprob = np.load(lnprob_file)
     best_sample = dt.getBestSample(chain, lnprob)
-    best_group = syn.Group(best_sample, internal=True,
-                           sphere=len(best_sample) == 9)
+    best_group = chronostar.component.Component(best_sample,
+                                                form=len(best_sample) == 9,
+                                                internal=True)
 
     star_pars['xyzuvw'] = fits.getdata(xyzuvw_file, 1)
     star_pars['xyzuvw_cov'] = fits.getdata(xyzuvw_file, 2)

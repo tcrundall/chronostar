@@ -11,10 +11,12 @@ import logging
 import numpy as np
 import sys
 
+import chronostar.synthdata
+
 sys.path.insert(0, '..')  # hacky way to get access to module
 
 import chronostar.expectmax as em
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
 import chronostar.measurer as ms
 import chronostar.converter as cv
@@ -69,7 +71,7 @@ def test_maximisation():
                                                     )
     # NEED TO TRACE STARS FORWARD!!!
     now_xyzuvw = torb.traceManyOrbitXYZUVW(init_xyzuvw,uniform_age,)
-    astro_table = ms.measureXYZUVW(now_xyzuvw, 1.0)
+    astro_table = chronostar.synthdata.measureXYZUVW(now_xyzuvw, 1.0)
     star_pars = cv.convertMeasurementsToCartesian(astro_table)
 
     import pdb;

@@ -11,7 +11,7 @@ from scipy import stats
 import sys
 sys.path.insert(0, '..')
 import chronostar.datatool as dt
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.expectmax as em
 import chronostar.groupfitter as gf
 from chronostar._overlap import get_lnoverlaps

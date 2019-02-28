@@ -67,7 +67,7 @@ except ValueError:
 # since this could be being executed anywhere, need to pass in package location
 sys.path.insert(0, package_path)
 try:
-    import chronostar.synthesiser as syn
+    import chronostar.synthdata as syn
     import chronostar.tracingback as tb
     import chronostar.tfgroupfitter as tfgf
     import chronostar.error_ellipse as ee

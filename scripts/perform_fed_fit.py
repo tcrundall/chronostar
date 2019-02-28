@@ -13,6 +13,9 @@ where nthreads is the number of threads to be passed into emcee run
 """
 from __future__ import division, print_function
 
+import chronostar.component
+import chronostar.synthdata
+
 try:
     # prevents displaying plots from generation from tasks in background
     import matplotlib as mpl
@@ -69,7 +72,7 @@ except ValueError:
 # since this could be being executed anywhere, need to pass in package location
 sys.path.insert(0, package_path)
 try:
-    import chronostar.synthesiser as syn
+    import chronostar.synthdata as syn
     import chronostar.traceorbit as torb
     import chronostar.converter as cv
     import chronostar.measurer as ms
@@ -146,7 +149,7 @@ except IOError:
     dv = np.prod(np.std(xyzuvw_init[:,3:], axis=0))**(1./3.)
     group_pars = np.hstack((mean, dx, dy, dz, dv, 0., 0., 0., age))
     pdb.set_trace()
-    origin = syn.Group(group_pars, sphere=False, starcount=False)
+    origin = chronostar.component.Component(group_pars, form=False)
     np.save(group_savefile, origin)
 
     xyzuvw_now_perf =\
@@ -169,8 +172,8 @@ for prec in precs:
         logging.info("Precision [{}] already fitted for".format(prec))
     except IOError:
         # convert XYZUVW data into astrometry
-        astro_table = ms.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
-                                       savefile=astro_savefile)
+        astro_table = chronostar.synthdata.measureXYZUVW(xyzuvw_now_perf, prec_val[prec],
+                                                         savefile=astro_savefile)
         star_pars =\
             cv.convertMeasurementsToCartesian(astro_table,
                                               savefile=xyzuvw_conv_savefile)

@@ -2,9 +2,12 @@ import logging
 import numpy as np
 from scipy.stats import mstats
 import sys
+
+import chronostar.component
+
 sys.path.insert(0, '..')
 
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 LOGGINGLEVEL = logging.DEBUG
 
 TEMP_SAVE_DIR = 'temp_data/'
@@ -16,7 +19,7 @@ def testGroupGeneration():
     logging.basicConfig(level=LOGGINGLEVEL,
                         filename="temp_logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 50.]
-    myGroup = syn.Group(pars, sphere=True)
+    myGroup = chronostar.component.Component(pars, form='sphere')
     assert myGroup.age == pars[-2]
 
     scmat = myGroup.generateSphericalCovMatrix()
@@ -28,8 +31,8 @@ def testStarGenerate():
     logging.basicConfig(level=LOGGINGLEVEL,
                         filename="temp_logs/test_synthesiser.log")
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100000.]
-    init_xyzuvw = syn.synthesiseXYZUVW(pars, sphere=True)
-    myGroup = syn.Group(pars, sphere=True)
+    init_xyzuvw = syn.synthesiseXYZUVW(pars, form='sphere')
+    myGroup = chronostar.component.Component(pars, form='sphere')
     fitted_cov = np.cov(init_xyzuvw.T)
     np.set_printoptions(suppress=True, precision=4)
     assert np.allclose(fitted_cov, myGroup.generateSphericalCovMatrix(),
@@ -50,7 +53,8 @@ def testInternalPars():
     log_dx = 0.
     log_dv = 0.
     internal_pars_sphere = np.array([0.,0.,0.,0.,0.,0.,log_dx,log_dv,0.])
-    myGroup = syn.Group(internal_pars_sphere, internal=True)
+    myGroup = chronostar.component.Component(internal_pars_sphere,
+                                             internal=True)
     assert myGroup.dx == np.exp(log_dx)
     assert myGroup.dv == np.exp(log_dv)
     assert np.allclose(myGroup.generateSphericalCovMatrix(), np.eye(6,6))
@@ -62,10 +66,10 @@ def testEllipticalGeneration():
     """
     logging.basicConfig(level=LOGGINGLEVEL,
                         filename="temp_logs/test_synthesiser.log")
-    pars = [0., 0., 0., 0., 0., 0., 10., 15., 5., 5., 0.0, 0.0, 0.0, 20.,
-            100000.]
-    init_xyzuvw = syn.synthesiseXYZUVW(pars, sphere=False)
-    myGroup = syn.Group(pars, sphere=False)
+    pars = [0., 0., 0., 0., 0., 0., 10., 15., 5., 5., 0.0, 0.0, 0.0, 20.]
+    nstars = 1000000
+    init_xyzuvw = syn.synthesiseXYZUVW(pars, nstars=nstars, form='elliptical')
+    myGroup = chronostar.component.Component(pars, form='elliptical')
     sphere_dx = mstats.gmean(pars[6:9])
     assert sphere_dx == myGroup.sphere_dx
 
@@ -91,10 +95,9 @@ def testSaveFiles():
     xyzuvw_savefile = TEMP_SAVE_DIR+'temp_xyzuvw.npy'
     group_savefile = TEMP_SAVE_DIR+'temp_group.npy'
     pars = [0., 0., 0., 0., 0., 0., 10., 5., 20., 100.]
-    xyzuvw_init, group = syn.synthesiseXYZUVW(
-        pars, return_group=True, xyzuvw_savefile=xyzuvw_savefile,
-        group_savefile=group_savefile
-    )
+    xyzuvw_init, group = syn.synthesiseXYZUVW(pars, return_group=True,
+                                              xyzuvw_savefile=xyzuvw_savefile,
+                                              group_savefile=group_savefile)
     xyzuvw_saved = np.load(xyzuvw_savefile)
     assert np.allclose(xyzuvw_init, xyzuvw_saved)
 

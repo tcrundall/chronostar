@@ -10,11 +10,7 @@ appropriate errors.
 from __future__ import print_function, division
 
 from astropy.table import Table
-import logging
 import numpy as np
-import pickle
-
-import chronostar.coordinate as cc
 
 # BASED ON MEDIAN ERRORS OF ALL GAIA STARS WITH RVS
 # AND <20% PARALLAX ERROR
@@ -90,54 +86,4 @@ def convertTableToArray(star_table):
     )).T
     return measured_vals, errors
 
-
-def measureXYZUVW(xyzuvws, error_frac, savefile=''):
-    """
-    Replicates the measurement of synthetic stars. Converts XYZUVW to radec..
-
-    Parameters
-    ----------
-    xyzuvws : [nstars, 6] float array
-        A list of stars in rh cartesian
-        coordinate system, centred on and co-rotating with the local standard
-        of rest
-        [pc, pc, pc, km/s, km/s, km/s]
-    error_frac : float
-        Parametrisation of Gaia-like uncertainty. 0 is perfect precision,
-        1.0 is simplified best Gaia uncertainty.
-    savefile : string {''}
-        if not empty, the astrometry table will be saved to the given
-        file name
-
-    Returns
-    -------
-    real_astros : ([nstars, 6] float array) List of stars in measurements with
-        incorporated error
-    """
-    errors = np.array([
-        0., 0., GERROR['e_Plx'], GERROR['e_pm'], GERROR['e_pm'], GERROR['e_RV']
-    ])
-    nstars = xyzuvws.shape[0]
-    astros = cc.convertManyLSRXYZUVWToAstrometry(xyzuvws)
-
-    raw_errors = error_frac * np.tile(errors, (nstars, 1))
-    random_errors = raw_errors * np.random.randn(*raw_errors.shape)
-
-    astros_w_errs = astros + random_errors
-    astrometry_table = convertArrayToTable(astros_w_errs, raw_errors)
-    #if as_table:
-    #    astros_w_errs = convertArrayToTable(astros_w_errs, raw_errors)
-    logging.info("-- Generated astrometry table with errors:")
-    logging.info("Parallax:       {:4} mas".\
-                 format(error_frac * GERROR['e_Plx']))
-    logging.info("Radial velocity:{:4} km/s".\
-                 format(error_frac * GERROR['e_RV']))
-    logging.info("Proper motion:  {:4} mas/yr".\
-                 format(error_frac * GERROR['e_pm']))
-
-
-    if savefile:
-        astrometry_table.write(savefile, format='ascii', overwrite=True)
-
-    return astrometry_table
 

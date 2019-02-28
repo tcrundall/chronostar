@@ -6,10 +6,11 @@ import numpy as np
 import sys
 
 import chronostar.fitplotter
+import chronostar.synthdata
 
 sys.path.insert(0, '..')
 
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.traceorbit as to
 import chronostar.measurer as ms
 import chronostar.converter as cv
@@ -29,17 +30,17 @@ astro_savefile = save_dir + 'astro_table.txt'
 
 
 group_pars = [0., 0., 0., 0., 0., 0., 1., 1., 0.5, 20]
-xyzuvw_init, group = syn.synthesiseXYZUVW(
-    group_pars, sphere=True, xyzuvw_savefile=xyzuvw_init_savefile,
-    group_savefile=group_savefile, return_group=True
-)
+xyzuvw_init, group = syn.synthesiseXYZUVW(group_pars, form='sphere',
+                                          return_group=True,
+                                          xyzuvw_savefile=xyzuvw_init_savefile,
+                                          group_savefile=group_savefile)
 logging.info("Age is: {} Myr".format(group.age))
 xyzuvw_now_true = to.traceManyOrbitXYZUVW(xyzuvw_init, np.array([0., group.age]))[:,1]
 #assert np.allclose(np.mean(xyzuvw_now, axis=0), group.mean, rtol=1e-1)
 logging.info("Mean of initial stars: {}".format(np.mean(xyzuvw_init, axis=0)))
 logging.info("Mean of final stars: {}".format(np.mean(xyzuvw_now_true, axis=0)))
 
-star_table = ms.measureXYZUVW(xyzuvw_now_true, 20.0, astro_savefile)
+star_table = chronostar.synthdata.measureXYZUVW(xyzuvw_now_true, 20.0, astro_savefile)
 astr_arr, err_arr = ms.convertTableToArray(star_table)
 nstars = len(star_table)
 

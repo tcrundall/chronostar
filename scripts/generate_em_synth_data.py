@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 from __future__ import print_function, division
 
+import chronostar.synthdata
+
 try:
     import matplotlib as mpl
     mpl.use('Agg')
@@ -16,7 +18,7 @@ import numpy as np
 import random
 import sys
 sys.path.insert(0, '..')
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
 import chronostar.converter as cv
 import chronostar.measurer as ms
@@ -149,7 +151,7 @@ except IOError:
         mean_then = torb.traceOrbitXYZUVW(mean_now_w_offset, -extra_pars[i,-2],
                                           single_age=True)
         group_pars = np.hstack((mean_then, extra_pars[i]))
-        xyzuvw_init, origin = syn.synthesiseXYZUVW(group_pars, sphere=True,
+        xyzuvw_init, origin = syn.synthesiseXYZUVW(group_pars, form='sphere',
                                                    return_group=True,
                                                    internal=False)
         origins.append(origin)
@@ -182,8 +184,8 @@ except IOError:
 
     np.save(groups_savefile, origins)
     np.save(xyzuvw_perf_file, all_xyzuvw_now_perf)
-    astro_table = ms.measureXYZUVW(all_xyzuvw_now_perf, error_frac=ERROR,
-                                   savefile=astro_savefile)
+    astro_table = chronostar.synthdata.measureXYZUVW(all_xyzuvw_now_perf, error_frac=ERROR,
+                                                     savefile=astro_savefile)
     star_pars = cv.convertMeasurementsToCartesian(
         astro_table, savefile=xyzuvw_conv_savefile,
     )
