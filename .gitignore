@@ -2,6 +2,8 @@
 results/*
 *.zip
 logs/*
+.idea
+stat_dumps
 
 # Data
 *.fits*
@@ -9,6 +11,10 @@ logs/*
 *.npy
 *.txt
 *.cmd
+*.stat
+
+# Config files
+*.json
 
 # Temp files
 data/synth_log.txt
@@ -117,3 +123,8 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# Specific swig outputs
+chronostar/overlap/overlap.py
+playground/numpy/multid/multid.py
+playground/swig-demo/overlap_tool.py
