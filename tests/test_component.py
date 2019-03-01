@@ -88,3 +88,21 @@ def test_splitGroup():
 
     assert np.allclose(lo_comp.mean, lo_comp.pars[:6])
 
+
+def test_loadComponents():
+    single_filename = 'temp_data/single_comp.npy'
+    multi_filename = 'temp_data/multi_comp.npy'
+
+    comp0 = Component(pars=SPHERE_PARS)
+    comp1 = Component(pars=SPHERE_PARS)
+
+    np.save(single_filename, comp0)
+    np.save(multi_filename, [comp0, comp1])
+
+    single_res = Component.loadComponents(single_filename)
+    # assert single_res[0].pars == comp1.pars
+
+    multi_res = Component.loadComponents(multi_filename)
+    assert np.allclose(multi_res[0].pars, comp0.pars)
+    assert np.allclose(multi_res[1].pars, comp1.pars)
+

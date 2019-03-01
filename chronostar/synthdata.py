@@ -20,133 +20,6 @@ from chronostar import coordinate
 from chronostar.component import Component
 from chronostar import traceorbit
 
-#
-# def synthesiseXYZUVW(pars, nstars, form='sphere', return_group=False,
-#                      xyzuvw_savefile='', group_savefile='', internal=False):
-#     """
-#     Generate a bunch of stars in situ based off a Guassian parametrisation
-#
-#     Parameters
-#     ----------
-#     pars : [10] or [15] float array
-#         10 parameters : [X,Y,Z,U,V,W,dX,dV,age,nstars]
-#             Covariance matrix describes a spherical distribution in pos
-#             and vel space
-#         15 parameters : [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars]
-#             Covariance matrix descirbes a spherical distribution in velocity
-#             space and freely orientable, triaxial ellipsoid in position space
-#     nstars : int
-#         Number of stars to be drawn
-#     form : string {'sphere'}
-#         'sphere' if providing pars in 9 parameter form,
-#         'ellpitical' if providing pars in 14 parameter form,
-#     return_group : boolean {False}
-#         Set flag if want to return the group object (for tracking input
-#         parameters)
-#     xyzuvw_savefile : String {''}
-#         Provide a string to numpy.save the init_xyzuvw array
-#     group_savefile : Stirng {''}
-#         Provide a string to numpy.save the group object; note you need to
-#         np.load(group_savefile).item() in order to retrieve it.
-#     internal : Boolean {False}
-#         Set if parameters are provided in emcee internalised form
-#
-#     Returns
-#     -------
-#     xyzuvw_init : [nstars,6] float array
-#         Initial distribution of stars in XYZUVW coordinates in corotating, RH
-#         (X,U positive towards galactic anti-centre) cartesian coordinates
-#         centred on local standard fo rest.
-#
-#     (if flag return_group is set)
-#     group : SynthGroup object
-#         An object that wraps initialisation parameters
-#     """
-#     logging.debug("Internal?: {}".format(internal))
-#     group = Component(pars, form=form, internal=internal)
-#     logging.debug("Mean {}".format(group.mean))
-#     logging.debug("Cov\n{}".format(group.generateCovMatrix()))
-#     logging.debug("Number of stars {}".format(group.nstars))
-#     init_xyzuvw = np.random.multivariate_normal(
-#         mean=group.mean, cov=group.generateCovMatrix(),
-#         size=nstars,
-#     )
-#     if xyzuvw_savefile:
-#         np.save(xyzuvw_savefile, init_xyzuvw)
-#     if group_savefile:
-#         np.save(group_savefile, group)
-#     if return_group:
-#         return init_xyzuvw, group
-#     else:
-#         return init_xyzuvw
-
-# def synthesiseManyXYZUVW(many_pars, star_counts, form='sphere', return_groups=False,
-#                          xyzuvw_savefile='', groups_savefile='',
-#                          internal=False):
-#     """
-#     Generate a bunch of stars in situ from many Gaussian parametrisations
-#
-#     Note: there is no orbital projection, only the initial positions
-#     of the stars are returned
-#     As a consequence, this function is stupid and useless....
-#
-#     Parameters
-#     ----------
-#     many_pars : [ngroups, 10] or [ngroups, 15] float array
-#         10 parameters : [X,Y,Z,U,V,W,dX,dV,age,nstars]
-#             Covariance matrix describes a spherical distribution in pos
-#             and vel space
-#         15 parameters : [X,Y,Z,U,V,W,dX,dY,dZ,dV,Cxy,Cxz,Cyz,age,nstars]
-#             Covariance matrix descirbes a spherical distribution in velocity
-#             space and freely orientable, triaxial ellipsoid in position space
-#     sphere : boolean {True}
-#         Set flag True if providing pars in 9 parameter form,
-#         Set flag False if providing pars in 14 parameter form,
-#     return_groups : boolean {False}
-#         Set flag if want to return the group object (for tracking input
-#         parameters)
-#     xyzuvw_savefile : String {''}
-#         Provide a string to numpy.save the init_xyzuvw array
-#     groups_savefile : Stirng {''}
-#         Provide a string to numpy.save the group object; note you need to
-#         np.load(group_savefile).item() in order to retrieve it.
-#     internal : Boolean {False}
-#         Set if parameters are provided in emcee internalised form
-#
-#     Returns
-#     -------
-#     xyzuvw_init : [Nstars,6] float array
-#         Initial distribution of stars in XYZUVW coordinates in corotating, RH
-#         (X,U positive towards galactic anti-centre) cartesian coordinates
-#         centred on local standard fo rest.
-#         Nstars is the sum of all group pars' nstars
-#
-#     (if flag return_group is set)
-#     groups : [ngroups] Group object
-#         Objects that wrap initialisation parameters
-#     """
-#     many_pars_cp = np.copy(many_pars)
-#
-#     groups = []
-#     all_init_xyzuvw = np.zeros((0,6))
-#
-#     for pars, nstars in zip(many_pars_cp, star_counts):
-#         init_xyzuvw, group = synthesiseXYZUVW(pars, nstars=nstars,
-#                                               form=form,
-#                                               return_group=True,
-#                                               internal=internal)
-#         groups.append(group)
-#         all_init_xyzuvw = np.vstack((all_init_xyzuvw, init_xyzuvw))
-#     if xyzuvw_savefile:
-#         np.save(xyzuvw_savefile, all_init_xyzuvw)
-#     if groups_savefile:
-#         np.save(groups_savefile, groups)
-#     if return_groups:
-#         return all_init_xyzuvw, groups
-#     else:
-#         return all_init_xyzuvw
-from chronostar.measurer import GERROR, convertArrayToTable
-
 
 class SynthData():
     # BASED ON MEDIAN ERRORS OF ALL GAIA STARS WITH RVS
@@ -270,10 +143,6 @@ class SynthData():
                 star[dim+'_now'] = xyzuvw_now[ix]
 
 
-    def measureStars(self):
-        astr_w_errs = None
-
-
     def generateComponentData(self):
         """Generate the full astrometry for a component"""
         # initialise blank astropy astrometry table
@@ -283,20 +152,32 @@ class SynthData():
 
     def measureXYZUVW(self):
         """
-        TODO: Work out neat way to measure stars in place.
+        Convert current day cartesian phase-space coordinates into astrometry
+        values, with incorporated measurement uncertainty.
         """
+        # Grab xyzuvw data in array form
         xyzuvw_now_colnames = [dim + '_now' for dim in 'xyzuvw']
         xyzuvw_now = self.extractDataAsArray(colnames=xyzuvw_now_colnames)
 
-        errors = np.array([
-            self.GERROR[colname + '_error']
-            for colname in self.DEFAULT_ASTR_COLNAMES
-        ])
+        # Build array of measurement errors, based on Gaia DR2 and scaled by
+        # `m_err`
+        # [ra, dec, plx, pmra, pmdec, rv]
+        errors = self.m_err *\
+                 np.array([
+                     self.GERROR[colname + '_error']
+                     for colname in self.DEFAULT_ASTR_COLNAMES
+                 ])
 
-        nstars = xyzuvw_now.shape[0]
+        # Get perfect astrometry
         astr = coordinate.convertManyLSRXYZUVWToAstrometry(xyzuvw_now)
 
+        # Measurement errors are applied homogenously across data so we
+        # can just tile to produce uncertainty
+        nstars = xyzuvw_now.shape[0]
         raw_errors = self.m_err * np.tile(errors, (nstars, 1))
+
+        # Generate and apply a set of offsets from a 1D Gaussian with std
+        # equal to the measurement error for each value
         offsets = raw_errors * np.random.randn(*raw_errors.shape)
         astr_w_offsets = astr + offsets
 
@@ -307,6 +188,19 @@ class SynthData():
 
 
     def storeTable(self, savedir=None, filename=None, overwrite=False):
+        """
+        Store table on disk.
+
+        Parameters
+        ----------
+        savedir : str {None}
+            the directory to store table file in
+        filename : str {None}
+            what to call the file (can also just use this and provide whole
+            path)
+        overwrite : boolean {False}
+            Whether to overwrite a table in the same location
+        """
         if savedir is None:
             savedir = self.savedir
         else:
@@ -317,37 +211,12 @@ class SynthData():
 
 
     def synthesiseEverything(self, savedir=None, filename=None, overwrite=True):
+        """
+        Uses self.pars and self.starcounts to generate an astropy table with
+        synthetic stellar measurements.
+        """
         self.generateAllInitXYZUVW()
         self.projectStars()
         self.measureXYZUVW()
         self.storeTable(savedir=savedir, filename=filename,
                         overwrite=overwrite)
-
-
-def redundantDocString():
-    """
-    Returns dictionary of measurments, so that this method can be
-    used without an internal table.
-
-    Replicates the measurement of synthetic stars. Converts XYZUVW to radec..
-
-    Parameters
-    ----------
-    xyzuvws : [nstars, 6] float array
-        A list of stars in rh cartesian
-        coordinate system, centred on and co-rotating with the local standard
-        of rest
-        [pc, pc, pc, km/s, km/s, km/s]
-    error_frac : float
-        Parametrisation of Gaia-like uncertainty. 0 is perfect precision,
-        1.0 is simplified best Gaia uncertainty.
-    savefile : string {''}
-        if not empty, the astrometry table will be saved to the given
-        file name
-
-    Returns
-    -------
-    real_astros : ([nstars, 6] float array) List of stars in measurements with
-        incorporated error
-    """
-    pass

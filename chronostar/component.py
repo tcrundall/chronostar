@@ -1,6 +1,12 @@
 """
 Class object that encapsulates a component, the phase-space model
 of an unbound set of stars formed from the same starburst/filament.
+
+A component models the initial phase-space distribution of stars
+as a Gaussian. As such there are three key attributes:
+- mean: the central location
+- covariance matrix: the spread in each dimension along with any correlations
+- age: how long the stars have been travelling
 """
 
 from __future__ import print_function, division, unicode_literals
@@ -19,9 +25,25 @@ class Component:
 
     @staticmethod
     def loadComponents(filename):
+        """
+        Load Component objects from a *.npy file.
+
+        Used to standardise result if loading a single component vs multiple
+        components.
+
+        Parameters
+        ----------
+        filename : str
+            name of the stored file
+
+        Returns
+        -------
+        res : [Component] list
+            A list of Component objects
+        """
         res = np.load(filename)
-        if len(res) == 0:
-            return res.item()
+        if res.shape == ():
+            return [res.item()]
         else:
             return res
 
@@ -29,6 +51,23 @@ class Component:
     def externalisePars(pars, form='sphere'):
         """
         Convert parameters from internal form to external form.
+
+        Parameters
+        ----------
+        pars : [n] float array_like
+            Raw float parametrisation of a component in internal form.
+            Main differences between internal and external is that standard
+            deviations are stored in log form.
+            See signature for __init__ for detailed breakdown of format of
+            `pars`
+        form : string {'sphere'}
+            Possible values ['sphere'|'elliptical']
+            Determines the arrangement of values in `pars`
+
+        Returns
+        -------
+        pars : [n] float array_like
+            Pars in external format
         """
         pars = np.copy(pars)
         if form == 'sphere':
@@ -114,22 +153,63 @@ class Component:
         return not self.__eq__(other)
 
     def getInternalSphericalPars(self):
+        """Build and return raw parametrisation of Component in
+        internal, spherical form"""
         return np.hstack((self.mean, np.log(self.sphere_dx), np.log(self.dv),
                           self.age))
 
     def getSphericalPars(self):
+        """Build and return raw parametrisation of Component in
+        external, spherical form"""
         return np.hstack((self.mean, self.sphere_dx, self.dv, self.age))
 
     def getEllipticalPars(self):
+        """Build and return raw parametrisation of Component in
+        external, elliptical form"""
         if self.form == 'sphere':
             return np.hstack((self.mean, self.dx, self.dx, self.dx, self.dv,
                              0.0, 0.0, 0.0, self.age))
         elif self.form == 'elliptical':
-            return self.pars
-            # return np.hstack((self.mean, self.dx, self.dy, self.dz, self.dv,
-            #                  self.cxy, self.cxz, self.cyz, self.age))
+            return np.copy(self.pars)
+
+    def getPars(self, form=None):
+        """Get pars in the form of the Component
+
+        Parameters
+        ----------
+        form : str {None}
+            Possible values: ['sphere'|'elliptical']
+            If left as None, defaults to whatever form the Component
+            was initialised as.
+
+        Returns
+        res : [n] float array_like
+            Raw parameterisation of Component
+        """
+        if form is None:
+            return np.copy(self.pars)
+        elif form == 'sphere':
+            return self.getSphericalPars()
+        elif form == 'elliptical':
+            return self.getEllipticalPars()
+        else:
+            raise ValueError
+
 
     def generateSphericalCovMatrix(self):
+        """
+        Build the initial covariance matrix based on spherical parameterisation.
+
+        This covariance matrix is spherical in both position and velocity space,
+        meaning there are no correlations between any axes, and the position
+        standard deviations are all equal, and the velocity standard devaitions
+        are all equal.
+
+        Returns
+        -------
+        scmat : [6,6] float array_like
+            The spherical covariance matrix of the Components origin
+        """
         dx = self.sphere_dx
         dv = self.dv
         scmat = np.array([
@@ -143,8 +223,23 @@ class Component:
         return scmat
 
     def generateEllipticalCovMatrix(self):
-        # if self.is_sphere:
-        #     return self.generateSphericalCovMatrix()
+        """
+        Build the initial covariance matrix based on spherical parameterisation.
+
+        This covariance matrix is spherical in both position and velocity space,
+        meaning there are no correlations between any axes, and the position
+        standard deviations are all equal, and the velocity standard devaitions
+        are all equal.
+
+        Returns
+        -------
+        scmat : [6,6] float array_like
+            The spherical covariance matrix of the Components origin
+        """
+        # Handles scenario where component is not elliptical
+        if self.form == 'sphere':
+            return self.generateSphericalCovMatrix()
+
         dx, dy, dz = self.dx, self.dy, self.dz
         dv = self.dv
         cxy, cxz, cyz = self.cxy, self.cxz, self.cyz
@@ -160,6 +255,15 @@ class Component:
         return ecmat
 
     def generateCovMatrix(self):
+        """Builds and returns the initial covariance matrix based on
+        parameterisation.
+
+        Returns
+        -------
+        res : [6,6] float array_like
+            The covariance matrix of a component's initial phase-space
+            distribution.
+        """
         if self.form == 'sphere':
             return self.generateSphericalCovMatrix()
         elif self.form == 'elliptical':
@@ -168,11 +272,14 @@ class Component:
             raise NotImplementedError
 
     def calcMeanNow(self):
+        """
+        Calculates the mean of the component when projected to the current-day
+        """
         self.mean_now = traceorbit.traceOrbitXYZUVW(self.mean, times=self.age)
 
     def calcCovMatrixNow(self):
         """
-        Calculate covariance matrix of current day distribution.
+        Calculates covariance matrix of current day distribution.
 
         Calculated as a first-order Taylor approximation of the coordinate
         transformation that takes the initial mean to the current day mean.
@@ -200,7 +307,20 @@ class Component:
         if self.covmatrix_now is None:
             self.calcCovMatrixNow()
 
+
     def getCurrentDayProjection(self):
+        """
+        Calculate (as needed) and return the current day projection of Component
+
+        Returns
+        -------
+        mean_now : [6] float array_like
+            The phase-space centroid of current-day Gaussian distribution of
+            Component
+        covmatrix_now : [6,6] float array_like
+            The phase-space covariance matrix of current-day Gaussian
+            distribution of Component
+        """
         self.calcCurrentDayProjection()
         return self.mean_now, self.covmatrix_now
 
@@ -209,7 +329,7 @@ class Component:
         """
         Make sure `self.pars` field accurately maps to the various fields.
 
-        This is useful to ensure consistency if fields are modfied direclty
+        This is useful to ensure consistency if fields are modified directly
         """
         if self.form == 'sphere':
             self.pars = np.hstack((self.mean, self.dx, self.dv, self.age))
@@ -225,6 +345,24 @@ class Component:
         Generate two new components that share the current day mean, and
         initial covariance matrix of this component but with different ages:
         `lo_age` and `hi_age`.
+
+        Parameters
+        ----------
+        lo_age : float
+            Must be a positive (and ideally smaller) value than self.age.
+            Serves as the age for the younger component.
+        hi_age : float
+            Must be a positive (and ideally larger) value than self.age
+            Serves as the age for the older component.
+
+        Returns
+        -------
+        lo_comp : Component
+            A component that matches `self` in current-day mean and initial
+            covariance matrix but with a younger age
+        hi_comp : Component
+            A component that matches `self` in current-day mean and initial
+            covariance matrix but wiht an older age
         """
         if self.mean_now is None:
             self.calcMeanNow()

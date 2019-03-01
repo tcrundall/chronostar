@@ -5,7 +5,6 @@ kinematic data from simple, Gaussian distributions.
 from __future__ import print_function, division, unicode_literals
 
 from astropy.table import Table, join
-import astropy.table as t
 import numpy as np
 
 import sys
