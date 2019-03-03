@@ -2,12 +2,12 @@
 A module containing all the required functions to evaluate the likelhood
 of a Component model and data.
 
-TODO: Implement (and place sensibly) means to generate covariance matrices
 from astropy table
 """
 import logging
 import numpy as np
 
+from . import tabletool
 from component import Component
 USE_C_IMPLEMENTATION = True
 try:
@@ -148,8 +148,7 @@ def getLogOverlaps(comp, data):
             the covariance of each star in XYZUVW space
     """
     # Prepare star arrays
-    cov_stars = buildStarCovs(data)
-    mean_stars = buildStarMeans(data)
+    mean_stars, cov_stars = tabletool.convertTableXYZUVWToArray(data)
     nearby_star_count = len(mean_stars)
 
     # Get current day projection of component
@@ -164,7 +163,7 @@ def getLogOverlaps(comp, data):
     return lnols
 
 
-def lnlike(comp, data, memb_probs):
+def lnlike(comp, data, memb_probs, memb_threshold=0.001):
     """Computes the log-likelihood for a fit to a group.
 
     The emcee parameters encode the modelled origin point of the stars.
@@ -195,8 +194,8 @@ def lnlike(comp, data, memb_probs):
     lnlike
         the logarithm of the likelihood of the fit
     """
-    # Only consider contributions of stars with larger than 0.1% membership prob
-    memb_threshold = 0.001
+    # Only consider contributions of stars with larger than provided
+    # threshold membership prob
     nearby_star_mask = np.where(memb_probs > memb_threshold)
 
     # Calculate log overlaps of relevant stars

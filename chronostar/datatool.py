@@ -17,8 +17,8 @@ import numpy as np
 import logging
 from scipy import stats
 
-import converter as cv
-import coordinate as cc
+# from . import converter as cv
+from . import coordinate as cc
 
 
 def gauss(x, mu, sig):
@@ -588,18 +588,22 @@ def loadDictFromTable(table, assoc_name=None):
         gaia_ids : [nstars] int array
             the gaia ids of stars successfully converted
     """
-
     star_pars = {}
     if type(table) is str:
         file_name = table
         star_pars['file_name'] = file_name
         table = Table.read(table)
 
+    gaia_col_name = 'source_id'
+    if gaia_col_name not in table.colnames:
+        gaia_col_name = 'gaia_dr2'
+
+
     xyzuvw = []
     xyzuvw_cov = []
     indices = []
     gaia_ids = []
-    nrows = len(table['source_id'])
+    nrows = len(table[gaia_col_name])
     for ix, row in enumerate(table):
         if nrows > 10000 and ix % 1000==0:
             print("Done {:7} of {} | {:.2}%".format(ix, nrows,
@@ -610,7 +614,7 @@ def loadDictFromTable(table, assoc_name=None):
             xyzuvw.append(mean)
             xyzuvw_cov.append(cov)
             indices.append(ix)
-            gaia_ids.append(row['source_id'])
+            gaia_ids.append(row[gaia_col_name])
 
     star_pars['xyzuvw']     = np.array(xyzuvw).astype(np.float64)
     star_pars['xyzuvw_cov'] = np.array(xyzuvw_cov).astype(np.float64)

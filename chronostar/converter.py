@@ -7,10 +7,10 @@ from astropy.table import Table
 import logging
 import numpy as np
 
-import measurer
-import coordinate
-import transform
-import datatool
+from . import measurer
+from . import coordinate
+from . import transform
+from . import datatool
 
 try:
     import astropy.io.fits as pyfits

@@ -66,10 +66,10 @@ def genRotationMatrix(alpha=0.0, beta=0.0, gamma=0.0):
         angle about X axis (roll), angle covers a span of (0,360)
     """
     sub_rotation_matrix = np.dot(r_z(alpha), np.dot(r_y(beta), r_x(gamma)))
+    empty_block = np.zeros((3,3))
 
-    rot_mat_upper = np.hstack((sub_rotation_matrix,np.zeros((3,3))))
-    rot_mat_lower = np.hstack((np.zeros((3,3)),sub_rotation_matrix))
-    rot_mat = np.vstack((rot_mat_upper, rot_mat_lower))
+    rot_mat = np.block([[sub_rotation_matrix, empty_block],
+                        [empty_block, sub_rotation_matrix]])
 
     return rot_mat
 
