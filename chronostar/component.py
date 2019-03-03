@@ -13,6 +13,7 @@ from __future__ import print_function, division, unicode_literals
 
 import logging
 import numpy as np
+from scipy.stats.mstats import gmean
 
 from . import transform
 from . import traceorbit
@@ -22,6 +23,9 @@ class Component:
 
     mean_now = None
     covmatrix_now = None
+
+    sphere_dx = None
+    sphere_dv = None
 
     @staticmethod
     def loadComponents(filename):
@@ -126,7 +130,7 @@ class Component:
 
         if self.form == 'sphere':
             self.mean = pars[:6]
-            self.dx = self.sphere_dx = self.pars[6]
+            self.dx = self.pars[6]
             self.dv = self.pars[7]
             self.age = self.pars[8]
 
@@ -137,9 +141,17 @@ class Component:
             self.cxy, self.cxz, self.cyz = self.pars[10:13]
             self.age = self.pars[13]
 
-            self.sphere_dx = (self.dx * self.dy * self.dz)**(1./3.)
-
+        # Construct cov matrix
         self.covmatrix = self.generateCovMatrix()
+
+        # Set some general values based of CovMatrix
+        self.sphere_dx = gmean(np.sqrt(
+            np.linalg.eigvalsh(self.covmatrix[:3,:3]))
+        )
+        self.sphere_dv = gmean(np.sqrt(
+            np.linalg.eigvalsh(self.covmatrix[3:,3:]))
+        )
+
 
     def __eq__(self, other):
         """Predominantly implemented for testing reasons"""
@@ -210,8 +222,17 @@ class Component:
         scmat : [6,6] float array_like
             The spherical covariance matrix of the Components origin
         """
-        dx = self.sphere_dx
-        dv = self.dv
+        # Awkward checks to allow for two usages:
+        # 1) initialise a spherical cov matrix from spherical pars input
+        # 2) generate spherical equivalent of non-spherical covariance matrix
+        if self.sphere_dx is None:
+            dx = self.dx
+        else:
+            dx = self.sphere_dx
+        if self.sphere_dv is None:
+            dv = self.dv
+        else:
+            dv = self.sphere_dv
         scmat = np.array([
             [dx**2, 0., 0., 0., 0., 0.],
             [0., dx**2, 0., 0., 0., 0.],

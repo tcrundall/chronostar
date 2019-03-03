@@ -8,6 +8,7 @@ import numpy as np
 import sys
 
 import chronostar.component
+import chronostar.likelihood
 
 sys.path.insert(0, '..')
 
@@ -105,9 +106,9 @@ for i in range(len(three_group_pars_ex)):
     weight = np.sum(final_z[:,i])
     print(weight)
     spec_ln_comp_ols = np.log(weight) + \
-                       gf.getLogOverlaps(spec_comp_group.\
-                                         getInternalSphericalPars(),
-                                         spec_comp_star_pars)
+                       chronostar.likelihood.getLogOverlaps(spec_comp_group. \
+                                                            getInternalSphericalPars(),
+                                                            spec_comp_star_pars)
     try:
         assert np.all(spec_ln_comp_ols > spec_ln_bg_ols)
     except AssertionError:

@@ -14,6 +14,7 @@ import logging
 import numpy as np
 
 import chronostar.component
+import chronostar.likelihood
 
 try:
     import matplotlib as mpl
@@ -345,9 +346,9 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
         #         format(i, threshold, weight)
         # )
         group_pars = group.getInternalSphericalPars()
-        lnols[:, i] =\
-            np.log(weights[i]) +\
-                gf.getLogOverlaps(group_pars, star_pars)
+        lnols[:, i] = \
+            np.log(weights[i]) + \
+            chronostar.likelihood.getLogOverlaps(group_pars, star_pars)
             # gf.lnlike(group_pars, star_pars,
             #                            old_z, return_lnols=True) #??!??!?!
 

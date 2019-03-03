@@ -2,6 +2,9 @@ from __future__ import print_function, division
 
 import numpy as np
 import sys
+
+import chronostar.likelihood
+
 sys.path.insert(0,'..')
 
 import chronostar.synthdata as syn
@@ -78,8 +81,8 @@ def test_expectation():
 
     astro_table = ms.measureXYZUVW(all_xyzuvw_init, error_frac=1.0)
     star_pars = cv.convertMeasurementsToCartesian(astro_table)
-    lnols = np.log(nass_stars) +\
-            gf.getLogOverlaps(ass_group.getInternalSphericalPars(), star_pars)
+    lnols = np.log(nass_stars) + \
+            chronostar.likelihood.getLogOverlaps(ass_group.getInternalSphericalPars(), star_pars)
     bg_ln_ols = np.array([-34] * nstars)
 
     z = em.expectation(star_pars, [ass_group], bg_ln_ols=bg_ln_ols,

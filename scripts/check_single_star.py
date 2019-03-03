@@ -5,6 +5,9 @@ Initial rough attempt of checking membership of a single star
 from astropy.table import Table
 import numpy as np
 import sys
+
+import chronostar.likelihood
+
 sys.path.insert(0, '..')
 
 import chronostar.datatool as dt
@@ -49,7 +52,7 @@ ln_bg_ols = dt.getKernelDensities(gaia_xyzuvw_file, [xyzuvw])
 star_pars = {'xyzuvw':np.array([xyzuvw]),
              'xyzuvw_cov':np.array([xyzuvw_cov])}
 nbp_stars = 100
-ln_bp_ols = np.log(nbp_stars) + gf.getLogOverlaps(beta_fit.getInternalSphericalPars(), star_pars)
+ln_bp_ols = np.log(nbp_stars) + chronostar.likelihood.getLogOverlaps(beta_fit.getInternalSphericalPars(), star_pars)
 
 combined_lnols = np.hstack((ln_bp_ols, ln_bg_ols))
 

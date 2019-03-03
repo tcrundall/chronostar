@@ -10,18 +10,15 @@ import emcee
 import logging
 
 import chronostar.component
+from chronostar.likelihood import lnprobFunc
 
 try:
     import matplotlib.pyplot as plt
     plt_avail = True
 except ImportError:
     plt_avail = False
-import pdb
 
-import transform as tf
 from _overlap import get_lnoverlaps
-import traceorbit as torb
-import synthdata as syn
 import datatool as dt
 
 try:
@@ -30,40 +27,6 @@ except ImportError:
     import pyfits as fits
 
 DEFAULT_ALPHA_SIG = 1.0
-
-def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns):
-    """
-    A pythonic implementation of overlap integral calculation
-
-    Paramters
-    ---------
-    g_cov : ([6,6] float array)
-        Covariance matrix of the group
-    g_mn : ([6] float array)
-        mean of the group
-    st_covs : ([nstars, 6, 6] float array)
-        covariance matrices of the stars
-    st_mns : ([nstars, 6], float array)
-        means of the stars
-
-    Returns
-    -------
-    ln_ols : ([nstars] float array)
-        an array of the logarithm of the overlaps
-    """
-    lnols = []
-    for st_cov, st_mn in zip(st_covs, st_mns):
-        res = 0
-        #res += 6 * np.log(2*np.pi)
-        res -= 6 * np.log(2*np.pi)
-        res -= np.log(np.linalg.det(g_cov + st_cov))
-        stmg_mn = st_mn - g_mn
-        stpg_cov = st_cov + g_cov
-        logging.debug("ApB:\n{}".format(stpg_cov))
-        res -= np.dot(stmg_mn.T, np.dot(np.linalg.inv(stpg_cov), stmg_mn))
-        res *= 0.5
-        lnols.append(res)
-    return np.array(lnols)
 
 
 def loadXYZUVW(xyzuvw_file):
@@ -165,6 +128,41 @@ def lnAlphaPrior(pars, z, sig=DEFAULT_ALPHA_SIG):
     # TODO: just rework mu and sig to give desired
     # mode and shape
     return lnlognormal(alpha, sig=sig)
+
+
+def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns):
+    """
+    A pythonic implementation of overlap integral calculation
+
+    Paramters
+    ---------
+    g_cov : ([6,6] float array)
+        Covariance matrix of the group
+    g_mn : ([6] float array)
+        mean of the group
+    st_covs : ([nstars, 6, 6] float array)
+        covariance matrices of the stars
+    st_mns : ([nstars, 6], float array)
+        means of the stars
+
+    Returns
+    -------
+    ln_ols : ([nstars] float array)
+        an array of the logarithm of the overlaps
+    """
+    lnols = []
+    for st_cov, st_mn in zip(st_covs, st_mns):
+        res = 0
+        #res += 6 * np.log(2*np.pi)
+        res -= 6 * np.log(2*np.pi)
+        res -= np.log(np.linalg.det(g_cov + st_cov))
+        stmg_mn = st_mn - g_mn
+        stpg_cov = st_cov + g_cov
+        logging.debug("ApB:\n{}".format(stpg_cov))
+        res -= np.dot(stmg_mn.T, np.dot(np.linalg.inv(stpg_cov), stmg_mn))
+        res *= 0.5
+        lnols.append(res)
+    return np.array(lnols)
 
 
 def lnprior(pars, star_pars, z):
@@ -305,7 +303,6 @@ def lnprobFunc(pars, star_pars, z):
     if not np.isfinite(lp):
         return -np.inf
     return lp + lnlike(pars, star_pars, z)
-
 
 def lnpriorTraceback(pars, star_pars, z):
     """Computes the prior of the group models constraining parameter space
