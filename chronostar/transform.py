@@ -23,20 +23,20 @@ def calcJacobianColumn(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
 
     Parameters
     ----------
-    trans_func : function
+    trans_func: function
         Transformation function taking us from the initial coordinate frame
         to the final coordinate frame
-    col_number : int
+    col_number: int
         The index in question (which parameter of the initial frame we are
         incrementing
-    loc : [dim] float array
+    loc: [dim] float array
         The position (in the initial coordinte frame) around which we are
         calculting the jacobian
-    dim : integer {2}
+    dim: integer {2}
         The dimensionality of the coordinate frames.
-    h : float {1e-3}
+    h: float {1e-3}
         The size of the increment
-    args : tuple
+    args: tuple
         Extra arguments required by `trans_func`, e.g 'age' for the
         traceforward function
 
@@ -94,8 +94,8 @@ def transformCovMat(cov, trans_func, loc, dim=6, args=None):
     """
     Transforming a covariance matrix from one coordinate frame to another
 
-    Paramters
-    ---------
+    Parameters
+    ----------
     cov : [dim,dim] float array
         Covariance matrix in the initial frame
     trans_func : function
@@ -109,9 +109,7 @@ def transformCovMat(cov, trans_func, loc, dim=6, args=None):
         The dimensionality of the coordinate frames
     args : tuple
         extra args to be passed to trans_func. E.g. for traceOrbitXYZUVW
-        args = (age,) [for traceforward]
-            or
-        args = (-age,) [for traceback]
+        args = (age,) [for traceforward] or args = (-age,) [for traceback]
 
     Returns
     -------
@@ -120,3 +118,4 @@ def transformCovMat(cov, trans_func, loc, dim=6, args=None):
     """
     jac = calcJacobian(trans_func, loc, dim=dim, args=args)
     return np.dot(jac, np.dot(cov, jac.T))
+
