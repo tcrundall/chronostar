@@ -94,8 +94,8 @@ def transformCovMat(cov, trans_func, loc, dim=6, args=None):
     """
     Transforming a covariance matrix from one coordinate frame to another
 
-    Paramters
-    ---------
+    Parameters
+    ----------
     cov : [dim,dim] float array
         Covariance matrix in the initial frame
     trans_func : function

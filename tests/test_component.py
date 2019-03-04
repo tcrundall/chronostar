@@ -106,3 +106,31 @@ def test_loadComponents():
     assert np.allclose(multi_res[0].pars, comp0.pars)
     assert np.allclose(multi_res[1].pars, comp1.pars)
 
+
+def test_setParsFromMeanAndCov():
+    sphere_pars = np.copy(SPHERE_PARS)
+    sphere_pars[-1] = Component.DEFAULT_TINY_AGE
+    comp_orig = Component(pars=sphere_pars)
+
+    orig_mean = comp_orig.mean
+    orig_covmatrix = comp_orig.covmatrix
+
+    comp_from_mc = Component(mean=orig_mean, covmatrix=orig_covmatrix)
+
+    assert np.allclose(comp_orig.pars, comp_from_mc.pars)
+
+    ellip_pars = np.array([0.,0.,0.,0.,0.,0.,
+                           16.,9.,9.,2.,0.5,0.2,-0.4,
+                           Component.DEFAULT_TINY_AGE])
+    ellip_comp_orig = Component(pars=ellip_pars, form='elliptical')
+    ellip_orig_mean = ellip_comp_orig.mean
+    ellip_orig_covmatrix = ellip_comp_orig.covmatrix
+
+    ellip_comp_from_mc = Component(mean=ellip_orig_mean,
+                                   covmatrix=ellip_orig_covmatrix,
+                                   form='elliptical')
+    assert np.allclose(ellip_comp_orig.pars, ellip_comp_from_mc.pars)
+    assert np.isclose(ellip_comp_orig.sphere_dx, ellip_comp_from_mc.sphere_dx)
+
+if __name__ == '__main__':
+    pass

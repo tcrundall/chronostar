@@ -20,12 +20,40 @@ from . import traceorbit
 
 class Component:
     IMPLEMENTED_FORMS = ('sphere', 'elliptical')
+    DEFAULT_TINY_AGE = 1e-5
 
     mean_now = None
     covmatrix_now = None
 
     sphere_dx = None
     sphere_dv = None
+
+    @staticmethod
+    def getSensibleInitSpread(form='sphere'):
+        pos_spread = 10.
+        vel_spread =  2.
+        log_pos_stdev_spread = 0.5
+        log_vel_stdev_spread = 0.5
+        pos_corr_spread = 0.05
+        age_spread = 1.
+        if form == 'sphere':
+            #                 X,  Y,  Z,U, V, W, lndX,lndV,age
+            return np.array([
+                pos_spread, pos_spread, pos_spread,
+                vel_spread, vel_spread, vel_spread,
+                log_pos_stdev_spread, log_vel_stdev_spread, age_spread
+            ])
+        elif form == 'elliptical':
+            #                 X,  Y,  Z,U, V, W, lndX,lndV,age
+            return np.array([
+                pos_spread, pos_spread, pos_spread,
+                vel_spread, vel_spread, vel_spread,
+                log_pos_stdev_spread, log_pos_stdev_spread,
+                log_pos_stdev_spread, log_vel_stdev_spread,
+                pos_corr_spread, pos_corr_spread, pos_corr_spread,
+                age_spread,
+            ])
+
 
     @staticmethod
     def loadComponents(filename):
@@ -80,8 +108,37 @@ class Component:
             pars[6:10] = np.exp(pars[6:10])
         return pars
 
+    @staticmethod
+    def internalisePars(pars, form='sphere'):
+        """
+        Convert parameters from internal form to external form.
 
-    def __init__(self, pars, form='sphere', internal=False):
+        Parameters
+        ----------
+        pars : [n] float array_like
+            Raw float parametrisation of a component in internal form.
+            Main differences between internal and external is that standard
+            deviations are stored in log form.
+            See signature for __init__ for detailed breakdown of format of
+            `pars`
+        form : string {'sphere'}
+            Possible values ['sphere'|'elliptical']
+            Determines the arrangement of values in `pars`
+
+        Returns
+        -------
+        pars : [n] float array_like
+            Pars in external format
+        """
+        pars = np.copy(pars)
+        if form == 'sphere':
+            pars[6:8] = np.log(pars[6:8])
+        elif form == 'elliptical':
+            pars[6:10] = np.log(pars[6:10])
+        return pars
+
+    def __init__(self, pars=None, form='sphere', internal=False,
+                 mean=None, covmatrix=None):
         """
         Parameters
         ----------
@@ -120,29 +177,36 @@ class Component:
             Set to True if final value in `pars` is the number of stars.
         """
         assert form in self.IMPLEMENTED_FORMS, 'provided form: {}'.format(form)
-        logging.debug("Input: {}".format(pars))
-        if internal:
-            self.pars = self.externalisePars(pars, form=form)
-        else:
-            self.pars = pars
         self.form = form
-        logging.debug("Interpreted: {}".format(self.pars))
+        if pars is None:
+            self.mean = mean
+            self.covmatrix = covmatrix
+            self.setParsFromMeanAndCov()
 
-        if self.form == 'sphere':
-            self.mean = pars[:6]
-            self.dx = self.pars[6]
-            self.dv = self.pars[7]
-            self.age = self.pars[8]
+        else:
+            logging.debug("Input: {}".format(pars))
+            if internal:
+                self.pars = self.externalisePars(pars, form=form)
+            else:
+                self.pars = pars
+            self.form = form
+            logging.debug("Interpreted: {}".format(self.pars))
 
-        elif self.form == 'elliptical':
-            self.mean = pars[:6]
-            self.dx, self.dy, self.dz = self.pars[6:9]
-            self.dv = self.pars[9]
-            self.cxy, self.cxz, self.cyz = self.pars[10:13]
-            self.age = self.pars[13]
+            if self.form == 'sphere':
+                self.mean = pars[:6]
+                self.dx = self.pars[6]
+                self.dv = self.pars[7]
+                self.age = self.pars[8]
 
-        # Construct cov matrix
-        self.covmatrix = self.generateCovMatrix()
+            elif self.form == 'elliptical':
+                self.mean = pars[:6]
+                self.dx, self.dy, self.dz = self.pars[6:9]
+                self.dv = self.pars[9]
+                self.cxy, self.cxz, self.cyz = self.pars[10:13]
+                self.age = self.pars[13]
+
+            # Construct cov matrix
+            self.covmatrix = self.generateCovMatrix()
 
         # Set some general values based of CovMatrix
         self.sphere_dx = gmean(np.sqrt(
@@ -163,6 +227,34 @@ class Component:
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def setParsFromMeanAndCov(self):
+        """Using the mean and covariance matrix, establish best fitting
+        pars, and update accordingly.
+        Used primarily when a component is initialised by mean and covariance
+        matrix.
+        """
+        if self.form == 'sphere':
+            self.dx = self.sphere_dx = gmean(np.sqrt(
+                np.linalg.eigvalsh(self.covmatrix[:3,:3]))
+            )
+            self.dv = self.sphere_dv = gmean(np.sqrt(
+                    np.linalg.eigvalsh(self.covmatrix[3:,3:]))
+            )
+            self.age = self.DEFAULT_TINY_AGE
+
+        elif self.form == 'elliptical':
+            self.dv = self.sphere_dv = gmean(np.sqrt(
+                    np.linalg.eigvalsh(self.covmatrix[3:,3:]))
+            )
+            xyz_covmatrix = self.covmatrix[:3,:3]
+            stdevs = np.sqrt(np.diagonal(xyz_covmatrix))
+            xyz_corrmatrix = xyz_covmatrix / stdevs / stdevs.reshape(1,3).T
+            self.dx, self.dy, self.dz = stdevs
+            self.cxy, self.cxz, self.cyz = xyz_corrmatrix[np.triu_indices(3,1)]
+            self.age = 1e-5
+
+        self.updatePars()
 
     def getInternalSphericalPars(self):
         """Build and return raw parametrisation of Component in
@@ -342,9 +434,9 @@ class Component:
             The phase-space covariance matrix of current-day Gaussian
             distribution of Component
         """
-        self.calcCurrentDayProjection()
-        return self.mean_now, self.covmatrix_now
-
+        return self.mean, self.covmatrix
+        # self.calcCurrentDayProjection()
+        # return self.mean_now, self.covmatrix_now
 
     def updatePars(self):
         """
@@ -354,7 +446,7 @@ class Component:
         """
         if self.form == 'sphere':
             self.pars = np.hstack((self.mean, self.dx, self.dv, self.age))
-        elif self.form == 'eliptical':
+        elif self.form == 'elliptical':
             self.pars = np.hstack((
                 self.mean, self.dx, self.dy, self.dz, self.dv,
                 self.cxy, self.cxz, self.cyz, self.age

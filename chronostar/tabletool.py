@@ -47,7 +47,7 @@ def getColnames(main_colnames=None, error_colnames=None, corr_colnames=None,
 
 def buildDataFromTable(table, main_colnames=None, error_colnames=None,
                        corr_colnames=None, cartesian=True,
-                       historical=False):
+                       historical=False, only_means=False):
     """
     Use data in tale columns to construct arrays of means and covariance
     matrices.
@@ -97,6 +97,8 @@ def buildDataFromTable(table, main_colnames=None, error_colnames=None,
     means = np.vstack((table[main_colnames[0]], table[main_colnames[1]],
                        table[main_colnames[2]], table[main_colnames[3]],
                        table[main_colnames[4]], table[main_colnames[5]])).T
+    if only_means:
+        return means
 
     # Generate covariance matrices
     nstars = len(table)

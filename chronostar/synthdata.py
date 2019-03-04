@@ -44,10 +44,6 @@ class SynthData():
         'ra', 'ra_error', 'dec', 'dec_error', 'parallax', 'parallax_error',
         'pmra', 'pmra_error', 'pmdec', 'pmdec_error',
         'radial_velocity', 'radial_velocity_error',
-        # 'ra_dec_corr', 'ra_parallax_corr', 'ra_pmra_corr',
-        # 'ra_pmdec_corr', 'dec_parallax_corr', 'dec_pmra_corr',
-        # 'dec_pmdec_corr', 'parallax_pmra_corr', 'parallax_pmdec_corr',
-        # 'pmra_pmdec_corr',
     )
 
     DEFAULT_DTYPES = tuple(['S20', 'S2']
@@ -143,13 +139,6 @@ class SynthData():
                 star[dim+'_now'] = xyzuvw_now[ix]
 
 
-    def generateComponentData(self):
-        """Generate the full astrometry for a component"""
-        # initialise blank astropy astrometry table
-        self.generateAllInitXYZUVW()
-        # self.projectStars()
-
-
     def measureXYZUVW(self):
         """
         Convert current day cartesian phase-space coordinates into astrometry
@@ -174,7 +163,7 @@ class SynthData():
         # Measurement errors are applied homogenously across data so we
         # can just tile to produce uncertainty
         nstars = xyzuvw_now.shape[0]
-        raw_errors = self.m_err * np.tile(errors, (nstars, 1))
+        raw_errors = np.tile(errors, (nstars, 1))
 
         # Generate and apply a set of offsets from a 1D Gaussian with std
         # equal to the measurement error for each value
@@ -210,7 +199,7 @@ class SynthData():
         self.astr_table.write(savedir+filename, overwrite=overwrite)
 
 
-    def synthesiseEverything(self, savedir=None, filename=None, overwrite=True):
+    def synthesiseEverything(self, savedir=None, filename=None, overwrite=False):
         """
         Uses self.pars and self.starcounts to generate an astropy table with
         synthetic stellar measurements.
@@ -218,5 +207,6 @@ class SynthData():
         self.generateAllInitXYZUVW()
         self.projectStars()
         self.measureXYZUVW()
-        self.storeTable(savedir=savedir, filename=filename,
-                        overwrite=overwrite)
+        if filename is not None:
+            self.storeTable(savedir=savedir, filename=filename,
+                            overwrite=overwrite)
