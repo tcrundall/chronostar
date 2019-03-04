@@ -5,6 +5,12 @@ table
 import numpy as np
 
 from astropy.io import fits
+from astropy.table import Table
+from astropy.units.core import UnitConversionError
+try:
+    import exceptions
+except ImportError:
+    import builtins as exceptions # python 3 consistent
 import sys
 sys.path.insert(0, '..')
 
@@ -14,6 +20,7 @@ from chronostar import datatool
 from chronostar import converter as cv
 
 
+# Retired funciton, put here for comparison reasons
 def convertManyRecToArray(data):
     """
     Convert many Fits Records in astrometry into mean and covs (astro)
@@ -110,7 +117,7 @@ def convertGaiaToXYZUVWDict(astr_file="../data/gaia_dr2_ok_plx.fits",
 
 def alternativeBuildCovMatrix(data):
     nstars = len(data)
-    cls = np.array([
+    cov_labels = np.array([
         ['X', 'c_XY', 'c_XZ', 'c_XU', 'c_XV', 'c_XW'],
         ['c_XY', 'Y', 'c_YZ', 'c_YU', 'c_YV', 'c_YW'],
         ['c_XZ', 'c_YZ', 'Z', 'c_ZU', 'c_ZV', 'c_ZW'],
@@ -127,12 +134,12 @@ def alternativeBuildCovMatrix(data):
     # Insert correlations into off diagonals
     for i in range(0,5):
         for j in range(i+1,5):
-            covs[:,i,j] = covs[:,j,i] = data[cls[i,j]]
+            covs[:,i,j] = covs[:,j,i] = data[cov_labels[i,j]]
 
     # multiply each row and each column by appropriate error
     for i in range(6):
-        covs[:,i,:] *= np.tile(data[cls[i,i]], (6,1)).T
-        covs[:,:,i] *= np.tile(data[cls[i,i]], (6,1)).T
+        covs[:,i,:] *= np.tile(data[cov_labels[i,i]], (6,1)).T
+        covs[:,:,i] *= np.tile(data[cov_labels[i,i]], (6,1)).T
 
     return covs
 
@@ -141,20 +148,105 @@ def test_convertTableXYZUVWToArray():
     """
     TODO: replace file with synthetic data once XYZUVW conversion is implemented
     """
-    PARS = np.array([
-        [0., 0., 0., 0., 0., 0., 10., 5., 1e-5],
-        [5., 0., -5., 0., 0., 0., 10., 5., 40.]
-    ])
-    STARCOUNTS = [50, 30]
-    COMP_FORMS = 'sphere'
-
     filename = '../data/beta_Pictoris_with_gaia_small_everything_final.fits'
 
     orig_star_pars = datatool.loadDictFromTable(filename)
-    means, covs = tabletool.convertTableXYZUVWToArray(
-        orig_star_pars['table'][orig_star_pars['indices']]
+    main_colnames, error_colnames, corr_colnames =\
+        tabletool.getHistoricalCartColnames()
+    means, covs = tabletool.buildDataFromTable(
+            orig_star_pars['table'][orig_star_pars['indices']],
+            main_colnames=main_colnames,
+            error_colnames=error_colnames,
+            corr_colnames=corr_colnames
     )
 
     assert np.allclose(orig_star_pars['xyzuvw'], means)
     assert np.allclose(orig_star_pars['xyzuvw_cov'], covs)
 
+def test_convertSynthTableToCart():
+    PARS = np.array([
+        [0., 0., 0., 0., 0., 0., 10., 5., 1e-10],
+        # [5., 0., -5., 0., 0., 0., 10., 5., 40.]
+    ])
+    STARCOUNTS = [50] #, 30]
+    COMP_FORMS = 'sphere'
+
+    filename = 'temp_data/full_synth_data.fits'
+    synth_data = SynthData(pars=PARS, starcounts=STARCOUNTS,
+                           comp_forms=COMP_FORMS, measurement_error=1e-3
+                           )
+    synth_data.synthesiseEverything()
+    synth_data.storeTable(filename=filename, overwrite=True)
+
+    table = tabletool.convertTableAstroToXYZUVW(filename, return_table=True)
+
+    assert np.allclose(table['x0'], table['X'])
+
+
+def test_convertAstrTableToCart():
+    """
+    Using a historical table, confirm that cartesian conversion yields
+    same results
+    """
+    filename = '../data/beta_Pictoris_with_gaia_small_everything_final.fits'
+    table = Table.read(filename)
+    # Drop stars that have gone through any binary checking
+    table = Table(table[100:])
+    # Manually change different colnames
+    table['radial_velocity'] = table['radial_velocity_best']
+    table['radial_velocity_error'] = table['radial_velocity_error_best']
+
+    # load in original means and covs
+    # orig_astr_means, orig_astr_covs =\
+    #     tabletool.buildDataFromTable(table=table, cartesian=False)
+    orig_cart_means, orig_cart_covs =\
+        tabletool.buildDataFromTable(table=table, cartesian=True,
+                                     historical=True)
+
+    tabletool.convertTableAstroToXYZUVW(table=table, write_table=False)
+
+    cart_means, cart_covs = tabletool.buildDataFromTable(table, cartesian=True)
+
+    assert np.allclose(orig_cart_means, cart_means)
+    assert np.allclose(table['dX'], table['X_error'])
+    assert np.allclose(orig_cart_covs, cart_covs)
+
+
+def test_badColNames():
+    main_colnames, error_colnames, corr_colnames = \
+        tabletool.getColnames(cartesian=False)
+
+    main_colnames[5] = 'radial_velocity_best'
+    error_colnames[5] = 'radial_velocity_error_best'
+    # corrupt ordering of column names
+    corrupted_error_colnames = list(error_colnames)
+    corrupted_error_colnames[0], corrupted_error_colnames[3] =\
+        error_colnames[3], error_colnames[0]
+
+    filename = '../data/beta_Pictoris_with_gaia_small_everything_final.fits'
+    table = Table.read(filename)
+
+    # Only need a handful of rows
+    table = Table(table[:10])
+
+    # Catch when units are inconsistent
+    try:
+        tabletool.convertTableAstroToXYZUVW(table,
+                                            main_colnames=main_colnames,
+                                            error_colnames=corrupted_error_colnames,
+                                            corr_colnames=corr_colnames)
+    except Exception as e:
+        assert type(e) == exceptions.UserWarning
+
+    # In the case where units have not been provided, then just leave it be
+    try:
+        error_colnames[0] = 'ra_dec_corr'
+        tabletool.convertTableAstroToXYZUVW(table,
+                                            main_colnames=main_colnames,
+                                            error_colnames=error_colnames,
+                                            corr_colnames=corr_colnames)
+    except:
+        assert False
+
+if __name__ == '__main__':
+    test_badColNames()

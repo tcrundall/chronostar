@@ -55,8 +55,6 @@ def calcAlpha(dx, dv, nstars):
     star mass is 1 M_sun.
 
     Calculated alpha is unitless
-
-    TODO: Astropy slows things down a very much lot. Remove it!
     """
     # G_const taken from astropy
     G_const = 4.30211e-3 #pc (km/s)^2 / M_sol
@@ -115,7 +113,6 @@ def lnprior(comp, memb_probs):
     # fetch maximum allowed age
     max_age = 500
 
-    mean = comp.mean
     stds = np.linalg.eigvalsh(comp.covmatrix)
     if np.min(comp.mean) < -100000 or np.max(comp.mean) > 100000:
         return -np.inf

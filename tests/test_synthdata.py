@@ -98,6 +98,13 @@ def test_synthesiseEverything():
     assert np.isclose(np.sum(STARCOUNTS), len(sd.astr_table))
 
 
+def test_storeAndLoad():
+    filename = 'temp_data/test_synthesiseEverything_output.fits'
+    sd = SynthData(pars=PARS, starcounts=STARCOUNTS, comp_forms=COMP_FORMS)
+    sd.synthesiseEverything(filename=filename)
+
+
+
 if __name__ == '__main__':
     starcounts = (int(1e2), 10)
     sd = SynthData(pars=PARS, starcounts=starcounts, comp_forms=COMP_FORMS)
