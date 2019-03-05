@@ -7,7 +7,7 @@ import emcee
 import logging
 
 from chronostar.component import Component
-from chronostar.likelihood import lnprobFunc
+from chronostar.likelihood import lnprob_func
 from chronostar import tabletool
 
 try:
@@ -254,7 +254,7 @@ def fitGroup(data=None, memb_probs=None, burnin_steps=1000, model_form='sphere',
 
     # Whole emcee shebang
     sampler = emcee.EnsembleSampler(
-        nwalkers, npars, lnprobFunc, args=[data, memb_probs], pool=pool,
+        nwalkers, npars, lnprob_func, args=[data, memb_probs], pool=pool,
     )
 
     # Perform burnin

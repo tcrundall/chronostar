@@ -52,7 +52,7 @@ ln_bg_ols = dt.getKernelDensities(gaia_xyzuvw_file, [xyzuvw])
 star_pars = {'xyzuvw':np.array([xyzuvw]),
              'xyzuvw_cov':np.array([xyzuvw_cov])}
 nbp_stars = 100
-ln_bp_ols = np.log(nbp_stars) + chronostar.likelihood.getLogOverlaps(beta_fit.getInternalSphericalPars(), star_pars)
+ln_bp_ols = np.log(nbp_stars) + chronostar.likelihood.get_lnoverlaps(beta_fit.getInternalSphericalPars(), star_pars)
 
 combined_lnols = np.hstack((ln_bp_ols, ln_bg_ols))
 

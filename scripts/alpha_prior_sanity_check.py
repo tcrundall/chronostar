@@ -106,7 +106,7 @@ for i in range(len(three_group_pars_ex)):
     weight = np.sum(final_z[:,i])
     print(weight)
     spec_ln_comp_ols = np.log(weight) + \
-                       chronostar.likelihood.getLogOverlaps(spec_comp_group. \
+                       chronostar.likelihood.get_lnoverlaps(spec_comp_group. \
                                                             getInternalSphericalPars(),
                                                             spec_comp_star_pars)
     try:

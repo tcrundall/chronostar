@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, '..')
 
 import chronostar.groupfitter as gf
-from chronostar.likelihood import slowGetLogOverlaps as sclno
+from chronostar.likelihood import slow_get_lnoverlaps as sclno
 import chronostar._overlap as ol
 
 def clno(A, a, B, b):

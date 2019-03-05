@@ -8,16 +8,17 @@ import logging
 import numpy as np
 
 from . import tabletool
-from component import Component
+from chronostar.component import SphereComponent
 USE_C_IMPLEMENTATION = True
 try:
-    from _overlap import get_lnoverlaps
+    from _overlap import get_lnoverlaps as c_get_lnoverlaps
 except ImportError:
     USE_C_IMPLEMENTATION = False
 
-def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns):
+def slow_get_lnoverlaps(g_cov, g_mn, st_covs, st_mns):
     """
-    A pythonic implementation of overlap integral calculation
+    A pythonic implementation of overlap integral calculation.
+    Left here in case swigged _overlap doesn't work.
 
     Paramters
     ---------
@@ -49,7 +50,7 @@ def slowGetLogOverlaps(g_cov, g_mn, st_covs, st_mns):
     return np.array(lnols)
 
 
-def calcAlpha(dx, dv, nstars):
+def calc_alpha(dx, dv, nstars):
     """
     Assuming we have identified 100% of star mass, and that average
     star mass is 1 M_sun.
@@ -57,8 +58,10 @@ def calcAlpha(dx, dv, nstars):
     Calculated alpha is unitless
     """
     # G_const taken from astropy
-    G_const = 4.30211e-3 #pc (km/s)^2 / M_sol
-    M_sol = 1. # M_sol
+    # G_const = 4.30211e-3 #pc (km/s)^2 / M_sol
+    G_const = 0.004302113488372941  # pc (km/s)^2 / Msun
+    G_const = 0.004300917270069976  # pc (km/s)^2 / Msun
+    M_sol = 1. # Msun
     return (dv**2 * dx) / (G_const * nstars * M_sol)
 
 
@@ -66,7 +69,7 @@ def lnlognormal(x, mu=2.1, sig=1.0):
     return -np.log(x*sig*np.sqrt(2*np.pi)) - (np.log(x)-mu)**2/(2*sig**2)
 
 
-def lnAlphaPrior(comp, memb_probs, sig=1.0):
+def ln_alpha_prior(comp, memb_probs, sig=1.0):
     """
     A very approximate, gentle prior preferring super-virial distributions
 
@@ -85,10 +88,10 @@ def lnAlphaPrior(comp, memb_probs, sig=1.0):
     memb_probs: [nstars] float array
         membership array
     """
-    dx = comp.sphere_dx
-    dv = comp.sphere_dv
+    dx = comp.get_sphere_dx()
+    dv = comp.get_sphere_dv()
     nstars = np.sum(memb_probs)
-    alpha = calcAlpha(dx, dv, nstars)
+    alpha = calc_alpha(dx, dv, nstars)
     return lnlognormal(alpha, mu=2.1, sig=sig)
 
 
@@ -110,21 +113,29 @@ def lnprior(comp, memb_probs):
     lnprior
         The logarithm of the prior on the model parameters
     """
-    # fetch maximum allowed age
-    max_age = 500
-
-    stds = np.linalg.eigvalsh(comp.covmatrix)
-    if np.min(comp.mean) < -100000 or np.max(comp.mean) > 100000:
+    # set maximum allowed age
+    MAX_AGE = 500
+    covmatrix = comp.get_covmatrix()
+    stds = np.linalg.eigvalsh(covmatrix)
+    # print(comp.get_covmatrix())
+    if np.min(comp.get_mean()) < -100000 or np.max(comp.get_mean()) > 100000:
         return -np.inf
     if np.min(stds) <= 0.0 or np.max(stds) > 10000.0:
         return -np.inf
-    if comp.age < 0.0 or comp.age > max_age:
+    if comp.get_age() < 0.0 or comp.get_age() > MAX_AGE:
         return -np.inf
 
-    return lnAlphaPrior(comp, memb_probs, sig=1.0)
+    # Check covariance matrix is transform of itself
+    if not np.allclose(covmatrix, covmatrix.T):
+        return -np.inf
+    # Check correlations are valid
+    if not np.all(np.linalg.eigvals(covmatrix) > 0):
+        return -np.inf
+
+    return ln_alpha_prior(comp, memb_probs, sig=1.0)
 
 
-def getLogOverlaps(comp, data):
+def get_lnoverlaps(comp, data):
     """
     Given the parametric description of an origin, calculate star overlaps
 
@@ -149,14 +160,14 @@ def getLogOverlaps(comp, data):
     nearby_star_count = len(mean_stars)
 
     # Get current day projection of component
-    cov_now, mean_now = comp.getCurrentDayProjection()
+    mean_now, cov_now = comp.get_currentday_projection()
 
     # Calculate overlap integral of each star
     if USE_C_IMPLEMENTATION:
-        lnols = get_lnoverlaps(cov_now, mean_now, cov_stars, mean_stars,
+        lnols = c_get_lnoverlaps(cov_now, mean_now, cov_stars, mean_stars,
                            nearby_star_count)
     else:
-        lnols = slowGetLogOverlaps(cov_now, mean_now, cov_stars, mean_stars)
+        lnols = slow_get_lnoverlaps(cov_now, mean_now, cov_stars, mean_stars)
     return lnols
 
 
@@ -169,8 +180,8 @@ def lnlike(comp, data, memb_probs, memb_threshold=0.001):
     current age and compared with the current stars' XYZUVW values (and
     uncertainties)
 
-    P(D|G) = \prod_i[P(d_i|G)^{z_i}]
-    \ln P(D|G) = \sum_i z_i*\ln P(d_i|G)
+    P(D|G) = prod_i[P(d_i|G)^{z_i}]
+    ln P(D|G) = sum_i z_i*ln P(d_i|G)
 
     Parameters
     ----------
@@ -190,6 +201,7 @@ def lnlike(comp, data, memb_probs, memb_threshold=0.001):
     -------
     lnlike
         the logarithm of the likelihood of the fit
+
     """
     # Only consider contributions of stars with larger than provided
     # threshold membership prob
@@ -197,34 +209,41 @@ def lnlike(comp, data, memb_probs, memb_threshold=0.001):
 
     # Calculate log overlaps of relevant stars
     lnols = np.zeros(len(memb_probs))
-    lnols[nearby_star_mask] = getLogOverlaps(comp, data[nearby_star_mask])
+    lnols[nearby_star_mask] = get_lnoverlaps(comp, data[nearby_star_mask])
 
     # Weight each stars contribution by their membership probability
     result = np.sum(lnols * memb_probs)
     return result
 
 
-def lnprobFunc(pars, data, memb_probs, form='sphere'):
+def lnprob_func(pars, data, memb_probs, Component=SphereComponent):
     """Computes the log-probability for a fit to a group.
 
     Parameters
     ----------
     pars
         Parameters describing the group model being fitted
-        0,1,2,3,4,5,   6,   7,  8
-        X,Y,Z,U,V,W,lndX,lndV,age
+        e.g. for SphereComponent:
+            0,1,2,3,4,5,   6,   7,  8
+            X,Y,Z,U,V,W,lndX,lndV,age
     data
         data being fitted to
     memb_probs
         array of weights [0.0 - 1.0] for each star, describing how likely
         they are members of group to be fitted.
+    Component: child Class of component.AbstractComponent
+        A class that can read in `pars`, and generate the three key
+        attributes for the modelled origin point:
+        mean, covariance matrix, age
+        See AbstractComponent to see which methods must be implemented
+        for a new model.
 
     Returns
     -------
     logprob
         the logarithm of the posterior probability of the fit
     """
-    comp = Component(pars, form=form, internal=True)
+    comp = Component(pars, internal=True)
     lp = lnprior(comp, memb_probs)
     if not np.isfinite(lp):
         return -np.inf

@@ -33,7 +33,7 @@ import emcee
 
 from component import Component
 from . import tabletool
-from likelihood import lnprobFunc
+from likelihood import lnprob_func
 
 class ComponentFit():
     """
@@ -157,7 +157,7 @@ class ComponentFit():
             init_pos = self.getInitEmceePos(nwalkers=nwalkers,
                                             init_pars=init_pars)
         nwalkers, npars = init_pos.shape
-        sampler = emcee.EnsembleSampler(nwalkers, npars, lnprobFunc,
+        sampler = emcee.EnsembleSampler(nwalkers, npars, lnprob_func,
                                         args=[self.data, self.membership_probs])
 
         pos, lnprob, state = sampler.run_mcmc(pos=init_pos,

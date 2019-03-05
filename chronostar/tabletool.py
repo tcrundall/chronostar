@@ -206,9 +206,12 @@ def convertAstroToCart(astr_mean, astr_cov):
     return xyzuvw_mean, xyzuvw_cov
 
 
-def insertDataIntoRow(row, mean, cov, main_colnames, error_colnames,
-                      corr_colnames):
+def insertDataIntoRow(row, mean, cov, main_colnames=None, error_colnames=None,
+                      corr_colnames=None, cartesian=True):
 
+    main_colnames, error_colnames, corr_colnames = getColnames(
+            main_colnames, error_colnames, corr_colnames, cartesian=cartesian
+    )
     # Insert mean data
     for ix, main_colname in enumerate(main_colnames):
         row[main_colname] = mean[ix]

@@ -348,7 +348,7 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
         group_pars = group.getInternalSphericalPars()
         lnols[:, i] = \
             np.log(weights[i]) + \
-            chronostar.likelihood.getLogOverlaps(group_pars, star_pars)
+            chronostar.likelihood.get_lnoverlaps(group_pars, star_pars)
             # gf.lnlike(group_pars, star_pars,
             #                            old_z, return_lnols=True) #??!??!?!
 

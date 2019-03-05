@@ -56,7 +56,7 @@ class AbstractComponent(object):
         self.check_parameter_format()
 
         # Set cartesian orbit tracing function
-        self.trace_orbit_func=trace_orbit_func
+        self.trace_orbit_func = trace_orbit_func
 
         # If parameters are provided in internal form (the form used by emcee),
         # then externalise before setting of various other attributes.
@@ -226,7 +226,7 @@ class AbstractComponent(object):
             covariance matrix but with a younger age
         hi_comp : Component
             A component that matches `self` in current-day mean and initial
-            covariance matrix but wiht an older age
+            covariance matrix but with an older age
         """
         comps = []
         for new_age in [lo_age, hi_age]:

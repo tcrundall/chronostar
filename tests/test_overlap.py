@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, '..')
 
 import chronostar.groupfitter as gf
-from chronostar.likelihood import slowGetLogOverlaps as p_lno
+from chronostar.likelihood import slow_get_lnoverlaps as p_lno
 from chronostar._overlap import get_lnoverlaps as c_lno
 
 

@@ -82,7 +82,7 @@ def test_expectation():
     astro_table = ms.measureXYZUVW(all_xyzuvw_init, error_frac=1.0)
     star_pars = cv.convertMeasurementsToCartesian(astro_table)
     lnols = np.log(nass_stars) + \
-            chronostar.likelihood.getLogOverlaps(ass_group.getInternalSphericalPars(), star_pars)
+            chronostar.likelihood.get_lnoverlaps(ass_group.getInternalSphericalPars(), star_pars)
     bg_ln_ols = np.array([-34] * nstars)
 
     z = em.expectation(star_pars, [ass_group], bg_ln_ols=bg_ln_ols,
