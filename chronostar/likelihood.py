@@ -85,10 +85,10 @@ def lnAlphaPrior(comp, memb_probs, sig=1.0):
     memb_probs: [nstars] float array
         membership array
     """
-    dX = comp.sphere_dx
-    dV = comp.sphere_dv
+    dx = comp.sphere_dx
+    dv = comp.sphere_dv
     nstars = np.sum(memb_probs)
-    alpha = calcAlpha(dX, dV, nstars)
+    alpha = calcAlpha(dx, dv, nstars)
     return lnlognormal(alpha, mu=2.1, sig=sig)
 
 
