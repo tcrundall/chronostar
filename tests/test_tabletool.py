@@ -3,17 +3,19 @@ Test a bunch of functions that serve as an interface to standard stellar data
 table
 """
 import numpy as np
+import logging
 
 from astropy.io import fits
 from astropy.table import Table
-from astropy.units.core import UnitConversionError
+# from astropy.units.core import UnitConversionError
 try:
     import exceptions
 except ImportError:
     import builtins as exceptions # python 3 consistent
+
 import sys
 sys.path.insert(0, '..')
-
+from chronostar.component import SphereComponent
 from chronostar.synthdata import SynthData
 from chronostar import tabletool
 from chronostar import coordinate
@@ -422,12 +424,12 @@ def test_convertSynthTableToCart():
         [0., 0., 0., 0., 0., 0., 10., 5., AGE],
     ])
     STARCOUNTS = [50] #, 30]
-    COMP_FORMS = 'sphere'
+    COMPONENTS = SphereComponent
     MEASUREMENT_ERROR = 1e-10
 
     # Generate synthetic data
     synth_data = SynthData(pars=PARS, starcounts=STARCOUNTS,
-                           comp_forms=COMP_FORMS,
+                           Components=COMPONENTS,
                            measurement_error=MEASUREMENT_ERROR,
                            )
     synth_data.synthesiseEverything()

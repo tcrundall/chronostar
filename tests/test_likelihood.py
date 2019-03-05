@@ -83,7 +83,13 @@ def test_lnprior():
 def test_get_lnoverlaps():
     """
     Confirms that star-component overlaps get smaller as stars get further
-    away
+    away.
+
+    First generates a component `sphere_comp`. Then generates three stars.
+    The first one is identical to `sphere_comp` in mean and covmatrix.
+    The other two share the same covmatrix yet are separated in X.
+    We check that the overlap integral is smaller for the more separated
+    stars.
     """
     dim = 6
     mean = np.zeros(dim)
@@ -124,6 +130,12 @@ def test_get_lnoverlaps():
 
 
 
-
+def test_lnprob_func():
+    """
+    Generates two components. Generates a synthetic data set based on the
+    first component. Confrims that the lnprob is larger for the first
+    component than the second.
+    """
+    SYNTH_PARS = np.array([])
 
 

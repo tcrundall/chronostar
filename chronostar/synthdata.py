@@ -17,7 +17,7 @@ import logging
 import numpy as np
 
 from chronostar import coordinate
-from chronostar.component import Component
+from chronostar.component import SphereComponent
 from chronostar import traceorbit
 
 
@@ -50,7 +50,8 @@ class SynthData():
                            + (len(DEFAULT_NAMES)-2) * ['float64'])
 
     def __init__(self, pars, starcounts, measurement_error=1.0,
-                 comp_forms='sphere', savedir=None, tablefilename=None):
+                 Components=SphereComponent, savedir=None,
+                 tablefilename=None):
         """
         Generates a set of astrometry data based on multiple star bursts with
         simple, Gaussian origins.
@@ -58,20 +59,24 @@ class SynthData():
         TODO: allow for list of Components as input
         """
         # Tidying input and applying some quality checks
-        self.pars = np.array(pars)
+        self.pars = np.copy(pars)      # Can different rows of pars be
+                                       # provided in different forms?
         assert len(self.pars.shape) == 2, 'pars must be a 2 dim array'
         self.ncomps = pars.shape[0]
         assert len(starcounts) == self.ncomps,\
             'starcounts must be same length as pars dimension'
         self.starcounts = starcounts
-        if type(comp_forms) is not list:
-            self.comp_forms = self.ncomps * [comp_forms]
+        if type(Components) is not list:
+            self.Components = self.ncomps * [Components]
+        else:
+            self.Components = Components
         self.m_err = measurement_error
 
         self.components = []
         for i in range(self.ncomps):
             self.components.append(
-                Component(self.pars[i], self.comp_forms[i])
+                    self.Components[i](self.pars[i])
+                # Component(self.pars[i], self.comp_forms[i])
             )
 
         if savedir is None:
@@ -99,7 +104,7 @@ class SynthData():
         """Generate initial xyzuvw based on component"""
         init_size = len(self.astr_table)
         init_xyzuvw = np.random.multivariate_normal(
-            mean=component.mean, cov=component.covmatrix,
+            mean=component.get_mean(), cov=component.get_covmatrix(),
             size=starcount,
         )
 
@@ -112,7 +117,7 @@ class SynthData():
 
         new_data['name'] = names
         new_data['component'] = starcount*[component_name]
-        new_data['age'] = starcount*[component.age]
+        new_data['age'] = starcount*[component.get_age()]
         for col, dim in zip(init_xyzuvw.T, 'xzyuvw'):
             new_data[dim+'0'] = col
         self.astr_table = vstack((self.astr_table, new_data))

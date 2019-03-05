@@ -10,46 +10,47 @@ import numpy as np
 import sys
 sys.path.insert(0,'..')
 from chronostar.synthdata import SynthData
-from chronostar.component import Component
+from chronostar.component import SphereComponent, EllipComponent
 
 PARS =  np.array([
     [0., 0., 0., 0., 0., 0., 10., 5., 1e-5],
     [5., 0.,-5., 0., 0., 0., 10., 5., 40.]
 ])
 STARCOUNTS = [50, 30]
-COMP_FORMS = 'sphere'
+COMPONENTS = SphereComponent
 
 def test_initialisation():
     """Basic sanity check to see if things start off ok"""
-    sd = SynthData(pars=PARS, starcounts=STARCOUNTS, comp_forms=COMP_FORMS)
+    sd = SynthData(pars=PARS, starcounts=STARCOUNTS, Components=COMPONENTS)
 
     assert np.allclose(PARS, sd.pars)
     assert sd.ncomps == len(PARS)
-    assert np.allclose(PARS[0], sd.components[0].pars)
+    assert np.allclose(PARS[0], sd.components[0].get_pars())
 
 
 def test_generateInitXYZUVW():
     """Check that the mean of initial xyzuvw of stars matches that of the
     initialising component"""
     starcounts = (int(1e6),)
-    sd = SynthData(pars=PARS[:1], starcounts=starcounts, comp_forms=COMP_FORMS)
+    sd = SynthData(pars=PARS[:1], starcounts=starcounts, Components=COMPONENTS)
     sd.generateAllInitXYZUVW()
 
-    comp = Component(PARS[0])
+    comp = SphereComponent(PARS[0])
     init_xyzuvw = sd.extractDataAsArray([dim+'0' for dim in 'xyzuvw'])
-    assert np.allclose(comp.mean, np.mean(init_xyzuvw, axis=0), atol=0.1)
+    assert np.allclose(comp.get_mean(), np.mean(init_xyzuvw, axis=0),
+                       atol=0.1)
 
 
 def test_projectStars():
     """Check that the mean of stars after projection matches the mean
     of the component after projection"""
     starcounts = (int(1e3),)
-    sd = SynthData(pars=PARS[:1], starcounts=starcounts, comp_forms=COMP_FORMS)
+    sd = SynthData(pars=PARS[:1], starcounts=starcounts, Components=COMPONENTS)
     sd.generateAllInitXYZUVW()
     sd.projectStars()
 
     comp_mean_now, comp_covmatrix_now = \
-        sd.components[0].getCurrentDayProjection()
+        sd.components[0].get_currentday_projection()
     final_xyzuvw = sd.extractDataAsArray([dim+'_now' for dim in 'xzyuvw'])
     assert np.allclose(comp_mean_now, final_xyzuvw.mean(axis=0), atol=1.)
 
@@ -65,7 +66,7 @@ def test_measureXYZUVW():
     starcounts = [1000]
 
     sd = SynthData(pars=np.array([compact_comp_pars]), starcounts=starcounts,
-                   comp_forms=COMP_FORMS)
+                   Components=COMPONENTS)
     sd.generateAllInitXYZUVW()
     sd.projectStars()
     sd.measureXYZUVW()
@@ -83,7 +84,7 @@ def test_measureXYZUVW():
 def test_storeTable():
     """Check storing table and loading works"""
     filename = 'temp_data/test_storeTable_output.fits'
-    sd = SynthData(pars=PARS, starcounts=STARCOUNTS, comp_forms=COMP_FORMS)
+    sd = SynthData(pars=PARS, starcounts=STARCOUNTS, Components=COMPONENTS)
     sd.synthesiseEverything()
     sd.storeTable(filename=filename, overwrite=True)
     stored_table = Table.read(filename)
@@ -93,7 +94,7 @@ def test_storeTable():
 
 def test_synthesiseEverything():
     """Check everything goes to plan with single call"""
-    sd = SynthData(pars=PARS, starcounts=STARCOUNTS, comp_forms=COMP_FORMS)
+    sd = SynthData(pars=PARS, starcounts=STARCOUNTS, Components=COMPONENTS)
     sd.synthesiseEverything()
 
     assert np.isclose(np.sum(STARCOUNTS), len(sd.astr_table))
@@ -102,7 +103,7 @@ def test_synthesiseEverything():
 def test_storeAndLoad():
     """Check that storing and loading works as expected"""
     filename = 'temp_data/test_synthesiseEverything_output.fits'
-    sd = SynthData(pars=PARS, starcounts=STARCOUNTS, comp_forms=COMP_FORMS)
+    sd = SynthData(pars=PARS, starcounts=STARCOUNTS, Components=COMPONENTS)
     sd.synthesiseEverything(filename=filename, overwrite=True)
 
     # Trying to store table at `filename` without overwrite throws error
@@ -131,7 +132,8 @@ def test_artificialMeasurement():
     for name in names:
         np.random.seed(1)
         sd = SynthData(pars=pars, starcounts=starcounts,
-                       measurement_error=m_err_dict[name], comp_forms=COMP_FORMS)
+                       measurement_error=m_err_dict[name],
+                       Components=COMPONENTS)
         sd.synthesiseEverything()
         sd_dict[name] = sd
 

@@ -6,7 +6,7 @@ from astropy.table import Table
 import emcee
 import logging
 
-from chronostar.component import Component
+from chronostar.component import SphereComponent as Component
 from chronostar.likelihood import lnprob_func
 from chronostar import tabletool
 
