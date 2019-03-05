@@ -50,10 +50,10 @@ def test_general_initialisation():
 
 def test_spherecomponent_initialisation():
     sphere_comp = SphereComponent(pars=SPHERE_PARS, internal=False)
-    assert np.allclose(SPHERE_PARS[:6], sphere_comp.mean)
-    assert np.allclose(AGE, sphere_comp.age)
-    assert np.isclose(DX, sphere_comp.sphere_dx)
-    assert np.isclose(DV, sphere_comp.sphere_dv)
+    assert np.allclose(SPHERE_PARS[:6], sphere_comp._mean)
+    assert np.allclose(AGE, sphere_comp._age)
+    assert np.isclose(DX, sphere_comp.get_sphere_dx())
+    assert np.isclose(DV, sphere_comp.get_sphere_dv())
 
 def test_ellipcomponent_initialisation():
     ellip_pars = np.copy(ELLIP_PARS)
@@ -61,12 +61,12 @@ def test_ellipcomponent_initialisation():
     ellip_pars[10:13] = 0.
 
     ellip_comp = EllipComponent(pars=ellip_pars, internal=False)
-    assert np.allclose(ellip_pars[:6], ellip_comp.mean)
-    assert np.allclose(AGE, ellip_comp.age)
+    assert np.allclose(ellip_pars[:6], ellip_comp._mean)
+    assert np.allclose(AGE, ellip_comp._age)
 
     sphere_dx = (DX * DY * DZ)**(1./3)
-    assert np.isclose(sphere_dx, ellip_comp.sphere_dx)
-    assert np.isclose(DV, ellip_comp.sphere_dv)
+    assert np.isclose(sphere_dx, ellip_comp.get_sphere_dx())
+    assert np.isclose(DV, ellip_comp.get_sphere_dv())
 
 
 def test_generic_externalise_and_internalise():
@@ -124,14 +124,14 @@ def test_split_group():
     for name, ComponentClass in COMPONENT_CLASSES.items():
         comp = ComponentClass(pars=DEFAULT_PARS[name])
         age_offset = 1.
-        assert age_offset < comp.age    #check that we won't get negative ages
-        lo_age, hi_age = comp.age - age_offset, comp.age + age_offset
+        assert age_offset < comp._age    #check that we won't get negative ages
+        lo_age, hi_age = comp._age - age_offset, comp._age + age_offset
         lo_comp, hi_comp = comp.splitGroup(lo_age, hi_age)
 
-        assert lo_age == lo_comp.age
-        assert hi_age == hi_comp.age
-        assert np.allclose(comp.covmatrix, lo_comp.covmatrix)
-        assert np.allclose(comp.covmatrix, hi_comp.covmatrix)
+        assert lo_age == lo_comp.get_age()
+        assert hi_age == hi_comp.get_age()
+        assert np.allclose(comp.get_covmatrix(), lo_comp.get_covmatrix())
+        assert np.allclose(comp.get_covmatrix(), hi_comp.get_covmatrix())
 
         assert np.allclose(comp.get_mean_now(), lo_comp.get_mean_now(),
                            atol=1e-4)
@@ -150,11 +150,11 @@ def test_load_components():
         np.save(multi_filename, [comp0, comp1])
 
         single_res = ComponentClass.load_components(single_filename)
-        assert np.allclose(single_res[0].pars, comp1.pars)
+        assert np.allclose(single_res[0].get_pars(), comp1.get_pars())
 
         multi_res = ComponentClass.load_components(multi_filename)
-        assert np.allclose(multi_res[0].pars, comp0.pars)
-        assert np.allclose(multi_res[1].pars, comp1.pars)
+        assert np.allclose(multi_res[0].get_pars(), comp0.get_pars())
+        assert np.allclose(multi_res[1].get_pars(), comp1.get_pars())
 
 
 def test_init_from_attributes():
@@ -167,7 +167,7 @@ def test_init_from_attributes():
                 attributes={'mean':comp_orig.get_mean(),
                             'covmatrix':comp_orig.get_covmatrix()}
         )
-        assert np.allclose(comp_orig.pars, comp_from_attr.pars)
+        assert np.allclose(comp_orig.get_pars(), comp_from_attr.get_pars())
         assert np.allclose(comp_orig.get_covmatrix(),
                            comp_from_attr.get_covmatrix())
 
