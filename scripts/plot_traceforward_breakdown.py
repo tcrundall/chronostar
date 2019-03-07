@@ -9,10 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, '..')
-import chronostar.synthdata as syn
-import chronostar.groupfitter as gf
 import chronostar.traceorbit as torb
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 rdir = "../results/synth_fit/50_2_1_50/"
 # rdir = "../results/synth_fit/30_5_2_100/"

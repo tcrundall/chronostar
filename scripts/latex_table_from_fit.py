@@ -9,7 +9,7 @@ import numpy as np
 import sys
 sys.path.insert(0, '..')
 
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 fits = [
     'synth_bpmg2',

@@ -1,6 +1,5 @@
 from __future__ import division, print_function
 
-import chronostar.fitplotter
 import chronostar.synthdata
 
 """
@@ -15,15 +14,13 @@ import numpy as np
 import sys
 
 #import astropy.io.fits as pyfits
-from astropy.table import Table
 
 sys.path.insert(0, '..')
 
 import chronostar.synthdata as syn
-import chronostar.measurer as ms
-import chronostar.converter as cv
+import chronostar.retired2.measurer as ms
+import chronostar.retired2.converter as cv
 import chronostar.traceorbit as torb
-import chronostar.errorellipse as ee
 import chronostar.transform as tf
 
 logging.basicConfig(level=logging.INFO, filemode='a',

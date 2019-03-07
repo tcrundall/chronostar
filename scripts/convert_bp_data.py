@@ -1,14 +1,12 @@
 import numpy as np
-import logging
 import pdb
 import pickle
 import sys
 
 sys.path.insert(0, '..')
 
-import chronostar.retired.groupfitter as rgf
-import chronostar.measurer as ms
-import chronostar.converter as cv
+import chronostar.retired2.measurer as ms
+import chronostar.retired2.converter as cv
 
 original_tb_file = "../data/bp_TGAS2_traceback_save.pkl"
 data_file = "../data/betaPic.csv"

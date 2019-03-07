@@ -4,15 +4,13 @@ import chronostar.synthdata
 
 """Generate a diagram detailing model fitting approach"""
 
-import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, '..')
 import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
-import chronostar.measurer as ms
-import chronostar.converter as cv
+import chronostar.retired2.converter as cv
 import chronostar.fitplotter as fp
 
 pdir = "../figures/paper1/"

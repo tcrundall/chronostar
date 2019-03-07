@@ -10,8 +10,6 @@ sys.path.insert(0, '..')
 import chronostar.traceorbit as torb
 import integration_tests.traceback_plotter as tp
 import chronostar.groupfitter as gf
-import chronostar.measurer as ms
-import chronostar.converter as cv
 import chronostar.transform as tf
 
 rdir = '../results/em_fit/field_blind/'

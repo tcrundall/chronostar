@@ -9,8 +9,6 @@ import numpy as np
 import sys
 sys.path.insert(0, '..')
 
-import chronostar.datatool as dt
-
 save_file_name = '../results/tables/real_bpmg_table.tex'
 
 chaindirs = [

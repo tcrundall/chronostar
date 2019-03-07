@@ -13,8 +13,8 @@ sys.path.insert(0, '..')
 
 logging.basicConfig(level=logging.INFO, filemode='w',
                         filename="gaia_converting.log")
-import chronostar.datatool as dt
-import chronostar.converter as cv
+import chronostar.retired2.datatool as dt
+import chronostar.retired2.converter as cv
 
 gaia_table_filename = '../data/gaia_full_6d_table.fits'
 logging.info("loading table...")

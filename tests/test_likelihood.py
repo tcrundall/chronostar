@@ -13,6 +13,7 @@ sys.path.insert(0,'..')
 from chronostar import likelihood
 from chronostar.component import SphereComponent, EllipComponent
 from chronostar import tabletool
+from chronostar.synthdata import SynthData
 
 
 def astropyCalcAlpha(dx,dv,nstars):
@@ -136,6 +137,47 @@ def test_lnprob_func():
     first component. Confrims that the lnprob is larger for the first
     component than the second.
     """
-    SYNTH_PARS = np.array([])
+    measurment_error = 1e-10
+    star_count = 200
+    tiny_age = 1e-10
+    dim = 6
+    comp_covmatrix = np.identity(dim)
+    comp1_mean = np.zeros(dim)
+    comp2_mean = 10 * np.ones(dim)
 
 
+
+    comp1 = SphereComponent(attributes={
+        'mean':comp1_mean,
+        'covmatrix':comp_covmatrix,
+        'age':tiny_age
+    })
+    comp2 = SphereComponent(attributes={
+        'mean':comp2_mean,
+        'covmatrix':comp_covmatrix,
+        'age':tiny_age
+    })
+
+    synth_data1 = SynthData(pars=[comp1.get_pars()], starcounts=star_count,
+                            measurement_error=measurment_error)
+    synth_data1.synthesiseEverything()
+    tabletool.convertTableAstroToXYZUVW(synth_data1.astr_table)
+    synth_data2 = SynthData(pars=[comp2.get_pars()], starcounts=star_count,
+                            measurement_error=measurment_error)
+    synth_data2.synthesiseEverything()
+    tabletool.convertTableAstroToXYZUVW(synth_data2.astr_table)
+
+    lnprob_comp1_data1 = likelihood.lnprob_func(pars=comp1.get_pars(),
+                                                data=synth_data1.astr_table)
+    lnprob_comp2_data1 = likelihood.lnprob_func(pars=comp2.get_pars(),
+                                                data=synth_data1.astr_table)
+    lnprob_comp1_data2 = likelihood.lnprob_func(pars=comp1.get_pars(),
+                                                data=synth_data2.astr_table)
+    lnprob_comp2_data2 = likelihood.lnprob_func(pars=comp2.get_pars(),
+                                                data=synth_data2.astr_table)
+    assert lnprob_comp1_data1 > lnprob_comp2_data1
+    assert lnprob_comp2_data2 > lnprob_comp1_data2
+
+    # Check that the different realisations only differ by 20%
+    assert np.isclose(lnprob_comp1_data1, lnprob_comp2_data2, rtol=2e-2)
+    assert np.isclose(lnprob_comp1_data2, lnprob_comp2_data1, rtol=2e-2)

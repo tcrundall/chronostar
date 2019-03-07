@@ -7,11 +7,8 @@ import numpy as np
 import sys
 sys.path.insert(0, '..')
 
-import chronostar.traceorbit as torb
 import integration_tests.traceback_plotter as tp
 import chronostar.groupfitter as gf
-import chronostar.measurer as ms
-import chronostar.converter as cv
 
 rdir = '../results/em_fit/gaia_dr2_bp/'
 sdir = rdir

@@ -13,9 +13,6 @@ from distutils.dir_util import mkpath
 import logging
 import numpy as np
 
-import chronostar.component
-import chronostar.likelihood
-
 try:
     import matplotlib as mpl
     # prevents displaying plots from generation from tasks in background
@@ -24,9 +21,10 @@ try:
 except ImportError:
     print("Warning: matplotlib not imported")
 
-import synthdata as syn
-import traceorbit as torb
-import groupfitter as gf
+from chronostar.component import SphereComponent
+from chronostar import likelihood
+from . import traceorbit
+from . import groupfitter
 
 
 def ix_fst(array, ix):
@@ -88,7 +86,7 @@ def calcMedAndSpan(chain, perc=34, sphere=True):
                                            axis=0))))
 
 
-def checkConvergence(old_best_fits, new_chains,
+def checkConvergence(old_best_comps, new_chains,
                      perc=35):
     """Check if the last maximisation step yielded is consistent to new fit
 
@@ -119,12 +117,12 @@ def checkConvergence(old_best_fits, new_chains,
     """
     each_converged = []
 
-    for old_best_fit, new_chain in zip(old_best_fits, new_chains):
-        errors = calcMedAndSpan(new_chain, perc=perc)
+    for old_best_comp, new_chain in zip(old_best_comps, new_chains):
+        errors = gf.calc_med_and_span(new_chain, perc=perc)
         upper_contained =\
-            old_best_fit.getInternalSphericalPars() < errors[:, 1]
+            old_best_comp.get_pars() < errors[:, 1]
         lower_contained =\
-            old_best_fit.getInternalSphericalPars() > errors[:, 2]
+            old_best_comp.get_pars() > errors[:, 2]
 
         each_converged.append(
             np.all(upper_contained) and np.all(lower_contained))
@@ -152,16 +150,6 @@ def calcMembershipProbs(star_lnols):
         star_memb_probs[i] = 1. / np.sum(np.exp(star_lnols - star_lnols[i]))
 
     return star_memb_probs
-
-
-def background6DLogOverlap(star_mean, bg_6dhist):
-    """
-    Approximates density of Gaia catalogue at `star_mean`
-    :param star_mean:
-    :param bg_6dhist:
-    :return:
-    """
-    pass
 
 
 def backgroundLogOverlap(star_mean, bg_hists, correction_factor=1.):
@@ -630,7 +618,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
         if ignore_dead_comps and (np.sum(z[:,i]) < DEATH_THRESHOLD):
             logging.info("Skipped component {} with nstars {}".format(i, np.sum(z[:,i])))
         else:
-            best_fit, chain, lnprob = gf.fitGroup(
+            best_fit, chain, lnprob = gf.fit_group(
                 xyzuvw_dict=star_pars, burnin_steps=burnin_steps,
                 plot_it=plot_it, pool=pool, convergence_tol=convergence_tol,
                 plot_dir=gdir, save_dir=gdir, z=z[:, i],
@@ -972,7 +960,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             final_gdir = final_dir + "group{}/".format(i)
             mkpath(final_gdir)
 
-            best_fit, chain, lnprob = gf.fitGroup(
+            best_fit, chain, lnprob = gf.fit_group(
                 xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS,
                 plot_it=True, pool=pool, convergence_tol=C_TOL,
                 plot_dir=final_gdir, save_dir=final_gdir, z=final_z[:, i],
@@ -984,7 +972,7 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             # runs once
             logging.info("Finished fit")
             final_best_fits[i] = best_fit
-            final_med_errs[i] = calcMedAndSpan(chain)
+            final_med_errs[i] = gf.calc_med_and_span(chain, intern_to_exter=True)
             # np.save(final_gdir + "best_group_fit.npy", new_group)
             np.save(final_gdir + 'final_chain.npy', chain)
             np.save(final_gdir + 'final_lnprob.npy', lnprob)

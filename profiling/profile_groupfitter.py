@@ -17,9 +17,7 @@ import chronostar.synthdata
 
 sys.path.insert(0, '..')
 import chronostar.synthdata as syn
-import chronostar.measurer as ms
-import chronostar.converter as cv
-import chronostar.groupfitter as gf
+import chronostar.retired2.converter as cv
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filename='temp_logs/groupfitter.log')

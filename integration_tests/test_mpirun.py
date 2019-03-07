@@ -9,8 +9,7 @@ import chronostar.synthdata
 sys.path.insert(0,'..')
 
 import chronostar.groupfitter as gf
-import chronostar.converter as cv
-import chronostar.measurer as ms
+import chronostar.retired2.converter as cv
 import chronostar.traceorbit as torb
 import chronostar.synthdata as syn
 
@@ -54,7 +53,7 @@ def test_mpirun():
     star_pars = cv.convertMeasurementsToCartesian(astro_table,
                                                   savefile=xyzuvw_conv_savefile)
 
-    best_fit, chain, lnprob = gf.fitGroup(
+    best_fit, chain, lnprob = gf.fit_group(
         xyzuvw_dict=star_pars, plot_it=True, convergence_tol=0.4,
         burnin_steps=1000, pool=pool, plot_dir='temp_plots/',
         save_dir='temp_data/'

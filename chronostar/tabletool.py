@@ -247,8 +247,7 @@ def insertDataIntoRow(row, mean, cov, main_colnames=None, error_colnames=None,
 
 def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,
                               main_colnames=None, error_colnames=None,
-                              corr_colnames=None):
-    filename = ''
+                              corr_colnames=None, filename=''):
     if isinstance(table, str):
         if filename and not write_table:
             raise UserWarning('Specify how to handle result, won\'t overwrite'
@@ -287,7 +286,7 @@ def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,
                           )
 
     if filename and write_table:
-        table.write(filename, overwrite=write_table)
+        table.write(filename, overwrite=True)
 
     if return_table:
         return table

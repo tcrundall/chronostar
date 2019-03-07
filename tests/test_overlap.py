@@ -13,6 +13,9 @@ sys.path.insert(0, '..')
 import chronostar.groupfitter as gf
 from chronostar.likelihood import slow_get_lnoverlaps as p_lno
 from chronostar._overlap import get_lnoverlaps as c_lno
+from chronostar.component import SphereComponent
+from chronostar.synthdata import SynthData
+from chronostar import tabletool
 
 
 def co2(A, a, B, b):
@@ -90,24 +93,31 @@ def test_pythonFuncs():
     """
     TODO: remove the requirements of file, have data stored in file?
     """
-    try:
-        xyzuvw_file = "../data/fed_stars_20_xyzuvw.fits"
-        xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
-    except IOError:
-        print("Required data file missing")
-        assert False
+    true_comp_mean = np.zeros(6)
+    true_comp_dx = 2.
+    true_comp_dv = 2.
+    true_comp_covmatrix = np.identity(6)
+    true_comp_covmatrix[:3, :3] *= true_comp_dx ** 2
+    true_comp_covmatrix[3:, 3:] *= true_comp_dv ** 2
+    true_comp_age = 1e-10
+    true_comp = SphereComponent(attributes={
+        'mean': true_comp_mean,
+        'covmatrix': true_comp_covmatrix,
+        'age': true_comp_age,
+    })
+    nstars = 100
+    synth_data = SynthData(pars=true_comp.get_pars(), starcounts=nstars)
+    synth_data.synthesiseEverything()
+    tabletool.convertTableAstroToXYZUVW(synth_data.astr_table)
 
-    star_means = xyzuvw_dict['xyzuvw']
-    star_covs = xyzuvw_dict['xyzuvw_cov']
-    nstars = star_means.shape[0]
+    star_means, star_covs = tabletool.buildDataFromTable(synth_data.astr_table)
+    group_mean = true_comp.get_mean()
+    group_cov = true_comp.get_covmatrix()
 
-    group_mean = np.mean(star_means, axis=0)
-    group_cov = np.cov(star_means.T)
-
+    # Test overlap with true component
     co1s = []
     co2s = []
     for i, (scov, smn) in enumerate(zip(star_covs, star_means)):
-        print(i)
         co1s.append(co1(group_cov, group_mean, scov, smn))
         co2s.append(co2(group_cov, group_mean, scov, smn))
     co1s = np.array(co1s)
@@ -117,8 +127,9 @@ def test_pythonFuncs():
     assert np.allclose(co2s, co3s)
     assert np.allclose(co1s, co3s)
 
-    # note that most overlaps go to 0, but the log overlaps retains the
-    # information
+    # Test overlap with neighbouring star (with the aim of testing
+    # tiny overlap values). Note that most overlaps go to 0, but the
+    # log overlaps retain the information
     co1s = []
     co2s = []
     for i, (scov, smn) in enumerate(zip(star_covs, star_means)):
@@ -135,21 +146,34 @@ def test_pythonFuncs():
 
 def test_swigImplementation():
     """
-    Compares the swigged c implementation against the python one in groupfitter
+    Compares the swigged c implementation against the python one in
+    likelihood.py
     """
-    xyzuvw_file = "../data/fed_stars_20_xyzuvw.fits"
-    xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
+    true_comp_mean = np.zeros(6)
+    true_comp_dx = 2.
+    true_comp_dv = 2.
+    true_comp_covmatrix = np.identity(6)
+    true_comp_covmatrix[:3,:3] *= true_comp_dx**2
+    true_comp_covmatrix[3:,3:] *= true_comp_dv**2
+    true_comp_age = 1e-10
+    true_comp = SphereComponent(attributes={
+        'mean':true_comp_mean,
+        'covmatrix':true_comp_covmatrix,
+        'age':true_comp_age,
+    })
+    nstars = 100
+    synth_data = SynthData(pars=true_comp.get_pars(), starcounts=nstars)
+    synth_data.synthesiseEverything()
+    tabletool.convertTableAstroToXYZUVW(synth_data.astr_table)
 
-    star_means = xyzuvw_dict['xyzuvw']
-    star_covs = xyzuvw_dict['xyzuvw_cov']
-    nstars = star_means.shape[0]
+    star_means, star_covs = tabletool.buildDataFromTable(synth_data.astr_table)
 
-    gmn = np.mean(star_means, axis=0)
-    gcov = np.cov(star_means.T)
-
-    p_lnos = p_lno(gcov, gmn, star_covs, star_means)
-    c_lnos = c_lno(gcov, gmn, star_covs, star_means, nstars)
+    p_lnos = p_lno(true_comp.get_covmatrix(), true_comp.get_mean(),
+                   star_covs, star_means)
+    c_lnos = c_lno(true_comp.get_covmatrix(), true_comp.get_mean(),
+                   star_covs, star_means, nstars)
 
     assert np.allclose(p_lnos, c_lnos)
     assert np.isfinite(p_lnos).all()
     assert np.isfinite(c_lnos).all()
+

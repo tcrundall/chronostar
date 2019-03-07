@@ -10,10 +10,8 @@ import numpy as np
 from scipy import stats
 import sys
 sys.path.insert(0, '..')
-import chronostar.datatool as dt
-import chronostar.synthdata as syn
+import chronostar.retired2.datatool as dt
 import chronostar.expectmax as em
-import chronostar.groupfitter as gf
 from chronostar._overlap import get_lnoverlaps
 
 bpmg_group_file = 'final_groups.npy'

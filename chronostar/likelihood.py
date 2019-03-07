@@ -216,7 +216,7 @@ def lnlike(comp, data, memb_probs, memb_threshold=0.001):
     return result
 
 
-def lnprob_func(pars, data, memb_probs, Component=SphereComponent):
+def lnprob_func(pars, data, memb_probs=None, Component=SphereComponent):
     """Computes the log-probability for a fit to a group.
 
     Parameters
@@ -243,6 +243,8 @@ def lnprob_func(pars, data, memb_probs, Component=SphereComponent):
     logprob
         the logarithm of the posterior probability of the fit
     """
+    if memb_probs is None:
+        memb_probs = np.ones(len(data))
     comp = Component(pars, internal=True)
     lp = lnprior(comp, memb_probs)
     if not np.isfinite(lp):

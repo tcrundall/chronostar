@@ -6,12 +6,10 @@ featured as members elsewhere, also just to get their main designations.
 """
 
 from astropy.table import Table
-import csv
 import numpy as np
 import sys
 sys.path.insert(0, '..')
-import chronostar.synthdata as syn
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 import chronostar.coordinate as coord
 
 import banyan_parser as bp
@@ -150,7 +148,6 @@ if __name__ == '__main__':
             row['dec'] = gg_sp['table'][gg_ix]['gagne_de']
 
     # INCORPORTATE 2MASS IDS AND MAIN IDENTIFIERS
-    import pdb;
     # pdb.set_trace()
     star_labels = readSimIds()
     for row in bp_sp['table']:

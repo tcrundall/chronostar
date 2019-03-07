@@ -4,22 +4,14 @@ format and
 """
 from __future__ import print_function, division
 
-from astropy.io import fits
-from astropy.table import Table, Column
+from astropy.table import Table
 import csv
-import matplotlib.pyplot as plt
 import numpy as np
-import logging
-import pdb
-import pickle
 import sys
 
 sys.path.insert(0, '..')
 
-import chronostar.retired.groupfitter as rgf
-import chronostar.measurer as ms
-import chronostar.converter as cv
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 #original_tb_file = "../data/bp_TGAS2_traceback_save.pkl"
 data_file = "../data/bpmg_cand_w_gaia_dr2_astrometry_comb_binars.csv"

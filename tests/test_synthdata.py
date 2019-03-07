@@ -26,6 +26,17 @@ def test_initialisation():
     assert np.allclose(PARS, sd.pars)
     assert sd.ncomps == len(PARS)
     assert np.allclose(PARS[0], sd.components[0].get_pars())
+    assert np.allclose(np.array(STARCOUNTS), sd.starcounts)
+
+
+    sd2 = SynthData(pars=PARS[0], starcounts=STARCOUNTS[0],
+                    Components=COMPONENTS)
+    assert np.allclose(np.array([STARCOUNTS[0]]), sd2.starcounts)
+
+    starcounts = 50.
+    sd3 = SynthData(pars=PARS[0], starcounts=starcounts,
+                    Components=COMPONENTS)
+    assert np.allclose(np.array([np.int(starcounts)]), sd3.starcounts)
 
 
 def test_generateInitXYZUVW():

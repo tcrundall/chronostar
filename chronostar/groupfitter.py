@@ -5,8 +5,9 @@ import numpy as np
 from astropy.table import Table
 import emcee
 import logging
+import os
 
-from chronostar.component import SphereComponent as Component
+from chronostar.component import SphereComponent
 from chronostar.likelihood import lnprob_func
 from chronostar import tabletool
 
@@ -17,7 +18,8 @@ except ImportError:
     plt_avail = False
 
 
-def calcMedAndSpan(chain, perc=34, intern_to_extern=False, sphere=True):
+def calc_med_and_span(chain, perc=34, intern_to_extern=False,
+                      Component=SphereComponent):
     """
     Given a set of aligned samples, calculate the 50th, (50-perc)th and
      (50+perc)th percentiles.
@@ -48,12 +50,10 @@ def calcMedAndSpan(chain, perc=34, intern_to_extern=False, sphere=True):
     flat_chain = np.reshape(chain, (-1, npars))
 
     if intern_to_extern:
-        # take the exponent of the log(dx) and log(dv) values
-        flat_chain = np.copy(flat_chain)
-        if sphere:
-            flat_chain[:, 6:8] = np.exp(flat_chain[:, 6:8])
-        else:
-            flat_chain[:, 6:10] = np.exp(flat_chain[:, 6:10])
+        # Externalise each sample
+        for ix in range(flat_chain.shape[0]):
+            flat_chain = np.copy(flat_chain)
+            flat_chain[ix] = Component.externalise(flat_chain[ix])
 
     return np.array(map(lambda v: (v[1], v[2], v[0]),
                         zip(*np.percentile(flat_chain,
@@ -61,15 +61,16 @@ def calcMedAndSpan(chain, perc=34, intern_to_extern=False, sphere=True):
                                            axis=0))))
 
 
-def approxCurrentDayDistribution(data, membership_probs):
+def approx_currentday_distribution(data, membership_probs):
     means = tabletool.buildDataFromTable(data, cartesian=True,
                                          only_means=True)
+    # approximate the (weighted) mean and covariance of star distribution
     mean_of_means = np.average(means, axis=0, weights=membership_probs)
     cov_of_means = np.cov(means.T, ddof=0., aweights=membership_probs)
     return mean_of_means, cov_of_means
 
 
-def noStuckWalkers(lnprob):
+def no_stuck_walkers(lnprob):
     """
     Examines lnprob to see if any walkers have flatlined far from pack
 
@@ -87,7 +88,7 @@ def noStuckWalkers(lnprob):
     return res
 
 
-def burninConvergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
+def burnin_convergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
     """Checks early lnprob vals with final lnprob vals for convergence
 
     Parameters
@@ -121,21 +122,21 @@ def burninConvergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
 
     return (np.isclose(start_lnprob_mn, end_lnprob_mn,
                        atol=tol*end_lnprob_std)
-            and noStuckWalkers(lnprob))
+            and no_stuck_walkers(lnprob))
 
 
-def getInitEmceePos(data, memb_probs=None, nwalkers=None,
-                    init_pars=None, model_form='sphere'):
+def get_init_emcee_pos(data, memb_probs=None, nwalkers=None,
+                       init_pars=None, Component=SphereComponent):
     if init_pars is None:
         rough_mean_now, rough_cov_now = \
-            approxCurrentDayDistribution(data=data, membership_probs=memb_probs)
+            approx_currentday_distribution(data=data,
+                                           membership_probs=memb_probs)
         # Exploit the component logic to generate closest set of pars
-        dummy_comp = Component(mean=rough_mean_now,
-                               covmatrix=rough_cov_now,
-                               form=model_form)
-        init_pars = Component.internalisePars(dummy_comp.getPars())
+        dummy_comp = Component(attributes={'mean':rough_mean_now,
+                                           'covmatrix':rough_cov_now,})
+        init_pars = Component.internalise(dummy_comp.get_pars())
 
-    init_std = Component.getSensibleInitSpread(form=model_form)
+    init_std = Component.get_sensible_walker_spread()
 
     # Generate initial positions of all walkers by adding some random
     # offset to `init_pars`
@@ -149,10 +150,11 @@ def getInitEmceePos(data, memb_probs=None, nwalkers=None,
     return init_pos
 
 
-def fitGroup(data=None, memb_probs=None, burnin_steps=1000, model_form='sphere',
-             plot_it=False, pool=None, convergence_tol=0.25, init_pos=None,
-             plot_dir='', save_dir='', init_pars=None, sampling_steps=None,
-             max_iter=None):
+def fit_group(data=None, memb_probs=None, burnin_steps=1000,
+              Component=SphereComponent,
+              plot_it=False, pool=None, convergence_tol=0.25, init_pos=None,
+              plot_dir='', save_dir='', init_pars=None, sampling_steps=None,
+              max_iter=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Stores the final sampling chain and lnprob in `save_dir`, but also
@@ -241,15 +243,22 @@ def fitGroup(data=None, memb_probs=None, burnin_steps=1000, model_form='sphere',
     if memb_probs is None:
         memb_probs = np.ones(len(data))
 
+    # Ensure plot_dir has a single trailing '/'
+    if plot_dir != '':
+        plot_dir = plot_dir.rstrip('/') + '/'
+    if plot_it and plot_dir != '':
+        if not os.path.exists(plot_dir):
+            os.mkdir(plot_dir)
+
     # initialise z if needed as array of 1s of length nstars
     if memb_probs is None:
         memb_probs = np.ones(len(data))
 
     # Initialise the fit
     if init_pos is None:
-        init_pos = getInitEmceePos(data=data, memb_probs=memb_probs,
-                                   init_pars=init_pars,
-                                   model_form=model_form)
+        init_pos = get_init_emcee_pos(data=data, memb_probs=memb_probs,
+                                      init_pars=init_pars,
+                                      Component=Component)
     nwalkers, npars = init_pos.shape
 
     # Whole emcee shebang
@@ -269,8 +278,8 @@ def fitGroup(data=None, memb_probs=None, burnin_steps=1000, model_form='sphere',
         logging.info("Burning in cnt: {}".format(cnt))
         sampler.reset()
         init_pos, lnprob, state = sampler.run_mcmc(init_pos, burnin_steps, state)
-        converged = burninConvergence(sampler.lnprobability,
-                                      tol=convergence_tol)
+        converged = burnin_convergence(sampler.lnprobability,
+                                       tol=convergence_tol)
         logging.info("Burnin status: {}".format(converged))
 
         if plot_it and plt_avail:
@@ -324,12 +333,13 @@ def fitGroup(data=None, memb_probs=None, burnin_steps=1000, model_form='sphere',
     # yet np.argmax takes index of flattened array
     final_best_ix = np.argmax(sampler.lnprobability)
     best_sample = sampler.flatchain[final_best_ix]
+    best_component = Component(pars=best_sample, internal=True)
 
     # displaying median and range of each paramter
-    med_and_span = calcMedAndSpan(sampler.chain)
+    med_and_span = calc_med_and_span(sampler.chain)
 
     logging.info("Results:\n{}".format(med_and_span))
 
-    return best_sample, sampler.chain, sampler.lnprobability
+    return best_component, sampler.chain, sampler.lnprobability
 
 

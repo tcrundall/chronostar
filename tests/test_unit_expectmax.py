@@ -7,35 +7,37 @@ import chronostar.likelihood
 
 sys.path.insert(0,'..')
 
+from chronostar import expectmax as em
+from chronostar.synthdata import SynthData
+from chronostar.component import SphereComponent
+from chronostar import tabletool
 import chronostar.synthdata as syn
-import chronostar.measurer as ms
-import chronostar.converter as cv
-import chronostar.groupfitter as gf
-import chronostar.expectmax as em
+# import chronostar.retired2.measurer as ms
+# import chronostar.retired2.converter as cv
 
-
-def test_calcMedAndSpan():
-    """
-    Test that the median, and +- 34th percentiles is found correctly
-    """
-    dx = 10.
-    dv = 5.
-    dummy_mean = np.array([10,10,10, 5, 5, 5,np.log(dx),np.log(dv),20])
-    dummy_std =  np.array([1.,1.,1.,1.,1.,1.,0.5,       0.5,       3.])
-    assert len(dummy_mean) == len(dummy_std)
-    npars = len(dummy_mean)
-
-    nsteps = 10000
-    nwalkers = 18
-
-    dummy_chain = np.array([np.random.randn(nsteps)*std + mean
-                            for (std, mean) in zip(dummy_std, dummy_mean)]).T
-    np.repeat(dummy_chain, 18, axis=0).reshape(nwalkers,nsteps,npars)
-
-    med_and_span = em.calcMedAndSpan(dummy_chain)
-    assert np.allclose(dummy_mean, med_and_span[:,0], atol=0.1)
-    approx_stds = 0.5*(med_and_span[:,1] - med_and_span[:,2])
-    assert np.allclose(dummy_std, approx_stds, atol=0.1)
+#
+# def test_calcMedAndSpan():
+#     """
+#     Test that the median, and +- 34th percentiles is found correctly
+#     """
+#     dx = 10.
+#     dv = 5.
+#     dummy_mean = np.array([10,10,10, 5, 5, 5,np.log(dx),np.log(dv),20])
+#     dummy_std =  np.array([1.,1.,1.,1.,1.,1.,0.5,       0.5,       3.])
+#     assert len(dummy_mean) == len(dummy_std)
+#     npars = len(dummy_mean)
+#
+#     nsteps = 10000
+#     nwalkers = 18
+#
+#     dummy_chain = np.array([np.random.randn(nsteps)*std + mean
+#                             for (std, mean) in zip(dummy_std, dummy_mean)]).T
+#     np.repeat(dummy_chain, 18, axis=0).reshape(nwalkers,nsteps,npars)
+#
+#     med_and_span = em.calcMedAndSpan(dummy_chain)
+#     assert np.allclose(dummy_mean, med_and_span[:,0], atol=0.1)
+#     approx_stds = 0.5*(med_and_span[:,1] - med_and_span[:,2])
+#     assert np.allclose(dummy_std, approx_stds, atol=0.1)
 
 def test_calcMembershipProbs():
     """
@@ -71,16 +73,27 @@ def test_expectation():
     old_z[nass_stars:, 1] = 1.
 
     age = 1e-5
-    ass_pars = np.array([0, 0, 0, 0, 0, 0, 5., 2., age])
-    ass_xyzuvw_init, ass_group = \
-        syn.synthesiseXYZUVW(ass_pars, nstars=nass_stars, return_group=True,
-                             internal=False)
-    field_xyzuvw_init = np.random.uniform(-15, 15, (nfield, 6))
+    ass_pars1 = np.array([0, 0, 0, 0, 0, 0, 5., 2., age])
+    comp1 = SphereComponent(ass_pars1)
+    ass_pars2 = np.array([50., 0, 0, 0, 0, 0, 5., 2., age])
+    comp2 = SphereComponent(ass_pars2)
+    starcounts = [100,200]
+    synth_data = SynthData(pars=[ass_pars1, ass_pars2],
+                           starcounts=starcounts)
+    synth_data.synthesiseEverything()
+    #
+    # ass_xyzuvw_init, ass_group = \
+    #     syn.synthesiseXYZUVW(ass_pars, nstars=nass_stars, return_group=True,
+    #                          internal=False)
+    # field_xyzuvw_init = np.random.uniform(-15, 15, (nfield, 6))
+    #
+    # all_xyzuvw_init = np.vstack((ass_xyzuvw_init, field_xyzuvw_init))
+    #
+    # astro_table = ms.measureXYZUVW(all_xyzuvw_init, error_frac=1.0)
+    # star_pars = cv.convertMeasurementsToCartesian(astro_table)
 
-    all_xyzuvw_init = np.vstack((ass_xyzuvw_init, field_xyzuvw_init))
+    star_means, star_covs = tabletool.buildDataFromTable(synth_data.astr_table)
 
-    astro_table = ms.measureXYZUVW(all_xyzuvw_init, error_frac=1.0)
-    star_pars = cv.convertMeasurementsToCartesian(astro_table)
     lnols = np.log(nass_stars) + \
             chronostar.likelihood.get_lnoverlaps(ass_group.getInternalSphericalPars(), star_pars)
     bg_ln_ols = np.array([-34] * nstars)

@@ -51,7 +51,7 @@ hdul[1].data[0]['pmra_error']
 hdul[1].data[0]['parralax_error']
 hdul[1].data[0]['parallax_error']
 np.sqrt(astr_dict['astr_covs'][0])
-import chronostar.converter as cv
+import chronostar.retired2.converter as cv
 cv.convertMeasurementsToCartesian(astr_dict=astr_dict, savefile="../data/gaia_dr2_bp_xyzuvw.fits")
 import chronostar.groupfitter as gf
 star_pars = gf.loadXYZUVW("../data/gaia_dr2_bp_xyzuvw.fits")
@@ -61,4 +61,4 @@ plt.plot(star_pars['xyzuvw'][:,0], star_pars['xyzuvw'][:,1], '.')
 plt.show()
 plt.plot(star_pars['xyzuvw'][:,3], star_pars['xyzuvw'][:,4], '.')
 plt.show()
-gf.fitGroup(xyzuvw_dict=star_pars, plot_it=True, plot_dir='temp_plots')
+gf.fit_group(xyzuvw_dict=star_pars, plot_it=True, plot_dir='temp_plots')

@@ -27,7 +27,6 @@ except ImportError:
 from distutils.dir_util import mkpath
 import logging
 import numpy as np
-import pdb
 import platform
 import sys
 from emcee.utils import MPIPool
@@ -36,11 +35,9 @@ sys.path.insert(0, '..')
 
 import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
-import chronostar.converter as cv
-import chronostar.measurer as ms
+import chronostar.retired2.converter as cv
 import chronostar.groupfitter as gf
-import chronostar.datatool as dt
-import chronostar.coordinate as cc
+import chronostar.retired2.datatool as dt
 
 INIT_WITH_TRUE_ORIGIN = False
 
@@ -198,7 +195,7 @@ for prec in precs:
 
         # apply traceforward fitting (with lnprob, corner plots as side
         # effects)
-        best_fit, chain, lnprob = gf.fitGroup(
+        best_fit, chain, lnprob = gf.fit_group(
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL, plot_dir=pdir,
             sampling_steps=SAMPLING_STEPS, save_dir=pdir,

@@ -1,11 +1,10 @@
 
 import logging
-import numpy as np
 import sys
 
 sys.path.insert(0, '..')
 
-import chronostar.converter as cv
+import chronostar.retired2.converter as cv
 import chronostar.groupfitter as gf
 
 if __name__ == '__main__':

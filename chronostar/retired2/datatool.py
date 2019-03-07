@@ -18,7 +18,7 @@ import logging
 from scipy import stats
 
 # from . import converter as cv
-from . import coordinate as cc
+from chronostar import coordinate as cc
 
 
 def gauss(x, mu, sig):

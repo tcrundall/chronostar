@@ -9,8 +9,7 @@ from astropy.table import Table
 import numpy as np
 import sys
 sys.path.insert(0, '..')
-import chronostar.synthdata as syn
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 import chronostar.coordinate as coord
 
 import banyan_parser as bp

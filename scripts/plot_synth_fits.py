@@ -10,12 +10,10 @@ from itertools import product
 import numpy as np
 import os
 import sys
-from shutil import copyfile
 
 sys.path.insert(0, '..')
 
-import chronostar.datatool as dt
-import chronostar.synthdata as syn
+import chronostar.retired2.datatool as dt
 import chronostar.fitplotter as fp
 
 ages = [30] #[5,15,30,50,100,200]

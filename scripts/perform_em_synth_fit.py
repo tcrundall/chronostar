@@ -20,8 +20,7 @@ from emcee.utils import MPIPool
 sys.path.insert(0, '..')
 import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
-import chronostar.converter as cv
-import chronostar.measurer as ms
+import chronostar.retired2.converter as cv
 import chronostar.expectmax as em
 
 dir_name = sys.argv[1]

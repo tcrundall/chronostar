@@ -13,7 +13,6 @@ where nthreads is the number of threads to be passed into emcee run
 """
 from __future__ import division, print_function
 
-import chronostar.component
 import chronostar.synthdata
 
 try:
@@ -74,8 +73,8 @@ sys.path.insert(0, package_path)
 try:
     import chronostar.synthdata as syn
     import chronostar.traceorbit as torb
-    import chronostar.converter as cv
-    import chronostar.measurer as ms
+    import chronostar.retired2.converter as cv
+    import chronostar.retired2.measurer as ms
     import chronostar.groupfitter as gf
     import chronostar.retired.hexplotter as hp
 
@@ -180,7 +179,7 @@ for prec in precs:
         logging.info("Generated [{}] traceback file".format(prec))
 
         # apply traceforward fitting (with lnprob, corner plots as side effects)
-        best_fit, chain, lnprob = gf.fitGroup(
+        best_fit, chain, lnprob = gf.fit_group(
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL
         )

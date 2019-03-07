@@ -6,12 +6,11 @@ near BPMG, removes duplicates (especially binaries/ternaries absorbed
 into centre of mass references), and packages up neatly for an EM run
 """
 
-from astropy import table
 from astropy.table import Table
 import numpy as np
 import sys
 sys.path.insert(0, '..')
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 cart_gaia_table = '../data/gaia_cartesian_full_6d_table.fits'
 gagne_table = '../data/gagne_bonafide_full_kinematics_with_lit_and_best_'\

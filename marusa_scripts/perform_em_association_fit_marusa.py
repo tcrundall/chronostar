@@ -10,14 +10,11 @@ from distutils.dir_util import mkpath
 from distutils.errors import DistutilsFileError
 import logging
 import numpy as np
-import pdb
 import sys
 from emcee.utils import MPIPool
 sys.path.insert(0, '..')
 import chronostar.expectmax as em
-import chronostar.groupfitter as gf
-import chronostar.synthdata as syn
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 
 try:

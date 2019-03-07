@@ -3,7 +3,6 @@ Provides many functions that aid plotting of stellar data sets and their fits
 """
 
 import matplotlib as mpl
-from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
 mpl.use('Agg')
@@ -11,11 +10,9 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
-import synthdata as syn
-import errorellipse as ee
 import traceorbit as torb
 import transform as tf
-import datatool as dt
+from chronostar.retired2 import datatool as dt
 
 COLORS = ['xkcd:blue','xkcd:red', 'xkcd:tangerine', 'xkcd:shit', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:neon purple', 'xkcd:bright pink']

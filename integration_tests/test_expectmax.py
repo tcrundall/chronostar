@@ -18,8 +18,7 @@ sys.path.insert(0, '..')  # hacky way to get access to module
 import chronostar.expectmax as em
 import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
-import chronostar.measurer as ms
-import chronostar.converter as cv
+import chronostar.retired2.converter as cv
 
 group_pars = np.array([
     # X, Y, Z, U, V, W, dX, dV, age,nstars
@@ -73,7 +72,6 @@ def test_maximisation():
     astro_table = chronostar.synthdata.measureXYZUVW(now_xyzuvw, 1.0)
     star_pars = cv.convertMeasurementsToCartesian(astro_table)
 
-    import pdb;
     all_init_pars = [o.getInternalSphericalPars() for o in origins]
 
     # perform maximisation step

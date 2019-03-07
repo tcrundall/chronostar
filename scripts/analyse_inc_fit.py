@@ -6,8 +6,8 @@ import numpy as np
 import os
 import sys
 sys.path.insert(0, '..')
-import chronostar.datatool as dt
-import chronostar.synthdata as syn
+import chronostar.retired2.datatool as dt
+
 
 def loadFinalResults(fdir):
     fgroups = dt.loadGroups(fdir + 'final_groups.npy')

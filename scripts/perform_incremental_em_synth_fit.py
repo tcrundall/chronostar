@@ -13,17 +13,11 @@ from distutils.dir_util import mkpath
 from distutils.errors import DistutilsFileError
 import logging
 import numpy as np
-import random
 import sys
 from emcee.utils import MPIPool
 sys.path.insert(0, '..')
-import chronostar.synthdata as syn
-import chronostar.traceorbit as torb
-import chronostar.converter as cv
-import chronostar.measurer as ms
 import chronostar.expectmax as em
-import chronostar.fitplotter as fp
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 try:
     run_name = sys.argv[1]

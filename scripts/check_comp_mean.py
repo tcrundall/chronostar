@@ -7,7 +7,7 @@ fmerrs
 fmerrs[0]
 import sys
 sys.path.insert(0, '/home/tcrun/chronostar/')
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 sp = dt.loadDictFromTable('../../../data/marusa_galah_li_strong_stars_xyzuvw.fits')
 get_ipython().magic(u'ls ')
 sp['table'].info

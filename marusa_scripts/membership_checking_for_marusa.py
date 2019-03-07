@@ -9,7 +9,7 @@ z.shape
 z.sum(axis=0)
 import sys
 sys.path.insert(0, '/home/marusa/chronostar/')
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 star_pars = dt.loadDictFromTable('../../../../../../data/marusa_galah_li_strong_stars_xyzuvw.fits')
 star_pars.keys()
 star_pars['table'].info

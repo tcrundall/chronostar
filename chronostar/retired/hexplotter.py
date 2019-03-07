@@ -3,19 +3,14 @@ from __future__ import division, print_function
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
-import pdb
 
 from astropy.io import fits
-
-import chronostar.errorellipse as ee
-import chronostar.analyser as al
 
 import chronostar.component
 import chronostar.fitplotter
 import chronostar.traceorbit as torb
 import chronostar.transform as tf
-import chronostar.datatool as dt
-import chronostar.synthdata as syn
+import chronostar.retired2.datatool as dt
 
 COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']*12

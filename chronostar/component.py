@@ -83,6 +83,16 @@ class AbstractComponent(object):
         # and set those attributes.
         self.set_sphere_stds()
 
+    def __str__(self):
+        x,y,z,u,v,w = self.get_mean_now()
+        return 'Currentday...  ' \
+               'X: {:.2}pc, Y: {:.2}pc, Z: {:.2}pc, '  \
+               'U {:.2}km/s, V {:.2}km/s, W {:.2}km/s, ' \
+               'age: {:.2}Myr'.format(x,y,z,u,v,w, self._age)
+
+    def __repr__(self):
+        return self.__str__()
+
     @classmethod
     def check_parameter_format(cls):
         if cls.PARAMETER_FORMAT is None:
@@ -154,6 +164,8 @@ class AbstractComponent(object):
         won't update. So ideally use this method to modify attributes so
         we can force the recalculation of current-day projections as required
         """
+        if type(attributes) is not dict:
+            raise TypeError('Attributes must be passed in as dictionary')
         if 'mean' in attributes.keys():
             self._set_mean(mean=attributes['mean'])
         if 'covmatrix' in attributes.keys():
@@ -162,7 +174,6 @@ class AbstractComponent(object):
             self._set_age(age=attributes['age'])
         self._mean_now = None
         self._covmatrix_now = None
-
 
     def get_mean_now(self):
         """

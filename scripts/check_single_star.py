@@ -10,10 +10,9 @@ import chronostar.likelihood
 
 sys.path.insert(0, '..')
 
-import chronostar.datatool as dt
-import chronostar.converter as cv
+import chronostar.retired2.datatool as dt
+import chronostar.retired2.converter as cv
 import chronostar.coordinate as cc
-import chronostar.groupfitter as gf
 import chronostar.expectmax as em
 
 filename = '../data/2M0249-05.fits'

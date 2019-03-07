@@ -7,17 +7,15 @@ realistic BMPG membership probabilities based on current best fit to group
 
 import logging
 import numpy as np
-import matplotlib as pyplot
 from distutils.dir_util import mkpath
 import sys
 
 from astropy.io import fits
 
 sys.path.insert(0, '..')
-import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
 import chronostar.transform as tf
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 def MVGaussian(vec_x, mean, cov, inv_cov = None):
     """

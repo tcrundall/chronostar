@@ -55,17 +55,29 @@ class SynthData():
         """
         Generates a set of astrometry data based on multiple star bursts with
         simple, Gaussian origins.
-
-        TODO: allow for list of Components as input
         """
         # Tidying input and applying some quality checks
-        self.pars = np.copy(pars)      # Can different rows of pars be
-                                       # provided in different forms?
-        assert len(self.pars.shape) == 2, 'pars must be a 2 dim array'
-        self.ncomps = pars.shape[0]
-        assert len(starcounts) == self.ncomps,\
-            'starcounts must be same length as pars dimension'
-        self.starcounts = starcounts
+        self.pars = np.array(pars)      # Can different rows of pars be
+                                        # provided in different forms?
+        if type(self.pars[0]) is not np.ndarray:
+            self.pars = self.pars.reshape(1,-1)
+        self.ncomps = self.pars.shape[0]
+        if type(starcounts) is not np.ndarray:
+            if type(starcounts) in (list, tuple):
+                self.starcounts = np.array(starcounts, dtype=np.int)
+            else:
+                self.starcounts = np.array([starcounts], dtype=np.int)
+        # try:
+        #     len(starcounts)
+        # except TypeError:   # starcunts is not array_like, so fix this
+        #     starcounts = np.array([starcounts])
+        assert len(self.starcounts) == self.ncomps,\
+            'starcounts must be same length as pars dimension. Received' \
+            'lengths starcounts: {} and pars: {}'.format(
+                    len(self.starcounts),
+                    self.ncomps,
+            )
+        # self.starcounts = np.int(starcounts)
         if type(Components) is not list:
             self.Components = self.ncomps * [Components]
         else:
@@ -197,7 +209,8 @@ class SynthData():
         """
         if savedir is None:
             savedir = self.savedir
-        else:
+        # ensure singular trailing '/'
+        if savedir != '':
             savedir = savedir.rstrip('/') + '/'
         if filename is None:
             filename = self.tablefilename

@@ -81,7 +81,7 @@ logging.info("applying fit")
 #approx_dx   = np.prod(np.std(xyzuvw_dict['xyzuvw'][:,:3], axis=0))**(1./3.)
 #approx_dv   = np.prod(np.std(xyzuvw_dict['xyzuvw'][:,3:], axis=0))**(1./3.)
 #init_pars = np.hstack((approx_mean, np.log(approx_dx), np.log(approx_dv), 1.0))
-best_fit, chain, lnprob = gf.fitGroup(
+best_fit, chain, lnprob = gf.fit_group(
     xyzuvw_file=xyzuvw_file, burnin_steps=BURNIN_STEPS, plot_it=True,
     pool=pool, convergence_tol=C_TOL, save_dir=results_dir, #init_pars=init_pars,
     plot_dir=results_dir, sampling_steps=SAMPLING_STEPS,

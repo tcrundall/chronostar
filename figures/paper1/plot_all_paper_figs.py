@@ -15,10 +15,8 @@ import numpy as np
 import sys
 sys.path.insert(0, '../..')
 
-import chronostar.datatool as dt
-import chronostar.synthdata as syn
+import chronostar.retired2.datatool as dt
 import chronostar.fitplotter as fp
-import chronostar.traceorbit as torb
 
 debugging_circles=False
 

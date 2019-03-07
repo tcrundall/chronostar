@@ -15,16 +15,13 @@ from distutils.dir_util import mkpath
 from distutils.errors import DistutilsFileError
 import logging
 import numpy as np
-import random
 import sys
 sys.path.insert(0, '..')
 import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
-import chronostar.converter as cv
-import chronostar.measurer as ms
-import chronostar.expectmax as em
+import chronostar.retired2.converter as cv
 import chronostar.fitplotter as fp
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 def plotInitState(origins, star_pars):
     for dim1, dim2 in ('xy', 'xu', 'yv', 'zw', 'uv'):

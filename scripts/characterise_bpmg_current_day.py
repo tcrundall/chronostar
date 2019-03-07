@@ -10,10 +10,9 @@ parametrisation of corresponding current-day fits to BPMG
 import numpy as np
 import sys
 sys.path.insert(0, '..')
-import chronostar.synthdata as syn
 import chronostar.transform as tf
 import chronostar.traceorbit as torb
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 DIM = 6
 

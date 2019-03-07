@@ -15,8 +15,6 @@ sys.path.insert(0, '..')
 
 import chronostar.groupfitter as gf
 import chronostar.traceorbit as torb
-import chronostar.measurer as ms
-import chronostar.converter as cv
 
 
 def get_euc_dist(pos1, pos2):

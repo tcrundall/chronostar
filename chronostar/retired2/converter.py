@@ -7,10 +7,9 @@ from astropy.table import Table
 import logging
 import numpy as np
 
-from . import measurer
-from . import coordinate
-from . import transform
-from . import datatool
+from chronostar.retired2 import measurer, datatool
+from chronostar import coordinate
+from chronostar import transform
 
 try:
     import astropy.io.fits as pyfits

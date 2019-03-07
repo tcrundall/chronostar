@@ -20,17 +20,14 @@ except ImportError:
     can_plot = False
 
 from distutils.dir_util import mkpath
-from distutils.errors import DistutilsFileError
 import os
-from scipy import stats
 import logging
 import numpy as np
-import pdb
 import sys
 from emcee.utils import MPIPool
 sys.path.insert(0, '..')
 import chronostar.expectmax as em
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 try:
     ass_name = sys.argv[1]

@@ -7,11 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, '..')
-import chronostar.synthdata as syn
-import chronostar.traceorbit as torb
-import chronostar.measurer as ms
-import chronostar.converter as cv
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 import chronostar.fitplotter as fp
 
 

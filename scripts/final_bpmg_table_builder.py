@@ -19,10 +19,10 @@ Changes:
 
 import numpy as np
 import pandas as pd
-from astropy.table import Table, hstack, join
+from astropy.table import Table
 import sys
 sys.path.insert(0, '..')
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 if __name__ == '__main__':
     input_file = '../data/beta_Pictoris_with_gaia_small_everything.fits'

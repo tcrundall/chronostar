@@ -13,7 +13,6 @@ where nthreads is the number of threads to be passed into emcee run
 """
 from __future__ import division, print_function
 
-import chronostar.component
 import chronostar.synthdata
 
 try:
@@ -29,18 +28,15 @@ except ImportError:
 from distutils.dir_util import mkpath
 import logging
 import numpy as np
-import os
 import platform
 from emcee.utils import MPIPool
 import sys
 sys.path.insert(0, '..')
 
-import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
-import chronostar.converter as cv
-import chronostar.measurer as ms
+import chronostar.retired2.converter as cv
 import chronostar.groupfitter as gf
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 # import chronostar.retired.hexplotter as hp
 
 #base_sphere_pars = [100, -80, 40, -7, -17, -7, None, None, None, None]
@@ -220,7 +216,7 @@ for prec in precs:
         logging.info("Generated [{}] traceback file".format(prec))
 
         # apply traceforward fitting (with lnprob, corner plots as side effects)
-        best_fit, chain, lnprob = gf.fitGroup(
+        best_fit, chain, lnprob = gf.fit_group(
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL, plot_dir=pdir, save_dir=pdir,
             sampling_steps=SAMPLING_STEPS

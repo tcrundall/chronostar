@@ -8,7 +8,7 @@ import os
 import sys
 sys.path.insert(0, '..')
 import chronostar.fitplotter as fp
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 
 def plotEveryIter(rdir, star_pars, bg_hists=None, true_memb=None):

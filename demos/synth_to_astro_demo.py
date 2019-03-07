@@ -5,17 +5,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-import chronostar.fitplotter
 import chronostar.synthdata
 
 sys.path.insert(0, '..')
 
 import chronostar.synthdata as syn
 import chronostar.traceorbit as to
-import chronostar.measurer as ms
-import chronostar.converter as cv
+import chronostar.retired2.measurer as ms
+import chronostar.retired2.converter as cv
 import chronostar.coordinate as cc
-import chronostar.errorellipse as ee
 import chronostar.transform as tf
 
 
