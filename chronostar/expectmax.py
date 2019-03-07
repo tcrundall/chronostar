@@ -23,67 +23,24 @@ except ImportError:
 
 from chronostar.component import SphereComponent
 from chronostar import likelihood
-from . import traceorbit
 from . import groupfitter
+from . import tabletool
 
 
-def ix_fst(array, ix):
-    """Helper function to index array by first axis that could be None"""
-    if array is None:
-        return None
-    else:
-        return array[ix]
-
-
-def ix_snd(array, ix):
-    """Helper function to index array by second axis that could be None"""
-    if array is None:
-        return None
-    else:
-        return array[:, ix]
-
-
-def calcMedAndSpan(chain, perc=34, sphere=True):
-    """
-    Given a set of aligned samples, calculate the 50th, (50-perc)th and
-     (50+perc)th percentiles.
-
-    Parameters
-    ----------
-    chain : [nwalkers, nsteps, npars]
-        The chain of samples (in internal encoding)
-    perc: integer {34}
-        The percentage from the midpoint you wish to set as the error.
-        The default is to take the 16th and 84th percentile.
-    sphere: Boolean {True}
-        Currently hardcoded to take the exponent of the logged
-        standard deviations. If sphere is true the log stds are at
-        indices 6, 7. If sphere is false, the log stds are at
-        indices 6:10.
-
-    Returns
-    -------
-    _ : [npars,3] float array
-        For each paramter, there is the 50th, (50+perc)th and (50-perc)th
-        percentiles
-    """
-    npars = chain.shape[-1]  # will now also work on flatchain as input
-    flat_chain = np.reshape(chain, (-1, npars))
-
-    # conv_chain = np.copy(flat_chain)
-    # if sphere:
-    #     conv_chain[:, 6:8] = np.exp(conv_chain[:, 6:8])
-    # else:
-    #     conv_chain[:, 6:10] = np.exp(conv_chain[:, 6:10])
-
-    # return np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-    #                     zip(*np.percentile(conv_chain,
-    #                                        [50-perc,50,50+perc],
-    #                                        axis=0))))
-    return np.array(map(lambda v: (v[1], v[2], v[0]),
-                        zip(*np.percentile(flat_chain,
-                                           [50-perc, 50, 50+perc],
-                                           axis=0))))
+# def ix_fst(array, ix):
+#     """Helper function to index array by first axis that could be None"""
+#     if array is None:
+#         return None
+#     else:
+#         return array[ix]
+#
+#
+# def ix_snd(array, ix):
+#     """Helper function to index array by second axis that could be None"""
+#     if array is None:
+#         return None
+#     else:
+#         return array[:, ix]
 
 
 def checkConvergence(old_best_comps, new_chains,
@@ -118,7 +75,7 @@ def checkConvergence(old_best_comps, new_chains,
     each_converged = []
 
     for old_best_comp, new_chain in zip(old_best_comps, new_chains):
-        errors = gf.calc_med_and_span(new_chain, perc=perc)
+        errors = groupfitter.calc_med_and_span(new_chain, perc=perc)
         upper_contained =\
             old_best_comp.get_pars() < errors[:, 1]
         lower_contained =\
@@ -135,18 +92,18 @@ def calcMembershipProbs(star_lnols):
 
     Parameters
     ----------
-    star_lnols : [ngroups] array
+    star_lnols : [ncomps] array
         The log of the overlap of a star with each group
 
     Returns
     -------
-    star_memb_probs : [ngroups] array
+    star_memb_probs : [ncomps] array
         The probability of membership to each group, normalised to sum to 1
     """
-    ngroups = star_lnols.shape[0]
-    star_memb_probs = np.zeros(ngroups)
+    ncomps = star_lnols.shape[0]
+    star_memb_probs = np.zeros(ncomps)
 
-    for i in range(ngroups):
+    for i in range(ncomps):
         star_memb_probs[i] = 1. / np.sum(np.exp(star_lnols - star_lnols[i]))
 
     return star_memb_probs
@@ -241,14 +198,14 @@ def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
     return bg_ln_ols
 
 
-def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
+def getAllLnOverlaps(data, comps, old_memb_probs=None, bg_ln_ols=None,
                      inc_posterior=False, amp_prior=None):
     """
     Get the log overlap integrals of each star with each component
 
     Parameters
     ----------
-    star_pars : dict
+    data : dict
         stars: (nstars) high astropy table including columns as
                     documented in the Traceback class.
         times : [ntimes] numpy array
@@ -258,12 +215,12 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
         xyzuvw_cov : [nstars, ntimes, 6, 6] array
             covariance of xyzuvw
 
-    groups : [ngroups] syn.Group object list
-        a fit for each group (in internal form)
+    comps : [ncomps] syn.Group object list
+        a fit for each comp (in internal form)
 
-    old_z : [nstars, ngroups (+1)] float array {None}
+    old_memb_probs : [nstars, ncomps (+1)] float array {None}
         Only used to get weights (amplitudes) for each fitted component.
-        Tracks membership probabilities of each star to each group. Each
+        Tracks membership probabilities of each star to each comp. Each
         element is between 0.0 and 1.0 such that each row sums to 1.0
         exactly.
         If bg_hists are also being used, there is an extra column for the
@@ -281,33 +238,33 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
 
     Returns
     -------
-    lnols: [nstars, ngroups (+1)] float array
+    lnols: [nstars, ncomps (+1)] float array
         The log overlaps of each star with each component, optionally
         with the log background overlaps appended as the final column
     """
-    nstars = len(star_pars['xyzuvw'])
-    ngroups = len(groups)
+    nstars = len(data)
+    ncomps = len(comps)
     using_bg = bg_ln_ols is not None
 
-    lnols = np.zeros((nstars, ngroups + using_bg))
+    lnols = np.zeros((nstars, ncomps + using_bg))
 
-    if old_z is None:
-        old_z = np.ones((nstars, ngroups)) / ngroups
+    if old_memb_probs is None:
+        old_memb_probs = np.ones((nstars, ncomps)) / ncomps
 
 
-    weights = old_z[:,:ngroups].sum(axis=0)
+    weights = old_memb_probs[:, :ncomps].sum(axis=0)
 
     # Optionally scale each weight by the component prior, then rebalance
     # so total expected stars across all components is unchanged
     if inc_posterior:
-        group_lnpriors = np.zeros(ngroups)# &TC
-        for i, group in enumerate(groups):
-            group_lnpriors[i] = gf.lnAlphaPrior(
-                group.getInternalSphericalPars(),
-                z=old_z
+        comp_lnpriors = np.zeros(ncomps)# &TC
+        for i, comp in enumerate(comps):
+            comp_lnpriors[i] = likelihood.ln_alpha_prior(
+                    comp.getInternalSphericalPars(),
+                    memb_probs=old_memb_probs
             )
         ngroup_stars = weights.sum()
-        weights *= np.exp(group_lnpriors)
+        weights *= np.exp(comp_lnpriors)
         weights = weights / weights.sum() * ngroup_stars
 
     # Optionally scale each weight such that the total expected stars
@@ -318,27 +275,25 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
 
 #    # except:
 #    logging.info("_____ DEBUGGGING _____")
-#    logging.info("ngroups: {}".format(ngroups))
+#    logging.info("ncomps: {}".format(ncomps))
 #    logging.info("old_z shape: {}".format(old_z.shape))
 #    logging.info("weights shape: {}".format(weights.shape))
 #    logging.info("weights: {}".format(weights))
 #    import pdb; pdb.set_trace()
 
-    for i, group in enumerate(groups):
+    for i, comp in enumerate(comps):
         # weight is the amplitude of a component, proportional to its expected
         # total of stellar members
         #weight = old_z[:,i].sum()
-        # threshold = nstars/(2. * (ngroups+1))
+        # threshold = nstars/(2. * (ncomps+1))
         # if weight < threshold:
         #     logging.info("!!! GROUP {} HAS LESS THAN {} STARS, weight: {}".\
         #         format(i, threshold, weight)
         # )
-        group_pars = group.getInternalSphericalPars()
+        comp_pars = comp.get_pars()
         lnols[:, i] = \
             np.log(weights[i]) + \
-            chronostar.likelihood.get_lnoverlaps(group_pars, star_pars)
-            # gf.lnlike(group_pars, star_pars,
-            #                            old_z, return_lnols=True) #??!??!?!
+            likelihood.get_lnoverlaps(comp, data)
 
     # insert one time calculated background overlaps
     if using_bg:
@@ -346,7 +301,7 @@ def getAllLnOverlaps(star_pars, groups, old_z=None, bg_ln_ols=None,
     return lnols
 
 
-def calcBIC(star_pars, ncomps, lnlike, z=None):
+def calcBIC(data, ncomps, lnlike, z=None):
     """Calculates the Bayesian Information Criterion
 
     A simple metric to judge whether added components are worthwhile
@@ -358,19 +313,19 @@ def calcBIC(star_pars, ncomps, lnlike, z=None):
     if z is not None:
         nstars = np.sum(z[:,:ncomps])
     else:
-        nstars = len(star_pars['xyzuvw'])
+        nstars = len(data)
     n = nstars * 6 # 6 for phase space origin (and 1 for age???)
     k = ncomps * 8 # 6 for central estimate, 2 for dx and dv, 1 for age
     return np.log(n)*k - 2 * lnlike
 
 
-def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
+def expectation(data, comps, old_memb_probs=None, bg_ln_ols=None,
                 inc_posterior=False, amp_prior=None):
     """Calculate membership probabilities given fits to each group
 
     Parameters
     ----------
-    star_pars : dict
+    data : dict
         stars: (nstars) high astropy table including columns as
                     documented in the Traceback class.
         times : [ntimes] numpy array
@@ -380,10 +335,10 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
         xyzuvw_cov : [nstars, ntimes, 6, 6] array
             covariance of xyzuvw
 
-    groups : [ngroups] syn.Group object list
+    comps : [ncomps] syn.Group object list
         a fit for each group (in internal form)
 
-    old_z : [nstars, ngroups (+1)] float array
+    old_memb_probs : [nstars, ncomps (+1)] float array
         Only used to get weights (amplitudes) for each fitted component.
         Tracks membership probabilities of each star to each group. Each
         element is between 0.0 and 1.0 such that each row sums to 1.0
@@ -396,32 +351,32 @@ def expectation(star_pars, groups, old_z=None, bg_ln_ols=None,
 
     Returns
     -------
-    z : [nstars, ngroups] array
+    memb_probs : [nstars, ncomps] array
         An array designating each star's probability of being a member to
         each group. It is populated by floats in the range (0.0, 1.0) such
         that each row sums to 1.0, each column sums to the expected size of
         each group, and the entire array sums to the number of stars.
     """
-    ngroups = len(groups)
-    nstars = len(star_pars['xyzuvw'])
+    ncomps = len(comps)
+    nstars = len(data)
 
     using_bg = bg_ln_ols is not None
 
-    # if no z provided, assume perfectly equal membership
-    if old_z is None:
-        old_z = np.ones((nstars, ngroups + using_bg))/(ngroups + using_bg)
+    # if no memb_probs provided, assume perfectly equal membership
+    if old_memb_probs is None:
+        old_memb_probs = np.ones((nstars, ncomps+using_bg)) / (ncomps+using_bg)
 
-    lnols = getAllLnOverlaps(star_pars, groups, old_z, bg_ln_ols,
+    lnols = getAllLnOverlaps(data, comps, old_memb_probs, bg_ln_ols,
                              inc_posterior=inc_posterior, amp_prior=amp_prior)
 
-    z = np.zeros((nstars, ngroups + using_bg))
+    memb_probs = np.zeros((nstars, ncomps + using_bg))
     for i in range(nstars):
-        z[i] = calcMembershipProbs(lnols[i])
-    if np.isnan(z).any():
+        memb_probs[i] = calcMembershipProbs(lnols[i])
+    if np.isnan(memb_probs).any():
         logging.info("!!!!!! AT LEAST ONE MEMBERSHIP IS 'NAN' !!!!!!")
-        z[np.where(np.isnan(z))] = 0.
+        memb_probs[np.where(np.isnan(memb_probs))] = 0.
         # import pdb; pdb.set_trace()
-    return z
+    return memb_probs
 
 
 def getPointsOnCircle(npoints, v_dist=20, offset=False):
@@ -446,32 +401,35 @@ def getPointsOnCircle(npoints, v_dist=20, offset=False):
     return np.vstack((us, vs)).T
 
 
-def getInitialGroups(ngroups, xyzuvw, offset=False, v_dist=10.):
+def getInitialGroups(ncomps, xyzuvw, offset=False, v_dist=10.,
+                     Component=SphereComponent):
     """
     Generate the parameter list with which walkers will be initialised
 
+    TODO: replace hardcoding parameter generation with Component methods
+
     Parameters
     ----------
-    ngroups: int
-        number of groups
+    ncomps: int
+        number of comps
     xyzuvw: [nstars, 6] array
         the mean measurement of stars
     offset : (boolean {False})
         If set, the gorups are initialised in the complementary angular
         positions
     v_dist: float
-        Radius of circle in UV plane along which groups are initialsed
+        Radius of circle in UV plane along which comps are initialsed
 
     Returns
     -------
-    groups: [ngroups] synthesiser.Group object list
-        the parameters with which to initialise each group's emcee run
+    comps: [ngroups] synthesiser.Group object list
+        the parameters with which to initialise each comp's emcee run
     """
-    groups = []
+    comps = []
 
-    # if only fitting one group, simply initialise walkers about the
+    # if only fitting one comp, simply initialise walkers about the
     # mean of the data set
-    if ngroups == 1:
+    if ncomps == 1:
         v_dist = 0
 
     mean = np.mean(xyzuvw, axis=0)[:6]
@@ -483,60 +441,60 @@ def getInitialGroups(ngroups, xyzuvw, offset=False, v_dist=10.):
     age = 3.
     # group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
     #                         np.log(5), 3])
-    pts = getPointsOnCircle(npoints=ngroups, v_dist=v_dist, offset=offset)
+    pts = getPointsOnCircle(npoints=ncomps, v_dist=v_dist, offset=offset)
     logging.info("Points around circle are:\n{}".format(pts))
 
-    for i in range(ngroups):
+    for i in range(ncomps):
         mean_w_offset = np.copy(mean)
         mean_w_offset[3:5] += pts[i]
         logging.info("Group {} has init UV of ({},{})".\
                     format(i, mean_w_offset[3], mean_w_offset[4]))
-        group_pars = np.hstack((mean_w_offset, dx, dv, age))
-        group = chronostar.component.Component(group_pars, form='sphere')
-        groups.append(group)
+        comp_pars = np.hstack((mean_w_offset, dx, dv, age))
+        comp = Component(comp_pars)
+        comps.append(comp)
 
-    return groups
+    return comps
+#
+# def decomposeGroup(comp, young_age=None, old_age=None, age_offset=4):
+#     """
+#     Takes a group object and splits it into two components offset by age.
+#
+#     Parameters
+#     ----------
+#     comp: synthesiser.Group instance
+#         the group which is to be decomposed
+#
+#     Returns
+#     -------
+#     all_init_pars: [2, npars] array
+#         the intenralised parameters with which the walkers will be
+#         initiallised
+#     sub_groups: [2] list of Group instances
+#         the group objects of the resulting decomposition
+#     """
+#     internal_pars = comp.getInternalSphericalPars()
+#     mean_now = torb.traceOrbitXYZUVW(comp.mean, comp.age, single_age=True)
+#     ngroups = 2
+#
+#     sub_groups = []
+#
+#     if (young_age is None) and (old_age is None):
+#         young_age = max(1e-5, comp.age - age_offset)
+#         old_age = comp.age + age_offset
+#
+#     ages = [young_age, old_age]
+#     for age in ages:
+#         mean_then = torb.traceOrbitXYZUVW(mean_now, -age, single_age=True)
+#         group_pars_int = np.hstack((mean_then, internal_pars[6:8], age))
+#         sub_groups.append(
+#             component.Component(group_pars_int, form='sphere',
+#                                            internal=True))
+#     all_init_pars = [sg.getInternalSphericalPars() for sg in sub_groups]
+#
+#     return all_init_pars, sub_groups
 
-def decomposeGroup(group, young_age=None, old_age=None, age_offset=4):
-    """
-    Takes a group object and splits it into two components offset by age.
 
-    Parameters
-    ----------
-    group: synthesiser.Group instance
-        the group which is to be decomposed
-
-    Returns
-    -------
-    all_init_pars: [2, npars] array
-        the intenralised parameters with which the walkers will be
-        initiallised
-    sub_groups: [2] list of Group instances
-        the group objects of the resulting decomposition
-    """
-    internal_pars = group.getInternalSphericalPars()
-    mean_now = torb.traceOrbitXYZUVW(group.mean, group.age, single_age=True)
-    ngroups = 2
-
-    sub_groups = []
-
-    if (young_age is None) and (old_age is None):
-        young_age = max(1e-5, group.age - age_offset)
-        old_age = group.age + age_offset
-
-    ages = [young_age, old_age]
-    for age in ages:
-        mean_then = torb.traceOrbitXYZUVW(mean_now, -age, single_age=True)
-        group_pars_int = np.hstack((mean_then, internal_pars[6:8], age))
-        sub_groups.append(
-            chronostar.component.Component(group_pars_int, form='sphere',
-                                           internal=True))
-    all_init_pars = [sg.getInternalSphericalPars() for sg in sub_groups]
-
-    return all_init_pars, sub_groups
-
-
-def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False,
+def getOverallLnLikelihood(data, comps, bg_ln_ols, return_z=False,
                            inc_posterior=False):
     """
     Get overall likelihood for a proposed model.
@@ -546,9 +504,9 @@ def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False,
 
     Parameters
     ----------
-    star_pars : (dict)
-    groups : [ngroups] list of Synthesiser.Group objects
-    z : [nstars, ngroups] float array
+    data : (dict)
+    comps : [ngroups] list of Synthesiser.Group objects
+    memb_probs : [nstars, ngroups] float array
         membership array
     bg_ln_ols : [nstars] float array
         the overlap each star has with the provided background density
@@ -558,23 +516,24 @@ def getOverallLnLikelihood(star_pars, groups, bg_ln_ols, return_z=False,
     -------
     overall_lnlikelihood : float
     """
-    z = expectation(star_pars, groups, None, bg_ln_ols,
-                    inc_posterior=inc_posterior)
-    all_ln_ols = getAllLnOverlaps(star_pars, groups, z, bg_ln_ols,
+    memb_probs = expectation(data, comps, None, bg_ln_ols,
+                             inc_posterior=inc_posterior)
+    all_ln_ols = getAllLnOverlaps(data, comps, memb_probs, bg_ln_ols,
                                   inc_posterior=inc_posterior)
 
     # multiplies each log overlap by the star's membership probability
     # import pdb; pdb.set_trace()
-    weighted_lnols = np.einsum('ij,ij->ij', all_ln_ols, z)
+    weighted_lnols = np.einsum('ij,ij->ij', all_ln_ols, memb_probs)
     if return_z:
-        return np.sum(weighted_lnols), z
+        return np.sum(weighted_lnols), memb_probs
     else:
         return np.sum(weighted_lnols)
 
 
-def maximisation(star_pars, ngroups, z, burnin_steps, idir,
+def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
                  all_init_pars, all_init_pos=None, plot_it=False, pool=None,
-                 convergence_tol=0.25, ignore_dead_comps=False):
+                 convergence_tol=0.25, ignore_dead_comps=False,
+                 Component=SphereComponent):
     """
     Performs the 'maximisation' step of the EM algorithm
 
@@ -588,7 +547,7 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
 
     :param star_pars:
     :param ngroups:
-    :param z:
+    :param memb_probs:
     :param burnin_steps:
     :param idir:
     :param all_init_pars:
@@ -600,42 +559,50 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
     """
     DEATH_THRESHOLD = 2.1
 
-    new_groups = []
+    new_comps = []
     all_samples = []
     all_lnprob = []
     success_mask = []
     if all_init_pos is None:
-        all_init_pos = ngroups * [None]
+        all_init_pos = ncomps * [None]
 
-    for i in range(ngroups):
+    for i in range(ncomps):
         logging.info("........................................")
-        logging.info("          Fitting group {}".format(i))
+        logging.info("          Fitting comp {}".format(i))
         logging.info("........................................")
-        gdir = idir + "group{}/".format(i)
+        gdir = idir + "comp{}/".format(i)
         mkpath(gdir)
         # pdb.set_trace()
         # If component has too few stars, skip fit, and use previous best walker
-        if ignore_dead_comps and (np.sum(z[:,i]) < DEATH_THRESHOLD):
-            logging.info("Skipped component {} with nstars {}".format(i, np.sum(z[:,i])))
+        if ignore_dead_comps and (np.sum(memb_probs[:, i]) < DEATH_THRESHOLD):
+            logging.info("Skipped component {} with nstars {}".format(
+                    i, np.sum(memb_probs[:, i])
+            ))
         else:
-            best_fit, chain, lnprob = gf.fit_group(
-                xyzuvw_dict=star_pars, burnin_steps=burnin_steps,
-                plot_it=plot_it, pool=pool, convergence_tol=convergence_tol,
-                plot_dir=gdir, save_dir=gdir, z=z[:, i],
-                init_pos=all_init_pos[i],
-                init_pars=all_init_pars[i],
+            best_fit, chain, lnprob = groupfitter.fit_comp(
+                    data=data,
+                    memb_probs=memb_probs[:, i],
+                    burnin_steps=burnin_steps,
+                    plot_it=plot_it,
+                    pool=pool,
+                    convergence_tol=convergence_tol,
+                    plot_dir=gdir,
+                    save_dir=gdir,
+                    init_pos=all_init_pos[i],
+                    init_pars=all_init_pars[i],
+                    Component=Component,
             )
             logging.info("Finished fit")
-            logging.info("Best group (internal) pars:\n{}".format(best_fit))
+            logging.info("Best comp (internal) pars:\n{}".format(best_fit))
 
             final_pos = chain[:, -1, :]
 
             logging.info("With age of: {:.3} +- {:.3} Myr".\
-                        format(np.median(chain[:,:,-1]), np.std(chain[:,:,-1])))
-            new_group = chronostar.component.Component(best_fit, form='sphere',
-                                                       internal=True)
-            new_groups.append(new_group)
-            np.save(gdir + "best_group_fit.npy", new_group)
+                        format(np.median(chain[:,:,-1]),
+                               np.std(chain[:,:,-1])))
+            new_comp = Component(best_fit, internal=True)
+            new_comps.append(new_comp)
+            np.save(gdir + "best_comp_fit.npy", new_comp)
             np.save(gdir + 'final_chain.npy', chain)
             np.save(gdir + 'final_lnprob.npy', lnprob)
             all_samples.append(chain)
@@ -643,17 +610,17 @@ def maximisation(star_pars, ngroups, z, burnin_steps, idir,
 
             success_mask.append(i)
 
-            # record the final position of the walkers for each group
+            # record the final position of the walkers for each comp
             # TODO: TIM TO FIX IMPENDING BUG HERE
             all_init_pos[i] = final_pos
 
-    np.save(idir + 'best_groups.npy', new_groups)
+    np.save(idir + 'best_comps.npy', new_comps)
 
-    return new_groups, all_samples, all_lnprob, all_init_pos,\
+    return new_comps, all_samples, all_lnprob, all_init_pos,\
            np.array(success_mask)
 
 
-def checkStability(star_pars, best_groups, z, bg_ln_ols=None):
+def checkStability(star_pars, best_comps, z, bg_ln_ols=None):
     """
     Checks if run has encountered problems
 
@@ -664,21 +631,21 @@ def checkStability(star_pars, best_groups, z, bg_ln_ols=None):
     ---------
     star_pars : dict
         Contains XYZUVW kinematics of stars
-    best_groups : [ngroups] list of Synthesiser.Group objects
+    best_groups : [ncomps] list of Synthesiser.Group objects
         The best fits (np.argmax(chain)) for each component from the most
         recent run
-    z : [nstars, ngroups] float array
+    z : [nstars, ncomps] float array
         The membership array from the most recent run
     bg_ln_ols : [nstars] float array
         The overlap the stars have with the (fixed) background distribution
     """
-    ngroups = len(best_groups)
+    ncomps = len(best_comps)
     stable = True
-    if np.min(np.sum(z[:,:ngroups], axis=0)) <= 2.:
+    if np.min(np.sum(z[:,:ncomps], axis=0)) <= 2.:
         logging.info("ERROR: A component has less than 2 members")
         stable = False
     if not np.isfinite(getOverallLnLikelihood(star_pars,
-                                              best_groups,
+                                              best_comps,
                                               bg_ln_ols)):
         logging.info("ERROR: Posterior is not finite")
         stable = False
@@ -688,18 +655,19 @@ def checkStability(star_pars, best_groups, z, bg_ln_ols=None):
     return stable
 
 
-def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
+def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
                   origins=None, pool=None, init_with_origin=False,
-                  init_groups=None, init_weights=None,
-                  offset=False,  bg_hist_file='', correction_factor=1.0,
+                  init_comps=None, init_weights=None,
+                  offset=False, bg_hist_file='', correction_factor=1.0,
                   inc_posterior=False, burnin=1000, bg_dens=None,
-                  bg_ln_ols=None, ignore_dead_comps=False):
+                  bg_ln_ols=None, ignore_dead_comps=False,
+                  Component=SphereComponent):
     """
     Entry point: Fit multiple Gaussians to data set
 
     Parameters
     ----------
-    star_pars: dict
+    data: dict
         'xyzuvw': [nstars, 6] numpy array
             the xyzuvw mean values of each star, calculated from astrometry
         'xyzuvw_cov': [nstars, 6, 6] numpy array
@@ -708,12 +676,12 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         'table': Astropy table (sometimes None)
             The astrometry from which xyzuvw values are calculated. Can
             optionally include more information, like star names etc.
-    ngroups: int
+    ncomps: int
         the number of groups to be fitted to the data
     rdir: String {''}
         The directory in which all the data will be stored and accessed
         from
-    init_z: [nstars, ngroups] array {None} [UNIMPLEMENTED]
+    init_memb_probs: [nstars, ngroups] array {None} [UNIMPLEMENTED]
         If some members are already known, the initialsiation process
         could use this.
     origins: [ngroups] synthetic Group
@@ -735,12 +703,12 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
     Return
     ------
-    final_groups: [ngroups] list of synthesiser.Group objects
+    final_comps: [ngroups] list of synthesiser.Group objects
         the best fit for each component
     final_med_errs: [ngroups, npars, 3] array
         the median, -34 perc, +34 perc values of each parameter from
         each final sampling chain
-    z: [nstars, ngroups] array
+    memb_probs: [nstars, ngroups] array
         membership probabilities
 
     TODO: Generalise interventions for more than 2 groups
@@ -754,9 +722,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     # MEMB_CONV_TOL = 0.1 # no memberships may vary by >10% to be converged.
     AMPLITUDE_TOL = 1.0 # total sum of memberships for each component
                         # cannot vary by more than this value to be converged
-    nstars = star_pars['xyzuvw'].shape[0]
+    nstars = data['xyzuvw'].shape[0]
 
-    logging.info("Fitting {} groups with {} burnin steps".format(ngroups,
+    logging.info("Fitting {} groups with {} burnin steps".format(ncomps,
                                                                  BURNIN_STEPS))
 
     # Set up stars' log overlaps with background
@@ -769,8 +737,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         # bg_hists = np.load(rdir + bg_hist_file)
         bg_hists = np.load(bg_hist_file)
         bg_ln_ols = backgroundLogOverlaps(
-            star_pars['xyzuvw'], bg_hists,
-            correction_factor=correction_factor,
+                tabletool.buildDataFromTable(data, only_means=True),
+                bg_hists,
+                correction_factor=correction_factor,
         )
     elif bg_dens:
         logging.info("CORRECTION FACTOR: {}".format(correction_factor))
@@ -779,45 +748,51 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
     # INITIALISE GROUPS
     skip_first_e_step = False
-    # use init groups if given (along with any z)
-    if init_groups is not None:
-        z = init_z
+    # use init groups if given (along with any memb_probs)
+    if init_comps is not None:
+        memb_probs = init_memb_probs
     # if just init_z provided, skip first E-step, and maximise off of init_z
-    elif init_z is not None:
+    elif init_memb_probs is not None:
         skip_first_e_step = True
         # still need a sensible location to begin the walkers
-        init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'],
-                                       offset=offset)
+        init_comps = getInitialGroups(
+                ncomps,
+                tabletool.buildDataFromTable(data, only_means=True),
+                offset=offset
+        )
     # if a synth fit, could initialse at origins
     elif origins is not None:
-        init_groups = origins
-        z = np.zeros((nstars, ngroups + use_background)) # extra column for bg
+        init_comps = origins
+        memb_probs = np.zeros((nstars, ncomps + use_background)) # extra column for bg
         cnt = 0
-        for i in range(ngroups):
-            z[cnt:cnt+origins[i].nstars, i] = 1.0
+        for i in range(ncomps):
+            memb_probs[cnt:cnt+origins[i].nstars, i] = 1.0
             cnt += origins[i].nstars
         logging.info("Initialising fit with origins and membership\n{}".
-                     format(z))
+                     format(memb_probs))
     # otherwise, begin with a blind guess
     else:
-        init_groups = getInitialGroups(ngroups, star_pars['xyzuvw'],
-                                       offset=offset)
-        # having z = None triggers an equal weighting of groups in
+        init_comps = getInitialGroups(
+                ncomps,
+                tabletool.buildDataFromTable(data, only_means=True),
+                offset=offset
+        )
+        # having memb_probs = None triggers an equal weighting of groups in
         # expectation step
-        z = None
+        memb_probs = None
 
-    np.save(rdir + "init_groups.npy", init_groups)
+    np.save(rdir + "init_groups.npy", init_comps)
 
     # Initialise values for upcoming iterations
-    old_groups = init_groups
-    all_init_pars = [init_group.getInternalSphericalPars() for init_group
-                     in init_groups]
+    old_comps = init_comps
+    all_init_pars = [init_comp.getInternalSphericalPars() for init_comp
+                     in init_comps]
     old_overallLnLike = -np.inf
-    all_init_pos = ngroups * [None]
+    all_init_pos = ncomps * [None]
     iter_count = 0
     converged = False
     stable_state = True         # used to track issues
-    z_old = z
+    memb_probs_old = memb_probs
 
     # Look for previous iterations and overwrite values as appropriate
     prev_iters = True
@@ -825,12 +800,13 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     while prev_iters:
         try:
             idir = rdir+"iter{:02}/".format(iter_count)
-            old_groups = np.load(idir + 'best_groups.npy')
-            z_old = np.load(idir + 'membership.npy')
-            old_overallLnLike = getOverallLnLikelihood(star_pars, old_groups,
-                                               bg_ln_ols, inc_posterior=False)
-            all_init_pars = [old_group.getInternalSphericalPars() for old_group
-                             in old_groups]
+            old_comps = np.load(idir + 'best_groups.npy')
+            memb_probs_old = np.load(idir + 'membership.npy')
+            old_overallLnLike = getOverallLnLikelihood(data, old_comps,
+                                                       bg_ln_ols,
+                                                       inc_posterior=False)
+            all_init_pars = [old_comp.get_pars() for old_comp
+                             in old_comps]
             iter_count += 1
         except IOError:
             logging.info("Managed to find {} previous iterations".format(
@@ -851,48 +827,50 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         # EXPECTATION
         if skip_first_e_step:
-            logging.info("Using input z for first iteration")
-            logging.info("z: {}".format(init_z.sum(axis=0)))
-            z_new = init_z
+            logging.info("Using input memb_probs for first iteration")
+            logging.info("memb_probs: {}".format(init_memb_probs.sum(axis=0)))
+            memb_probs_new = init_memb_probs
             skip_first_e_step = False
         else:
-            z_new = expectation(star_pars, old_groups, z_old, bg_ln_ols,
-                            inc_posterior=inc_posterior)
+            memb_probs_new = expectation(data, old_comps, memb_probs_old, bg_ln_ols,
+                                inc_posterior=inc_posterior)
             logging.info("Membership distribution:\n{}".format(
-                z_new.sum(axis=0)
+                memb_probs_new.sum(axis=0)
             ))
-        np.save(idir+"membership.npy", z_new)
+        np.save(idir+"membership.npy", memb_probs_new)
 
         # MAXIMISE
         #  use `success_mask` to account for groups skipped due to brokenness
-        new_groups, all_samples, all_lnprob, all_init_pos, success_mask =\
-            maximisation(star_pars, ngroups=ngroups,
+        new_comps, all_samples, all_lnprob, all_init_pos, success_mask =\
+            maximisation(data, ngroups=ncomps,
                          burnin_steps=BURNIN_STEPS,
                          plot_it=True, pool=pool, convergence_tol=C_TOL,
-                         z=z_new, idir=idir, all_init_pars=all_init_pars,
+                         memb_probs=memb_probs_new, idir=idir,
+                         all_init_pars=all_init_pars,
                          all_init_pos=all_init_pos,
                          ignore_dead_comps=ignore_dead_comps,
                          )
 
         # update number of groups to reflect any loss of dead components
-        ngroups = len(success_mask)
+        ncomps = len(success_mask)
         logging.info("The following groups survived: {}".format(success_mask))
 
-        # apply success mask to z, somewhat awkward cause need to preserve
+        # apply success mask to memb_probs, somewhat awkward cause need to preserve
         # final column (for background overlaps) if present
         if use_background:
-            z = np.hstack((z[:,success_mask], z[:,-1][:,np.newaxis]))
+            memb_probs = np.hstack((memb_probs[:,success_mask],
+                                    memb_probs[:,-1][:,np.newaxis]))
         else:
-            z = z[:,success_mask]
+            memb_probs = memb_probs[:,success_mask]
 
         # LOG RESULTS OF ITERATION
-        overallLnLike = getOverallLnLikelihood(star_pars,
-                                               new_groups,
+        overallLnLike = getOverallLnLikelihood(data,
+                                               new_comps,
                                                bg_ln_ols, inc_posterior=False)
         # TODO This seems to be bugged... returns same value as lnlike when only
         # fitting one group; BECAUSE WEIGHTS ARE REBALANCED
-        overallLnPosterior = getOverallLnLikelihood(star_pars,
-                                                    new_groups,
+        overallLnPosterior = getOverallLnLikelihood(data,
+                                                    new_comps,
                                                     bg_ln_ols,
                                                     inc_posterior=True)
         logging.info("---        Iteration results         --")
@@ -900,18 +878,19 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
                      format(overallLnLike))
         logging.info("-- Overall posterior so far:  {} --". \
                      format(overallLnPosterior))
-        logging.info("-- BIC so far: {}                --".\
-                     format(calcBIC(star_pars, ngroups, overallLnLike, z=z_new)))
+        logging.info("-- BIC so far: {}                --". \
+                     format(calcBIC(data, ncomps, overallLnLike, z=memb_probs_new)))
 
         # checks if the fit ever worsens
         converged = ( (old_overallLnLike > overallLnLike) and\
-                     checkConvergence(old_best_fits=old_groups[success_mask],
+                     checkConvergence(old_best_fits=old_comps[success_mask],
                                       new_chains=all_samples,
                                       ) and
                      # individual star memberships don't vary too much
-                     # np.allclose(z_new, z_old, atol=MEMB_CONV_TOL) and
+                     # np.allclose(memb_probs_new, memb_probs_old, atol=MEMB_CONV_TOL) and
                      # amplitudes of components don't vary too much
-                     np.allclose(z_new.sum(axis=0), z_old.sum(axis=0),
+                     np.allclose(memb_probs_new.sum(axis=0),
+                                 memb_probs_old.sum(axis=0),
                                  atol=AMPLITUDE_TOL)
             # UNSURE HOW TO TUNE THIS
         )
@@ -923,13 +902,13 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
 
         # Ensure stability after sufficient iterations to settle
         if iter_count > 10:
-            stable_state = checkStability(star_pars, new_groups, z_new, bg_ln_ols)
+            stable_state = checkStability(data, new_comps, memb_probs_new, bg_ln_ols)
 
         # only update if the fit has improved
         if not converged:
-            # old_old_groups = old_groups
-            old_groups = new_groups
-            z_old = z_new
+            # old_old_groups = old_comps
+            old_comps = new_comps
+            memb_probs_old = memb_probs_new
 
         iter_count += 1
 
@@ -937,9 +916,9 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
     logging.info("********** EM Algorithm finished *************")
 
     # TODO: HAVE A THINK ABOUT WHAT RESULTS END UP WHERE...
-#    #np.save(rdir+"final_groups.npy", new_groups)
-#    np.save(rdir+"final_groups.npy", new_groups) # old grps overwritten by new grps
-#    np.save(rdir+"memberships.npy", z)
+#    #np.save(rdir+"final_comps.npy", new_comps)
+#    np.save(rdir+"final_comps.npy", new_comps) # old grps overwritten by new grps
+#    np.save(rdir+"memberships.npy", memb_probs)
 
     if stable_state:
         # PERFORM FINAL EXPLORATION OF PARAMETER SPACE
@@ -949,30 +928,35 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         final_dir = rdir+"final/"
         mkpath(final_dir)
 
-        final_z = expectation(star_pars, new_groups, z_new, bg_ln_ols,
-                              inc_posterior=inc_posterior)
-        np.save(final_dir+"final_membership.npy", final_z)
-        final_best_fits = [None] * ngroups
-        final_med_errs = [None] * ngroups
+        memb_probs_final = expectation(data, new_comps, memb_probs_new,
+                                       bg_ln_ols, inc_posterior=inc_posterior)
+        np.save(final_dir+"final_membership.npy", memb_probs_final)
+        final_best_fits = [None] * ncomps
+        final_med_errs = [None] * ncomps
 
-        for i in range(ngroups):
+        for i in range(ncomps):
             logging.info("Characterising group {}".format(i))
             final_gdir = final_dir + "group{}/".format(i)
             mkpath(final_gdir)
 
-            best_fit, chain, lnprob = gf.fit_group(
-                xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS,
-                plot_it=True, pool=pool, convergence_tol=C_TOL,
-                plot_dir=final_gdir, save_dir=final_gdir, z=final_z[:, i],
-                init_pos=all_init_pos[i], sampling_steps=SAMPLING_STEPS,
+            best_fit, chain, lnprob = groupfitter.fit_comp(
+                    data=data,
+                    memb_probs=memb_probs_final[:, i],
+                    burnin_steps=BURNIN_STEPS,
+                    plot_it=True, pool=pool, convergence_tol=C_TOL,
+                    plot_dir=final_gdir, save_dir=final_gdir,
+                    init_pos=all_init_pos[i],
+                    sampling_steps=SAMPLING_STEPS,
                 # max_iter=4 # Todo: why max_iter? (19/02)
-                # init_pars=old_groups[i],
+                # init_pars=old_comps[i],
             )
             # run with extremely large convergence tolerance to ensure it only
             # runs once
             logging.info("Finished fit")
             final_best_fits[i] = best_fit
-            final_med_errs[i] = gf.calc_med_and_span(chain, intern_to_exter=True)
+            final_med_errs[i] = groupfitter.calc_med_and_span(
+                    chain, intern_to_extern=True, Component=Component,
+            )
             # np.save(final_gdir + "best_group_fit.npy", new_group)
             np.save(final_gdir + 'final_chain.npy', chain)
             np.save(final_gdir + 'final_lnprob.npy', lnprob)
@@ -980,20 +964,21 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
             all_init_pos[i] = chain[:, -1, :]
 
 
-        final_groups = np.array(
-            [chronostar.component.Component(final_best_fit, form='sphere',
-                                            internal=True)
+        final_comps = np.array(
+            [Component(pars=final_best_fit, internal=True)
              for final_best_fit in final_best_fits]
         )
-        np.save(final_dir+'final_groups.npy', final_groups)
+        np.save(final_dir+'final_comps.npy', final_comps)
         np.save(final_dir+'final_med_errs.npy', final_med_errs)
 
         # get overall likelihood
-        overallLnLike = getOverallLnLikelihood(star_pars, new_groups,
-                                               bg_ln_ols, inc_posterior=False)
-        overallLnPosterior = getOverallLnLikelihood(star_pars, new_groups,
-                                                bg_ln_ols, inc_posterior=True)
-        bic = calcBIC(star_pars, ngroups, overallLnLike, z=final_z)
+        overallLnLike = getOverallLnLikelihood(
+                data, new_comps, bg_ln_ols, inc_posterior=False
+        )
+        overallLnPosterior = getOverallLnLikelihood(
+                data, new_comps, bg_ln_ols, inc_posterior=True
+        )
+        bic = calcBIC(data, ncomps, overallLnLike, z=memb_probs_final)
         logging.info("Final overall lnlikelihood: {}".format(overallLnLike))
         logging.info("Final overall lnposterior:  {}".format(overallLnLike))
         logging.info("Final BIC: {}".format(bic))
@@ -1005,16 +990,20 @@ def fitManyGroups(star_pars, ngroups, rdir='', init_z=None,
         logging.info("FINISHED CHARACTERISATION")
         #logging.info("Origin:\n{}".format(origins))
         logging.info("Best fits:\n{}".format(
-            [fg.getSphericalPars() for fg in final_groups]
+            [fg.getSphericalPars() for fg in final_comps]
         ))
-        logging.info("Stars per component:\n{}".format(final_z.sum(axis=0)))
-        logging.info("Memberships: \n{}".format((final_z*100).astype(np.int)))
+        logging.info("Stars per component:\n{}".format(
+                memb_probs_final.sum(axis=0)
+        ))
+        logging.info("Memberships: \n{}".format(
+                (memb_probs_final*100).astype(np.int)
+        ))
 
-        return final_groups, np.array(final_med_errs), final_z
+        return final_comps, np.array(final_med_errs), memb_probs_final
 
     else: # not stable_state
         logging.info("****************************************")
         logging.info("********** BAD RUN TERMINATED **********")
         logging.info("****************************************")
-        return new_groups, -1, z_new
+        return new_comps, -1, memb_probs_new
 

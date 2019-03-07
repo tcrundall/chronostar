@@ -42,7 +42,7 @@ def test_maximisation():
     Synthesise a tb file with negligible error, retrieve initial
     parameters
 
-    Takes a while... maybe this belongs in integration tests
+    Takes a while... maybe this belongs in integration unit_tests
     """
     logging.basicConfig(level=logging.INFO, filemode='w',
                         filename='temp_logs/test_maximisation.log')

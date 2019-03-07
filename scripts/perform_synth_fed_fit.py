@@ -216,7 +216,7 @@ for prec in precs:
         logging.info("Generated [{}] traceback file".format(prec))
 
         # apply traceforward fitting (with lnprob, corner plots as side effects)
-        best_fit, chain, lnprob = gf.fit_group(
+        best_fit, chain, lnprob = gf.fit_comp(
             xyzuvw_dict=star_pars, burnin_steps=BURNIN_STEPS, plot_it=True,
             pool=pool, convergence_tol=C_TOL, plot_dir=pdir, save_dir=pdir,
             sampling_steps=SAMPLING_STEPS

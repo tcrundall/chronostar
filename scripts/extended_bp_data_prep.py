@@ -61,7 +61,7 @@ plt.plot(star_pars['xyzuvw'][:,0], star_pars['xyzuvw'][:,1], '.')
 plt.show()
 plt.plot(star_pars['xyzuvw'][:,3], star_pars['xyzuvw'][:,4], '.')
 plt.show()
-gf.fit_group(xyzuvw_dict=star_pars, plot_it=True, plot_dir='temp_plots')
+gf.fit_comp(xyzuvw_dict=star_pars, plot_it=True, plot_dir='temp_plots')
 get_ipython().magic(u'save gaia_dr2_bp_data_generation.py 1-62')
 xyzuvw_dict['xyzuvw'].shape
 star_pars

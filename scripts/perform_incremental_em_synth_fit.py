@@ -275,7 +275,7 @@ while ncomps < MAX_COMP:
             except IOError:
                 groups, meds, z = \
                     em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
-                                     init_groups=init_groups,
+                                     init_comps=init_groups,
                                      bg_dens=BG_DENS,
                                      correction_factor=1.0)
             best_fits.append(groups)

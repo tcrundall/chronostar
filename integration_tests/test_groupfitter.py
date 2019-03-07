@@ -28,13 +28,13 @@ def run_fit_helper(true_comp, starcounts, measurement_error,
     synth_data = SynthData(pars=true_comp.get_pars(),
                            starcounts=starcounts,
                            measurement_error=measurement_error)
-    synth_data.synthesiseEverything()
-    tabletool.convertTableAstroToXYZUVW(synth_data.astr_table,
+    synth_data.synthesise_everything()
+    tabletool.convertTableAstroToXYZUVW(synth_data.table,
                                         write_table=True,
                                         filename=data_filename)
 
-    res = gf.fit_group(
-            data=synth_data.astr_table,
+    res = gf.fit_comp(
+            data=synth_data.table,
             plot_it=True,
             burnin_steps=burnin_step,
             plot_dir=plot_dir,

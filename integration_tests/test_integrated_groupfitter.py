@@ -48,13 +48,13 @@ def test_stationary_component():
     synth_data = SynthData(pars=true_comp.get_pars(),
                            starcounts=nstars,
                            measurement_error=measurement_error)
-    synth_data.synthesiseEverything()
-    tabletool.convertTableAstroToXYZUVW(synth_data.astr_table,
+    synth_data.synthesise_everything()
+    tabletool.convertTableAstroToXYZUVW(synth_data.table,
                                         write_table=True,
                                         filename=synth_data_savefile)
 
-    best_comp, chain, lnprob = gf.fit_group(
-            data=synth_data.astr_table,
+    best_comp, chain, lnprob = gf.fit_comp(
+            data=synth_data.table,
             plot_it=True,
             convergence_tol=generous_convergence_tol,
             burnin_steps=short_burnin_step,

@@ -13,11 +13,10 @@ import numpy as np
 import pstats
 import sys
 
-import chronostar.synthdata
-
 sys.path.insert(0, '..')
-import chronostar.synthdata as syn
-import chronostar.retired2.converter as cv
+from chronostar.synthdata import SynthData
+from chronostar import tabletool
+from chronostar import groupfitter
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filename='temp_logs/groupfitter.log')
@@ -27,21 +26,17 @@ if __name__ == '__main__':
     astro_savefile = save_dir + 'astro_table_stat.txt'
     xyzuvw_conv_savefile = save_dir + 'xyzuvw_conv_stat.fits'
 
-    pars = np.array([0., 0., 0., 0., 0., 0., 0., 0., 1e-8, 100])
-    error_frac = 1
-    xyzuvw_init, group = syn.synthesiseXYZUVW(pars, return_group=True,
-                                              xyzuvw_savefile=xyzuvw_init_savefile,
-                                              group_savefile=group_savefile,
-                                              internal=True)
-    astro_table = chronostar.synthdata.measureXYZUVW(xyzuvw_init, error_frac,
-                                                     savefile=astro_savefile)
-    star_pars = cv.convertMeasurementsToCartesian(astro_table,
-                                                  savefile=xyzuvw_conv_savefile)
+    pars = np.array([0., 0., 0., 0., 0., 0., 0., 0., 1e-8])
+    starcount = 100
+    error_frac = 1.
+    synth_data = SynthData(pars=pars, starcounts=starcount)
+    synth_data.synthesise_everything()
+    tabletool.convertTableAstroToXYZUVW(synth_data.table)
 
     stat_file = 'groupfitter.stat'
     # best_fit, chain, lnprob = \
     cProfile.run(
-        "gf.fitGroup(xyzuvw_dict=star_pars, plot_it=True,"
+        "groupfitter.fit_comp(data=synth_data.table, plot_it=True,"
         "convergence_tol=2., burnin_steps=400, plot_dir='temp_plots/',"
         "save_dir='temp_data/')",
         stat_file,

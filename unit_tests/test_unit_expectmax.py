@@ -64,43 +64,28 @@ def test_expectation():
     with some background stars and checks membership allocation
     is correct
     """
-    nfield = 10
-    nass_stars = 20
-    nstars = nfield + nass_stars
-
-    old_z = np.zeros((nstars, 2))
-    old_z[:nass_stars, 0] = 1.
-    old_z[nass_stars:, 1] = 1.
 
     age = 1e-5
     ass_pars1 = np.array([0, 0, 0, 0, 0, 0, 5., 2., age])
     comp1 = SphereComponent(ass_pars1)
-    ass_pars2 = np.array([50., 0, 0, 0, 0, 0, 5., 2., age])
+    ass_pars2 = np.array([100., 0, 0, 20, 0, 0, 5., 2., age])
     comp2 = SphereComponent(ass_pars2)
-    starcounts = [100,200]
+    starcounts = [100,100]
     synth_data = SynthData(pars=[ass_pars1, ass_pars2],
                            starcounts=starcounts)
-    synth_data.synthesiseEverything()
-    #
-    # ass_xyzuvw_init, ass_group = \
-    #     syn.synthesiseXYZUVW(ass_pars, nstars=nass_stars, return_group=True,
-    #                          internal=False)
-    # field_xyzuvw_init = np.random.uniform(-15, 15, (nfield, 6))
-    #
-    # all_xyzuvw_init = np.vstack((ass_xyzuvw_init, field_xyzuvw_init))
-    #
-    # astro_table = ms.measureXYZUVW(all_xyzuvw_init, error_frac=1.0)
-    # star_pars = cv.convertMeasurementsToCartesian(astro_table)
+    synth_data.synthesise_everything()
+    tabletool.convertTableAstroToXYZUVW(synth_data.table)
 
-    star_means, star_covs = tabletool.buildDataFromTable(synth_data.astr_table)
+    true_memb_probs = np.zeros((np.sum(starcounts), 2))
+    true_memb_probs[:starcounts[0], 0] = 1.
+    true_memb_probs[starcounts[0]:, 1] = 1.
 
-    lnols = np.log(nass_stars) + \
-            chronostar.likelihood.get_lnoverlaps(ass_group.getInternalSphericalPars(), star_pars)
-    bg_ln_ols = np.array([-34] * nstars)
+    # star_means, star_covs = tabletool.buildDataFromTable(synth_data.astr_table)
+    # all_lnols = em.getAllLnOverlaps(
+    #         synth_data.astr_table, [comp1, comp2]
+    # )
 
-    z = em.expectation(star_pars, [ass_group], bg_ln_ols=bg_ln_ols,
-                       old_z=old_z)
-    strong_bg_overlap = np.where(lnols < bg_ln_ols)
+    fitted_memb_probs = em.expectation(synth_data.table, [comp1, comp2])
 
-    assert (z[strong_bg_overlap, 1] > 0.5).all()
+    assert np.allclose(true_memb_probs, fitted_memb_probs, atol=1e-10)
 

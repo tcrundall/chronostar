@@ -160,21 +160,21 @@ def test_lnprob_func():
 
     synth_data1 = SynthData(pars=[comp1.get_pars()], starcounts=star_count,
                             measurement_error=measurment_error)
-    synth_data1.synthesiseEverything()
-    tabletool.convertTableAstroToXYZUVW(synth_data1.astr_table)
+    synth_data1.synthesise_everything()
+    tabletool.convertTableAstroToXYZUVW(synth_data1.table)
     synth_data2 = SynthData(pars=[comp2.get_pars()], starcounts=star_count,
                             measurement_error=measurment_error)
-    synth_data2.synthesiseEverything()
-    tabletool.convertTableAstroToXYZUVW(synth_data2.astr_table)
+    synth_data2.synthesise_everything()
+    tabletool.convertTableAstroToXYZUVW(synth_data2.table)
 
     lnprob_comp1_data1 = likelihood.lnprob_func(pars=comp1.get_pars(),
-                                                data=synth_data1.astr_table)
+                                                data=synth_data1.table)
     lnprob_comp2_data1 = likelihood.lnprob_func(pars=comp2.get_pars(),
-                                                data=synth_data1.astr_table)
+                                                data=synth_data1.table)
     lnprob_comp1_data2 = likelihood.lnprob_func(pars=comp1.get_pars(),
-                                                data=synth_data2.astr_table)
+                                                data=synth_data2.table)
     lnprob_comp2_data2 = likelihood.lnprob_func(pars=comp2.get_pars(),
-                                                data=synth_data2.astr_table)
+                                                data=synth_data2.table)
     assert lnprob_comp1_data1 > lnprob_comp2_data1
     assert lnprob_comp2_data2 > lnprob_comp1_data2
 

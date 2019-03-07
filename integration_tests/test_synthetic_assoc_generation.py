@@ -13,7 +13,7 @@ import chronostar.synthdata as syn
 
 def testManyGroups():
     """
-    The point of the function this tests is to generate *AND PROJECT*
+    The point of the function this unit_tests is to generate *AND PROJECT*
     a bunch of stars. The function does not project stars through time,
     because of the author's dislike of 'spaghetti' code, and the synthesiser
     module is desired to be separate from the traceorbit module.
@@ -55,7 +55,7 @@ def testManyGroups():
 
 def testManyGroupsSave():
     """
-    The point of the function this tests is to generate *AND PROJECT*
+    The point of the function this unit_tests is to generate *AND PROJECT*
     a bunch of stars. The function does not project stars through time,
     because of the author's dislike of 'spaghetti' code, and the synthesiser
     module is desired to be separate from the traceorbit module.

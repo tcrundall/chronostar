@@ -432,17 +432,17 @@ def test_convertSynthTableToCart():
                            Components=COMPONENTS,
                            measurement_error=MEASUREMENT_ERROR,
                            )
-    synth_data.synthesiseEverything()
+    synth_data.synthesise_everything()
 
     # Convert (inplace) astrometry to cartesian
-    tabletool.convertTableAstroToXYZUVW(synth_data.astr_table)
+    tabletool.convertTableAstroToXYZUVW(synth_data.table)
 
     # Check consistency between true current-day kinematics and measured
     # current-day kinematics (with negliglbe error)
     for dim in 'XYZUVW':
         dim_now = dim.lower() + '_now'
-        assert np.allclose(synth_data.astr_table[dim_now],
-                           synth_data.astr_table[dim])
+        assert np.allclose(synth_data.table[dim_now],
+                           synth_data.table[dim])
 
 
 def test_convertAstrTableToCart():

@@ -53,7 +53,7 @@ def test_mpirun():
     star_pars = cv.convertMeasurementsToCartesian(astro_table,
                                                   savefile=xyzuvw_conv_savefile)
 
-    best_fit, chain, lnprob = gf.fit_group(
+    best_fit, chain, lnprob = gf.fit_comp(
         xyzuvw_dict=star_pars, plot_it=True, convergence_tol=0.4,
         burnin_steps=1000, pool=pool, plot_dir='temp_plots/',
         save_dir='temp_data/'

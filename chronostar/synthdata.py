@@ -12,7 +12,7 @@ TODO: accommodate multiple groups
 
 from __future__ import print_function, division
 
-from astropy.table import Table, Column, vstack
+from astropy.table import Table, vstack
 import logging
 import numpy as np
 
@@ -99,22 +99,22 @@ class SynthData():
             self.tablefilename = 'synthetic_data.fits'
 
 
-    def extractDataAsArray(self, colnames=None, table=None):
+    def extract_data_as_array(self, colnames=None, table=None):
         result = []
         if table is None:
-            table = self.astr_table
+            table = self.table
         for colname in colnames:
             result.append(np.array(table[colname]))
         return np.array(result).T
 
     @staticmethod
-    def generateSynthDataFromFile():
+    def generate_synth_data_from_file():
         """Given saved files, generate a SynthData object"""
         pass
 
-    def generateInitXYZUVW(self, component, starcount, component_name=''):
+    def generate_init_cartesian(self, component, starcount, component_name=''):
         """Generate initial xyzuvw based on component"""
-        init_size = len(self.astr_table)
+        init_size = len(self.table)
         init_xyzuvw = np.random.multivariate_normal(
             mean=component.get_mean(), cov=component.get_covmatrix(),
             size=starcount,
@@ -124,7 +124,7 @@ class SynthData():
         # then append to existing table
         names = np.arange(init_size, init_size+starcount).astype(np.str)
         new_data = Table(
-            data=np.zeros(starcount,dtype=self.astr_table.dtype)
+            data=np.zeros(starcount, dtype=self.table.dtype)
         )
 
         new_data['name'] = names
@@ -132,21 +132,20 @@ class SynthData():
         new_data['age'] = starcount*[component.get_age()]
         for col, dim in zip(init_xyzuvw.T, 'xzyuvw'):
             new_data[dim+'0'] = col
-        self.astr_table = vstack((self.astr_table, new_data))
+        self.table = vstack((self.table, new_data))
 
 
-    def generateAllInitXYZUVW(self):
-        self.astr_table = Table(names=self.DEFAULT_NAMES,
-                                dtype=self.DEFAULT_DTYPES)
+    def generate_all_init_cartesian(self):
+        self.table = Table(names=self.DEFAULT_NAMES,
+                           dtype=self.DEFAULT_DTYPES)
         for ix, comp in enumerate(self.components):
-            self.generateInitXYZUVW(comp, self.starcounts[ix],
-                                    component_name=str(ix))
+            self.generate_init_cartesian(comp, self.starcounts[ix],
+                                         component_name=str(ix))
 
-
-    def projectStars(self):
+    def project_stars(self):
         """Project stars from xyzuvw then to xyzuvw now based on their age"""
-        for star in self.astr_table:
-            mean_then = self.extractDataAsArray(
+        for star in self.table:
+            mean_then = self.extract_data_as_array(
                 table=star,
                 colnames=[dim+'0' for dim in 'xyzuvw'],
             )
@@ -155,15 +154,14 @@ class SynthData():
             for ix, dim in enumerate('xyzuvw'):
                 star[dim+'_now'] = xyzuvw_now[ix]
 
-
-    def measureXYZUVW(self):
+    def measure_astrometry(self):
         """
         Convert current day cartesian phase-space coordinates into astrometry
         values, with incorporated measurement uncertainty.
         """
         # Grab xyzuvw data in array form
         xyzuvw_now_colnames = [dim + '_now' for dim in 'xyzuvw']
-        xyzuvw_now = self.extractDataAsArray(colnames=xyzuvw_now_colnames)
+        xyzuvw_now = self.extract_data_as_array(colnames=xyzuvw_now_colnames)
 
         # Build array of measurement errors, based on Gaia DR2 and scaled by
         # `m_err`
@@ -189,11 +187,10 @@ class SynthData():
 
         # insert into Table
         for ix, astr_name in enumerate(self.DEFAULT_ASTR_COLNAMES):
-            self.astr_table[astr_name] = astr_w_offsets[:,ix]
-            self.astr_table[astr_name + '_error'] = raw_errors[:,ix]
+            self.table[astr_name] = astr_w_offsets[:, ix]
+            self.table[astr_name + '_error'] = raw_errors[:, ix]
 
-
-    def storeTable(self, savedir=None, filename=None, overwrite=False):
+    def store_table(self, savedir=None, filename=None, overwrite=False):
         """
         Store table on disk.
 
@@ -214,17 +211,16 @@ class SynthData():
             savedir = savedir.rstrip('/') + '/'
         if filename is None:
             filename = self.tablefilename
-        self.astr_table.write(savedir+filename, overwrite=overwrite)
+        self.table.write(savedir + filename, overwrite=overwrite)
 
-
-    def synthesiseEverything(self, savedir=None, filename=None, overwrite=False):
+    def synthesise_everything(self, savedir=None, filename=None, overwrite=False):
         """
         Uses self.pars and self.starcounts to generate an astropy table with
         synthetic stellar measurements.
         """
-        self.generateAllInitXYZUVW()
-        self.projectStars()
-        self.measureXYZUVW()
+        self.generate_all_init_cartesian()
+        self.project_stars()
+        self.measure_astrometry()
         if filename is not None:
-            self.storeTable(savedir=savedir, filename=filename,
-                            overwrite=overwrite)
+            self.store_table(savedir=savedir, filename=filename,
+                             overwrite=overwrite)

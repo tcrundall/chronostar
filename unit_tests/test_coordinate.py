@@ -22,8 +22,6 @@ def test_calcEQToGCMatrix():
     """
     Compare generated matrices with those reported by
     Johnson and Soderblom (1987)
-
-
     """
     old_a_ngp = 192.25
     old_d_ngp = 27.4
@@ -85,7 +83,6 @@ def test_CartesianAngleConversions():
 
 def test_convertEquatorialToGalactic():
     """Take equatorial coords to galactic and back"""
-    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     pos_ncp_list = [
         (20,85),
         (30,20),
@@ -98,7 +95,6 @@ def test_convertEquatorialToGalactic():
         assert np.allclose(pos_ncp, pos_ncp2)
 
 def test_famousPositions():
-    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     # galactic north pole in two coordinate systems
     gnp_eq = (192.8595, 27.1283)
     gnp_gc = (0,90)
@@ -165,7 +161,6 @@ def test_convertHelioXYZUVWToAstrometry():
     calculated_xyzuvw_bp_helio = cc.convertAstrometryToHelioXYZUVW(
         *astr_bp
     )
-    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     assert np.allclose(calculated_xyzuvw_bp_helio, xyzuvw_bp_helio, rtol=1e-2)
 
 def test_convertAstrometryToLSRXYZUVW():
@@ -211,7 +206,6 @@ def test_convertLSRXYZUVWToAstrometry():
     assert np.allclose(astr_bp, calculated_astr_bp, rtol=1e-2)
 
     calculated_xyzuvw_bp_lsr = cc.convertAstrometryToLSRXYZUVW(astr_bp)
-    logging.basicConfig(level=logging.DEBUG, stream=sys.stdout)
     assert np.allclose(calculated_xyzuvw_bp_lsr, xyzuvw_bp_lsr, rtol=0.15)
 
     calculated_astr_bp2 = cc.convertLSRXYZUVWToAstrometry(xyzuvw_bp_lsr)

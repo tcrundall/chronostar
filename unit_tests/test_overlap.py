@@ -107,10 +107,10 @@ def test_pythonFuncs():
     })
     nstars = 100
     synth_data = SynthData(pars=true_comp.get_pars(), starcounts=nstars)
-    synth_data.synthesiseEverything()
-    tabletool.convertTableAstroToXYZUVW(synth_data.astr_table)
+    synth_data.synthesise_everything()
+    tabletool.convertTableAstroToXYZUVW(synth_data.table)
 
-    star_means, star_covs = tabletool.buildDataFromTable(synth_data.astr_table)
+    star_means, star_covs = tabletool.buildDataFromTable(synth_data.table)
     group_mean = true_comp.get_mean()
     group_cov = true_comp.get_covmatrix()
 
@@ -163,10 +163,10 @@ def test_swigImplementation():
     })
     nstars = 100
     synth_data = SynthData(pars=true_comp.get_pars(), starcounts=nstars)
-    synth_data.synthesiseEverything()
-    tabletool.convertTableAstroToXYZUVW(synth_data.astr_table)
+    synth_data.synthesise_everything()
+    tabletool.convertTableAstroToXYZUVW(synth_data.table)
 
-    star_means, star_covs = tabletool.buildDataFromTable(synth_data.astr_table)
+    star_means, star_covs = tabletool.buildDataFromTable(synth_data.table)
 
     p_lnos = p_lno(true_comp.get_covmatrix(), true_comp.get_mean(),
                    star_covs, star_means)

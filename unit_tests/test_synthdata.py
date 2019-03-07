@@ -44,10 +44,10 @@ def test_generateInitXYZUVW():
     initialising component"""
     starcounts = (int(1e6),)
     sd = SynthData(pars=PARS[:1], starcounts=starcounts, Components=COMPONENTS)
-    sd.generateAllInitXYZUVW()
+    sd.generate_all_init_cartesian()
 
     comp = SphereComponent(PARS[0])
-    init_xyzuvw = sd.extractDataAsArray([dim+'0' for dim in 'xyzuvw'])
+    init_xyzuvw = sd.extract_data_as_array([dim + '0' for dim in 'xyzuvw'])
     assert np.allclose(comp.get_mean(), np.mean(init_xyzuvw, axis=0),
                        atol=0.1)
 
@@ -57,12 +57,12 @@ def test_projectStars():
     of the component after projection"""
     starcounts = (int(1e3),)
     sd = SynthData(pars=PARS[:1], starcounts=starcounts, Components=COMPONENTS)
-    sd.generateAllInitXYZUVW()
-    sd.projectStars()
+    sd.generate_all_init_cartesian()
+    sd.project_stars()
 
     comp_mean_now, comp_covmatrix_now = \
         sd.components[0].get_currentday_projection()
-    final_xyzuvw = sd.extractDataAsArray([dim+'_now' for dim in 'xzyuvw'])
+    final_xyzuvw = sd.extract_data_as_array([dim + '_now' for dim in 'xzyuvw'])
     assert np.allclose(comp_mean_now, final_xyzuvw.mean(axis=0), atol=1.)
 
 
@@ -78,17 +78,17 @@ def test_measureXYZUVW():
 
     sd = SynthData(pars=np.array([compact_comp_pars]), starcounts=starcounts,
                    Components=COMPONENTS)
-    sd.generateAllInitXYZUVW()
-    sd.projectStars()
-    sd.measureXYZUVW()
+    sd.generate_all_init_cartesian()
+    sd.project_stars()
+    sd.measure_astrometry()
 
     for colname in SynthData.DEFAULT_ASTR_COLNAMES:
         assert np.allclose(sd.GERROR[colname + '_error'],
-                           sd.astr_table[colname + '_error'])
+                           sd.table[colname + '_error'])
         # Check spread of data is similar to Gaia error, we use
         # a large tolerance so a small number of stars can be used
         assert np.isclose(sd.GERROR[colname + '_error'],
-                          np.std(sd.astr_table[colname]),
+                          np.std(sd.table[colname]),
                           rtol=1e-1)
 
 
@@ -96,30 +96,30 @@ def test_storeTable():
     """Check storing table and loading works"""
     filename = 'temp_data/test_storeTable_output.fits'
     sd = SynthData(pars=PARS, starcounts=STARCOUNTS, Components=COMPONENTS)
-    sd.synthesiseEverything()
-    sd.storeTable(filename=filename, overwrite=True)
+    sd.synthesise_everything()
+    sd.store_table(filename=filename, overwrite=True)
     stored_table = Table.read(filename)
 
-    assert np.allclose(sd.astr_table['parallax'], stored_table['parallax'])
+    assert np.allclose(sd.table['parallax'], stored_table['parallax'])
 
 
 def test_synthesiseEverything():
     """Check everything goes to plan with single call"""
     sd = SynthData(pars=PARS, starcounts=STARCOUNTS, Components=COMPONENTS)
-    sd.synthesiseEverything()
+    sd.synthesise_everything()
 
-    assert np.isclose(np.sum(STARCOUNTS), len(sd.astr_table))
+    assert np.isclose(np.sum(STARCOUNTS), len(sd.table))
 
 
 def test_storeAndLoad():
     """Check that storing and loading works as expected"""
     filename = 'temp_data/test_synthesiseEverything_output.fits'
     sd = SynthData(pars=PARS, starcounts=STARCOUNTS, Components=COMPONENTS)
-    sd.synthesiseEverything(filename=filename, overwrite=True)
+    sd.synthesise_everything(filename=filename, overwrite=True)
 
     # Trying to store table at `filename` without overwrite throws error
     try:
-        sd.synthesiseEverything(filename=filename, overwrite=False)
+        sd.synthesise_everything(filename=filename, overwrite=False)
     except IOError:
         pass
 
@@ -145,34 +145,84 @@ def test_artificialMeasurement():
         sd = SynthData(pars=pars, starcounts=starcounts,
                        measurement_error=m_err_dict[name],
                        Components=COMPONENTS)
-        sd.synthesiseEverything()
+        sd.synthesise_everything()
         sd_dict[name] = sd
 
     # Assert that measurement errors are stored correctly in columns
     for name in names[1:]:
         assert np.allclose(
-                sd_dict[name].astr_table['radial_velocity_error'],
+                sd_dict[name].table['radial_velocity_error'],
                 m_err_dict[name]*SynthData.GERROR['radial_velocity_error']
         )
 
     # Get reference for degree of offset expected
     norm_offset = np.mean(
-            np.abs(sd_dict['perf'].astr_table['radial_velocity']
-                   - sd_dict['norm'].astr_table['radial_velocity'])
+            np.abs(sd_dict['perf'].table['radial_velocity']
+                   - sd_dict['norm'].table['radial_velocity'])
     )
 
     bad_offset = np.mean(
-            np.abs(sd_dict['perf'].astr_table['radial_velocity']
-                   - sd_dict['bad'].astr_table['radial_velocity'])
+            np.abs(sd_dict['perf'].table['radial_velocity']
+                   - sd_dict['bad'].table['radial_velocity'])
     )
     good_offset = np.mean(
-            np.abs(sd_dict['perf'].astr_table['radial_velocity']
-                   - sd_dict['good'].astr_table['radial_velocity'])
+            np.abs(sd_dict['perf'].table['radial_velocity']
+                   - sd_dict['good'].table['radial_velocity'])
     )
 
     # Check the average offset scales with incorporated measurement error
     assert np.isclose(norm_offset*m_err_dict['bad'], bad_offset)
     assert np.isclose(norm_offset*m_err_dict['good'], good_offset)
+
+def test_multiple_synth_components():
+    """Check initialising with multiple components works"""
+    age = 1e-5
+    ass_pars1 = np.array([0, 0, 0, 0, 0, 0, 5., 2., age])
+    comp1 = SphereComponent(ass_pars1)
+    ass_pars2 = np.array([100., 0, 0, 20, 0, 0, 5., 2., age])
+    comp2 = SphereComponent(ass_pars2)
+    starcounts = [100, 100]
+    try:
+        synth_data = SynthData(pars=[ass_pars1, ass_pars2],
+                               starcounts=starcounts[0],
+                               Components=SphereComponent)
+        raise UserWarning('AssertionError should have been thrown by synthdata')
+    except AssertionError:
+        pass
+
+    synth_data = SynthData(pars=[ass_pars1, ass_pars2],
+                           starcounts=starcounts,
+                           Components=SphereComponent)
+    synth_data.synthesise_everything()
+    assert len(synth_data.table) == np.sum(starcounts)
+
+def test_different_component_forms():
+    """Check component forms can be different"""
+    tiny_age = 1e-10
+
+    mean1 = np.zeros(6)
+    covmatrix1 = np.eye(6) * 4
+    comp1 = SphereComponent(attributes={
+        'mean':mean1,
+        'covmatrix':covmatrix1,
+        'age':tiny_age,
+    })
+
+    mean2 = np.zeros(6) + 10.
+    covmatrix2 = np.eye(6) * 9
+    comp2 = EllipComponent(attributes={
+        'mean':mean2,
+        'covmatrix':covmatrix2,
+        'age':tiny_age,
+    })
+    starcounts = [100,100]
+
+    synth_data = SynthData(pars=[comp1.get_pars(), comp2.get_pars()],
+                           starcounts=starcounts,
+                           Components=[SphereComponent, EllipComponent])
+    synth_data.synthesise_everything()
+    assert len(synth_data.table) == np.sum(starcounts)
+
 
 if __name__ == '__main__':
     pass

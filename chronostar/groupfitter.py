@@ -150,11 +150,11 @@ def get_init_emcee_pos(data, memb_probs=None, nwalkers=None,
     return init_pos
 
 
-def fit_group(data=None, memb_probs=None, burnin_steps=1000,
-              Component=SphereComponent,
-              plot_it=False, pool=None, convergence_tol=0.25, init_pos=None,
-              plot_dir='', save_dir='', init_pars=None, sampling_steps=None,
-              max_iter=None):
+def fit_comp(data=None, memb_probs=None, burnin_steps=1000,
+             Component=SphereComponent,
+             plot_it=False, pool=None, convergence_tol=0.25, init_pos=None,
+             plot_dir='', save_dir='', init_pars=None, sampling_steps=None,
+             max_iter=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Stores the final sampling chain and lnprob in `save_dir`, but also

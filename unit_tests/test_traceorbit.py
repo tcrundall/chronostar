@@ -38,7 +38,6 @@ def test_LSR():
     Since our frame of reference is **centred** on the LSR, then the LSR
     should remain at the origin.
     """
-    logging.basicConfig(level=LOGGINGLEVEL, stream=sys.stdout)
     xyzuvw_lsr = [0.,0.,0.,0.,0.,0.]
     times = np.linspace(0,100,101)
 
@@ -49,7 +48,6 @@ def test_rotatedLSR():
     """
     Check that LSRs with different azimuthal positions also remain constant
     """
-    logging.basicConfig(level=LOGGINGLEVEL, stream=sys.stdout)
     rot_lsr_gp_coords = np.array([1., 0., 1., 0., 0., np.pi])
     xyzuvw_rot_lsr = torb.convertGalpyCoordsToXYZUVW(rot_lsr_gp_coords)
     times = np.linspace(0,100,101)
@@ -67,7 +65,6 @@ def test_singleTime():
     Good demo of how to traceback 2 stars forward through time, either
     with an array of time steps, or a single age
     """
-    logging.basicConfig(level=LOGGINGLEVEL, stream=sys.stdout)
     xyzuvw_1 = [0.,0.,25.,0.,0.,0.]
     xyzuvw_2 = [0.,0.,0.,0.,-10.,0.]
     xyzuvws = np.vstack((xyzuvw_1, xyzuvw_2))

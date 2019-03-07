@@ -97,7 +97,7 @@ except IOError:
 #init_pars = np.hstack((approx_mean, np.log(approx_dx), np.log(approx_dv), 1.0))
 
 logging.info("applying fit")
-best_fit, chain, lnprob = gf.fit_group(
+best_fit, chain, lnprob = gf.fit_comp(
     xyzuvw_file=xyzuvw_file, burnin_steps=BURNIN_STEPS, plot_it=True,
     pool=pool, convergence_tol=C_TOL, save_dir=results_dir, #init_pars=init_pars,
     plot_dir=results_dir, sampling_steps=SAMPLING_STEPS, z=z,
