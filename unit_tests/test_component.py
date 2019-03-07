@@ -42,11 +42,13 @@ DEFAULT_PARS = {
     # Insert new default pars here
 }
 
+
 def test_general_initialisation():
     for name, ComponentClass in COMPONENT_CLASSES.items():
         comp = ComponentClass(pars=DEFAULT_PARS[name])
         assert np.allclose(MEAN, comp.get_mean())
         assert AGE == comp.get_age()
+
 
 def test_spherecomponent_initialisation():
     sphere_comp = SphereComponent(pars=SPHERE_PARS, internal=False)
@@ -54,6 +56,7 @@ def test_spherecomponent_initialisation():
     assert np.allclose(AGE, sphere_comp._age)
     assert np.isclose(DX, sphere_comp.get_sphere_dx())
     assert np.isclose(DV, sphere_comp.get_sphere_dv())
+
 
 def test_ellipcomponent_initialisation():
     ellip_pars = np.copy(ELLIP_PARS)

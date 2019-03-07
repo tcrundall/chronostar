@@ -209,13 +209,13 @@ def convertEquatorialToGalactic(theta_deg, phi_deg):
     ------
     pos_gc: (float, float) Galactic coordinates l and b, in degrees
     """
-    logging.debug("Converting eq ({}, {}) to gc: ".format(theta_deg, phi_deg))
+    # logging.debug("Converting eq ({}, {}) to gc: ".format(theta_deg, phi_deg))
     assert isinstance(theta_deg, (int, float, np.float32, np.float64))
     cart_eq = convertAnglesToCartesian(theta_deg, phi_deg)
-    logging.debug("Cartesian eq coords: {}".format(cart_eq))
+    # logging.debug("Cartesian eq coords: {}".format(cart_eq))
     eq_to_gc = calcEQToGCMatrix()
     cart_gc = np.dot(eq_to_gc, cart_eq)
-    logging.debug("Cartesian gc coords: {}".format(cart_gc))
+    # logging.debug("Cartesian gc coords: {}".format(cart_gc))
     pos_gc_deg = convertCartesianToAngles(*cart_gc)
     return pos_gc_deg
 
@@ -235,17 +235,17 @@ def convertGalacticToEquatorial(theta_deg, phi_deg, value=True):
     ------
     pos_gc: (float, float) Equatorial coordinates RA and DEC, in degrees
     """
-    logging.debug("Converting gc ({}, {}) to eq:".format(theta_deg, phi_deg))
+    # logging.debug("Converting gc ({}, {}) to eq:".format(theta_deg, phi_deg))
     try:
         assert isinstance(theta_deg, (int, float, np.float32, np.float64))
     except AssertionError:
         print(type(theta_deg))
         AssertionError
     cart_gc = convertAnglesToCartesian(theta_deg, phi_deg)
-    logging.debug("Cartesian eq coords: {}".format(cart_gc))
+    # logging.debug("Cartesian eq coords: {}".format(cart_gc))
     gc_to_eq = calcGCToEQMatrix()
     cart_eq = np.dot(gc_to_eq, cart_gc)
-    logging.debug("Cartesian gc coords: {}".format(cart_eq))
+    # logging.debug("Cartesian gc coords: {}".format(cart_eq))
     pos_eq_deg = convertCartesianToAngles(*cart_eq)
     return pos_eq_deg
 
@@ -324,9 +324,9 @@ def convertHelioSpaceVelocityToPM(a_deg, d_deg, pi, u, v, w):
     rv : (km/s) line of sight velocity
     """
     assert isinstance(a_deg, (int, float, np.float32, np.float64))
-    logging.debug("Parallax is {} as which is a distance of {} pc".format(
-        pi, 1./pi
-    ))
+    # logging.debug("Parallax is {} as which is a distance of {} pc".format(
+    #     pi, 1./pi
+    # ))
 
     space_vels = np.array([u,v,w])
 
@@ -363,7 +363,7 @@ def convertHelioXYZUVWToAstrometry(xyzuvw_helio):
     """
     x, y, z, u, v, w = xyzuvw_helio
     l_deg, b_deg, dist = convertCartesianToAngles(x,y,z,return_dist=True)
-    logging.debug("l,b,Distance is {}, {}, {} pc".format(l_deg, b_deg, dist))
+    # logging.debug("l,b,Distance is {}, {}, {} pc".format(l_deg, b_deg, dist))
     a_deg, d_deg = convertGalacticToEquatorial(l_deg, b_deg)
     pi = 1./dist
     mu_a, mu_d, rv = convertHelioSpaceVelocityToPM(a_deg, d_deg, pi, u, v, w)
@@ -383,14 +383,14 @@ def convertAstrometryToHelioXYZUVW(a_deg, d_deg, pi, mu_a, mu_d, rv):
     mu_d : (as/yr) proper motion in declination
     rv : (km/s) line of sight velocity
     """
-    logging.debug("Input:\nra {}\ndec {}\nparallax {}\nmu_ra {}\nmu_de {}\n"
-                  "rv {}".format(a_deg, d_deg, pi, mu_a, mu_d, rv))
+    # logging.debug("Input:\nra {}\ndec {}\nparallax {}\nmu_ra {}\nmu_de {}\n"
+    #               "rv {}".format(a_deg, d_deg, pi, mu_a, mu_d, rv))
     dist = 1/pi #pc
     l_deg, b_deg = convertEquatorialToGalactic(a_deg, d_deg)
     x, y, z = convertAnglesToCartesian(l_deg, b_deg, radius=dist)
     u, v, w = convertPMToHelioSpaceVelocity(a_deg, d_deg, pi, mu_a, mu_d, rv)
     xyzuvw_helio = np.array([x,y,z,u,v,w])
-    logging.debug("XYZUVW heliocentric is : {}".format(xyzuvw_helio))
+    # logging.debug("XYZUVW heliocentric is : {}".format(xyzuvw_helio))
     return xyzuvw_helio
 
 
@@ -480,12 +480,12 @@ def convertAstrometryToLSRXYZUVW(astro, mas=True):
     # convert to as for internal use
     if mas:
         astro[2:5] *= 1e-3
-    logging.debug("Input (after conversion) is: {}".format(astro))
+    # logging.debug("Input (after conversion) is: {}".format(astro))
     xyzuvw_helio = convertAstrometryToHelioXYZUVW(*astro)
-    logging.debug("Heliocentric XYZUVW is : {}".format(xyzuvw_helio))
+    # logging.debug("Heliocentric XYZUVW is : {}".format(xyzuvw_helio))
     xyzuvw_lsr = convertHelioToLSR(xyzuvw_helio)
 
-    logging.debug("LSR XYZUVW (pc) is : {}".format(xyzuvw_lsr))
+    # logging.debug("LSR XYZUVW (pc) is : {}".format(xyzuvw_lsr))
     return xyzuvw_lsr
 
 def convertManyAstrometryToLSRXYZUVW(astr_arr, mas=True):
@@ -537,16 +537,16 @@ def convertLSRXYZUVWToAstrometry(xyzuvw_lsr):
     """
     xyzuvw_lsr = np.copy(xyzuvw_lsr)
 
-    logging.debug("Input (before conversion) is: {}".format(xyzuvw_lsr))
+    # logging.debug("Input (before conversion) is: {}".format(xyzuvw_lsr))
 
     xyzuvw_helio = convertLSRToHelio(xyzuvw_lsr)
-    logging.debug("xyzuvw_helio is: {}".format(xyzuvw_helio))
+    # logging.debug("xyzuvw_helio is: {}".format(xyzuvw_helio))
     astr = np.array(convertHelioXYZUVWToAstrometry(xyzuvw_helio))
-    logging.debug("Astro before conversion is: {}".format(astr))
+    # logging.debug("Astro before conversion is: {}".format(astr))
 
     # Finally converts angles to mas for external use
     astr[2:5] *= 1e3
-    logging.debug("Astro after conversion is: {}".format(astr))
+    # logging.debug("Astro after conversion is: {}".format(astr))
     return astr
 
 

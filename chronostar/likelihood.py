@@ -43,7 +43,6 @@ def slow_get_lnoverlaps(g_cov, g_mn, st_covs, st_mns):
         res -= np.log(np.linalg.det(g_cov + st_cov))
         stmg_mn = st_mn - g_mn
         stpg_cov = st_cov + g_cov
-        logging.debug("ApB:\n{}".format(stpg_cov))
         res -= np.dot(stmg_mn.T, np.dot(np.linalg.inv(stpg_cov), stmg_mn))
         res *= 0.5
         lnols.append(res)
@@ -117,7 +116,6 @@ def lnprior(comp, memb_probs):
     MAX_AGE = 500
     covmatrix = comp.get_covmatrix()
     stds = np.linalg.eigvalsh(covmatrix)
-    # print(comp.get_covmatrix())
     if np.min(comp.get_mean()) < -100000 or np.max(comp.get_mean()) > 100000:
         return -np.inf
     if np.min(stds) <= 0.0 or np.max(stds) > 10000.0:
@@ -156,7 +154,7 @@ def get_lnoverlaps(comp, data):
             the covariance of each star in XYZUVW space
     """
     # Prepare star arrays
-    mean_stars, cov_stars = tabletool.convertTableXYZUVWToArray(data)
+    mean_stars, cov_stars = tabletool.buildDataFromTable(data)
     nearby_star_count = len(mean_stars)
 
     # Get current day projection of component

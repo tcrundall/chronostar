@@ -28,13 +28,16 @@ def getColnames(main_colnames=None, error_colnames=None, corr_colnames=None,
     """
     if main_colnames is None:
         if cartesian:
-            main_colnames = [el for el in 'XYZUVW']
+            # main_colnames = [el for el in 'XYZUVW']
+            main_colnames = ['X', 'Y', 'Z', 'U', 'V', 'W']
         else:       # provide astrometric column names
             main_colnames = [
                 'ra', 'dec', 'parallax', 'pmra', 'pmdec', 'radial_velocity',
             ]
     if error_colnames is None:
-        error_colnames = [el + '_error' for el in main_colnames]
+        error_colnames = np.array(
+                map('_'.join, zip(main_colnames, 6*['error']))
+        )
     if corr_colnames is None:
         corr_colnames = []
         for i, colname1 in enumerate(main_colnames):
@@ -290,8 +293,4 @@ def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,
 
     if return_table:
         return table
-
-
-def convertTableXYZUVWToArray(table, row_ix=None, nrows=None):
-    return buildDataFromTable(table)
 
