@@ -35,9 +35,7 @@ def getColnames(main_colnames=None, error_colnames=None, corr_colnames=None,
                 'ra', 'dec', 'parallax', 'pmra', 'pmdec', 'radial_velocity',
             ]
     if error_colnames is None:
-        error_colnames = np.array(
-                map('_'.join, zip(main_colnames, 6*['error']))
-        )
+        error_colnames = [el+'_error' for el in main_colnames]
     if corr_colnames is None:
         corr_colnames = []
         for i, colname1 in enumerate(main_colnames):

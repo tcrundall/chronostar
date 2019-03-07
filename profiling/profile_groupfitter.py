@@ -26,7 +26,7 @@ if __name__ == '__main__':
     astro_savefile = save_dir + 'astro_table_stat.txt'
     xyzuvw_conv_savefile = save_dir + 'xyzuvw_conv_stat.fits'
 
-    pars = np.array([0., 0., 0., 0., 0., 0., 0., 0., 1e-8])
+    pars = np.array([0., 0., 0., 0., 0., 0., 5., 2., 1e-8])
     starcount = 100
     error_frac = 1.
     synth_data = SynthData(pars=pars, starcounts=starcount)

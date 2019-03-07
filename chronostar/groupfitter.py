@@ -55,10 +55,10 @@ def calc_med_and_span(chain, perc=34, intern_to_extern=False,
             flat_chain = np.copy(flat_chain)
             flat_chain[ix] = Component.externalise(flat_chain[ix])
 
-    return np.array(map(lambda v: (v[1], v[2], v[0]),
-                        zip(*np.percentile(flat_chain,
-                                           [50-perc, 50, 50+perc],
-                                           axis=0))))
+    return np.array(list(map(lambda v: (v[1], v[2], v[0]),
+                            zip(*np.percentile(flat_chain,
+                                               [50-perc, 50, 50+perc],
+                                               axis=0)))))
 
 
 def approx_currentday_distribution(data, membership_probs):
