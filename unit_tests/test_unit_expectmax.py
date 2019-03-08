@@ -85,7 +85,10 @@ def test_expectation():
     #         synth_data.astr_table, [comp1, comp2]
     # )
 
-    fitted_memb_probs = em.expectation(synth_data.table, [comp1, comp2])
+    fitted_memb_probs = em.expectation(
+            tabletool.buildDataFromTable(synth_data.table),
+            [comp1, comp2]
+    )
 
     assert np.allclose(true_memb_probs, fitted_memb_probs, atol=1e-10)
 

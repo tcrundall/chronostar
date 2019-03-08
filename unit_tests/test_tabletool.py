@@ -404,15 +404,15 @@ def test_convertTableXYZUVWToArray():
     orig_star_pars = loadDictFromTable(filename)
     main_colnames, error_colnames, corr_colnames =\
         tabletool.getHistoricalCartColnames()
-    means, covs = tabletool.buildDataFromTable(
+    data = tabletool.buildDataFromTable(
             orig_star_pars['table'][orig_star_pars['indices']],
             main_colnames=main_colnames,
             error_colnames=error_colnames,
             corr_colnames=corr_colnames
     )
 
-    assert np.allclose(orig_star_pars['xyzuvw'], means)
-    assert np.allclose(orig_star_pars['xyzuvw_cov'], covs)
+    assert np.allclose(orig_star_pars['xyzuvw'], data['means'])
+    assert np.allclose(orig_star_pars['xyzuvw_cov'], data['covs'])
 
 def test_convertSynthTableToCart():
     """
@@ -466,17 +466,17 @@ def test_convertAstrTableToCart():
     table['radial_velocity_error'] = table['radial_velocity_error_best']
 
     # load in original means and covs
-    orig_cart_means, orig_cart_covs =\
+    orig_cart_data =\
         tabletool.buildDataFromTable(table=table, cartesian=True,
                                      historical=True)
 
     tabletool.convertTableAstroToXYZUVW(table=table, write_table=False)
 
-    cart_means, cart_covs = tabletool.buildDataFromTable(table, cartesian=True)
+    cart_data = tabletool.buildDataFromTable(table, cartesian=True)
 
-    assert np.allclose(orig_cart_means, cart_means)
+    assert np.allclose(orig_cart_data['means'], cart_data['means'])
     assert np.allclose(table['dX'], table['X_error'])
-    assert np.allclose(orig_cart_covs, cart_covs)
+    assert np.allclose(orig_cart_data['covs'], cart_data['covs'])
 
 
 def test_badColNames():

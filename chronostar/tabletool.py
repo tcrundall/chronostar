@@ -95,20 +95,13 @@ def buildDataFromTable(table, main_colnames=None, error_colnames=None,
         )
 
     # Generate means
-    means = np.vstack((table[main_colnames[0]], table[main_colnames[1]],
-                       table[main_colnames[2]], table[main_colnames[3]],
-                       table[main_colnames[4]], table[main_colnames[5]])).T
+    means = np.vstack([table[col] for col in main_colnames]).T
     if only_means:
         return means
 
     # Generate covariance matrices
     nstars = len(table)
-
-    standard_devs = np.vstack(
-            (table[error_colnames[0]], table[error_colnames[1]],
-             table[error_colnames[2]], table[error_colnames[3]],
-             table[error_colnames[4]], table[error_colnames[5]])
-    ).T
+    standard_devs = np.vstack([table[col] for col in error_colnames]).T
 
     # Detect mismatch in units and scale standard_devs appropriately
     # If units can't be converted
@@ -153,8 +146,11 @@ def buildDataFromTable(table, main_colnames=None, error_colnames=None,
     # standard deviation vector, multiply the j'th row by the j'th std
     covs = np.einsum('ijk,ij->ijk', covs, standard_devs)    # the rows
     covs = np.einsum('ijk,ik->ijk', covs, standard_devs)    # the columsn
-
-    return means, covs
+    res = {
+        'means':means,
+        'covs':covs,
+    }
+    return res
 
 
 def appendCartColsToTable(table, main_colnames=None, error_colnames=None,
@@ -260,10 +256,10 @@ def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,
         getColnames(main_colnames=main_colnames, error_colnames=error_colnames,
                     corr_colnames=corr_colnames, cartesian=False)
 
-    astr_means, astr_covs = buildDataFromTable(table,
-                                               main_astr_colnames,
-                                               error_astr_colnames,
-                                               corr_astr_colnames)
+    data = buildDataFromTable(table,
+                              main_astr_colnames,
+                              error_astr_colnames,
+                              corr_astr_colnames)
 
     # if cartesian columns don't exist, then insert them
     if 'X_V_corr' not in table.keys():
@@ -278,7 +274,7 @@ def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,
 #         cart_means[ix], cart_covs[ix] = convertAstroToCart(astr_mean, astr_cov)
 
 
-    for row, astr_mean, astr_cov in zip(table, astr_means, astr_covs):
+    for row, astr_mean, astr_cov in zip(table, data['means'], data['covs']):
         cart_mean, cart_cov = convertAstroToCart(astr_mean, astr_cov)
         insertDataIntoRow(row, cart_mean, cart_cov,
                           main_colnames=main_cart_colnames,

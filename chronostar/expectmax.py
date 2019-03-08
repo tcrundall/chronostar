@@ -242,7 +242,7 @@ def getAllLnOverlaps(data, comps, old_memb_probs=None, bg_ln_ols=None,
         The log overlaps of each star with each component, optionally
         with the log background overlaps appended as the final column
     """
-    nstars = len(data)
+    nstars = len(data['means'])
     ncomps = len(comps)
     using_bg = bg_ln_ols is not None
 
@@ -358,7 +358,7 @@ def expectation(data, comps, old_memb_probs=None, bg_ln_ols=None,
         each group, and the entire array sums to the number of stars.
     """
     ncomps = len(comps)
-    nstars = len(data)
+    nstars = len(data['means'])
 
     using_bg = bg_ln_ols is not None
 

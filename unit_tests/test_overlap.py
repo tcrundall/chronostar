@@ -110,19 +110,22 @@ def test_pythonFuncs():
     synth_data.synthesise_everything()
     tabletool.convertTableAstroToXYZUVW(synth_data.table)
 
-    star_means, star_covs = tabletool.buildDataFromTable(synth_data.table)
+    star_data = tabletool.buildDataFromTable(synth_data.table)
+    # star_data['means'] = star_data['means']
+    # star_data['covs'] = star_data['covs']
     group_mean = true_comp.get_mean()
     group_cov = true_comp.get_covmatrix()
 
     # Test overlap with true component
     co1s = []
     co2s = []
-    for i, (scov, smn) in enumerate(zip(star_covs, star_means)):
+    for i, (scov, smn) in enumerate(zip(star_data['covs'], star_data['means'])):
         co1s.append(co1(group_cov, group_mean, scov, smn))
         co2s.append(co2(group_cov, group_mean, scov, smn))
     co1s = np.array(co1s)
     co2s = np.array(co2s)
-    co3s = np.exp(p_lno(group_cov, group_mean, star_covs, star_means))
+    co3s = np.exp(p_lno(group_cov, group_mean,
+                        star_data['covs'], star_data['means']))
     assert np.allclose(co1s, co2s)
     assert np.allclose(co2s, co3s)
     assert np.allclose(co1s, co3s)
@@ -132,12 +135,15 @@ def test_pythonFuncs():
     # log overlaps retain the information
     co1s = []
     co2s = []
-    for i, (scov, smn) in enumerate(zip(star_covs, star_means)):
-        co1s.append(co1(star_covs[15], star_means[15], scov, smn))
-        co2s.append(co2(star_covs[15], star_means[15], scov, smn))
+    for i, (scov, smn) in enumerate(zip(star_data['covs'], star_data['means'])):
+        co1s.append(co1(star_data['covs'][15], star_data['means'][15],
+                        scov, smn))
+        co2s.append(co2(star_data['covs'][15], star_data['means'][15],
+                        scov, smn))
     co1s = np.array(co1s)
     co2s = np.array(co2s)
-    lnos = p_lno(star_covs[15], star_means[15], star_covs, star_means)
+    lnos = p_lno(star_data['covs'][15], star_data['means'][15],
+                 star_data['covs'], star_data['means'])
     co3s = np.exp(lnos)
     assert np.allclose(co1s, co2s)
     assert np.allclose(co2s, co3s)
@@ -166,12 +172,12 @@ def test_swigImplementation():
     synth_data.synthesise_everything()
     tabletool.convertTableAstroToXYZUVW(synth_data.table)
 
-    star_means, star_covs = tabletool.buildDataFromTable(synth_data.table)
+    star_data = tabletool.buildDataFromTable(synth_data.table)
 
     p_lnos = p_lno(true_comp.get_covmatrix(), true_comp.get_mean(),
-                   star_covs, star_means)
+                   star_data['covs'], star_data['means'])
     c_lnos = c_lno(true_comp.get_covmatrix(), true_comp.get_mean(),
-                   star_covs, star_means, nstars)
+                   star_data['covs'], star_data['means'], nstars)
 
     assert np.allclose(p_lnos, c_lnos)
     assert np.isfinite(p_lnos).all()

@@ -133,7 +133,7 @@ def lnprior(comp, memb_probs):
     return ln_alpha_prior(comp, memb_probs, sig=1.0)
 
 
-def get_lnoverlaps(comp, data):
+def get_lnoverlaps(comp, data, star_mask=None):
     """
     Given the parametric description of an origin, calculate star overlaps
 
@@ -154,18 +154,24 @@ def get_lnoverlaps(comp, data):
             the covariance of each star in XYZUVW space
     """
     # Prepare star arrays
-    mean_stars, cov_stars = tabletool.buildDataFromTable(data)
-    nearby_star_count = len(mean_stars)
+    if star_mask is not None:
+        star_means = data['means'][star_mask]
+        star_covs = data['covs'][star_mask]
+    else:
+        star_means = data['means']
+        star_covs = data['covs']
+
+    star_count = len(star_means)
 
     # Get current day projection of component
     mean_now, cov_now = comp.get_currentday_projection()
 
     # Calculate overlap integral of each star
     if USE_C_IMPLEMENTATION:
-        lnols = c_get_lnoverlaps(cov_now, mean_now, cov_stars, mean_stars,
-                           nearby_star_count)
+        lnols = c_get_lnoverlaps(cov_now, mean_now, star_covs, star_means,
+                                 star_count)
     else:
-        lnols = slow_get_lnoverlaps(cov_now, mean_now, cov_stars, mean_stars)
+        lnols = slow_get_lnoverlaps(cov_now, mean_now, star_covs, star_means)
     return lnols
 
 
@@ -204,10 +210,13 @@ def lnlike(comp, data, memb_probs, memb_threshold=0.001):
     # Only consider contributions of stars with larger than provided
     # threshold membership prob
     nearby_star_mask = np.where(memb_probs > memb_threshold)
+    # data['means'] = data['means'][nearby_star_mask]
+    # data['covs'] = data['covs'][nearby_star_mask]
 
     # Calculate log overlaps of relevant stars
     lnols = np.zeros(len(memb_probs))
-    lnols[nearby_star_mask] = get_lnoverlaps(comp, data[nearby_star_mask])
+    lnols[nearby_star_mask] = get_lnoverlaps(comp, data,
+                                             star_mask=nearby_star_mask)
 
     # Weight each stars contribution by their membership probability
     result = np.sum(lnols * memb_probs)

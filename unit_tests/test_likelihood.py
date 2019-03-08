@@ -124,7 +124,8 @@ def test_get_lnoverlaps():
                                     star_comp.get_covmatrix(),
                                     cartesian=True,
                                     )
-    ln_overlaps = likelihood.get_lnoverlaps(sphere_comp, data=dummy_table)
+    dummy_data = tabletool.buildDataFromTable(dummy_table)
+    ln_overlaps = likelihood.get_lnoverlaps(sphere_comp, data=dummy_data)
 
     # Checks that ln_overlaps is descending
     assert np.allclose(ln_overlaps, sorted(ln_overlaps)[::-1])
@@ -137,47 +138,43 @@ def test_lnprob_func():
     first component. Confrims that the lnprob is larger for the first
     component than the second.
     """
-    measurment_error = 1e-10
-    star_count = 200
+    measurement_error = 1e-10
+    star_count = 500
     tiny_age = 1e-10
     dim = 6
     comp_covmatrix = np.identity(dim)
-    comp1_mean = np.zeros(dim)
-    comp2_mean = 10 * np.ones(dim)
+    comp_means = {
+        'comp1': np.zeros(dim),
+        'comp2': 10 * np.ones(dim)
+    }
+    comps = {}
+    data = {}
 
+    for comp_name in comp_means.keys():
+        comp = SphereComponent(attributes={
+            'mean':comp_means[comp_name],
+            'covmatrix':comp_covmatrix,
+            'age':tiny_age
+        })
 
+        synth_data = SynthData(pars=[comp.get_pars()], starcounts=star_count,
+                                measurement_error=measurement_error)
+        synth_data.synthesise_everything()
+        tabletool.convertTableAstroToXYZUVW(synth_data.table)
+        data[comp_name] = tabletool.buildDataFromTable(synth_data.table)
+        comps[comp_name] = comp
 
-    comp1 = SphereComponent(attributes={
-        'mean':comp1_mean,
-        'covmatrix':comp_covmatrix,
-        'age':tiny_age
-    })
-    comp2 = SphereComponent(attributes={
-        'mean':comp2_mean,
-        'covmatrix':comp_covmatrix,
-        'age':tiny_age
-    })
-
-    synth_data1 = SynthData(pars=[comp1.get_pars()], starcounts=star_count,
-                            measurement_error=measurment_error)
-    synth_data1.synthesise_everything()
-    tabletool.convertTableAstroToXYZUVW(synth_data1.table)
-    synth_data2 = SynthData(pars=[comp2.get_pars()], starcounts=star_count,
-                            measurement_error=measurment_error)
-    synth_data2.synthesise_everything()
-    tabletool.convertTableAstroToXYZUVW(synth_data2.table)
-
-    lnprob_comp1_data1 = likelihood.lnprob_func(pars=comp1.get_pars(),
-                                                data=synth_data1.table)
-    lnprob_comp2_data1 = likelihood.lnprob_func(pars=comp2.get_pars(),
-                                                data=synth_data1.table)
-    lnprob_comp1_data2 = likelihood.lnprob_func(pars=comp1.get_pars(),
-                                                data=synth_data2.table)
-    lnprob_comp2_data2 = likelihood.lnprob_func(pars=comp2.get_pars(),
-                                                data=synth_data2.table)
+    lnprob_comp1_data1 = likelihood.lnprob_func(pars=comps['comp1'].get_pars(),
+                                                data=data['comp1'])
+    lnprob_comp2_data1 = likelihood.lnprob_func(pars=comps['comp2'].get_pars(),
+                                                data=data['comp1'])
+    lnprob_comp1_data2 = likelihood.lnprob_func(pars=comps['comp1'].get_pars(),
+                                                data=data['comp2'])
+    lnprob_comp2_data2 = likelihood.lnprob_func(pars=comps['comp2'].get_pars(),
+                                                data=data['comp2'])
     assert lnprob_comp1_data1 > lnprob_comp2_data1
     assert lnprob_comp2_data2 > lnprob_comp1_data2
 
-    # Check that the different realisations only differ by 20%
-    assert np.isclose(lnprob_comp1_data1, lnprob_comp2_data2, rtol=2e-2)
-    assert np.isclose(lnprob_comp1_data2, lnprob_comp2_data1, rtol=2e-2)
+    # Check that the different realisations only differ by 10%
+    assert np.isclose(lnprob_comp1_data1, lnprob_comp2_data2, rtol=1e-1)
+    assert np.isclose(lnprob_comp1_data2, lnprob_comp2_data1, rtol=1e-1)

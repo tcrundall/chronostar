@@ -62,8 +62,7 @@ def calc_med_and_span(chain, perc=34, intern_to_extern=False,
 
 
 def approx_currentday_distribution(data, membership_probs):
-    means = tabletool.buildDataFromTable(data, cartesian=True,
-                                         only_means=True)
+    means = data['means']
     # approximate the (weighted) mean and covariance of star distribution
     mean_of_means = np.average(means, axis=0, weights=membership_probs)
     cov_of_means = np.cov(means.T, ddof=0., aweights=membership_probs)
@@ -239,7 +238,7 @@ def fit_comp(data=None, memb_probs=None, burnin_steps=1000,
         [nwalkers, nsteps] array of probabilities for each sample
     """
     if isinstance(data, str):
-        data = Table.read(data)
+        data = tabletool.buildDataFromTable(data)
     if memb_probs is None:
         memb_probs = np.ones(len(data))
 
