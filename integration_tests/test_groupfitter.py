@@ -32,7 +32,6 @@ def run_fit_helper(true_comp, starcounts, measurement_error,
     tabletool.convertTableAstroToXYZUVW(synth_data.table,
                                         write_table=True,
                                         filename=data_filename)
-
     res = gf.fit_comp(
             data=synth_data.table,
             plot_it=True,

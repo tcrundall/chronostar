@@ -11,6 +11,7 @@ import sys
 sys.path.insert(0,'..')
 from chronostar.synthdata import SynthData
 from chronostar.component import SphereComponent, EllipComponent
+from chronostar import tabletool
 
 PARS =  np.array([
     [0., 0., 0., 0., 0., 0., 10., 5., 1e-5],
@@ -176,10 +177,12 @@ def test_artificialMeasurement():
 
 def test_multiple_synth_components():
     """Check initialising with multiple components works"""
-    age = 1e-5
-    ass_pars1 = np.array([0, 0, 0, 0, 0, 0, 5., 2., age])
+    age = 1e-10
+    dx = 5.
+    dv = 2.
+    ass_pars1 = np.array([10, 20, 30, 40, 50, 60, dx, dv, age])
     comp1 = SphereComponent(ass_pars1)
-    ass_pars2 = np.array([100., 0, 0, 20, 0, 0, 5., 2., age])
+    ass_pars2 = np.array([0., 0., 0, 0, 0, 0, dx, dv, age])
     comp2 = SphereComponent(ass_pars2)
     starcounts = [100, 100]
     try:
@@ -194,7 +197,17 @@ def test_multiple_synth_components():
                            starcounts=starcounts,
                            Components=SphereComponent)
     synth_data.synthesise_everything()
+
     assert len(synth_data.table) == np.sum(starcounts)
+    means = tabletool.buildDataFromTable(
+            synth_data.table,
+            main_colnames=[el+'0' for el in 'xyzuvw'],
+            only_means=True
+    )
+    assert np.allclose(comp2.get_mean(), means[starcounts[0]:].mean(axis=0),
+                       atol=2.)
+    assert np.allclose(comp1.get_mean(), means[:starcounts[0]].mean(axis=0),
+                       atol=2.)
 
 def test_different_component_forms():
     """Check component forms can be different"""

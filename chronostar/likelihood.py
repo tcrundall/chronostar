@@ -238,10 +238,11 @@ def lnprob_func(pars, data, memb_probs=None, Component=SphereComponent):
     memb_probs
         array of weights [0.0 - 1.0] for each star, describing how likely
         they are members of group to be fitted.
-    Component: child Class of component.AbstractComponent
+    Component: Class implmentation of component.AbstractComponent
         A class that can read in `pars`, and generate the three key
         attributes for the modelled origin point:
         mean, covariance matrix, age
+        As well as get_current_day_projection()
         See AbstractComponent to see which methods must be implemented
         for a new model.
 

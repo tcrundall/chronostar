@@ -32,11 +32,12 @@ if __name__ == '__main__':
     synth_data = SynthData(pars=pars, starcounts=starcount)
     synth_data.synthesise_everything()
     tabletool.convertTableAstroToXYZUVW(synth_data.table)
+    data = tabletool.buildDataFromTable(synth_data.table)
 
-    stat_file = 'groupfitter.stat'
+    stat_file = 'stat_dumps/groupfitter.stat'
     # best_fit, chain, lnprob = \
     cProfile.run(
-        "groupfitter.fit_comp(data=synth_data.table, plot_it=True,"
+        "groupfitter.fit_comp(data=data, plot_it=True,"
         "convergence_tol=2., burnin_steps=400, plot_dir='temp_plots/',"
         "save_dir='temp_data/')",
         stat_file,

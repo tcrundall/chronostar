@@ -63,6 +63,8 @@ def calc_med_and_span(chain, perc=34, intern_to_extern=False,
 
 def approx_currentday_distribution(data, membership_probs):
     means = data['means']
+    if membership_probs is None:
+        membership_probs = np.ones(len(means))
     # approximate the (weighted) mean and covariance of star distribution
     mean_of_means = np.average(means, axis=0, weights=membership_probs)
     cov_of_means = np.cov(means.T, ddof=0., aweights=membership_probs)
@@ -237,10 +239,10 @@ def fit_comp(data=None, memb_probs=None, burnin_steps=1000,
     probability
         [nwalkers, nsteps] array of probabilities for each sample
     """
-    if isinstance(data, str):
+    if not isinstance(data, dict):
         data = tabletool.buildDataFromTable(data)
     if memb_probs is None:
-        memb_probs = np.ones(len(data))
+        memb_probs = np.ones(len(data['means']))
 
     # Ensure plot_dir has a single trailing '/'
     if plot_dir != '':
@@ -248,10 +250,6 @@ def fit_comp(data=None, memb_probs=None, burnin_steps=1000,
     if plot_it and plot_dir != '':
         if not os.path.exists(plot_dir):
             os.mkdir(plot_dir)
-
-    # initialise z if needed as array of 1s of length nstars
-    if memb_probs is None:
-        memb_probs = np.ones(len(data))
 
     # Initialise the fit
     if init_pos is None:

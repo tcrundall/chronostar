@@ -49,6 +49,10 @@ class SynthData():
     DEFAULT_DTYPES = tuple(['S20', 'S2']
                            + (len(DEFAULT_NAMES)-2) * ['float64'])
 
+    # Define here, because apparently i can't be trusted to type a string
+    # in a correct order
+    cart_labels = 'xyzuvw'
+
     def __init__(self, pars, starcounts, measurement_error=1.0,
                  Components=SphereComponent, savedir=None,
                  tablefilename=None):
@@ -130,7 +134,7 @@ class SynthData():
         new_data['name'] = names
         new_data['component'] = starcount*[component_name]
         new_data['age'] = starcount*[component.get_age()]
-        for col, dim in zip(init_xyzuvw.T, 'xzyuvw'):
+        for col, dim in zip(init_xyzuvw.T, self.cart_labels):
             new_data[dim+'0'] = col
         self.table = vstack((self.table, new_data))
 
@@ -147,11 +151,11 @@ class SynthData():
         for star in self.table:
             mean_then = self.extract_data_as_array(
                 table=star,
-                colnames=[dim+'0' for dim in 'xyzuvw'],
+                colnames=[dim+'0' for dim in self.cart_labels],
             )
             xyzuvw_now = traceorbit.traceOrbitXYZUVW(mean_then,
                                                      times=star['age'])
-            for ix, dim in enumerate('xyzuvw'):
+            for ix, dim in enumerate(self.cart_labels):
                 star[dim+'_now'] = xyzuvw_now[ix]
 
     def measure_astrometry(self):
@@ -160,7 +164,7 @@ class SynthData():
         values, with incorporated measurement uncertainty.
         """
         # Grab xyzuvw data in array form
-        xyzuvw_now_colnames = [dim + '_now' for dim in 'xyzuvw']
+        xyzuvw_now_colnames = [dim + '_now' for dim in self.cart_labels]
         xyzuvw_now = self.extract_data_as_array(colnames=xyzuvw_now_colnames)
 
         # Build array of measurement errors, based on Gaia DR2 and scaled by

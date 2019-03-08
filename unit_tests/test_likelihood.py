@@ -26,6 +26,7 @@ def astropyCalcAlpha(dx,dv,nstars):
     return ((dv * u.km / u.s) ** 2 * dx * u.pc /
             (const.G * nstars * const.M_sun)).decompose().value
 
+
 def test_calcAlpha():
     dx = 10.
     dv = 10.
@@ -129,7 +130,6 @@ def test_get_lnoverlaps():
 
     # Checks that ln_overlaps is descending
     assert np.allclose(ln_overlaps, sorted(ln_overlaps)[::-1])
-
 
 
 def test_lnprob_func():
