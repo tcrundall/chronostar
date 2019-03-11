@@ -146,7 +146,7 @@ def buildMeanAndCovMatFromRow(row):
 
 
 # Retired funciton, put here for comparison reasons
-def loadDictFromTable(table, assoc_name=None):
+def loadDictFromTable(table):
     """
     Takes the data in the table, builds dict with array of mean and cov matrices
 
