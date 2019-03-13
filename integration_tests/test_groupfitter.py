@@ -13,9 +13,17 @@ import chronostar.groupfitter as gf
 
 PY_VERS = sys.version[0]
 
+def dummy_trace_orbit_func(loc, times=None):
+    """Dummy trace orbit func to skip irrelevant computation"""
+    if times is not None:
+        if np.all(times > 1.0):
+            return loc + 10.
+    return loc
+
 def run_fit_helper(true_comp, starcounts, measurement_error,
                    burnin_step=None,
                    run_name='default',
+                   trace_orbit_func=None,
                    ):
     py_vers = sys.version[0]
     data_filename = 'temp_data/{}_groupfitter_{}.fits'.format(py_vers, run_name)
@@ -38,6 +46,7 @@ def run_fit_helper(true_comp, starcounts, measurement_error,
             burnin_steps=burnin_step,
             plot_dir=plot_dir,
             save_dir=save_dir,
+            trace_orbit_func=trace_orbit_func,
     )
     return res
 
@@ -76,6 +85,7 @@ def test_stationary_component():
             measurement_error=measurement_error,
             run_name='stationary',
             burnin_step=short_burnin_step,
+            trace_orbit_func=dummy_trace_orbit_func,
     )
     np.save('temp_data/{}_groupfitter_stationary_' \
             'true_and_best_comp.npy'.format(PY_VERS),

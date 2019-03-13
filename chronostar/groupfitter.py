@@ -155,7 +155,7 @@ def fit_comp(data=None, memb_probs=None, burnin_steps=1000,
              Component=SphereComponent,
              plot_it=False, pool=None, convergence_tol=0.25, init_pos=None,
              plot_dir='', save_dir='', init_pars=None, sampling_steps=None,
-             max_iter=None):
+             max_iter=None, trace_orbit_func=None):
     """Fits a single gaussian to a weighted set of traceback orbits.
 
     Stores the final sampling chain and lnprob in `save_dir`, but also
@@ -258,9 +258,14 @@ def fit_comp(data=None, memb_probs=None, burnin_steps=1000,
                                       Component=Component)
     nwalkers, npars = init_pos.shape
 
+    if trace_orbit_func is None:
+        print("Trace oribt func is none...")
+
     # Whole emcee shebang
     sampler = emcee.EnsembleSampler(
-        nwalkers, npars, lnprob_func, args=[data, memb_probs], pool=pool,
+            nwalkers, npars, lnprob_func,
+            args=[data, memb_probs, trace_orbit_func],
+            pool=pool,
     )
 
     # Perform burnin

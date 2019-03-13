@@ -10,6 +10,14 @@ from astropy.units.core import UnitConversionError
 from . import coordinate
 from . import transform
 
+def load(filename):
+    """Cause I'm too lazy to import Astropy.table.Table in terminal"""
+    return Table.read(filename)
+
+def read(filename):
+    """Cause I'm too lazy to import Astropy.table.Table in terminal"""
+    return load(filename)
+
 
 def getHistoricalCartColnames():
     main_colnames = 'XYZUVW'
@@ -252,19 +260,19 @@ def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,
         filename = table
         table = Table.read(table)
 
-    main_astr_colnames, error_astr_colnames, corr_astr_colnames =\
+    astr_main_colnames, astr_error_colnames, astr_corr_colnames =\
         getColnames(main_colnames=main_colnames, error_colnames=error_colnames,
                     corr_colnames=corr_colnames, cartesian=False)
 
     data = buildDataFromTable(table,
-                              main_astr_colnames,
-                              error_astr_colnames,
-                              corr_astr_colnames)
+                              astr_main_colnames,
+                              astr_error_colnames,
+                              astr_corr_colnames)
 
     # if cartesian columns don't exist, then insert them
     if 'X_V_corr' not in table.keys():
         appendCartColsToTable(table)
-    main_cart_colnames, error_cart_colnames, corr_cart_colnames = \
+    cart_main_colnames, cart_error_colnames, cart_corr_colnames = \
         getColnames(cartesian=True)
 
     # Iteratively transform data to cartesian coordinates, storing as we go
@@ -277,9 +285,9 @@ def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,
     for row, astr_mean, astr_cov in zip(table, data['means'], data['covs']):
         cart_mean, cart_cov = convertAstroToCart(astr_mean, astr_cov)
         insertDataIntoRow(row, cart_mean, cart_cov,
-                          main_colnames=main_cart_colnames,
-                          error_colnames=error_cart_colnames,
-                          corr_colnames=corr_cart_colnames
+                          main_colnames=cart_main_colnames,
+                          error_colnames=cart_error_colnames,
+                          corr_colnames=cart_corr_colnames
                           )
 
     if filename and write_table:

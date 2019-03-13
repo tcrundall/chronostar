@@ -12,6 +12,7 @@ import pdb
 from distutils.dir_util import mkpath
 import logging
 import numpy as np
+import os
 
 try:
     import matplotlib as mpl
@@ -27,27 +28,19 @@ from . import groupfitter
 from . import tabletool
 
 
-# def ix_fst(array, ix):
-#     """Helper function to index array by first axis that could be None"""
-#     if array is None:
-#         return None
-#     else:
-#         return array[ix]
-#
-#
-# def ix_snd(array, ix):
-#     """Helper function to index array by second axis that could be None"""
-#     if array is None:
-#         return None
-#     else:
-#         return array[:, ix]
+def log_message(msg, symbol='.', surround=False):
+    """Little formatting helper"""
+    res = '{}{:^40}{}'.format(5*symbol, msg, 5*symbol)
+    if surround:
+        res = '\n{}\n{}\n{}'.format(50*symbol, res, 50*symbol)
+    logging.info(res)
 
 
 def checkConvergence(old_best_comps, new_chains,
-                     perc=35):
+                     perc=40):
     """Check if the last maximisation step yielded is consistent to new fit
 
-    Note, percentage raised to 35 (from 25) as facing issues establishing
+    Note, percentage raised to 40 (from 25) as facing issues establishing
     convergence despite 100+ iterations for components with ~10 stars.
     Now, the previous best fits must be within the 70% range (i.e. not
     fall within the bottom 15th or top 15th percentiles in any parameter).
@@ -73,13 +66,14 @@ def checkConvergence(old_best_comps, new_chains,
         If the runs have converged, return true
     """
     each_converged = []
+    # import pdb; pdb.set_trace()
 
     for old_best_comp, new_chain in zip(old_best_comps, new_chains):
         errors = groupfitter.calc_med_and_span(new_chain, perc=perc)
         upper_contained =\
-            old_best_comp.get_pars() < errors[:, 1]
+            old_best_comp.internalise(old_best_comp.get_pars()) < errors[:, 1]
         lower_contained =\
-            old_best_comp.get_pars() > errors[:, 2]
+            old_best_comp.internalise(old_best_comp.get_pars()) > errors[:, 2]
 
         each_converged.append(
             np.all(upper_contained) and np.all(lower_contained))
@@ -242,6 +236,8 @@ def getAllLnOverlaps(data, comps, old_memb_probs=None, bg_ln_ols=None,
         The log overlaps of each star with each component, optionally
         with the log background overlaps appended as the final column
     """
+    if not isinstance(data, dict):
+        data = tabletool.buildDataFromTable(data)
     nstars = len(data['means'])
     ncomps = len(comps)
     using_bg = bg_ln_ols is not None
@@ -260,8 +256,7 @@ def getAllLnOverlaps(data, comps, old_memb_probs=None, bg_ln_ols=None,
         comp_lnpriors = np.zeros(ncomps)# &TC
         for i, comp in enumerate(comps):
             comp_lnpriors[i] = likelihood.ln_alpha_prior(
-                    comp.getInternalSphericalPars(),
-                    memb_probs=old_memb_probs
+                    comp, memb_probs=old_memb_probs
             )
         ngroup_stars = weights.sum()
         weights *= np.exp(comp_lnpriors)
@@ -290,7 +285,7 @@ def getAllLnOverlaps(data, comps, old_memb_probs=None, bg_ln_ols=None,
         #     logging.info("!!! GROUP {} HAS LESS THAN {} STARS, weight: {}".\
         #         format(i, threshold, weight)
         # )
-        comp_pars = comp.get_pars()
+        # comp_pars = comp.internalise(comp.get_pars())
         lnols[:, i] = \
             np.log(weights[i]) + \
             likelihood.get_lnoverlaps(comp, data)
@@ -357,6 +352,9 @@ def expectation(data, comps, old_memb_probs=None, bg_ln_ols=None,
         that each row sums to 1.0, each column sums to the expected size of
         each group, and the entire array sums to the number of stars.
     """
+    if not isinstance(data, dict):
+        data = tabletool.buildDataFromTable(data)
+    # import pdb; pdb.set_trace()
     ncomps = len(comps)
     nstars = len(data['means'])
 
@@ -438,7 +436,7 @@ def getInitialGroups(ncomps, xyzuvw, offset=False, v_dist=10.,
 #    meanW = 0.
     dx = 100.
     dv = 15.
-    age = 3.
+    age = 0.5
     # group_pars_base = list([0, 0, 0, None, None, 0, np.log(50),
     #                         np.log(5), 3])
     pts = getPointsOnCircle(npoints=ncomps, v_dist=v_dist, offset=offset)
@@ -453,7 +451,7 @@ def getInitialGroups(ncomps, xyzuvw, offset=False, v_dist=10.,
         comp = Component(comp_pars)
         comps.append(comp)
 
-    return comps
+    return np.array(comps)
 #
 # def decomposeGroup(comp, young_age=None, old_age=None, age_offset=4):
 #     """
@@ -494,7 +492,7 @@ def getInitialGroups(ncomps, xyzuvw, offset=False, v_dist=10.,
 #     return all_init_pars, sub_groups
 
 
-def getOverallLnLikelihood(data, comps, bg_ln_ols, return_z=False,
+def getOverallLnLikelihood(data, comps, bg_ln_ols=None, return_z=False,
                            inc_posterior=False):
     """
     Get overall likelihood for a proposed model.
@@ -533,7 +531,8 @@ def getOverallLnLikelihood(data, comps, bg_ln_ols, return_z=False,
 def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
                  all_init_pars, all_init_pos=None, plot_it=False, pool=None,
                  convergence_tol=0.25, ignore_dead_comps=False,
-                 Component=SphereComponent):
+                 Component=SphereComponent,
+                 trace_orbit_func=None):
     """
     Performs the 'maximisation' step of the EM algorithm
 
@@ -567,9 +566,10 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
         all_init_pos = ncomps * [None]
 
     for i in range(ncomps):
-        logging.info("........................................")
-        logging.info("          Fitting comp {}".format(i))
-        logging.info("........................................")
+        log_message('Fitting comp {}'.format(i), symbol='.', surround=True)
+        # logging.info("........................................")
+        # logging.info("          Fitting comp {}".format(i))
+        # logging.info("........................................")
         gdir = idir + "comp{}/".format(i)
         mkpath(gdir)
         # pdb.set_trace()
@@ -579,7 +579,7 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
                     i, np.sum(memb_probs[:, i])
             ))
         else:
-            best_fit, chain, lnprob = groupfitter.fit_comp(
+            best_comp, chain, lnprob = groupfitter.fit_comp(
                     data=data,
                     memb_probs=memb_probs[:, i],
                     burnin_steps=burnin_steps,
@@ -591,18 +591,21 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
                     init_pos=all_init_pos[i],
                     init_pars=all_init_pars[i],
                     Component=Component,
+                    trace_orbit_func=trace_orbit_func,
             )
             logging.info("Finished fit")
-            logging.info("Best comp (internal) pars:\n{}".format(best_fit))
+            logging.info("Best comp pars:\n{}".format(
+                    best_comp.get_pars()
+            ))
 
             final_pos = chain[:, -1, :]
 
             logging.info("With age of: {:.3} +- {:.3} Myr".\
                         format(np.median(chain[:,:,-1]),
                                np.std(chain[:,:,-1])))
-            new_comp = Component(best_fit, internal=True)
-            new_comps.append(new_comp)
-            np.save(gdir + "best_comp_fit.npy", new_comp)
+            # new_comp = Component(best_comp, internal=True)
+            new_comps.append(best_comp)
+            np.save(gdir + "best_comp_fit.npy", best_comp)
             np.save(gdir + 'final_chain.npy', chain)
             np.save(gdir + 'final_lnprob.npy', lnprob)
             all_samples.append(chain)
@@ -616,8 +619,8 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
 
     np.save(idir + 'best_comps.npy', new_comps)
 
-    return new_comps, all_samples, all_lnprob, all_init_pos,\
-           np.array(success_mask)
+    return np.array(new_comps), np.array(all_samples), np.array(all_lnprob),\
+           np.array(all_init_pos), np.array(success_mask)
 
 
 def checkStability(star_pars, best_comps, z, bg_ln_ols=None):
@@ -661,7 +664,8 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
                   offset=False, bg_hist_file='', correction_factor=1.0,
                   inc_posterior=False, burnin=1000, bg_dens=None,
                   bg_ln_ols=None, ignore_dead_comps=False,
-                  Component=SphereComponent):
+                  Component=SphereComponent,
+                  trace_orbit_func=None):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -714,6 +718,15 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
     TODO: Generalise interventions for more than 2 groups
     TODO: Allow option with which step to start with
     """
+    # Tidying up input
+    if not isinstance(data, dict):
+        data = tabletool.buildDataFromTable(data)
+    if rdir == '':                      # Ensure results directory has a
+        rdir = '.'                      # trailing '/'
+    rdir = rdir.rstrip('/') + '/'
+    if not os.path.exists(rdir):
+        mkpath(rdir)
+
     # setting up some constants
     BURNIN_STEPS = burnin
     SAMPLING_STEPS = 5000
@@ -722,7 +735,7 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
     # MEMB_CONV_TOL = 0.1 # no memberships may vary by >10% to be converged.
     AMPLITUDE_TOL = 1.0 # total sum of memberships for each component
                         # cannot vary by more than this value to be converged
-    nstars = data['xyzuvw'].shape[0]
+    nstars = data['means'].shape[0]
 
     logging.info("Fitting {} groups with {} burnin steps".format(ncomps,
                                                                  BURNIN_STEPS))
@@ -750,7 +763,7 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
     skip_first_e_step = False
     # use init groups if given (along with any memb_probs)
     if init_comps is not None:
-        memb_probs = init_memb_probs
+        memb_probs_old = init_memb_probs
     # if just init_z provided, skip first E-step, and maximise off of init_z
     elif init_memb_probs is not None:
         skip_first_e_step = True
@@ -763,36 +776,38 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
     # if a synth fit, could initialse at origins
     elif origins is not None:
         init_comps = origins
-        memb_probs = np.zeros((nstars, ncomps + use_background)) # extra column for bg
+        memb_probs_old = np.zeros((nstars, ncomps + use_background)) # extra column for bg
         cnt = 0
         for i in range(ncomps):
-            memb_probs[cnt:cnt+origins[i].nstars, i] = 1.0
+            memb_probs_old[cnt:cnt+origins[i].nstars, i] = 1.0
             cnt += origins[i].nstars
         logging.info("Initialising fit with origins and membership\n{}".
-                     format(memb_probs))
+                     format(memb_probs_old))
     # otherwise, begin with a blind guess
     else:
         init_comps = getInitialGroups(
                 ncomps,
-                tabletool.buildDataFromTable(data, only_means=True),
-                offset=offset
+                data['means'],
+                offset=offset,
         )
         # having memb_probs = None triggers an equal weighting of groups in
         # expectation step
-        memb_probs = None
+        # TODO: Handle this more smoothly... don't leave things None for hidden reasons
+        memb_probs_old = np.ones((nstars, ncomps+use_background))/\
+                         (ncomps+use_background)
+        # memb_probs_old = None
 
     np.save(rdir + "init_groups.npy", init_comps)
 
     # Initialise values for upcoming iterations
     old_comps = init_comps
-    all_init_pars = [init_comp.getInternalSphericalPars() for init_comp
-                     in init_comps]
+    all_init_pars = [Component.internalise(init_comp.get_pars()) for
+                     init_comp in init_comps]
     old_overallLnLike = -np.inf
     all_init_pos = ncomps * [None]
     iter_count = 0
-    converged = False
+    all_converged = False
     stable_state = True         # used to track issues
-    memb_probs_old = memb_probs
 
     # Look for previous iterations and overwrite values as appropriate
     prev_iters = True
@@ -800,13 +815,14 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
     while prev_iters:
         try:
             idir = rdir+"iter{:02}/".format(iter_count)
-            old_comps = np.load(idir + 'best_groups.npy')
+            # old_comps = np.load(idir + 'best_comps.npy')
+            old_comps = Component.load_components(idir + 'best_comps.npy')
             memb_probs_old = np.load(idir + 'membership.npy')
             old_overallLnLike = getOverallLnLikelihood(data, old_comps,
                                                        bg_ln_ols,
                                                        inc_posterior=False)
-            all_init_pars = [old_comp.get_pars() for old_comp
-                             in old_comps]
+            all_init_pars = [Component.internalise(old_comp.get_pars())
+                             for old_comp in old_comps]
             iter_count += 1
         except IOError:
             logging.info("Managed to find {} previous iterations".format(
@@ -815,13 +831,11 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
             prev_iters = False
 
 
-    while not converged and stable_state and iter_count < MAX_ITERS:
+    while not all_converged and stable_state and iter_count < MAX_ITERS:
         # for iter_count in range(10):
         idir = rdir+"iter{:02}/".format(iter_count)
-        logging.info("\n--------------------------------------------------"
-                     "\n--------------    Iteration {}    ----------------"
-                     "\n--------------------------------------------------".
-                     format(iter_count))
+        log_message('Iteration {}'.format(iter_count),
+                    symbol='-', surround=True)
 
         mkpath(idir)
 
@@ -842,26 +856,29 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
         # MAXIMISE
         #  use `success_mask` to account for groups skipped due to brokenness
         new_comps, all_samples, all_lnprob, all_init_pos, success_mask =\
-            maximisation(data, ngroups=ncomps,
+            maximisation(data, ncomps=ncomps,
                          burnin_steps=BURNIN_STEPS,
                          plot_it=True, pool=pool, convergence_tol=C_TOL,
                          memb_probs=memb_probs_new, idir=idir,
                          all_init_pars=all_init_pars,
                          all_init_pos=all_init_pos,
                          ignore_dead_comps=ignore_dead_comps,
+                         trace_orbit_func=trace_orbit_func,
                          )
 
         # update number of groups to reflect any loss of dead components
         ncomps = len(success_mask)
-        logging.info("The following groups survived: {}".format(success_mask))
+        logging.info("The following components survived: {}".format(
+                success_mask
+        ))
 
         # apply success mask to memb_probs, somewhat awkward cause need to preserve
         # final column (for background overlaps) if present
         if use_background:
-            memb_probs = np.hstack((memb_probs[:,success_mask],
-                                    memb_probs[:,-1][:,np.newaxis]))
+            memb_probs_new = np.hstack((memb_probs_new[:,success_mask],
+                                    memb_probs_new[:,-1][:,np.newaxis]))
         else:
-            memb_probs = memb_probs[:,success_mask]
+            memb_probs_new = memb_probs_new[:,success_mask]
 
         # LOG RESULTS OF ITERATION
         overallLnLike = getOverallLnLikelihood(data,
@@ -879,33 +896,39 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
         logging.info("-- Overall posterior so far:  {} --". \
                      format(overallLnPosterior))
         logging.info("-- BIC so far: {}                --". \
-                     format(calcBIC(data, ncomps, overallLnLike, z=memb_probs_new)))
+                     format(calcBIC(data, ncomps, overallLnLike,
+                                    z=memb_probs_new)))
 
         # checks if the fit ever worsens
-        converged = ( (old_overallLnLike > overallLnLike) and\
-                     checkConvergence(old_best_fits=old_comps[success_mask],
-                                      new_chains=all_samples,
-                                      ) and
-                     # individual star memberships don't vary too much
-                     # np.allclose(memb_probs_new, memb_probs_old, atol=MEMB_CONV_TOL) and
-                     # amplitudes of components don't vary too much
-                     np.allclose(memb_probs_new.sum(axis=0),
-                                 memb_probs_old.sum(axis=0),
-                                 atol=AMPLITUDE_TOL)
-            # UNSURE HOW TO TUNE THIS
+        # import pdb; pdb.set_trace()
+        chains_converged = checkConvergence(
+                old_best_comps=np.array(old_comps)[success_mask],
+                new_chains=all_samples
         )
+        amplitudes_converged = np.allclose(memb_probs_new.sum(axis=0),
+                                           memb_probs_old.sum(axis=0),
+                                           atol=AMPLITUDE_TOL)
+        likelihoods_converged = (old_overallLnLike > overallLnLike)
+        all_converged = (chains_converged and amplitudes_converged and
+                         likelihoods_converged)
         # old_samples = all_samples
         old_overallLnLike = overallLnLike
-        logging.info("-- Convergence status: {}        --".\
-                     format(converged))
-        logging.info("---------------------------------------")
+        log_message('Convergence status: {}'.format(all_converged),
+                    symbol='-', surround=True)
+        if not all_converged:
+            logging.info('Likelihoods converged: {}'. \
+                         format(likelihoods_converged))
+            logging.info('Chains converged: {}'.format(chains_converged))
+            logging.info('Amplitudes converged: {}'.\
+                format(amplitudes_converged))
+
 
         # Ensure stability after sufficient iterations to settle
         if iter_count > 10:
             stable_state = checkStability(data, new_comps, memb_probs_new, bg_ln_ols)
 
         # only update if the fit has improved
-        if not converged:
+        if not all_converged:
             # old_old_groups = old_comps
             old_comps = new_comps
             memb_probs_old = memb_probs_new
@@ -913,33 +936,27 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
         iter_count += 1
 
     logging.info("CONVERGENCE COMPLETE")
-    logging.info("********** EM Algorithm finished *************")
+    log_message('EM Algorithm finished', symbol='*')
 
-    # TODO: HAVE A THINK ABOUT WHAT RESULTS END UP WHERE...
-#    #np.save(rdir+"final_comps.npy", new_comps)
-#    np.save(rdir+"final_comps.npy", new_comps) # old grps overwritten by new grps
-#    np.save(rdir+"memberships.npy", memb_probs)
 
     if stable_state:
         # PERFORM FINAL EXPLORATION OF PARAMETER SPACE
-        logging.info("\n--------------------------------------------------"
-                     "\n--------------   Characterising   ----------------"
-                     "\n--------------------------------------------------")
+        log_message('Characterising', symbol='-', surround=True)
         final_dir = rdir+"final/"
         mkpath(final_dir)
 
         memb_probs_final = expectation(data, new_comps, memb_probs_new,
                                        bg_ln_ols, inc_posterior=inc_posterior)
         np.save(final_dir+"final_membership.npy", memb_probs_final)
-        final_best_fits = [None] * ncomps
-        final_med_errs = [None] * ncomps
+        final_med_and_spans = [None] * ncomps
+        final_best_comps = [None] * ncomps
 
         for i in range(ncomps):
-            logging.info("Characterising group {}".format(i))
-            final_gdir = final_dir + "group{}/".format(i)
+            logging.info("Characterising comp {}".format(i))
+            final_gdir = final_dir + "comp{}/".format(i)
             mkpath(final_gdir)
 
-            best_fit, chain, lnprob = groupfitter.fit_comp(
+            best_comp, chain, lnprob = groupfitter.fit_comp(
                     data=data,
                     memb_probs=memb_probs_final[:, i],
                     burnin_steps=BURNIN_STEPS,
@@ -947,14 +964,15 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
                     plot_dir=final_gdir, save_dir=final_gdir,
                     init_pos=all_init_pos[i],
                     sampling_steps=SAMPLING_STEPS,
+                    trace_orbit_func=trace_orbit_func,
                 # max_iter=4 # Todo: why max_iter? (19/02)
                 # init_pars=old_comps[i],
             )
             # run with extremely large convergence tolerance to ensure it only
             # runs once
             logging.info("Finished fit")
-            final_best_fits[i] = best_fit
-            final_med_errs[i] = groupfitter.calc_med_and_span(
+            final_best_comps[i] = best_comp
+            final_med_and_spans[i] = groupfitter.calc_med_and_span(
                     chain, intern_to_extern=True, Component=Component,
             )
             # np.save(final_gdir + "best_group_fit.npy", new_group)
@@ -964,12 +982,12 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
             all_init_pos[i] = chain[:, -1, :]
 
 
-        final_comps = np.array(
-            [Component(pars=final_best_fit, internal=True)
-             for final_best_fit in final_best_fits]
-        )
-        np.save(final_dir+'final_comps.npy', final_comps)
-        np.save(final_dir+'final_med_errs.npy', final_med_errs)
+        # final_comps = np.array(
+        #     [Component(pars=final_best_fit, internal=True)
+        #      for final_best_fit in final_best_fits]
+        # )
+        np.save(final_dir+'final_comps.npy', final_best_comps)
+        np.save(final_dir+'final_med_and_spans.npy', final_med_and_spans)
 
         # get overall likelihood
         overallLnLike = getOverallLnLikelihood(
@@ -990,7 +1008,7 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
         logging.info("FINISHED CHARACTERISATION")
         #logging.info("Origin:\n{}".format(origins))
         logging.info("Best fits:\n{}".format(
-            [fg.getSphericalPars() for fg in final_comps]
+            [fc.get_pars() for fc in final_best_comps]
         ))
         logging.info("Stars per component:\n{}".format(
                 memb_probs_final.sum(axis=0)
@@ -999,11 +1017,12 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
                 (memb_probs_final*100).astype(np.int)
         ))
 
-        return final_comps, np.array(final_med_errs), memb_probs_final
+        return final_best_comps, np.array(final_med_and_spans), memb_probs_final
 
     else: # not stable_state
-        logging.info("****************************************")
-        logging.info("********** BAD RUN TERMINATED **********")
-        logging.info("****************************************")
+        log_message('BAD RUN TERMINATED', symbol='*', surround=True)
+        # logging.info("****************************************")
+        # logging.info("********** BAD RUN TERMINATED **********")
+        # logging.info("****************************************")
         return new_comps, -1, memb_probs_new
 

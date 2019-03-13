@@ -117,7 +117,7 @@ class AbstractComponent(object):
     }
 
     def __init__(self, pars=None, attributes=None, internal=False,
-                 trace_orbit_func=traceOrbitXYZUVW):
+                 trace_orbit_func=None):
         """
         An abstraction for the parametrisation of a moving group
         component origin. As a 6D Gaussian, a Component has three key
@@ -167,7 +167,10 @@ class AbstractComponent(object):
         self.check_parameter_format()
 
         # Set cartesian orbit tracing function
-        self.trace_orbit_func = trace_orbit_func
+        if trace_orbit_func is None:
+            self.trace_orbit_func = traceOrbitXYZUVW
+        else:
+            self.trace_orbit_func = trace_orbit_func
 
         # If parameters are provided in internal form (the form used by emcee),
         # then externalise before setting of various other attributes.
@@ -487,7 +490,7 @@ class AbstractComponent(object):
         """
         res = np.load(filename)
         if res.shape == ():
-            return [res.item()]
+            return np.array([res.item()])
         else:
             return res
 

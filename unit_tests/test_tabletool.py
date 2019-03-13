@@ -399,7 +399,7 @@ def test_convertTableXYZUVWToArray():
     Check that generating cartesian means and covariance matrices matches
     previous implementation
     """
-    filename = '../data/beta_Pictoris_with_gaia_small_everything_final.fits'
+    filename = '../data/paper1/beta_Pictoris_with_gaia_small_everything_final.fits'
 
     orig_star_pars = loadDictFromTable(filename)
     main_colnames, error_colnames, corr_colnames =\
@@ -457,7 +457,7 @@ def test_convertAstrTableToCart():
     converting to cartesian (stored back into table) then building data
     from newly inserted table cart cols.
     """
-    filename = '../data/beta_Pictoris_with_gaia_small_everything_final.fits'
+    filename = '../data/paper1/beta_Pictoris_with_gaia_small_everything_final.fits'
     table = Table.read(filename)
     # Drop stars that have gone through any binary checking
     table = Table(table[100:300])
@@ -499,7 +499,7 @@ def test_badColNames():
     corrupted_error_colnames[0], corrupted_error_colnames[3] =\
         error_colnames[3], error_colnames[0]
 
-    filename = '../data/beta_Pictoris_with_gaia_small_everything_final.fits'
+    filename = '../data/paper1/beta_Pictoris_with_gaia_small_everything_final.fits'
     table = Table.read(filename)
 
     # Only need a handful of rows

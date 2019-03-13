@@ -223,7 +223,9 @@ def lnlike(comp, data, memb_probs, memb_threshold=0.001):
     return result
 
 
-def lnprob_func(pars, data, memb_probs=None, Component=SphereComponent):
+def lnprob_func(pars, data, memb_probs=None,
+                trace_orbit_func=None,
+                Component=SphereComponent):
     """Computes the log-probability for a fit to a group.
 
     Parameters
@@ -245,6 +247,11 @@ def lnprob_func(pars, data, memb_probs=None, Component=SphereComponent):
         As well as get_current_day_projection()
         See AbstractComponent to see which methods must be implemented
         for a new model.
+    trace_orbit_func: function {None}
+        A function that, given a starting phase-space position, and an
+        age, returns a new phase-space position. Leave as None to use
+        default (coordinate.traceOrbitXYZUVW)
+
 
     Returns
     -------
@@ -253,7 +260,7 @@ def lnprob_func(pars, data, memb_probs=None, Component=SphereComponent):
     """
     if memb_probs is None:
         memb_probs = np.ones(len(data))
-    comp = Component(pars, internal=True)
+    comp = Component(pars, internal=True, trace_orbit_func=trace_orbit_func)
     lp = lnprior(comp, memb_probs)
     if not np.isfinite(lp):
         return -np.inf
