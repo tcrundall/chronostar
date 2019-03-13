@@ -45,3 +45,8 @@ cart_colnames = {
 special = {
     'component':'sphere',
 }
+
+advanced = {
+    'burnin_steps':1000,
+    'sampling_steps':1000,
+}

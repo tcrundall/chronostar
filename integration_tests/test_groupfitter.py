@@ -95,7 +95,7 @@ def test_stationary_component():
     assert np.allclose(true_comp.get_mean(), best_comp.get_mean(),
                        atol=1.0)
     assert np.allclose(true_comp.get_age(), best_comp.get_age(),
-                       atol=0.5)
+                       atol=1.0)
     assert np.allclose(true_comp.get_covmatrix(),
                        best_comp.get_covmatrix(),
                        atol=2.0)

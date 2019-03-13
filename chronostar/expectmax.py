@@ -662,7 +662,8 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
                   origins=None, pool=None, init_with_origin=False,
                   init_comps=None, init_weights=None,
                   offset=False, bg_hist_file='', correction_factor=1.0,
-                  inc_posterior=False, burnin=1000, bg_dens=None,
+                  inc_posterior=False, burnin=1000, sampling_steps=5000,
+                  bg_dens=None,
                   bg_ln_ols=None, ignore_dead_comps=False,
                   Component=SphereComponent,
                   trace_orbit_func=None):
@@ -729,7 +730,7 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
 
     # setting up some constants
     BURNIN_STEPS = burnin
-    SAMPLING_STEPS = 5000
+    SAMPLING_STEPS = sampling_steps
     C_TOL = 0.5
     MAX_ITERS = 100
     # MEMB_CONV_TOL = 0.1 # no memberships may vary by >10% to be converged.

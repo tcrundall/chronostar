@@ -45,7 +45,6 @@ def log_message(msg, symbol='.', surround=False):
     logging.info(res)
 
 
-
 # Check if single input is provided, and treat as config file
 # at the moment config file needs to be in same directory...?
 if len(sys.argv) == 2:
@@ -149,11 +148,12 @@ try:
     # new_memb_probs = np.load(run_dir + 'final/final_membership.npy')
     logging.info('Loaded from previous run')
 except IOError:
-    import pdb; pdb.set_trace()
-    assert False
     prev_comps, prev_med_and_spans, prev_memb_probs = \
         expectmax.fitManyGroups(data=data, ncomps=ncomps, rdir=run_dir,
-                                trace_orbit_func=trace_orbit_func,)
+                                trace_orbit_func=trace_orbit_func,
+                                burnin=config.advanced['burnin_steps'],
+                                sampling_steps=config.advanced['sampling_steps'],
+                                )
 
 # Calculate global score of fit for comparison with future fits with different
 # component counts
@@ -213,6 +213,8 @@ while ncomps < MAX_COMPS:
                                     # bg_ln_ols=bg_ln_ols,
                                     init_comps=init_comps,
                                     trace_orbit_func=trace_orbit_func,
+                                    burnin=config.advanced['burnin_steps'],
+                                    sampling_steps=config.advanced['sampling_steps'],
                                     )
 
         best_fits.append(comps)
