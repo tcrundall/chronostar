@@ -95,6 +95,13 @@ def test_fit_many_comps():
                                 trace_orbit_func=dummy_trace_orbit_func, )
 
     # compare fit with input
+    try:
+        assert np.allclose(true_memb_probs, memb_probs)
+    except AssertionError:
+        # If not close, check if flipping component order fixes things
+        memb_probs = memb_probs[:,::-1]
+        best_comps = best_comps[::-1]
+        assert np.allclose(true_memb_probs, memb_probs)
     for origin, best_comp in zip(origins, best_comps):
         assert (isinstance(origin, SphereComponent) and
                 isinstance(best_comp, SphereComponent))
@@ -116,7 +123,6 @@ def test_fit_many_comps():
                            best_comp.get_age(),
                            atol=1.)
 
-    assert np.allclose(true_memb_probs, memb_probs)
 
 
 """

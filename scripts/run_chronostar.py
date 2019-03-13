@@ -281,4 +281,4 @@ while ncomps < MAX_COMPS:
         break
 
     logging.info("Best fit:\n{}".format(
-            [group.getInternalSphericalPars() for group in prev_comps]))
+            [group.get_pars() for group in prev_comps]))
