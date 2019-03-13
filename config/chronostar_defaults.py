@@ -1,23 +1,25 @@
 import numpy as np
 
-synth_name = 'demo_run'
+assoc_name = 'demo_run'
 config = {
     # 'datafile':'',
-    'results_dir':'../results/{}'.format(synth_name),
-    'datafile':'../results/{}/data.fits'.format(synth_name),
+    'results_dir':'../results/{}'.format(assoc_name),
+    'datafile':'../results/{}/data.fits'.format(assoc_name),
     'plot_it':True,
     # 'background_overlaps_file':'',
-    'include_background_distribution':True,
-    'kernel_density_input_datafile':'',
-    'run_with_mpi':False,
-    'convert_to_cartesian':True,
-    'overwrite_datafile':False,
+    'include_background_distribution':False,
+    'kernel_density_input_datafile':'',             # Cartesian data of all Gaia DR2 stars
+                                                    # e.g. ../data/gaia_dr2_mean_xyzuvw.npy
+    'run_with_mpi':False,       # not yet inpmlemented
+    'convert_to_cartesian':True,        # whehter need to convert data from astrometry to cartesian
+    'overwrite_datafile':False,         # whether to store results in same talbe and rewrite to file
     'cartesian_savefile':'',
-    'save_cartesian_data':True,
-    'ncomps':10,
-    'overwrite_prev_run':True,
-    'dummy_trace_orbit_function':True,
-    'pickup_prev_run':True,
+    'save_cartesian_data':True,         #
+    'ncomps':10,                        # maximum number of components to reach
+    'overwrite_prev_run':True,          # explores provided results directorty and sees if results already
+                                        # exist, and if so picks up from where left off
+    'dummy_trace_orbit_function':True,  # For testing, simple function to skip computation
+    'pickup_prev_run':True,             # Pick up where left off if possible
 }
 
 # synth = None
@@ -31,7 +33,7 @@ synth = {
 }
 
 astro_colnames = {
-    # 'main_colnames':None,
+    # 'main_colnames':None,     # list of names
     # 'error_colnames':None,
     # 'corr_colnames':None,
 }
@@ -43,10 +45,10 @@ cart_colnames = {
 }
 
 special = {
-    'component':'sphere',
+    'component':'sphere',       # parameterisation for the origin
 }
 
 advanced = {
-    'burnin_steps':1000,
+    'burnin_steps':1000,        # emcee parameters, number of steps for each burnin iteraton
     'sampling_steps':1000,
 }

@@ -252,7 +252,7 @@ while ncomps < MAX_COMPS:
         logging.info("New BIC: {} < Old BIC: {}".format(new_bic, prev_bic))
         logging.info("lnlike: {} | {}".format(new_lnlike, prev_lnlike))
         logging.info("lnpost: {} | {}".format(new_lnpost, prev_lnpost))
-        prev_comps, prev_meds, prev_z, prev_lnlike, prev_lnpost, \
+        prev_comps, prev_med_and_spans, prev_memb_probs, prev_lnlike, prev_lnpost, \
         prev_bic = \
             (new_comps, new_meds, new_z, new_lnlike, new_lnpost, new_bic)
         ncomps += 1
@@ -263,18 +263,18 @@ while ncomps < MAX_COMPS:
         logging.info("lnpost: {} | {}".format(new_lnpost, prev_lnpost))
         logging.info("... saving previous fit as best fit to data")
         np.save(rdir + final_comps_file, prev_comps)
-        np.save(rdir + final_med_and_spans_file, prev_meds)
-        np.save(rdir + final_memb_probs_file, prev_z)
+        np.save(rdir + final_med_and_spans_file, prev_med_and_spans)
+        np.save(rdir + final_memb_probs_file, prev_memb_probs)
         np.save(rdir + 'final_likelihood_post_and_bic',
                 [prev_lnlike, prev_lnpost,
                  prev_bic])
         logging.info('Final best fits:')
-        [logging.info(g.getSphericalPars()) for g in prev_comps]
+        [logging.info(c.get_pars()) for c in prev_comps]
         logging.info('Final age med and span:')
-        [logging.info(row[-1]) for row in prev_meds]
-        logging.info('Membership distribution: {}'.format(prev_z.sum(axis=0)))
+        [logging.info(row[-1]) for row in prev_med_and_spans]
+        logging.info('Membership distribution: {}'.format(prev_memb_probs.sum(axis=0)))
         logging.info('Final membership:')
-        logging.info('\n{}'.format(np.round(prev_z * 100)))
+        logging.info('\n{}'.format(np.round(prev_memb_probs * 100)))
         logging.info('Final lnlikelihood: {}'.format(prev_lnlike))
         logging.info('Final lnposterior:  {}'.format(prev_lnpost))
         logging.info('Final BIC: {}'.format(prev_bic))

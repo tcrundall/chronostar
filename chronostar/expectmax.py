@@ -796,7 +796,9 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
         # TODO: Handle this more smoothly... don't leave things None for hidden reasons
         memb_probs_old = np.ones((nstars, ncomps+use_background))/\
                          (ncomps+use_background)
-        # memb_probs_old = None
+    if memb_probs_old is None:
+        memb_probs_old = np.ones((nstars, ncomps + use_background)) / \
+                         (ncomps + use_background)
 
     np.save(rdir + "init_groups.npy", init_comps)
 
