@@ -1,0 +1,2 @@
+A directory for logs to live
+(File created cause git tracks files, not directories)
