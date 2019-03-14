@@ -12,6 +12,7 @@ import pdb
 from distutils.dir_util import mkpath
 import logging
 import numpy as np
+from scipy import stats
 import os
 
 try:
@@ -34,6 +35,39 @@ def log_message(msg, symbol='.', surround=False):
     if surround:
         res = '\n{}\n{}\n{}'.format(50*symbol, res, 50*symbol)
     logging.info(res)
+
+
+def getKernelDensities(data, points, get_twins=False, amp_scale=1.0):
+    """
+    Build a PDF from `data`, then evaluate said pdf at `points`
+
+    Changed behaviour (4/12/2018) such that inverts Z and W of points)
+
+    Parameters
+    ----------
+    data : [nstars, 6] array of star means (typically data/gaia_xyzuvw.npy content)
+    points: [npoints, 6] array of star means of particular interest
+    """
+    if type(data) is str:
+        data = np.load(data)
+    nstars = amp_scale * data.shape[0]
+
+    kernel = stats.gaussian_kde(data.T)
+    points = np.copy(points)
+    points[:,2] *= -1
+    points[:,5] *= -1
+
+    bg_ln_ols = np.log(nstars)+kernel.logpdf(points.T)
+
+    if get_twins:
+        twin_points = np.copy(points)
+        twin_points[:,2] *= -1
+        twin_points[:,5] *= -1
+
+        twin_bg_ln_ols = np.log(nstars)+kernel.logpdf(twin_points.T)
+        return bg_ln_ols, twin_bg_ln_ols
+    else:
+        return bg_ln_ols
 
 
 def checkConvergence(old_best_comps, new_chains,

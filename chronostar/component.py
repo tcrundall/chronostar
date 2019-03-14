@@ -7,6 +7,8 @@ as a Gaussian. As such there are three key attributes:
 - mean: the central location
 - covariance matrix: the spread in each dimension along with any correlations
 - age: how long the stars have been travelling
+
+TODO: Have actual names for parameters for clarity when logging results
 """
 
 from __future__ import print_function, division, unicode_literals

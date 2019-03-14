@@ -7,8 +7,9 @@ config = {
     'datafile':'../results/{}/data.fits'.format(assoc_name),
     'plot_it':True,
     # 'background_overlaps_file':'',
-    'include_background_distribution':False,
-    'kernel_density_input_datafile':'',             # Cartesian data of all Gaia DR2 stars
+    'include_background_distribution':True,
+    'kernel_density_input_datafile':'../data/gaia_cartesian_full_6d_table.fits',
+                                                    # Cartesian data of all Gaia DR2 stars
                                                     # e.g. ../data/gaia_dr2_mean_xyzuvw.npy
     'run_with_mpi':False,       # not yet inpmlemented
     'convert_to_cartesian':True,        # whehter need to convert data from astrometry to cartesian

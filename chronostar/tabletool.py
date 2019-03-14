@@ -56,7 +56,9 @@ def getColnames(main_colnames=None, error_colnames=None, corr_colnames=None,
 
 def buildDataFromTable(table, main_colnames=None, error_colnames=None,
                        corr_colnames=None, cartesian=True,
-                       historical=False, only_means=False):
+                       historical=False, only_means=False,
+                       get_background_overlaps=True,
+                       background_colname=None,):
     """
     Use data in tale columns to construct arrays of means and covariance
     matrices.
@@ -106,6 +108,15 @@ def buildDataFromTable(table, main_colnames=None, error_colnames=None,
     means = np.vstack([table[col] for col in main_colnames]).T
     if only_means:
         return means
+    results_dict = {}
+    results_dict['means'] = means
+
+    # Insert background overlaps
+    if get_background_overlaps:
+        if background_colname is None:
+            background_colname = ''
+    if background_overlaps_colname in table.colnames:
+        results_dict['bg_lnols'] = np.array(table[background_overlaps_colname])
 
     # Generate covariance matrices
     nstars = len(table)
@@ -154,11 +165,8 @@ def buildDataFromTable(table, main_colnames=None, error_colnames=None,
     # standard deviation vector, multiply the j'th row by the j'th std
     covs = np.einsum('ijk,ij->ijk', covs, standard_devs)    # the rows
     covs = np.einsum('ijk,ik->ijk', covs, standard_devs)    # the columsn
-    res = {
-        'means':means,
-        'covs':covs,
-    }
-    return res
+    results_dict['covs'] = covs
+    return results_dict
 
 
 def appendCartColsToTable(table, main_colnames=None, error_colnames=None,
@@ -248,6 +256,14 @@ def insertDataIntoRow(row, mean, cov, main_colnames=None, error_colnames=None,
             # raise UserWarning, '{} missing from columns'.format(
             #         corr_colnames[ix]
             # )
+
+
+def insert_column(table, col_data, col_name, filename=''):
+    """Little helper to insert column data"""
+    table[col_name] = col_data
+    if filename != '':
+        table.write(filename, overwrite=True)
+    return table
 
 
 def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,

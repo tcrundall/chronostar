@@ -99,8 +99,8 @@ final_med_and_spans_file = 'final_med_and_spans.npy'
 final_memb_probs_file = 'final_membership.npy'
 
 
-# By the end of this, data will be either a astropy table or
-# the path to an astropy table, with cartesian data written in
+# By the end of this, data will be a astropy table
+# with cartesian data written in
 # columns in default way. (Unless cartesian data was already
 # provided in non default way - handle this side-case later)
 if config.config['convert_to_cartesian']:
@@ -115,7 +115,30 @@ if config.config['convert_to_cartesian']:
     elif config.config['cartesian_savefile'] != '':
         data.write(config.config['cartesian_savefile'])
 else:
-    data = datafile
+    data = tabletool.load(datafile)
+
+
+# Calculate background overlaps, storing in data
+bg_lnol_colname = 'background_log_overlap'
+if config.config['include_background_distribution']:
+    # Only calculate if missing
+    if bg_lnol_colname not in data.colnames:
+        background_means = tabletool.buildDataFromTable(
+                config.config['kernel_density_input_datafile'],
+                only_means=True,
+        )
+        star_means = tabletool.buildDataFromTable(
+                data, only_means=True,
+        )
+        ln_bg_ols = expectmax.getKernelDensities(background_means,
+                                                 star_means,)
+        # If allowed, save to original file path
+        if config.config['overwrite_datafile']:
+            tabletool.insert_column(data, bg_lnol_colname,
+                                    ln_bg_ols, filename=datafile)
+        else:
+            tabletool.insert_column(data, bg_lnol_colname, ln_bg_ols)
+
 
 # Set up trace_orbit_func
 if config.config['dummy_trace_orbit_function']:
@@ -153,6 +176,7 @@ except IOError:
                                 trace_orbit_func=trace_orbit_func,
                                 burnin=config.advanced['burnin_steps'],
                                 sampling_steps=config.advanced['sampling_steps'],
+                                use_background=True,
                                 )
 
 # Calculate global score of fit for comparison with future fits with different
@@ -213,6 +237,7 @@ while ncomps < MAX_COMPS:
                                     # bg_ln_ols=bg_ln_ols,
                                     init_comps=init_comps,
                                     trace_orbit_func=trace_orbit_func,
+                                    use_background_ols=True,
                                     burnin=config.advanced['burnin_steps'],
                                     sampling_steps=config.advanced['sampling_steps'],
                                     )
