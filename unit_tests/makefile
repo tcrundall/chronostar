@@ -1,2 +1,2 @@
 clean:
-	rm -r temp*/*
+	find temp*/* ! -name descriptor.txt -exec rm '{}' \;
