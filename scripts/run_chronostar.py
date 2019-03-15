@@ -33,7 +33,7 @@ def dummy_trace_orbit_func(loc, times=None):
     """
     if times is not None:
         if np.all(times > 1.):
-            return loc + 10.
+            return loc + 1000.
     return loc
 
 
@@ -77,68 +77,103 @@ logging.basicConfig(filename=rdir+'log.log', level=logging.INFO)
 log_message('Beginning Chronostar run',
             symbol='_', surround=True)
 
+log_message('Setting up', symbol='.', surround=True)
+
 assert os.access(rdir, os.W_OK)
 
-# Construct synthetic data if required
-datafile = config.config['datafile']
-if config.synth is not None:
-    log_message('Getting synthetic data')
-    if not os.path.exists(datafile) and config.config['pickup_prev_run']:
-        synth_data = SynthData(pars=config.synth['pars'],
-                               starcounts=config.synth['starcounts'],
-                               Components=Component)
-        synth_data.synthesise_everything(filename=datafile,
-                                         overwrite=True)
-    else:
-        log_message('Synthetic data already exists')
-assert os.path.exists(datafile)
+# ------------------------------------------------------------
+# -----  SETTING UP ALL DATA PREP  ---------------------------
+# ------------------------------------------------------------
 
 # Set up some filename constants
 final_comps_file = 'final_comps.npy'
 final_med_and_spans_file = 'final_med_and_spans.npy'
 final_memb_probs_file = 'final_membership.npy'
 
-
-# By the end of this, data will be a astropy table
-# with cartesian data written in
-# columns in default way. (Unless cartesian data was already
-# provided in non default way - handle this side-case later)
-if config.config['convert_to_cartesian']:
-    data = tabletool.convertTableAstroToXYZUVW(
-            table=datafile,
-            main_colnames=config.astro_colnames.get('main_colnames', None),
-            error_colnames=config.astro_colnames.get('error_colnames', None),
-            corr_colnames=config.astro_colnames.get('corr_colnames', None),
-            return_table=True)
-    if config.config['overwrite_datafile']:
-        data.write(datafile)
-    elif config.config['cartesian_savefile'] != '':
-        data.write(config.config['cartesian_savefile'])
+# First see if a data savefile path has been provided, and if
+# so, then just assume this script has already been performed
+# and the data prep has already been done
+if (config.config['data_savefile'] != '' and
+        os.path.isfile(config.config['data_savefile'])):
+    log_message('Loading pre-prepared data')
+    data_table = tabletool.load(config.config['data_savefile'])
+# Otherwise, perform entire process
 else:
-    data = tabletool.load(datafile)
+    # Construct synthetic data if required
+    datafile = config.config['data_loadfile']
+    if config.synth is not None:
+        log_message('Getting synthetic data')
+        if not os.path.exists(datafile) and config.config['pickup_prev_run']:
+            synth_data = SynthData(pars=config.synth['pars'],
+                                   starcounts=config.synth['starcounts'],
+                                   Components=Component)
+            synth_data.synthesise_everything(filename=datafile,
+                                             overwrite=True)
+        else:
+            log_message('Synthetic data already exists')
+    assert os.path.exists(datafile)
 
+    # Read in data as table
+    log_message('Read data into table')
+    data_table = tabletool.read(datafile)
 
-# Calculate background overlaps, storing in data
-bg_lnol_colname = 'background_log_overlap'
-if config.config['include_background_distribution']:
-    # Only calculate if missing
-    if bg_lnol_colname not in data.colnames:
-        background_means = tabletool.buildDataFromTable(
-                config.config['kernel_density_input_datafile'],
+    # If data cuts provided, then apply them
+    if config.data_bound is not None:
+        log_message('Applying data cuts')
+        star_means = tabletool.buildDataFromTable(
+                datafile,
+                main_colnames=config.cart_colnames.get('main_colnames', None),
                 only_means=True,
         )
-        star_means = tabletool.buildDataFromTable(
-                data, only_means=True,
-        )
-        ln_bg_ols = expectmax.getKernelDensities(background_means,
-                                                 star_means,)
-        # If allowed, save to original file path
-        if config.config['overwrite_datafile']:
-            tabletool.insert_column(data, bg_lnol_colname,
-                                    ln_bg_ols, filename=datafile)
-        else:
-            tabletool.insert_column(data, bg_lnol_colname, ln_bg_ols)
+        data_mask = np.where(
+                np.all(star_means < config.data_bound['upper_bound'], axis=1)
+                & np.all(star_means > config.data_bound['lower_bound'], axis=1))
+        data_table = data_table[data_mask]
+    log_message('Data table has {} rows'.format(len(data_table)))
 
+
+    # By the end of this, data will be a astropy table
+    # with cartesian data written in
+    # columns in default way. (Unless cartesian data was already
+    # provided in non default way - handle this side-case later)
+    if config.config['convert_to_cartesian']:
+        # Performs conversion in place (in memory) on `data_table`
+        log_message('Converting to cartesian')
+        tabletool.convertTableAstroToXYZUVW(
+                table=data_table,
+                main_colnames=config.astro_colnames.get('main_colnames', None),
+                error_colnames=config.astro_colnames.get('error_colnames', None),
+                corr_colnames=config.astro_colnames.get('corr_colnames', None),
+                return_table=True)
+
+    # Calculate background overlaps, storing in data
+    bg_lnol_colname = 'background_log_overlap'
+    if config.config['include_background_distribution']:
+        # Only calculate if missing
+        if bg_lnol_colname not in data_table.colnames:
+            log_message('Calculating background densities')
+            background_means = tabletool.buildDataFromTable(
+                    config.config['kernel_density_input_datafile'],
+                    only_means=True,
+            )
+            star_means = tabletool.buildDataFromTable(
+                    data_table, only_means=True,
+            )
+            # ln_bg_ols = expectmax.getKernelDensities(background_means,
+            #                                          star_means,)
+            ln_bg_ols = len(star_means) * [-15]
+            # If allowed, save to original file path
+            if config.config['overwrite_datafile']:
+                tabletool.insert_column(data_table, bg_lnol_colname,
+                                        ln_bg_ols, filename=datafile)
+            else:
+                tabletool.insert_column(data_table, col_data=ln_bg_ols,
+                                        col_name=bg_lnol_colname)
+
+if config.config['overwrite_datafile']:
+    data_table.write(datafile)
+elif config.config['data_savefile'] != '':
+    data_table.write(config.config['data_savefile'], overwrite=True)
 
 # Set up trace_orbit_func
 if config.config['dummy_trace_orbit_function']:
@@ -146,7 +181,12 @@ if config.config['dummy_trace_orbit_function']:
 else:
     trace_orbit_func = None
 
-# TODO: Implmenet background overlap calculations.
+
+# Convert data table into numpy arrays of mean and covariance matrices
+data_dict = tabletool.buildDataFromTable(
+        data_table,
+        get_background_overlaps=config.config['include_background_distribution']
+)
 
 STARTING_NCOMPS = 1
 MAX_COMPS = 20          # Set a ceiling on how long code can run for
@@ -172,22 +212,23 @@ try:
     logging.info('Loaded from previous run')
 except IOError:
     prev_comps, prev_med_and_spans, prev_memb_probs = \
-        expectmax.fitManyGroups(data=data, ncomps=ncomps, rdir=run_dir,
+        expectmax.fitManyGroups(data=data_dict, ncomps=ncomps, rdir=run_dir,
                                 trace_orbit_func=trace_orbit_func,
                                 burnin=config.advanced['burnin_steps'],
                                 sampling_steps=config.advanced['sampling_steps'],
-                                use_background=True,
+                                use_background=config.config[
+                                    'include_background_distribution'],
                                 )
 
 # Calculate global score of fit for comparison with future fits with different
 # component counts
-prev_lnlike = expectmax.getOverallLnLikelihood(data, prev_comps,
+prev_lnlike = expectmax.getOverallLnLikelihood(data_dict, prev_comps,
                                        # bg_ln_ols=bg_ln_ols,
                                               )
-prev_lnpost = expectmax.getOverallLnLikelihood(data, prev_comps,
+prev_lnpost = expectmax.getOverallLnLikelihood(data_dict, prev_comps,
                                        # bg_ln_ols=bg_ln_ols,
                                        inc_posterior=True)
-prev_bic = expectmax.calcBIC(data, ncomps, prev_lnlike)
+prev_bic = expectmax.calcBIC(data_dict, ncomps, prev_lnlike)
 
 ncomps += 1
 
@@ -233,26 +274,26 @@ while ncomps < MAX_COMPS:
             logging.info('Fit loaded from previous run')
         except IOError:
             comps, med_and_spans, memb_probs = \
-            expectmax.fitManyGroups(data=data, ncomps=ncomps, rdir=run_dir,
-                                    # bg_ln_ols=bg_ln_ols,
-                                    init_comps=init_comps,
-                                    trace_orbit_func=trace_orbit_func,
-                                    use_background_ols=True,
-                                    burnin=config.advanced['burnin_steps'],
-                                    sampling_steps=config.advanced['sampling_steps'],
-                                    )
+            expectmax.fitManyGroups(
+                    data=data_dict, ncomps=ncomps, rdir=run_dir,
+                    init_comps=init_comps, trace_orbit_func=trace_orbit_func,
+                    use_background=config.config[
+                        'include_background_distribution'],
+                    burnin=config.advanced['burnin_steps'],
+                    sampling_steps=config.advanced['sampling_steps'],
+            )
 
         best_fits.append(comps)
         all_med_and_spans.append(med_and_spans)
         all_memb_probs.append(memb_probs)
         lnlikes.append(
-               expectmax.getOverallLnLikelihood(data, comps, bg_ln_ols=None,)
+               expectmax.getOverallLnLikelihood(data_dict, comps, bg_ln_ols=None,)
         )
         lnposts.append(
-                expectmax.getOverallLnLikelihood(data, comps, bg_ln_ols=None,
+                expectmax.getOverallLnLikelihood(data_dict, comps, bg_ln_ols=None,
                                                  inc_posterior=True)
         )
-        bics.append(expectmax.calcBIC(data, ncomps, lnlikes[-1]))
+        bics.append(expectmax.calcBIC(data_dict, ncomps, lnlikes[-1]))
         logging.info('Decomposiiton finished with \nBIC: {}\nlnlike: {}\n'
                      'lnpost: {}'.format(
                 bics[-1], lnlikes[-1], lnposts[-1],

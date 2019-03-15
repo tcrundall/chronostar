@@ -175,7 +175,8 @@ def get_lnoverlaps(comp, data, star_mask=None):
     return lnols
 
 
-def lnlike(comp, data, memb_probs, memb_threshold=0.001):
+def lnlike(comp, data, memb_probs, memb_threshold=1e-5,
+           minimum_exp_starcount=10.):
     """Computes the log-likelihood for a fit to a group.
 
     The emcee parameters encode the modelled origin point of the stars.
@@ -207,6 +208,12 @@ def lnlike(comp, data, memb_probs, memb_threshold=0.001):
         the logarithm of the likelihood of the fit
 
     """
+    # Boost expect star count to some minimum threshold
+    exp_starcount = np.sum(memb_probs)
+    if exp_starcount < minimum_exp_starcount:
+        memb_probs = np.copy(memb_probs)
+        memb_probs *= minimum_exp_starcount / exp_starcount
+
     # Only consider contributions of stars with larger than provided
     # threshold membership prob
     nearby_star_mask = np.where(memb_probs > memb_threshold)
@@ -225,7 +232,7 @@ def lnlike(comp, data, memb_probs, memb_threshold=0.001):
 
 def lnprob_func(pars, data, memb_probs=None,
                 trace_orbit_func=None,
-                Component=SphereComponent):
+                Component=SphereComponent, **kwargs):
     """Computes the log-probability for a fit to a group.
 
     Parameters
@@ -264,4 +271,4 @@ def lnprob_func(pars, data, memb_probs=None,
     lp = lnprior(comp, memb_probs)
     if not np.isfinite(lp):
         return -np.inf
-    return lp + lnlike(comp, data, memb_probs)
+    return lp + lnlike(comp, data, memb_probs, **kwargs)

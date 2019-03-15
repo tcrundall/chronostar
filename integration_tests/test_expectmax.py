@@ -55,8 +55,8 @@ def test_fit_one_comp_with_background():
     mkpath(savedir)
     data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
                                                                  run_name)
-    log_filename = 'temp_data/{}_expectmax_{}/log.log'.format(PY_VERS,
-                                                              run_name)
+    # log_filename = 'temp_data/{}_expectmax_{}/log.log'.format(PY_VERS,
+    #                                                           run_name)
 
     logging.basicConfig(level=logging.INFO, filemode='w',
                         filename=log_filename)
@@ -134,8 +134,8 @@ def test_fit_many_comps():
     mkpath(savedir)
     data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
                                                                  run_name)
-    log_filename = 'temp_data/{}_expectmax_{}/log.log'.format(PY_VERS,
-                                                              run_name)
+    # log_filename = 'temp_data/{}_expectmax_{}/log.log'.format(PY_VERS,
+    #                                                           run_name)
 
     logging.basicConfig(level=logging.INFO, filemode='w',
                         filename=log_filename)

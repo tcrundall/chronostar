@@ -10,13 +10,13 @@ from astropy.units.core import UnitConversionError
 from . import coordinate
 from . import transform
 
-def load(filename):
+def load(filename, **kwargs):
     """Cause I'm too lazy to import Astropy.table.Table in terminal"""
-    return Table.read(filename)
+    return Table.read(filename, **kwargs)
 
-def read(filename):
+def read(filename, **kwargs):
     """Cause I'm too lazy to import Astropy.table.Table in terminal"""
-    return load(filename)
+    return load(filename, **kwargs)
 
 
 def getHistoricalCartColnames():
