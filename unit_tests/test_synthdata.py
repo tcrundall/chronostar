@@ -237,5 +237,38 @@ def test_different_component_forms():
     assert len(synth_data.table) == np.sum(starcounts)
 
 
+def test_background_component():
+    """Create artificial association composed of two stars at opposite vertices
+    of unit 6D rectangle. Then base background density distribution on that."""
+    background_density = 100
+
+    # Since the background double the span of data, by setting the means as
+    # follows, the backbround should extend from 0 to 1 in each dimension,
+    # which greatly simplifies reasoning about densities and starcounts.
+    upper_mean = np.zeros(6) + 0.75
+    lower_mean = np.zeros(6) + 0.25
+    narrow_dx = 1e-10
+    narrow_dv = 1e-10
+    tiny_age = 1e-10
+    upper_pars = np.hstack((upper_mean, narrow_dx, narrow_dv, tiny_age))
+    lower_pars = np.hstack((lower_mean, narrow_dx, narrow_dv, tiny_age))
+
+    starcounts = [1,1]
+
+    synth_data = SynthData(pars=[upper_pars, lower_pars],
+                           starcounts=starcounts,
+                           background_density=background_density)
+    synth_data.generate_all_init_cartesian()
+
+    means = tabletool.buildDataFromTable(
+            synth_data.table[2:],
+            main_colnames=[el+'0' for el in 'xyzuvw'],
+            only_means=True,
+    )
+    assert np.allclose(0.5, np.mean(means, axis=0), atol=0.1)
+    assert np.allclose(1.0, np.max(means, axis=0), atol=0.1)
+    assert np.allclose(0.0, np.min(means, axis=0), atol=0.1)
+    assert len(synth_data.table) == background_density + 2
+
 if __name__ == '__main__':
     pass

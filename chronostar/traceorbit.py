@@ -153,10 +153,13 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     """
     # convert positions to kpc
     if single_age:
+        # replace 0 with some tiny number
+        if times == 0.:
+            times = 1e-10
         times = np.array([0., times])
     else:
         times = np.array(times)
-        #times[np.where(times == 0.)] = 1e-5
+        # times[np.where(times == 0.)] = 1e-10
 
     xyzuvw_start = np.copy(xyzuvw_start)
     xyzuvw_start[:3] *= 1e-3

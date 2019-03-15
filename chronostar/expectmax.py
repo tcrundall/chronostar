@@ -57,17 +57,17 @@ def getKernelDensities(data, points, get_twins=False, amp_scale=1.0):
     points[:,2] *= -1
     points[:,5] *= -1
 
-    bg_ln_ols = np.log(nstars)+kernel.logpdf(points.T)
+    bg_lnols = np.log(nstars)+kernel.logpdf(points.T)
 
     if get_twins:
         twin_points = np.copy(points)
         twin_points[:,2] *= -1
         twin_points[:,5] *= -1
 
-        twin_bg_ln_ols = np.log(nstars)+kernel.logpdf(twin_points.T)
-        return bg_ln_ols, twin_bg_ln_ols
+        twin_bg_lnols = np.log(nstars)+kernel.logpdf(twin_points.T)
+        return bg_lnols, twin_bg_lnols
     else:
-        return bg_ln_ols
+        return bg_lnols
 
 
 def checkConvergence(old_best_comps, new_chains,
@@ -136,97 +136,97 @@ def calcMembershipProbs(star_lnols):
 
     return star_memb_probs
 
+#
+# def backgroundLogOverlap(star_mean, bg_hists, correction_factor=1.):
+#     """Calculate the 'overlap' of a star with the background desnity of Gaia
+#
+#     We assume the Gaia density is approximately constant over the size scales
+#     of a star's uncertainty, and so approximate the star as a delta function
+#     at it's central estimate(/mean)
+#
+#     Parameters
+#     ----------
+#     star_mean : [6] float array
+#         the XYZUVW central estimate of a star, XYZ in pc and UVW in km/s
+#
+#     bg_hists : 6*[[nbins],[nbins+1]] list
+#         A collection of histograms desciribing the phase-space density of
+#         the Gaia catalogue in the vicinity of associaiton in quesiton.
+#         For each of the 6 dimensions there is an array of bin values and
+#         an array of bin edges.
+#
+#         e.g. bg_hists[0][1] is an array of floats describing the bin edges
+#         of the X dimension 1D histogram, and bg_hists[0][0] is an array of
+#         integers describing the star counts in each bin
+#
+#     correction_factor : positive float {1.}
+#         artificially amplify the Gaia background density to account for
+#         magnitude correctness
+#     """
+#     # get the total area under a histogram
+#     n_gaia_stars = np.sum(bg_hists[0][0])
+#
+#     ndim = 6
+#     lnol = 0
+#     for dim_ix in range(ndim):
+#         # evaluate the density: bin_height / bin_width / n_gaia_stars
+#         bin_width = bg_hists[dim_ix][1][1] - bg_hists[dim_ix][1][0]
+#         lnol += np.log(
+#             bg_hists[dim_ix][0][np.digitize(star_mean[dim_ix],
+#                                             bg_hists[dim_ix][1]) - 1]\
+#         )
+#         lnol -= bin_width
+#         lnol -= np.log(n_gaia_stars)
+#
+#     # Renormalise such that the combined 6D histogram has a hyper-volume
+#     # of n_gaia_stars
+#     # lnol -= 5 * np.log(n_gaia_stars)
+#     # lnol += np.log(n_gaia_stars)
+#     lnol += np.log(n_gaia_stars*correction_factor)
+#     return lnol
+#
+#
+# def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
+#     """Calculate the 'overlaps' of stars with the background desnity of Gaia
+#
+#     We assume the Gaia density is approximately constant over the size scales
+#     of a star's uncertainty, and so approximate the star as a delta function
+#     at it's central estimate(/mean)
+#
+#     Parameters
+#     ----------
+#     xyzuvw: [nstars, 6] float array
+#         the XYZUVW central estimate of a star, XYZ in pc and UVW in km/s
+#
+#     bg_hists : 6*[[nbins],[nbins+1]] list
+#         A collection of histograms desciribing the phase-space density of
+#         the Gaia catalogue in the vicinity of associaiton in quesiton.
+#         For each of the 6 dimensions there is an array of bin values and
+#         an array of bin edges.
+#
+#         e.g. bg_hists[0][1] is an array of floats describing the bin edges
+#         of the X dimension 1D histogram, and bg_hists[0][0] is an array of
+#         integers describing the star counts in each bin
+#
+#     correction_factor : positive float {1.}
+#         artificially amplify the Gaia background density to account for
+#         magnitude correctness
+#
+#     Returns
+#     -------
+#     bg_ln_ols: [nstars] float array
+#         the overlap with each star and the flat-ish background field
+#         distribution
+#     """
+#     bg_ln_ols = np.zeros(xyzuvw.shape[0])
+#     for i in range(bg_ln_ols.shape[0]):
+#         bg_ln_ols[i] = backgroundLogOverlap(
+#             xyzuvw[i], bg_hists, correction_factor=correction_factor
+#         )
+#     return bg_ln_ols
+#
 
-def backgroundLogOverlap(star_mean, bg_hists, correction_factor=1.):
-    """Calculate the 'overlap' of a star with the background desnity of Gaia
-
-    We assume the Gaia density is approximately constant over the size scales
-    of a star's uncertainty, and so approximate the star as a delta function
-    at it's central estimate(/mean)
-
-    Parameters
-    ----------
-    star_mean : [6] float array
-        the XYZUVW central estimate of a star, XYZ in pc and UVW in km/s
-
-    bg_hists : 6*[[nbins],[nbins+1]] list
-        A collection of histograms desciribing the phase-space density of
-        the Gaia catalogue in the vicinity of associaiton in quesiton.
-        For each of the 6 dimensions there is an array of bin values and
-        an array of bin edges.
-
-        e.g. bg_hists[0][1] is an array of floats describing the bin edges
-        of the X dimension 1D histogram, and bg_hists[0][0] is an array of
-        integers describing the star counts in each bin
-
-    correction_factor : positive float {1.}
-        artificially amplify the Gaia background density to account for
-        magnitude correctness
-    """
-    # get the total area under a histogram
-    n_gaia_stars = np.sum(bg_hists[0][0])
-
-    ndim = 6
-    lnol = 0
-    for dim_ix in range(ndim):
-        # evaluate the density: bin_height / bin_width / n_gaia_stars
-        bin_width = bg_hists[dim_ix][1][1] - bg_hists[dim_ix][1][0]
-        lnol += np.log(
-            bg_hists[dim_ix][0][np.digitize(star_mean[dim_ix],
-                                            bg_hists[dim_ix][1]) - 1]\
-        )
-        lnol -= bin_width
-        lnol -= np.log(n_gaia_stars)
-
-    # Renormalise such that the combined 6D histogram has a hyper-volume
-    # of n_gaia_stars
-    # lnol -= 5 * np.log(n_gaia_stars)
-    # lnol += np.log(n_gaia_stars)
-    lnol += np.log(n_gaia_stars*correction_factor)
-    return lnol
-
-
-def backgroundLogOverlaps(xyzuvw, bg_hists, correction_factor=1.0):
-    """Calculate the 'overlaps' of stars with the background desnity of Gaia
-
-    We assume the Gaia density is approximately constant over the size scales
-    of a star's uncertainty, and so approximate the star as a delta function
-    at it's central estimate(/mean)
-
-    Parameters
-    ----------
-    xyzuvw: [nstars, 6] float array
-        the XYZUVW central estimate of a star, XYZ in pc and UVW in km/s
-
-    bg_hists : 6*[[nbins],[nbins+1]] list
-        A collection of histograms desciribing the phase-space density of
-        the Gaia catalogue in the vicinity of associaiton in quesiton.
-        For each of the 6 dimensions there is an array of bin values and
-        an array of bin edges.
-
-        e.g. bg_hists[0][1] is an array of floats describing the bin edges
-        of the X dimension 1D histogram, and bg_hists[0][0] is an array of
-        integers describing the star counts in each bin
-
-    correction_factor : positive float {1.}
-        artificially amplify the Gaia background density to account for
-        magnitude correctness
-
-    Returns
-    -------
-    bg_ln_ols: [nstars] float array
-        the overlap with each star and the flat-ish background field
-        distribution
-    """
-    bg_ln_ols = np.zeros(xyzuvw.shape[0])
-    for i in range(bg_ln_ols.shape[0]):
-        bg_ln_ols[i] = backgroundLogOverlap(
-            xyzuvw[i], bg_hists, correction_factor=correction_factor
-        )
-    return bg_ln_ols
-
-
-def getAllLnOverlaps(data, comps, old_memb_probs=None, bg_ln_ols=None,
+def getAllLnOverlaps(data, comps, old_memb_probs=None,
                      inc_posterior=False, amp_prior=None):
     """
     Get the log overlap integrals of each star with each component
@@ -274,7 +274,7 @@ def getAllLnOverlaps(data, comps, old_memb_probs=None, bg_ln_ols=None,
         data = tabletool.buildDataFromTable(data)
     nstars = len(data['means'])
     ncomps = len(comps)
-    using_bg = bg_ln_ols is not None
+    using_bg = 'bg_lnols' in data.keys()
 
     lnols = np.zeros((nstars, ncomps + using_bg))
 
@@ -326,7 +326,7 @@ def getAllLnOverlaps(data, comps, old_memb_probs=None, bg_ln_ols=None,
 
     # insert one time calculated background overlaps
     if using_bg:
-        lnols[:,-1] = bg_ln_ols
+        lnols[:,-1] = data['bg_lnols']
     return lnols
 
 
@@ -348,7 +348,7 @@ def calcBIC(data, ncomps, lnlike, z=None):
     return np.log(n)*k - 2 * lnlike
 
 
-def expectation(data, comps, old_memb_probs=None, bg_ln_ols=None,
+def expectation(data, comps, old_memb_probs=None,
                 inc_posterior=False, amp_prior=None):
     """Calculate membership probabilities given fits to each group
 
@@ -392,13 +392,14 @@ def expectation(data, comps, old_memb_probs=None, bg_ln_ols=None,
     ncomps = len(comps)
     nstars = len(data['means'])
 
-    using_bg = bg_ln_ols is not None
+    using_bg = 'bg_lnols' in data.keys()
+    # using_bg = bg_ln_ols is not None
 
     # if no memb_probs provided, assume perfectly equal membership
     if old_memb_probs is None:
         old_memb_probs = np.ones((nstars, ncomps+using_bg)) / (ncomps+using_bg)
 
-    lnols = getAllLnOverlaps(data, comps, old_memb_probs, bg_ln_ols,
+    lnols = getAllLnOverlaps(data, comps, old_memb_probs,
                              inc_posterior=inc_posterior, amp_prior=amp_prior)
 
     memb_probs = np.zeros((nstars, ncomps + using_bg))
@@ -526,7 +527,7 @@ def getInitialGroups(ncomps, xyzuvw, offset=False, v_dist=10.,
 #     return all_init_pars, sub_groups
 
 
-def getOverallLnLikelihood(data, comps, bg_ln_ols=None, return_z=False,
+def getOverallLnLikelihood(data, comps, return_z=False,
                            inc_posterior=False):
     """
     Get overall likelihood for a proposed model.
@@ -548,9 +549,9 @@ def getOverallLnLikelihood(data, comps, bg_ln_ols=None, return_z=False,
     -------
     overall_lnlikelihood : float
     """
-    memb_probs = expectation(data, comps, None, bg_ln_ols,
+    memb_probs = expectation(data, comps, None,
                              inc_posterior=inc_posterior)
-    all_ln_ols = getAllLnOverlaps(data, comps, memb_probs, bg_ln_ols,
+    all_ln_ols = getAllLnOverlaps(data, comps, memb_probs,
                                   inc_posterior=inc_posterior)
 
     # multiplies each log overlap by the star's membership probability
@@ -657,7 +658,7 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
            np.array(all_init_pos), np.array(success_mask)
 
 
-def checkStability(star_pars, best_comps, z, bg_ln_ols=None):
+def checkStability(data, best_comps, z):
     """
     Checks if run has encountered problems
 
@@ -681,9 +682,7 @@ def checkStability(star_pars, best_comps, z, bg_ln_ols=None):
     if np.min(np.sum(z[:,:ncomps], axis=0)) <= 2.:
         logging.info("ERROR: A component has less than 2 members")
         stable = False
-    if not np.isfinite(getOverallLnLikelihood(star_pars,
-                                              best_comps,
-                                              bg_ln_ols)):
+    if not np.isfinite(getOverallLnLikelihood(data, best_comps)):
         logging.info("ERROR: Posterior is not finite")
         stable = False
     if not np.isfinite(z).all():
@@ -697,10 +696,10 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
                   init_comps=None, init_weights=None,
                   offset=False, bg_hist_file='', correction_factor=1.0,
                   inc_posterior=False, burnin=1000, sampling_steps=5000,
-                  bg_dens=None,
-                  bg_ln_ols=None, ignore_dead_comps=False,
+                  ignore_dead_comps=False,
                   Component=SphereComponent,
-                  trace_orbit_func=None):
+                  trace_orbit_func=None,
+                  use_background=False):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -755,12 +754,17 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
     """
     # Tidying up input
     if not isinstance(data, dict):
-        data = tabletool.buildDataFromTable(data)
+        data = tabletool.buildDataFromTable(
+                data, get_background_overlaps=use_background
+        )
     if rdir == '':                      # Ensure results directory has a
         rdir = '.'                      # trailing '/'
     rdir = rdir.rstrip('/') + '/'
     if not os.path.exists(rdir):
         mkpath(rdir)
+
+    if use_background:
+        assert 'bg_lnols' in data.keys()
 
     # setting up some constants
     BURNIN_STEPS = burnin
@@ -776,23 +780,24 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
                                                                  BURNIN_STEPS))
 
     # Set up stars' log overlaps with background
-    use_background = False
-    if bg_ln_ols is not None:
-        use_background = True
-    elif bg_hist_file:
-        logging.info("CORRECTION FACTOR: {}".format(correction_factor))
-        use_background = True
-        # bg_hists = np.load(rdir + bg_hist_file)
-        bg_hists = np.load(bg_hist_file)
-        bg_ln_ols = backgroundLogOverlaps(
-                tabletool.buildDataFromTable(data, only_means=True),
-                bg_hists,
-                correction_factor=correction_factor,
-        )
-    elif bg_dens:
-        logging.info("CORRECTION FACTOR: {}".format(correction_factor))
-        use_background = True
-        bg_ln_ols = correction_factor * np.log(np.array(nstars * [bg_dens]))
+
+    # use_background = False
+    # if bg_ln_ols is not None:
+    #     use_background = True
+    # elif bg_hist_file:
+    #     logging.info("CORRECTION FACTOR: {}".format(correction_factor))
+    #     use_background = True
+    #     # bg_hists = np.load(rdir + bg_hist_file)
+    #     bg_hists = np.load(bg_hist_file)
+    #     bg_ln_ols = backgroundLogOverlaps(
+    #             tabletool.buildDataFromTable(data, only_means=True),
+    #             bg_hists,
+    #             correction_factor=correction_factor,
+    #     )
+    # elif bg_dens:
+    #     logging.info("CORRECTION FACTOR: {}".format(correction_factor))
+    #     use_background = True
+    #     bg_ln_ols = correction_factor * np.log(np.array(nstars * [bg_dens]))
 
     # INITIALISE GROUPS
     skip_first_e_step = False
@@ -805,8 +810,8 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
         # still need a sensible location to begin the walkers
         init_comps = getInitialGroups(
                 ncomps,
-                tabletool.buildDataFromTable(data, only_means=True),
-                offset=offset
+                data['means'],
+                offset=offset,
         )
     # if a synth fit, could initialse at origins
     elif origins is not None:
@@ -856,7 +861,6 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
             old_comps = Component.load_components(idir + 'best_comps.npy')
             memb_probs_old = np.load(idir + 'membership.npy')
             old_overallLnLike = getOverallLnLikelihood(data, old_comps,
-                                                       bg_ln_ols,
                                                        inc_posterior=False)
             all_init_pars = [Component.internalise(old_comp.get_pars())
                              for old_comp in old_comps]
@@ -883,8 +887,8 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
             memb_probs_new = init_memb_probs
             skip_first_e_step = False
         else:
-            memb_probs_new = expectation(data, old_comps, memb_probs_old, bg_ln_ols,
-                                inc_posterior=inc_posterior)
+            memb_probs_new = expectation(data, old_comps, memb_probs_old,
+                                         inc_posterior=inc_posterior)
             logging.info("Membership distribution:\n{}".format(
                 memb_probs_new.sum(axis=0)
             ))
@@ -918,14 +922,11 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
             memb_probs_new = memb_probs_new[:,success_mask]
 
         # LOG RESULTS OF ITERATION
-        overallLnLike = getOverallLnLikelihood(data,
-                                               new_comps,
-                                               bg_ln_ols, inc_posterior=False)
+        overallLnLike = getOverallLnLikelihood(data, new_comps,
+                                               inc_posterior=False)
         # TODO This seems to be bugged... returns same value as lnlike when only
         # fitting one group; BECAUSE WEIGHTS ARE REBALANCED
-        overallLnPosterior = getOverallLnLikelihood(data,
-                                                    new_comps,
-                                                    bg_ln_ols,
+        overallLnPosterior = getOverallLnLikelihood(data, new_comps,
                                                     inc_posterior=True)
         logging.info("---        Iteration results         --")
         logging.info("-- Overall likelihood so far: {} --".\
@@ -962,7 +963,7 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
 
         # Ensure stability after sufficient iterations to settle
         if iter_count > 10:
-            stable_state = checkStability(data, new_comps, memb_probs_new, bg_ln_ols)
+            stable_state = checkStability(data, new_comps, memb_probs_new)
 
         # only update if the fit has improved
         if not all_converged:
@@ -983,7 +984,7 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
         mkpath(final_dir)
 
         memb_probs_final = expectation(data, new_comps, memb_probs_new,
-                                       bg_ln_ols, inc_posterior=inc_posterior)
+                                       inc_posterior=inc_posterior)
         np.save(final_dir+"final_membership.npy", memb_probs_final)
         final_med_and_spans = [None] * ncomps
         final_best_comps = [None] * ncomps
@@ -1028,10 +1029,10 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
 
         # get overall likelihood
         overallLnLike = getOverallLnLikelihood(
-                data, new_comps, bg_ln_ols, inc_posterior=False
+                data, new_comps, inc_posterior=False
         )
         overallLnPosterior = getOverallLnLikelihood(
-                data, new_comps, bg_ln_ols, inc_posterior=True
+                data, new_comps, inc_posterior=True
         )
         bic = calcBIC(data, ncomps, overallLnLike, z=memb_probs_final)
         logging.info("Final overall lnlikelihood: {}".format(overallLnLike))

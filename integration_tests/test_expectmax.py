@@ -21,11 +21,6 @@ from chronostar import expectmax
 
 PY_VERS = sys.version[0]
 
-# import chronostar.expectmax as em
-# import chronostar.synthdata as syn
-# import chronostar.traceorbit as torb
-# import chronostar.retired2.converter as cv
-
 def dummy_trace_orbit_func(loc, times=None):
     """Dummy trace orbit func to skip irrelevant computation"""
     if times is not None:
@@ -48,14 +43,100 @@ data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
 log_filename = 'logs/{}_expectmax_{}.log'.format(PY_VERS, run_name)
 plot_dir = 'temp_plots/{}_expectmax_{}'.format(PY_VERS, run_name)
 
-
-def test_fit_many_comps():
+def test_fit_one_comp_with_background():
     """
-    Synthesise a tb file with negligible error, retrieve initial
+    Synthesise a file with negligible error, retrieve initial
     parameters
 
     Takes a while... maybe this belongs in integration unit_tests
     """
+    run_name = 'background'
+    savedir = 'temp_data/{}_expectmax_{}/'.format(PY_VERS, run_name)
+    mkpath(savedir)
+    data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
+                                                                 run_name)
+    log_filename = 'temp_data/{}_expectmax_{}/log.log'.format(PY_VERS,
+                                                              run_name)
+
+    logging.basicConfig(level=logging.INFO, filemode='w',
+                        filename=log_filename)
+    uniform_age = 1e-10
+    sphere_comp_pars = np.array([
+        # X, Y, Z, U, V, W, dX, dV,  age,
+        [ 0, 0, 0, 0, 0, 0, 10.,  5, uniform_age],
+    ])
+    starcount = 100
+
+    background_density = 1e-9
+
+    ncomps = sphere_comp_pars.shape[0]
+
+    # true_memb_probs = np.zeros((starcount, ncomps))
+    # true_memb_probs[:,0] = 1.
+
+    synth_data = SynthData(pars=sphere_comp_pars, starcounts=[starcount],
+                           Components=SphereComponent,
+                           background_density=background_density,
+                           )
+    synth_data.synthesise_everything()
+
+    tabletool.convertTableAstroToXYZUVW(synth_data.table,
+                                        write_table=True,
+                                        filename=data_filename)
+    background_count = len(synth_data.table) - starcount
+
+    # insert background densities
+    synth_data.table['background_log_overlap'] =\
+        len(synth_data.table) * [np.log(background_density)]
+
+    origins = [SphereComponent(pars) for pars in sphere_comp_pars]
+
+    best_comps, med_and_spans, memb_probs = \
+        expectmax.fitManyGroups(data=synth_data.table,
+                                ncomps=ncomps,
+                                rdir=savedir,
+                                trace_orbit_func=dummy_trace_orbit_func,
+                                use_background=True)
+
+    return best_comps, med_and_spans, memb_probs
+
+    # Check parameters are close
+    assert np.allclose(sphere_comp_pars, best_comps[0].get_pars(),
+                       atol=1.)
+
+    # Check most assoc members are correctly classified
+    recovery_count_threshold = 0.95 * starcounts[0]
+    recovery_count_actual =  np.sum(np.round(memb_probs[:starcount,0]))
+    assert recovery_count_threshold < recovery_count_actual
+
+    # Check most background stars are correctly classified
+    contamination_count_threshold = 0.05 * len(memb_probs[100:])
+    contamination_count_actual = np.sum(np.round(memb_probs[starcount:,0]))
+    assert contamination_count_threshold < contamination_count_actual
+
+    # Check reported membership probabilities are consistent with recovery
+    # rate (within 5%)
+    mean_membership_confidence = np.mean(memb_probs[:starcount,0])
+    assert np.isclose(recovery_count_actual/100., mean_membership_confidence,
+                      atol=0.05)
+
+
+def test_fit_many_comps():
+    """
+    Synthesise a file with negligible error, retrieve initial
+    parameters
+
+    Takes a while... maybe this belongs in integration unit_tests
+    """
+
+    run_name = 'stationary'
+    savedir = 'temp_data/{}_expectmax_{}/'.format(PY_VERS, run_name)
+    mkpath(savedir)
+    data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
+                                                                 run_name)
+    log_filename = 'temp_data/{}_expectmax_{}/log.log'.format(PY_VERS,
+                                                              run_name)
+
     logging.basicConfig(level=logging.INFO, filemode='w',
                         filename=log_filename)
     uniform_age = 1e-10
@@ -176,4 +257,4 @@ def test_expectation(self):
 """
 
 if __name__ == '__main__':
-    test_fit_many_comps()
+    res = test_fit_one_comp_with_background()

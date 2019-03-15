@@ -19,6 +19,7 @@ import numpy as np
 from chronostar import coordinate
 from chronostar.component import SphereComponent
 from chronostar import traceorbit
+from . import tabletool
 
 
 class SynthData():
@@ -55,7 +56,7 @@ class SynthData():
 
     def __init__(self, pars, starcounts, measurement_error=1.0,
                  Components=SphereComponent, savedir=None,
-                 tablefilename=None):
+                 tablefilename=None, background_density=None):
         """
         Generates a set of astrometry data based on multiple star bursts with
         simple, Gaussian origins.
@@ -71,10 +72,7 @@ class SynthData():
                 self.starcounts = np.array(starcounts, dtype=np.int)
             else:
                 self.starcounts = np.array([starcounts], dtype=np.int)
-        # try:
-        #     len(starcounts)
-        # except TypeError:   # starcunts is not array_like, so fix this
-        #     starcounts = np.array([starcounts])
+
         assert len(self.starcounts) == self.ncomps,\
             'starcounts must be same length as pars dimension. Received' \
             'lengths starcounts: {} and pars: {}'.format(
@@ -92,8 +90,9 @@ class SynthData():
         for i in range(self.ncomps):
             self.components.append(
                     self.Components[i](self.pars[i])
-                # Component(self.pars[i], self.comp_forms[i])
             )
+
+        self.background_density = background_density
 
         if savedir is None:
             self.savedir = ''
@@ -101,7 +100,6 @@ class SynthData():
             self.savedir = savedir.rstrip('/') + '/'
         if tablefilename is None:
             self.tablefilename = 'synthetic_data.fits'
-
 
     def extract_data_as_array(self, colnames=None, table=None):
         result = []
@@ -116,28 +114,67 @@ class SynthData():
         """Given saved files, generate a SynthData object"""
         pass
 
-    def generate_init_cartesian(self, component, starcount, component_name=''):
-        """Generate initial xyzuvw based on component"""
-        init_size = len(self.table)
-        init_xyzuvw = np.random.multivariate_normal(
-            mean=component.get_mean(), cov=component.get_covmatrix(),
-            size=starcount,
-        )
 
+    def append_init_cartesian(self, init_xyzuvw, component_name='',
+                              component_age=0.):
         # constract new table with same fields as self.astr_table,
         # then append to existing table
+        init_size = len(self.table)
+        starcount = len(init_xyzuvw)
+
         names = np.arange(init_size, init_size+starcount).astype(np.str)
         new_data = Table(
             data=np.zeros(starcount, dtype=self.table.dtype)
         )
 
-        new_data['name'] = names
-        new_data['component'] = starcount*[component_name]
-        new_data['age'] = starcount*[component.get_age()]
-        for col, dim in zip(init_xyzuvw.T, self.cart_labels):
-            new_data[dim+'0'] = col
-        self.table = vstack((self.table, new_data))
+        names = np.arange(init_size, init_size + starcount).astype(np.str)
+        new_data = Table(
+                data=np.zeros(starcount, dtype=self.table.dtype)
+        )
 
+        new_data['name'] = names
+        new_data['component'] = starcount * [component_name]
+        new_data['age'] = starcount * [component_age]
+        for col, dim in zip(init_xyzuvw.T, self.cart_labels):
+            new_data[dim + '0'] = col
+        # print(self.table)
+        # print(new_data)
+        try:
+            self.table = vstack((self.table, new_data))
+        except:
+            import pdb; pdb.set_trace()
+
+    def generate_init_cartesian(self, component, starcount, component_name=''):
+        """Generate initial xyzuvw based on component"""
+        init_xyzuvw = np.random.multivariate_normal(
+            mean=component.get_mean(), cov=component.get_covmatrix(),
+            size=starcount,
+        )
+
+        # Append data to end of table
+        self.append_init_cartesian(init_xyzuvw, component_name=component_name,
+                                   component_age=component.get_age())
+
+    def generate_background_stars(self):
+        """Embed association stars in a sea of background stars with
+        twice the span as current data"""
+        init_means = tabletool.buildDataFromTable(
+                self.table, main_colnames=[el+'0' for el in 'xyzuvw'],
+                only_means=True,
+        )
+        data_upper_bound = np.max(init_means, axis=0)
+        data_lower_bound = np.min(init_means, axis=0)
+        box_centre = (data_upper_bound + data_lower_bound) / 2.
+        data_span = data_upper_bound - data_lower_bound
+        box_span = 2 * data_span
+        bg_starcount = self.background_density * np.product(box_span)
+        print(bg_starcount)
+
+        bg_init_xyzuvw = np.random.uniform(low=-data_span, high=data_span,
+                                           size=(int(round(bg_starcount)),6))
+        bg_init_xyzuvw += box_centre
+        self.bg_starcount = bg_starcount
+        self.append_init_cartesian(bg_init_xyzuvw, component_name='bg')
 
     def generate_all_init_cartesian(self):
         self.table = Table(names=self.DEFAULT_NAMES,
@@ -145,6 +182,8 @@ class SynthData():
         for ix, comp in enumerate(self.components):
             self.generate_init_cartesian(comp, self.starcounts[ix],
                                          component_name=str(ix))
+        if self.background_density is not None:
+            self.generate_background_stars()
 
     def project_stars(self):
         """Project stars from xyzuvw then to xyzuvw now based on their age"""

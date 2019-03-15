@@ -114,9 +114,9 @@ def buildDataFromTable(table, main_colnames=None, error_colnames=None,
     # Insert background overlaps
     if get_background_overlaps:
         if background_colname is None:
-            background_colname = ''
-    if background_overlaps_colname in table.colnames:
-        results_dict['bg_lnols'] = np.array(table[background_overlaps_colname])
+            background_colname = 'background_log_overlap'
+    if background_colname in table.colnames:
+        results_dict['bg_lnols'] = np.array(table[background_colname])
 
     # Generate covariance matrices
     nstars = len(table)
@@ -159,10 +159,10 @@ def buildDataFromTable(table, main_colnames=None, error_colnames=None,
     # Now multiply through the standard deviations along both axes
     # First along each column
     # We use einstein notation here such that 'ijk,ij->ijk' means
-    # Multiply the 'ijk'th element from covs by the 'ij'th element from
-    # standard_devs.
-    # More thoroughly: for the i'th covariance matrix, and the i'th 6D
-    # standard deviation vector, multiply the j'th row by the j'th std
+    # multiply the 'ijk'th element from covs by the 'ij'th element from
+    # standard_devs. More thoroughly: for the i'th covariance matrix,
+    # and the i'th 6D standard deviation vector, multiply the j'th row
+    # by the j'th std
     covs = np.einsum('ijk,ij->ijk', covs, standard_devs)    # the rows
     covs = np.einsum('ijk,ik->ijk', covs, standard_devs)    # the columsn
     results_dict['covs'] = covs
