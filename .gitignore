@@ -36,6 +36,9 @@ avatar_scripts/*.o*
 *.out
 *.log
 
+# Pytest files
+.pytest_cache
+
 # Plots and saves
 *.eps
 *.png
@@ -128,3 +131,5 @@ target/
 chronostar/overlap/overlap.py
 playground/numpy/multid/multid.py
 playground/swig-demo/overlap_tool.py
+playground/numpy/ezrange/ezrange.py
+playground/numpy/inplace/inplace.py
