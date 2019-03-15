@@ -19,6 +19,7 @@ import imp      # TODO: address deprecation of imp
 from distutils.dir_util import mkpath
 import random
 
+from get_association_region import get_region
 sys.path.insert(0, os.path.abspath('..'))
 from chronostar.synthdata import SynthData
 from chronostar import tabletool
@@ -118,7 +119,15 @@ else:
     data_table = tabletool.read(datafile)
 
     # If data cuts provided, then apply them
-    if config.data_bound is not None:
+    if config.config['banyan_assoc_name'] != '':
+        bounds = get_region(config.config['banyan_assoc_name'])
+    elif config.data_bound is not None:
+        bounds = (config.data_bound['lower_bound'],
+                  config.data_bound['upper_bound'])
+    else:
+        bounds = None
+
+    if bounds is not None:
         log_message('Applying data cuts')
         star_means = tabletool.buildDataFromTable(
                 datafile,
@@ -126,8 +135,8 @@ else:
                 only_means=True,
         )
         data_mask = np.where(
-                np.all(star_means < config.data_bound['upper_bound'], axis=1)
-                & np.all(star_means > config.data_bound['lower_bound'], axis=1))
+                np.all(star_means < bounds[1], axis=1)
+                & np.all(star_means > bounds[0], axis=1))
         data_table = data_table[data_mask]
     log_message('Data table has {} rows'.format(len(data_table)))
 
