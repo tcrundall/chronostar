@@ -175,9 +175,9 @@ else:
             star_means = tabletool.buildDataFromTable(
                     data_table, only_means=True,
             )
-            # ln_bg_ols = expectmax.getKernelDensities(background_means,
-            #                                          star_means,)
-            ln_bg_ols = len(star_means) * [-15]
+            ln_bg_ols = expectmax.getKernelDensities(background_means,
+                                                     star_means,)
+
             # If allowed, save to original file path
             if config.config['overwrite_datafile']:
                 tabletool.insert_column(data_table, bg_lnol_colname,
