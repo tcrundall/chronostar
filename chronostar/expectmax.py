@@ -701,17 +701,35 @@ def checkStability(data, best_comps, z):
     return stable
 
 
-def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
-                  origins=None, pool=None, init_with_origin=False,
-                  init_comps=None, init_weights=None,
-                  offset=False, bg_hist_file='', correction_factor=1.0,
-                  inc_posterior=False, burnin=1000, sampling_steps=5000,
+def fitManyGroups(data, ncomps, rdir='',
+                  pool=None,
+                  init_memb_probs=None,
+                  init_comps=None,
+                  origins=None,
+                  # offset=False,
+                  bg_hist_file='',
+                  correction_factor=1.0,
+                  inc_posterior=False,
+                  burnin=1000,
+                  sampling_steps=5000,
                   ignore_dead_comps=False,
                   Component=SphereComponent,
                   trace_orbit_func=None,
                   use_background=False):
     """
     Entry point: Fit multiple Gaussians to data set
+
+    There are currently multiple (conflicting) means to initialise this
+    function.
+
+    To streamline we propose one can initialise with either:
+        membership probabilities
+            -or-
+        initial components
+
+    Failing to initialise with either of these will result with equal
+    membership probabilities to each component (with background membership
+    probabilities initialised at 0).
 
     Parameters
     ----------
@@ -776,6 +794,9 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
     if use_background:
         assert 'bg_lnols' in data.keys()
 
+    # filenames
+    init_comp_filename = 'init_comps.npy'
+
     # setting up some constants
     BURNIN_STEPS = burnin
     SAMPLING_STEPS = sampling_steps
@@ -789,83 +810,38 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
     logging.info("Fitting {} groups with {} burnin steps".format(ncomps,
                                                                  BURNIN_STEPS))
 
-    # Set up stars' log overlaps with background
+    # INITIALISE RUN PARAMETERS
 
-    # use_background = False
-    # if bg_ln_ols is not None:
-    #     use_background = True
-    # elif bg_hist_file:
-    #     logging.info("CORRECTION FACTOR: {}".format(correction_factor))
-    #     use_background = True
-    #     # bg_hists = np.load(rdir + bg_hist_file)
-    #     bg_hists = np.load(bg_hist_file)
-    #     bg_ln_ols = backgroundLogOverlaps(
-    #             tabletool.buildDataFromTable(data, only_means=True),
-    #             bg_hists,
-    #             correction_factor=correction_factor,
-    #     )
-    # elif bg_dens:
-    #     logging.info("CORRECTION FACTOR: {}".format(correction_factor))
-    #     use_background = True
-    #     bg_ln_ols = correction_factor * np.log(np.array(nstars * [bg_dens]))
-
-    # INITIALISE GROUPS
-    skip_first_e_step = False
-    memb_probs_old = None
-    # use init groups if given (along with any memb_probs)
+    # If initialising with components then need to convert to emcee parameter lists
     if init_comps is not None:
-        memb_probs_old = init_memb_probs
-    # if just init_z provided, skip first E-step, and maximise off of init_z
+        logging.info('Initialised by components')
+        all_init_pars = [Component.internalise(ic.get_pars()) for ic in init_comps]
+        skip_first_e_step = False
+
+    # If initialising with membership probabilities, we need to skip first
+    # expectation step, but make sure other values are iterable
     elif init_memb_probs is not None:
+        logging.info('Initialised by memberships')
         skip_first_e_step = True
-        # still need a sensible location to begin the walkers
-        init_comps = None
-        # init_comps = getInitialGroups(
-        #         ncomps,
-        #         data['means'],
-        #         offset=offset,
-        # )
-    # if a synth fit, could initialse at origins
-    elif origins is not None:
-        init_comps = origins
-        memb_probs_old = np.zeros((nstars, ncomps + use_background)) # extra column for bg
-        cnt = 0
-        for i in range(ncomps):
-            memb_probs_old[cnt:cnt+origins[i].nstars, i] = 1.0
-            cnt += origins[i].nstars
-        logging.info("Initialising fit with origins and membership\n{}".
-                     format(memb_probs_old))
-    # otherwise, begin with a blind guess
-    else:
-        init_comps = getInitialGroups(
-                ncomps,
-                data['means'],
-                offset=offset,
-        )
-        # having memb_probs = None triggers an equal weighting of groups in
-        # expectation step
-        # TODO: Handle this more smoothly... don't leave things None for hidden reasons
-        memb_probs_old = np.ones((nstars, ncomps+use_background))/\
-                         (ncomps+use_background)
-    if memb_probs_old is None:
-        memb_probs_old = np.ones((nstars, ncomps + use_background)) / \
-                         (ncomps + use_background)
-    if init_comps is None:
+        all_init_pars = ncomps * [None]
         init_comps = ncomps * [None]
-    np.save(rdir + "init_groups.npy", init_comps)
+
+    # If no initialisation provided, assume each star is equally probable to belong
+    # to each component, but 0% likely to be part of the background
+    else:
+        logging.info('No specificed initialisation... assuming equal memberships')
+        init_memb_probs = np.ones((nstars, ncomps)) / ncomps
+        if use_background:
+            init_memb_probs = np.hstack((init_memb_probs, np.zeros((nstars,1))))
+        skip_first_e_step = True
+        all_init_pars = ncomps * [None]
+        init_comps = ncomps * [None]
+
+    np.save(rdir + init_comp_filename, init_comps)
 
     # Initialise values for upcoming iterations
     old_comps = init_comps
-
-
-    # If init comps are provided (or generated), convert into internal
-    # paremterisation form
-    if init_comps is not None:
-        all_init_pars = [Component.internalise(init_comp.get_pars()) for
-                         init_comp in init_comps]
-    else:
-        all_init_pars = None
-
+    memb_probs_old = init_memb_probs
     old_overallLnLike = -np.inf
     all_init_pos = ncomps * [None]
     all_converged = False
@@ -902,7 +878,7 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
 
         # EXPECTATION
         if skip_first_e_step:
-            logging.info("Using input memb_probs for first iteration")
+            logging.info("Using initialising memb_probs for first iteration")
             logging.info("memb_probs: {}".format(init_memb_probs.sum(axis=0)))
             memb_probs_new = init_memb_probs
             skip_first_e_step = False
