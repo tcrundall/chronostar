@@ -808,11 +808,12 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
     elif init_memb_probs is not None:
         skip_first_e_step = True
         # still need a sensible location to begin the walkers
-        init_comps = getInitialGroups(
-                ncomps,
-                data['means'],
-                offset=offset,
-        )
+        init_comps = None
+        # init_comps = getInitialGroups(
+        #         ncomps,
+        #         data['means'],
+        #         offset=offset,
+        # )
     # if a synth fit, could initialse at origins
     elif origins is not None:
         init_comps = origins
@@ -843,11 +844,17 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
 
     # Initialise values for upcoming iterations
     old_comps = init_comps
-    all_init_pars = [Component.internalise(init_comp.get_pars()) for
-                     init_comp in init_comps]
+
+    # If init comps are provided (or generated), convert into internal
+    # paremterisation form
+    if init_comps is not None:
+        all_init_pars = [Component.internalise(init_comp.get_pars()) for
+                         init_comp in init_comps]
+    else:
+        all_init_pars = None
+
     old_overallLnLike = -np.inf
     all_init_pos = ncomps * [None]
-    iter_count = 0
     all_converged = False
     stable_state = True         # used to track issues
 

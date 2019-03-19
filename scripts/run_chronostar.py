@@ -216,6 +216,10 @@ log_message(msg='FITTING {} COMPONENT'.format(ncomps),
             symbol='*', surround=True)
 run_dir = rdir + '{}/'.format(ncomps)
 
+# Initialise all stars in dataset to be full members of first component
+init_memb_probs = np.zeros((len(data_dict['means']),0))
+init_memb_probs[:,0] = 1.
+
 # Try and recover any results from previous run
 try:
     prev_comps = Component.load_components(run_dir + 'final/'
@@ -235,6 +239,7 @@ except IOError:
                                 sampling_steps=config.advanced['sampling_steps'],
                                 use_background=config.config[
                                     'include_background_distribution'],
+                                init_memb_probs=init_memb_probs,
                                 )
 
 # Calculate global score of fit for comparison with future fits with different
