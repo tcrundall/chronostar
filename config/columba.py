@@ -23,6 +23,7 @@ config = {
                                         # exist, and if so picks up from where left off
     'dummy_trace_orbit_function':False,  # For testing, simple function to skip computation
     'pickup_prev_run':True,             # Pick up where left off if possible
+    'banyan_assoc_name':'Columba',
 }
 
 synth = None
@@ -34,13 +35,14 @@ synth = None
 #     ]),
 #     'starcounts':[100,50,50]
 # }
-
-data_bound = {
-    'upper_bound':np.array([20.93930279, 58.41681567, 61.35019961,
-                             4.02520573, -5.38948337, 5.12689673]),
-    'lower_bound':np.array([-71.49657695, -94.28236532, -64.15451725,
-                             -6.12051672, -12.97631891,  -3.83867341]),
-}
+# 
+# data_bound = {
+#     'upper_bound':np.array([20.93930279, 58.41681567, 61.35019961,
+#                              4.02520573, -5.38948337, 5.12689673]),
+#     'lower_bound':np.array([-71.49657695, -94.28236532, -64.15451725,
+#                              -6.12051672, -12.97631891,  -3.83867341]),
+# }
+data_bound = None
 
 historical_colnames = True
 

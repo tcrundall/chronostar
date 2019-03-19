@@ -23,6 +23,7 @@ config = {
                                         # exist, and if so picks up from where left off
     'dummy_trace_orbit_function':False,  # For testing, simple function to skip computation
     'pickup_prev_run':True,             # Pick up where left off if possible
+    'banyan_assoc_name':'IC 2391',
 }
 
 synth = None
@@ -35,13 +36,13 @@ synth = None
 #     'starcounts':[100,50,50]
 # }
 
-data_bound = {
-    'upper_bound':np.array([6.50059366, -137.0119297 ,  11.33303644,
-                           -7.26027661, 4.64507646,  3.92638205]),
-    'lower_bound':np.array([-3.44507663, -164.47621748,    2.80742769,
-                            -15.66990427, -12.81235153,   -1.72730723])
-}
-
+# data_bound = {
+#     'upper_bound':np.array([6.50059366, -137.0119297 ,  11.33303644,
+#                            -7.26027661, 4.64507646,  3.92638205]),
+#     'lower_bound':np.array([-3.44507663, -164.47621748,    2.80742769,
+#                             -15.66990427, -12.81235153,   -1.72730723])
+# }
+data_bound = None
 
 historical_colnames = True
 

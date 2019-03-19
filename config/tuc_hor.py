@@ -23,6 +23,7 @@ config = {
                                         # exist, and if so picks up from where left off
     'dummy_trace_orbit_function':False,  # For testing, simple function to skip computation
     'pickup_prev_run':True,             # Pick up where left off if possible
+    'banyan_assoc_name':'Tucana-Horologium',
 }
 
 synth = None
@@ -35,13 +36,13 @@ synth = None
 #     'starcounts':[100,50,50]
 # }
 
-data_bound = {
-    'upper_bound':np.array([69.83348432, 37.10033402,  6.9815769,
-                             6.36215997, -3.32455398, 13.72408633]),
-    'lower_bound':np.array([-75.40007823, -77.72200515, -26.40852907,
-                             -7.28315955, -12.9561931,   2.28008221])
-}
-
+# data_bound = {
+#     'upper_bound':np.array([69.83348432, 37.10033402,  6.9815769,
+#                              6.36215997, -3.32455398, 13.72408633]),
+#     'lower_bound':np.array([-75.40007823, -77.72200515, -26.40852907,
+#                              -7.28315955, -12.9561931,   2.28008221])
+# }
+data_bound = None
 
 historical_colnames = True
 
