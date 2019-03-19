@@ -217,7 +217,7 @@ log_message(msg='FITTING {} COMPONENT'.format(ncomps),
 run_dir = rdir + '{}/'.format(ncomps)
 
 # Initialise all stars in dataset to be full members of first component
-init_memb_probs = np.zeros((len(data_dict['means']),0))
+init_memb_probs = np.zeros((len(data_dict['means']),1))
 init_memb_probs[:,0] = 1.
 
 # Try and recover any results from previous run
