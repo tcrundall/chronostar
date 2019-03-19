@@ -860,6 +860,7 @@ def fitManyGroups(data, ncomps, rdir='',
                                                        inc_posterior=False)
             all_init_pars = [Component.internalise(old_comp.get_pars())
                              for old_comp in old_comps]
+            skip_first_e_step = False
             iter_count += 1
         except IOError:
             logging.info("Managed to find {} previous iterations".format(
