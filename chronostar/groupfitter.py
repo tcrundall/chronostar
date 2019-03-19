@@ -258,9 +258,6 @@ def fit_comp(data=None, memb_probs=None, burnin_steps=1000,
                                       Component=Component)
     nwalkers, npars = init_pos.shape
 
-    if trace_orbit_func is None:
-        print("Trace oribt func is none...")
-
     # Whole emcee shebang
     sampler = emcee.EnsembleSampler(
             nwalkers, npars, lnprob_func,
