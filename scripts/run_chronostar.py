@@ -10,6 +10,13 @@ config file. Unzip contents of config_examples.zip to see some examples.
 
 from __future__ import print_function, division, unicode_literals
 
+# prevent plots trying to display (and breaking runs on servers)
+try:
+    import matplotlib as mpl
+    mpl.use('Agg')
+except ImportError:
+    pass
+
 import argparse
 import numpy as np
 import os
