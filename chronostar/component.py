@@ -472,6 +472,21 @@ class AbstractComponent(object):
 
         return comps
 
+
+    def get_peak(self, amplitude=1.):
+        """
+        Get the density at the peak of distribution.
+
+        Use this as a proxy of the characteristic density of the distribution,
+        with the option to scale by the amplitude of the Gaussian. Note, the
+        height of the peak is only dependent on the covariance matrix.
+        """
+        expon = 0   # because we are evaluating the ditribution *at* the mean
+        det = np.linalg.det(self.get_covmatrix_now())
+        coeff = 1./np.sqrt( (2*np.pi)**6 * det)
+        return amplitude * coeff * np.exp(expon)
+
+
     @staticmethod
     def load_components(filename):
         """

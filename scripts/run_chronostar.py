@@ -199,6 +199,7 @@ else:
 
 
 # Convert data table into numpy arrays of mean and covariance matrices
+log_message('Building data dictionary')
 data_dict = tabletool.buildDataFromTable(
         data_table,
         get_background_overlaps=config.config['include_background_distribution']
