@@ -99,6 +99,12 @@ def checkConvergence(old_best_comps, new_chains,
     converged : bool
         If the runs have converged, return true
     """
+    # Handle case where input is bad (due to run just starting out for e.g.)
+    if old_best_comps is None:
+        return False
+    if old_best_comps[0] is None:
+        return False
+
     each_converged = []
     # import pdb; pdb.set_trace()
 
@@ -844,11 +850,13 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
     if memb_probs_old is None:
         memb_probs_old = np.ones((nstars, ncomps + use_background)) / \
                          (ncomps + use_background)
-
+    if init_comps is None:
+        init_comps = ncomps * [None]
     np.save(rdir + "init_groups.npy", init_comps)
 
     # Initialise values for upcoming iterations
     old_comps = init_comps
+
 
     # If init comps are provided (or generated), convert into internal
     # paremterisation form
