@@ -597,8 +597,12 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
     all_samples = []
     all_lnprob = []
     success_mask = []
+
+    # Ensure None value inputs are still iterable
     if all_init_pos is None:
         all_init_pos = ncomps * [None]
+    if all_init_pars is None:
+        all_init_pars = ncomps * [None]
 
     for i in range(ncomps):
         log_message('Fitting comp {}'.format(i), symbol='.', surround=True)
@@ -801,6 +805,7 @@ def fitManyGroups(data, ncomps, rdir='', init_memb_probs=None,
 
     # INITIALISE GROUPS
     skip_first_e_step = False
+    memb_probs_old = None
     # use init groups if given (along with any memb_probs)
     if init_comps is not None:
         memb_probs_old = init_memb_probs
