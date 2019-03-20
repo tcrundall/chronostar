@@ -98,8 +98,6 @@ final_comps_file = 'final_comps.npy'
 final_med_and_spans_file = 'final_med_and_spans.npy'
 final_memb_probs_file = 'final_membership.npy'
 
-historical = False
-
 # First see if a data savefile path has been provided, and if
 # so, then just assume this script has already been performed
 # and the data prep has already been done
@@ -107,6 +105,8 @@ if (config.config['data_savefile'] != '' and
         os.path.isfile(config.config['data_savefile'])):
     log_message('Loading pre-prepared data')
     data_table = tabletool.load(config.config['data_savefile'])
+    historical = 'c_XU' in data_table.colnames
+
 # Otherwise, perform entire process
 else:
     # Construct synthetic data if required
@@ -127,6 +127,8 @@ else:
     log_message('Read data into table')
     data_table = tabletool.read(datafile)
 
+    historical = 'c_XU' in data_table.colnames
+
     # If data cuts provided, then apply them
     if config.config['banyan_assoc_name'] != '':
         bounds = get_region(config.config['banyan_assoc_name'])
@@ -142,6 +144,7 @@ else:
                 datafile,
                 main_colnames=config.cart_colnames.get('main_colnames', None),
                 only_means=True,
+                historical=historical,
         )
         data_mask = np.where(
                 np.all(star_means < bounds[1], axis=1)
@@ -155,15 +158,16 @@ else:
     # columns in default way. (Unless cartesian data was already
     # provided in non default way - handle this side-case later)
     if config.config['convert_to_cartesian']:
-        historical = 'c_XU' in data_table.colnames
         # Performs conversion in place (in memory) on `data_table`
-        log_message('Converting to cartesian')
-        tabletool.convert_table_astro2cart(
-                table=data_table,
-                main_colnames=config.astro_colnames.get('main_colnames', None),
-                error_colnames=config.astro_colnames.get('error_colnames', None),
-                corr_colnames=config.astro_colnames.get('corr_colnames', None),
-                return_table=True)
+        if (not 'c_XU' in data_table.colnames and
+            not 'X_U_corr' in data_table.colnames):
+            log_message('Converting to cartesian')
+            tabletool.convert_table_astro2cart(
+                    table=data_table,
+                    main_colnames=config.astro_colnames.get('main_colnames', None),
+                    error_colnames=config.astro_colnames.get('error_colnames', None),
+                    corr_colnames=config.astro_colnames.get('corr_colnames', None),
+                    return_table=True)
 
     # Calculate background overlaps, storing in data
     bg_lnol_colname = 'background_log_overlap'
@@ -200,6 +204,8 @@ if config.config['dummy_trace_orbit_function']:
 else:
     trace_orbit_func = None
 
+if historical:
+    log_message('Data set already has historical cartesian columns')
 
 # Convert data table into numpy arrays of mean and covariance matrices
 log_message('Building data dictionary')
