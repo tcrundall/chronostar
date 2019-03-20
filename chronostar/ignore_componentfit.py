@@ -117,8 +117,8 @@ class ComponentFit():
 
 
     def approxCurrentDayDistribution(self):
-        means = tabletool.buildDataFromTable(self.data, cartesian=True,
-                                             only_means=True)
+        means = tabletool.build_data_dict_from_table(self.data, cartesian=True,
+                                                     only_means=True)
         mean_of_means = np.average(means, axis=0, weights=self.membership_probs)
         cov_of_means = np.cov(means.T, ddof=0., aweights=self.membership_probs)
         return mean_of_means, cov_of_means

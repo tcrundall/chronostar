@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, '..')
 
 import chronostar.retired2.converter as cv
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)

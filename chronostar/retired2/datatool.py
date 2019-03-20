@@ -496,7 +496,7 @@ def convertGaiaMeansToXYZUVW(astr_file="all_rvs_w_ok_plx", server=False):
     means[:,4] = hdul[1].data['pmdec']
     means[:,5] = hdul[1].data['radial_velocity']
 
-    xyzuvw_mns = cc.convertManyAstrometryToLSRXYZUVW(means, mas=True)
+    xyzuvw_mns = cc.convert_many_astrometry2lsrxyzuvw(means, mas=True)
     np.save(rdir + astr_file + "mean_xyzuvw.npy", xyzuvw_mns)
 
 

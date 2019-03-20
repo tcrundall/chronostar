@@ -117,9 +117,9 @@ except IOError:
                                                    internal=True)
         origins.append(origin)
         all_xyzuvw_init = np.vstack((all_xyzuvw_init, xyzuvw_init))
-        xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init,
-                                                    times=origin.age,
-                                                    single_age=True)
+        xyzuvw_now_perf = torb.trace_many_cartesian_orbit(xyzuvw_init,
+                                                          times=origin.age,
+                                                          single_age=True)
         all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
     
     np.save(groups_savefile, origins)

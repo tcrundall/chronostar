@@ -61,8 +61,8 @@ def test_polar():
     cart_mean = convertPolarToCartesian(pol_mean)
     logging.debug("Covariance matrix:\n{}".format(pol_cov))
     logging.debug("Polar mean: {}".format(pol_mean))
-    cart_cov = tf.transformCovMat(pol_cov, convertPolarToCartesian,
-                                  pol_mean, dim=2)
+    cart_cov = tf.transform_covmatrix(pol_cov, convertPolarToCartesian,
+                                      pol_mean, dim=2)
 
     cart_samples = np.random.multivariate_normal(cart_mean, cart_cov, nsamples)
 

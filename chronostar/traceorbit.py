@@ -17,9 +17,14 @@ from galpy.util import bovy_conversion
 from . import coordinate
 
 
-def convertMyrToBovyTime(times):
+def convert_myr2bovytime(times):
     """
-    Convert times provided in Myr into times in bovy internal units
+    Convert times provided in Myr into times in bovy internal units.
+
+    Galpy parametrises time based on the natural initialising values
+    (r_0 and v_0) such that after 1 unit of time, a particle in a
+    circular orbit at r_0, with circular velocity of v_0 will travel
+    1 radian, azimuthally.
 
     Paramters
     ---------
@@ -35,7 +40,7 @@ def convertMyrToBovyTime(times):
     return bovy_times
 
 
-def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
+def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
     """
     Converts orbits from galpy internal coords to chronostar coords
 
@@ -126,7 +131,7 @@ def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
         xyzuvw = xyzuvw[0]
     return xyzuvw
 
-def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
+def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -164,18 +169,18 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     xyzuvw_start = np.copy(xyzuvw_start)
     xyzuvw_start[:3] *= 1e-3
     # profiling:   3 (s)
-    bovy_times = convertMyrToBovyTime(times)
+    bovy_times = convert_myr2bovytime(times)
     # logging.debug("Tracing up to {} Myr".format(times[-1]))
     # logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
     # logging.debug("Initial lsr start: {}".format(xyzuvw_start))
 
     # profiling:   9 (s)
-    xyzuvw_helio = coordinate.convertLSRToHelio(xyzuvw_start, kpc=True)
+    xyzuvw_helio = coordinate.convert_lsr2helio(xyzuvw_start, kpc=True)
     # logging.debug("Initial helio start: {}".format(xyzuvw_helio))
     # logging.debug("Galpy vector: {}".format(xyzuvw_helio))
 
     # profiling: 141 (s)
-    l,b,dist = coordinate.convertCartesianToAngles(*xyzuvw_helio[:3], return_dist=True)
+    l,b,dist = coordinate.convert_cartesian2angles(*xyzuvw_helio[:3], return_dist=True)
     vxvv = [l,b,dist,xyzuvw_helio[3],xyzuvw_helio[4],xyzuvw_helio[5]]
     # logging.debug("vxvv: {}".format(vxvv))
     # profiling:  67 (s)
@@ -185,7 +190,7 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     o.integrate(bovy_times,mp,method='odeint')
     data_gp = o.getOrbit()
     # profiling:  32 (s)
-    xyzuvw = convertGalpyCoordsToXYZUVW(data_gp, bovy_times)
+    xyzuvw = convert_galpycoords2cart(data_gp, bovy_times)
 
     # logging.debug("Started orbit at {}".format(xyzuvw[0]))
     # logging.debug("Finished orbit at {}".format(xyzuvw[-1]))
@@ -195,8 +200,8 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     return xyzuvw
 
 
-def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=True,
-                         savefile=''):
+def trace_many_cartesian_orbit(xyzuvw_starts, times=None, single_age=True,
+                               savefile=''):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -234,13 +239,14 @@ def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=True,
     else:
         xyzuvw_to = np.zeros((nstars, ntimes, 6))
     for st_ix in range(nstars):
-        xyzuvw_to[st_ix] = traceOrbitXYZUVW(xyzuvw_starts[st_ix], times,
-                                            single_age=single_age)
+        xyzuvw_to[st_ix] = trace_cartesian_orbit(xyzuvw_starts[st_ix], times,
+                                                 single_age=single_age)
     #TODO: test this
     if savefile:
         np.save(savefile, xyzuvw_to)
     return xyzuvw_to
-#
+
+
 # def generateTracebackFile(star_pars_now, times, savefile=''):
 #     """
 #     Take XYZUVW of the stars at the current time and trace back for

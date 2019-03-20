@@ -33,8 +33,8 @@ for row in banyan_data:
         bd_ras.append(None)
         bd_des.append(None)
     else:
-        bd_ras.append(coord.convertRAtoDeg(row[3], row[4], row[5]))
-        bd_des.append(coord.convertDEtoDeg(row[6], row[7], row[8]))
+        bd_ras.append(coord.convert_ra2deg(row[3], row[4], row[5]))
+        bd_des.append(coord.convert_dec2deg(row[6], row[7], row[8]))
 
 bd_ras_arr = np.array(bd_ras, dtype=np.float64)
 bd_des_arr = np.array(bd_des, dtype=np.float64)

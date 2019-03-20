@@ -33,7 +33,7 @@ from emcee.utils import MPIPool
 
 sys.path.insert(0, '..')
 
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 
 # Initialize the MPI-based pool used for parallelization.
 using_mpi = True

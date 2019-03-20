@@ -1,7 +1,7 @@
 # coding: utf-8
 get_ipython().magic(u'run ipython_primer.py')
 import numpy as np
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 xyzuvw_dict = gf.load("../data/gaia_dr2_ok_plx_xyzuvw.fits.gz.fits")
 xyzuvw_dict = gf.loadXYZUVW ("../data/gaia_dr2_ok_plx_xyzuvw.fits.gz.fits")
 xyzuvw_dict.keys()
@@ -53,7 +53,7 @@ hdul[1].data[0]['parallax_error']
 np.sqrt(astr_dict['astr_covs'][0])
 import chronostar.retired2.converter as cv
 cv.convertMeasurementsToCartesian(astr_dict=astr_dict, savefile="../data/gaia_dr2_bp_xyzuvw.fits")
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 star_pars = gf.loadXYZUVW("../data/gaia_dr2_bp_xyzuvw.fits")
 star_pars['xyzuvw']
 import matplotlib.pyplot as plt

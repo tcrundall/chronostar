@@ -136,7 +136,7 @@ else:
 
     if bounds is not None:
         log_message('Applying data cuts')
-        star_means = tabletool.buildDataFromTable(
+        star_means = tabletool.build_data_dict_from_table(
                 datafile,
                 main_colnames=config.cart_colnames.get('main_colnames', None),
                 only_means=True,
@@ -155,7 +155,7 @@ else:
     if config.config['convert_to_cartesian']:
         # Performs conversion in place (in memory) on `data_table`
         log_message('Converting to cartesian')
-        tabletool.convertTableAstroToXYZUVW(
+        tabletool.convert_table_astro2cart(
                 table=data_table,
                 main_colnames=config.astro_colnames.get('main_colnames', None),
                 error_colnames=config.astro_colnames.get('error_colnames', None),
@@ -168,11 +168,11 @@ else:
         # Only calculate if missing
         if bg_lnol_colname not in data_table.colnames:
             log_message('Calculating background densities')
-            background_means = tabletool.buildDataFromTable(
+            background_means = tabletool.build_data_dict_from_table(
                     config.config['kernel_density_input_datafile'],
                     only_means=True,
             )
-            star_means = tabletool.buildDataFromTable(
+            star_means = tabletool.build_data_dict_from_table(
                     data_table, only_means=True,
             )
             ln_bg_ols = expectmax.getKernelDensities(background_means,
@@ -200,7 +200,7 @@ else:
 
 # Convert data table into numpy arrays of mean and covariance matrices
 log_message('Building data dictionary')
-data_dict = tabletool.buildDataFromTable(
+data_dict = tabletool.build_data_dict_from_table(
         data_table,
         get_background_overlaps=config.config['include_background_distribution']
 )

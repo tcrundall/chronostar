@@ -36,7 +36,7 @@ sys.path.insert(0, '..')
 import chronostar.synthdata as syn
 import chronostar.traceorbit as torb
 import chronostar.retired2.converter as cv
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 import chronostar.retired2.datatool as dt
 
 INIT_WITH_TRUE_ORIGIN = False
@@ -134,7 +134,7 @@ logging.info("In the directory: {}".format(rdir))
 mean_now_lsr = np.array([50., -100., 25., 1.1, -7.76, 2.25])
 
 # Calculate appropriate starting point
-mean_then = torb.traceOrbitXYZUVW(mean_now_lsr, -age)
+mean_then = torb.trace_cartesian_orbit(mean_now_lsr, -age)
 # gather inputs
 group_pars = np.hstack((mean_then, dX, dV, age, nstars))
 
@@ -168,8 +168,8 @@ except IOError:
         origin.age, origin.sphere_dx, origin.dv, origin.nstars,
     ))
     xyzuvw_now_perf =\
-        torb.traceManyOrbitXYZUVW(xyzuvw_init, origin.age, single_age=True,
-                                  savefile=rdir+xyzuvw_perf_file)
+        torb.trace_many_cartesian_orbit(xyzuvw_init, origin.age, single_age=True,
+                                        savefile=rdir+xyzuvw_perf_file)
 
 for prec in precs:
     logging.info("Fitting to prec: {}".format(prec))

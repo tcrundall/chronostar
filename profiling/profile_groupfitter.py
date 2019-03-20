@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, '..')
 from chronostar.synthdata import SynthData
 from chronostar import tabletool
-from chronostar import groupfitter
+from chronostar import compfitter
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filename='temp_logs/groupfitter.log')
@@ -31,8 +31,8 @@ if __name__ == '__main__':
     error_frac = 1.
     synth_data = SynthData(pars=pars, starcounts=starcount)
     synth_data.synthesise_everything()
-    tabletool.convertTableAstroToXYZUVW(synth_data.table)
-    data = tabletool.buildDataFromTable(synth_data.table)
+    tabletool.convert_table_astro2cart(synth_data.table)
+    data = tabletool.build_data_dict_from_table(synth_data.table)
 
     stat_file = 'stat_dumps/groupfitter.stat'
     # best_fit, chain, lnprob = \

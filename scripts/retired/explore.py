@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, '../../..')
 import chronostar.synthdata as syn
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 import chronostar.traceorbit as torb
 
 xyzuvw_init = np.load('xyzuvw_init.npy')
@@ -15,7 +15,7 @@ max_age = origin.age
 ntimes = int(max_age) + 1
 times = np.linspace(1e-5, max_age, ntimes)
 
-traceback = torb.traceManyOrbitXYZUVW(xyzuvw_init, times, False)
+traceback = torb.trace_many_cartesian_orbit(xyzuvw_init, times, False)
 nstars = xyzuvw_init.shape[0]
 
 #times = np.array([1e-5])

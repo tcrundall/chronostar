@@ -72,7 +72,7 @@ try:
     import chronostar.traceorbit as torb
     import chronostar.converter as cv
     import chronostar.measurer as ms
-    import chronostar.groupfitter as gf
+    import chronostar.compfitter as gf
     import chronostar.hexplotter as hp
 
 except ImportError:
@@ -151,8 +151,8 @@ except IOError:
         origin.age, origin.sphere_dx, origin.dv, origin.nstars,
     ))
     xyzuvw_now_perf =\
-        torb.traceManyOrbitXYZUVW(xyzuvw_init, origin.age, single_age=True,
-                                  savefile=xyzuvw_perf_file)
+        torb.trace_many_cartesian_orbit(xyzuvw_init, origin.age, single_age=True,
+                                        savefile=xyzuvw_perf_file)
 
 logging.info(mpi_msg)
 if not using_mpi:

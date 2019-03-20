@@ -8,7 +8,7 @@ import sys
 sys.path.insert(0, '..')
 
 import integration_tests.traceback_plotter as tp
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 
 rdir = '../results/em_fit/gaia_dr2_bp/'
 sdir = rdir

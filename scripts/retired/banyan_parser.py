@@ -218,10 +218,10 @@ if __name__=='__main__':
         if row_ix%10 == 0:
             print("{:02.2f}% done".format(row_ix / float(nrows) * 100.))
         astr_mean, astr_cov = gc.convertRecToArray(gt_row)
-        xyzuvw_mean = coord.convertAstrometryToLSRXYZUVW(astr_mean)
-        xyzuvw_cov = tf.transformCovMat(
+        xyzuvw_mean = coord.convert_astrometry2lsrxyzuvw(astr_mean)
+        xyzuvw_cov = tf.transform_covmatrix(
             astr_cov,
-            coord.convertAstrometryToLSRXYZUVW,
+            coord.convert_astrometry2lsrxyzuvw,
             astr_mean,
             dim=dim,
         )

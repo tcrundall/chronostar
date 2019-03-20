@@ -10,7 +10,7 @@ import numpy as np
 import sys
 sys.path.insert(0, '..')
 
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 from chronostar.likelihood import slow_get_lnoverlaps as p_lno
 from chronostar._overlap import get_lnoverlaps as c_lno
 from chronostar.component import SphereComponent
@@ -108,9 +108,9 @@ def test_pythonFuncs():
     nstars = 100
     synth_data = SynthData(pars=true_comp.get_pars(), starcounts=nstars)
     synth_data.synthesise_everything()
-    tabletool.convertTableAstroToXYZUVW(synth_data.table)
+    tabletool.convert_table_astro2cart(synth_data.table)
 
-    star_data = tabletool.buildDataFromTable(synth_data.table)
+    star_data = tabletool.build_data_dict_from_table(synth_data.table)
     # star_data['means'] = star_data['means']
     # star_data['covs'] = star_data['covs']
     group_mean = true_comp.get_mean()
@@ -170,9 +170,9 @@ def test_swigImplementation():
     nstars = 100
     synth_data = SynthData(pars=true_comp.get_pars(), starcounts=nstars)
     synth_data.synthesise_everything()
-    tabletool.convertTableAstroToXYZUVW(synth_data.table)
+    tabletool.convert_table_astro2cart(synth_data.table)
 
-    star_data = tabletool.buildDataFromTable(synth_data.table)
+    star_data = tabletool.build_data_dict_from_table(synth_data.table)
 
     p_lnos = p_lno(true_comp.get_covmatrix(), true_comp.get_mean(),
                    star_data['covs'], star_data['means'])

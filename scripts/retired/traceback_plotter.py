@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(0, '..')
 
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 import chronostar.traceorbit as torb
 import chronostar.retired2.converter as cv
 
@@ -77,10 +77,10 @@ for i in range(len(fits_files)):
     true_age = group.age
     ntimes = int(2 * true_age + 1)
     times = -np.linspace(0, 2 * true_age, ntimes)
-    tb = torb.traceManyOrbitXYZUVW(xyzuvw_dict['xyzuvw'], times=times,
-                                   single_age=False,
-                                   savefile=res_dir + 'tb_{}.npy'.\
-                                   format(int(true_age)))
+    tb = torb.trace_many_cartesian_orbit(xyzuvw_dict['xyzuvw'], times=times,
+                                         single_age=False,
+                                         savefile=res_dir + 'tb_{}.npy'. \
+                                         format(int(true_age)))
 
     # for each timestep, get mean of association and distance from mean
     dists = np.zeros((nstars, ntimes))

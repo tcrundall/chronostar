@@ -37,21 +37,21 @@ def test_calcEQToGCMatrix():
 
     assert np.allclose(
         js1987,
-        cc.calcEQToGCMatrix(old_a_ngp,old_d_ngp,old_th),
+        cc.calc_eq2gc_matrix(old_a_ngp, old_d_ngp, old_th),
         rtol=1e-4
     )
 
     js1987_inv = np.linalg.inv(js1987)
     assert np.allclose(
         js1987_inv,
-        cc.calcGCToEQMatrix(old_a_ngp,old_d_ngp,old_th),
+        cc.calc_gc2eq_matrix(old_a_ngp, old_d_ngp, old_th),
         rtol=1e-4
     )
 
     assert np.allclose(
         np.dot(
-            cc.calcEQToGCMatrix(old_a_ngp,old_d_ngp,old_th),
-            cc.calcGCToEQMatrix(old_a_ngp,old_d_ngp,old_th),
+            cc.calc_eq2gc_matrix(old_a_ngp, old_d_ngp, old_th),
+            cc.calc_gc2eq_matrix(old_a_ngp, old_d_ngp, old_th),
         ), np.eye(3),
         rtol=1e-4
     )
@@ -76,8 +76,8 @@ def test_CartesianAngleConversions():
     ]
 
     for sphere_pos, cart in zip(sphere_pos_list, cart_list):
-        cart = cc.convertAnglesToCartesian(*sphere_pos)
-        sphere_pos2 = cc.convertCartesianToAngles(*cart)
+        cart = cc.convert_angles2cartesian(*sphere_pos)
+        sphere_pos2 = cc.convert_cartesian2angles(*cart)
         assert np.allclose(sphere_pos, sphere_pos2)
 
 
@@ -90,8 +90,8 @@ def test_convertEquatorialToGalactic():
         (100, -60)
     ]
     for pos_ncp in pos_ncp_list:
-        pos_ncp_gc = cc.convertEquatorialToGalactic(*pos_ncp)
-        pos_ncp2 = cc.convertGalacticToEquatorial(*pos_ncp_gc)
+        pos_ncp_gc = cc.convert_equatorial2galactic(*pos_ncp)
+        pos_ncp2 = cc.convert_galactic2equatorial(*pos_ncp_gc)
         assert np.allclose(pos_ncp, pos_ncp2)
 
 def test_famousPositions():
@@ -102,19 +102,19 @@ def test_famousPositions():
     # testing gnp_eq --> gnp_gc is tricky, since there is a degeneracy,
     # so only compare the second coordinate
     assert np.allclose(
-        cc.convertEquatorialToGalactic(*gnp_eq)[1],
+        cc.convert_equatorial2galactic(*gnp_eq)[1],
         gnp_gc[1], rtol=1e-4
     )
     assert np.allclose(
-        cc.convertGalacticToEquatorial(*gnp_gc),
+        cc.convert_galactic2equatorial(*gnp_gc),
         gnp_eq, rtol=1e-4
     )
 
     # beta pic
     bp_eq = [86.82125, -51.0664]
     bp_gc = [258.3638, -30.6117]
-    assert np.allclose(cc.convertEquatorialToGalactic(*bp_eq), bp_gc)
-    assert np.allclose(cc.convertGalacticToEquatorial(*bp_gc), bp_eq)
+    assert np.allclose(cc.convert_equatorial2galactic(*bp_eq), bp_gc)
+    assert np.allclose(cc.convert_galactic2equatorial(*bp_gc), bp_eq)
 
 def test_convertPMToSpaceVelocity():
     """
@@ -135,14 +135,14 @@ def test_convertPMToSpaceVelocity():
     xyzuvw_bp_ref = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
 
     # check UVW
-    uvw = cc.convertPMToHelioSpaceVelocity(*astr_bp_ref)
+    uvw = cc.convert_pm2heliospacevelocity(*astr_bp_ref)
     assert np.allclose(xyzuvw_bp_ref[3:], uvw, rtol=1e-2)
 
     # check pmrv conversion given position, parallax and (heliocentric) UVW
     pos_uvw_bp = np.hstack((astr_bp_ref[:3], xyzuvw_bp_ref[3:]))
     logging.debug("Input: {}".format(pos_uvw_bp))
     logging.debug("Input: {} {} {} {} {} {}".format(*pos_uvw_bp))
-    pms_bp = cc.convertHelioSpaceVelocityToPM(*pos_uvw_bp)
+    pms_bp = cc.convert_heliospacevelocity2pm(*pos_uvw_bp)
     assert np.allclose(astr_bp_ref[3:], pms_bp, rtol=1e-1)
 
 def test_convertHelioXYZUVWToAstrometry():
@@ -155,10 +155,10 @@ def test_convertHelioXYZUVWToAstrometry():
         20.0      #km/s
     ]
     xyzuvw_bp_helio = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
-    calculated_astr_bp = cc.convertHelioXYZUVWToAstrometry(xyzuvw_bp_helio)
+    calculated_astr_bp = cc.convert_helioxyzuvw2astrometry(xyzuvw_bp_helio)
     assert np.allclose(astr_bp, calculated_astr_bp, rtol=1e-2)
 
-    calculated_xyzuvw_bp_helio = cc.convertAstrometryToHelioXYZUVW(
+    calculated_xyzuvw_bp_helio = cc.convert_astrometry2helioxyzuvw(
         *astr_bp
     )
     assert np.allclose(calculated_xyzuvw_bp_helio, xyzuvw_bp_helio, rtol=1e-2)
@@ -169,7 +169,7 @@ def test_convertAstrometryToLSRXYZUVW():
     sun_astro = (0., 90., 1e15, 0.,0.,0.)
     sun_xyzuvw_lsr = (0., 0., 25., 11.1, 12.24, 7.25)
     assert np.allclose(
-        cc.convertAstrometryToLSRXYZUVW(sun_astro), sun_xyzuvw_lsr
+        cc.convert_astrometry2lsrxyzuvw(sun_astro), sun_xyzuvw_lsr
     )
 
     # TODO: compare astropy coordinates
@@ -185,7 +185,7 @@ def test_convertAstrometryToLSRXYZUVW():
 def test_origin():
     """Checks that the sun can be put in without breaking angle calculations"""
     xyzuvw_solar_helio = np.zeros(6) # = [0.,0.,25.,11.1,12.24,7.25]
-    astro = cc.convertHelioXYZUVWToAstrometry(xyzuvw_solar_helio)
+    astro = cc.convert_helioxyzuvw2astrometry(xyzuvw_solar_helio)
     assert not np.any(np.isnan(astro))
 
 
@@ -200,16 +200,16 @@ def test_convertLSRXYZUVWToAstrometry():
         20.0      #km/s
     ]
     xyzuvw_bp_helio = np.array([-3.4, -16.4, -9.9, -11.0, -16.0, -9.1])
-    xyzuvw_bp_lsr = cc.convertHelioToLSR(xyzuvw_bp_helio)
+    xyzuvw_bp_lsr = cc.convert_helio2lsr(xyzuvw_bp_helio)
 
-    calculated_astr_bp = cc.convertLSRXYZUVWToAstrometry(xyzuvw_bp_lsr)
+    calculated_astr_bp = cc.convert_lsrxyzuvw2astrometry(xyzuvw_bp_lsr)
     assert np.allclose(astr_bp, calculated_astr_bp, rtol=1e-2)
 
-    calculated_xyzuvw_bp_lsr = cc.convertAstrometryToLSRXYZUVW(astr_bp)
+    calculated_xyzuvw_bp_lsr = cc.convert_astrometry2lsrxyzuvw(astr_bp)
     assert np.allclose(calculated_xyzuvw_bp_lsr, xyzuvw_bp_lsr, rtol=0.15)
 
-    calculated_astr_bp2 = cc.convertLSRXYZUVWToAstrometry(xyzuvw_bp_lsr)
-    calculated_xyzuvw_bp_lsr2 = cc.convertAstrometryToLSRXYZUVW(
+    calculated_astr_bp2 = cc.convert_lsrxyzuvw2astrometry(xyzuvw_bp_lsr)
+    calculated_xyzuvw_bp_lsr2 = cc.convert_astrometry2lsrxyzuvw(
         calculated_astr_bp2
     )
     assert np.allclose(calculated_xyzuvw_bp_lsr2, xyzuvw_bp_lsr)
@@ -238,8 +238,8 @@ def test_convertManyLSRXYZUVWToAstrometry():
         astr_bp,
         astr_bp,
     ])
-    calculated_astros = cc.convertManyLSRXYZUVWToAstrometry(xyzuvw_lsrs)
+    calculated_astros = cc.convert_many_lsrxyzuvw2astrometry(xyzuvw_lsrs)
     assert np.allclose(calculated_astros, astros, rtol=1e-2)
 
-    recalculated_xyzuvws = cc.convertManyAstrometryToLSRXYZUVW(calculated_astros)
+    recalculated_xyzuvws = cc.convert_many_astrometry2lsrxyzuvw(calculated_astros)
     assert np.allclose(recalculated_xyzuvws, xyzuvw_lsrs)

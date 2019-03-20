@@ -19,7 +19,7 @@ def read(filename, **kwargs):
     return load(filename, **kwargs)
 
 
-def getHistoricalCartColnames():
+def get_historical_cart_colnames():
     main_colnames = 'XYZUVW'
     error_colnames = ['d'+el for el in main_colnames]
     corr_colnames = []
@@ -29,8 +29,8 @@ def getHistoricalCartColnames():
     return main_colnames, error_colnames, corr_colnames
 
 
-def getColnames(main_colnames=None, error_colnames=None, corr_colnames=None,
-                cartesian=True):
+def get_colnames(main_colnames=None, error_colnames=None, corr_colnames=None,
+                 cartesian=True):
     """
     Utility function for generating standard column names
     """
@@ -54,11 +54,11 @@ def getColnames(main_colnames=None, error_colnames=None, corr_colnames=None,
     return main_colnames, error_colnames, corr_colnames
 
 
-def buildDataFromTable(table, main_colnames=None, error_colnames=None,
-                       corr_colnames=None, cartesian=True,
-                       historical=False, only_means=False,
-                       get_background_overlaps=True,
-                       background_colname=None,):
+def build_data_dict_from_table(table, main_colnames=None, error_colnames=None,
+                               corr_colnames=None, cartesian=True,
+                               historical=False, only_means=False,
+                               get_background_overlaps=True,
+                               background_colname=None, ):
     """
     Use data in tale columns to construct arrays of means and covariance
     matrices.
@@ -97,9 +97,9 @@ def buildDataFromTable(table, main_colnames=None, error_colnames=None,
         table = Table.read(table)
     if historical:
         main_colnames, error_colnames, corr_colnames =\
-            getHistoricalCartColnames()
+            get_historical_cart_colnames()
     else:
-        main_colnames, error_colnames, corr_colnames = getColnames(
+        main_colnames, error_colnames, corr_colnames = get_colnames(
                 main_colnames=main_colnames, error_colnames=error_colnames,
                 corr_colnames=corr_colnames, cartesian=cartesian
         )
@@ -169,8 +169,8 @@ def buildDataFromTable(table, main_colnames=None, error_colnames=None,
     return results_dict
 
 
-def appendCartColsToTable(table, main_colnames=None, error_colnames=None,
-                          corr_colnames=None):
+def append_cart_cols_to_table(table, main_colnames=None, error_colnames=None,
+                              corr_colnames=None):
     """
     Insert empty place holder columns for cartesian values
 
@@ -188,8 +188,8 @@ def appendCartColsToTable(table, main_colnames=None, error_colnames=None,
     if isinstance(table, str):
         table = Table.read(table)
     main_colnames, error_colnames, corr_colnames =\
-        getColnames(main_colnames, error_colnames, corr_colnames,
-                    cartesian=True)
+        get_colnames(main_colnames, error_colnames, corr_colnames,
+                     cartesian=True)
 
     # Set up order of column names in table
     cart_colnames = []
@@ -208,21 +208,21 @@ def appendCartColsToTable(table, main_colnames=None, error_colnames=None,
         table[col_name].unit = unit
 
 
-def convertAstroToCart(astr_mean, astr_cov):
-    xyzuvw_mean = coordinate.convertAstrometryToLSRXYZUVW(astr_mean)
+def convert_astro2cart(astr_mean, astr_cov):
+    xyzuvw_mean = coordinate.convert_astrometry2lsrxyzuvw(astr_mean)
 
-    xyzuvw_cov = transform.transformCovMat(
-            cov=astr_cov, trans_func=coordinate.convertAstrometryToLSRXYZUVW,
+    xyzuvw_cov = transform.transform_covmatrix(
+            cov=astr_cov, trans_func=coordinate.convert_astrometry2lsrxyzuvw,
             loc=astr_mean
     )
 
     return xyzuvw_mean, xyzuvw_cov
 
 
-def insertDataIntoRow(row, mean, cov, main_colnames=None, error_colnames=None,
-                      corr_colnames=None, cartesian=True):
+def insert_data_into_row(row, mean, cov, main_colnames=None, error_colnames=None,
+                         corr_colnames=None, cartesian=True):
 
-    main_colnames, error_colnames, corr_colnames = getColnames(
+    main_colnames, error_colnames, corr_colnames = get_colnames(
             main_colnames, error_colnames, corr_colnames, cartesian=cartesian
     )
     # Insert mean data
@@ -266,9 +266,9 @@ def insert_column(table, col_data, col_name, filename=''):
     return table
 
 
-def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,
-                              main_colnames=None, error_colnames=None,
-                              corr_colnames=None, filename=''):
+def convert_table_astro2cart(table, return_table=False, write_table=False,
+                             main_colnames=None, error_colnames=None,
+                             corr_colnames=None, filename=''):
     if isinstance(table, str):
         if filename and not write_table:
             raise UserWarning('Specify how to handle result, won\'t overwrite'
@@ -277,19 +277,19 @@ def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,
         table = Table.read(table)
 
     astr_main_colnames, astr_error_colnames, astr_corr_colnames =\
-        getColnames(main_colnames=main_colnames, error_colnames=error_colnames,
-                    corr_colnames=corr_colnames, cartesian=False)
+        get_colnames(main_colnames=main_colnames, error_colnames=error_colnames,
+                     corr_colnames=corr_colnames, cartesian=False)
 
-    data = buildDataFromTable(table,
-                              astr_main_colnames,
-                              astr_error_colnames,
-                              astr_corr_colnames)
+    data = build_data_dict_from_table(table,
+                                      astr_main_colnames,
+                                      astr_error_colnames,
+                                      astr_corr_colnames)
 
     # if cartesian columns don't exist, then insert them
     if 'X_V_corr' not in table.keys():
-        appendCartColsToTable(table)
+        append_cart_cols_to_table(table)
     cart_main_colnames, cart_error_colnames, cart_corr_colnames = \
-        getColnames(cartesian=True)
+        get_colnames(cartesian=True)
 
     # Iteratively transform data to cartesian coordinates, storing as we go
 #     cart_means = np.zeros(astr_means.shape)
@@ -299,12 +299,12 @@ def convertTableAstroToXYZUVW(table, return_table=False, write_table=False,
 
 
     for row, astr_mean, astr_cov in zip(table, data['means'], data['covs']):
-        cart_mean, cart_cov = convertAstroToCart(astr_mean, astr_cov)
-        insertDataIntoRow(row, cart_mean, cart_cov,
-                          main_colnames=cart_main_colnames,
-                          error_colnames=cart_error_colnames,
-                          corr_colnames=cart_corr_colnames
-                          )
+        cart_mean, cart_cov = convert_astro2cart(astr_mean, astr_cov)
+        insert_data_into_row(row, cart_mean, cart_cov,
+                             main_colnames=cart_main_colnames,
+                             error_colnames=cart_error_colnames,
+                             corr_colnames=cart_corr_colnames
+                             )
 
     if filename and write_table:
         table.write(filename, overwrite=True)

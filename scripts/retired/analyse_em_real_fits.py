@@ -11,7 +11,7 @@ import os
 import sys
 sys.path.insert(0, '..')
 
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 import chronostar.expectmax as em
 import chronostar.retired.hexplotter as hp
 import chronostar.traceorbit as torb
@@ -63,7 +63,7 @@ for ncomps in range(1,4):
         means = {}
         means['fitted_then'] = [g.mean for g in groups]
         means['fitted_now'] = [
-            torb.traceOrbitXYZUVW(g.mean, g.age, single_age=True)
+            torb.trace_cartesian_orbit(g.mean, g.age, single_age=True)
             for g in groups
         ]
         covs = {}
@@ -71,10 +71,10 @@ for ncomps in range(1,4):
             g.generateSphericalCovMatrix() for g in groups
         ])
         covs['fitted_now'] = np.array([
-                tf.transformCovMat(covs['fitted_then'][0], torb.traceOrbitXYZUVW,
-                                   means['fitted_then'][0],
-                                   args=(g.age,True)
-                                   )
+                tf.transform_covmatrix(covs['fitted_then'][0], torb.trace_cartesian_orbit,
+                                       means['fitted_then'][0],
+                                       args=(g.age,True)
+                                       )
             for g in groups
             ])
         hp.plotNewQuad(star_pars, means, covs, None, 'final',

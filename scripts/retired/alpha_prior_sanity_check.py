@@ -13,7 +13,7 @@ import chronostar.likelihood
 sys.path.insert(0, '..')
 
 import chronostar.synthdata as syn
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 import chronostar.expectmax as em
 
 # 1 comp fit

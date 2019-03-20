@@ -21,9 +21,9 @@ origin_pars = np.array([50., 0., -50., 0., 10., 0., 10., 0.5, 10., 100])
 
 xyzuvw_init, origin = syn.synthesiseXYZUVW(origin_pars, form='sphere',
                                            return_group=True, internal=False)
-xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init,
-                                            times=origin.age,
-                                            single_age=True)
+xyzuvw_now_perf = torb.trace_many_cartesian_orbit(xyzuvw_init,
+                                                  times=origin.age,
+                                                  single_age=True)
 astr_table = chronostar.synthdata.measureXYZUVW(xyzuvw_now_perf, ERROR)
 star_pars = cv.convertMeasurementsToCartesian(astr_table)
 

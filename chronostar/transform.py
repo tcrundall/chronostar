@@ -10,7 +10,7 @@ forward (or backward) through the Galactic potential.
 import numpy as np
 
 
-def calcJacobianColumn(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
+def calc_jacobian_column(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
     """
     Calculate a column of the Jacobian.
 
@@ -54,7 +54,7 @@ def calcJacobianColumn(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
     else:
         return (trans_func(loc_pl, *args) - trans_func(loc_mi, *args)) / (2*h)
 
-def calcJacobian(trans_func, loc, dim=2, h=1e-3, args=None):
+def calc_jacobian(trans_func, loc, dim=2, h=1e-3, args=None):
     """
     Calculate the Jacobian of the coordinate transfromation `trans_func` about
     `loc`.
@@ -87,10 +87,10 @@ def calcJacobian(trans_func, loc, dim=2, h=1e-3, args=None):
     """
     jac = np.zeros((dim, dim))
     for i in range(dim):
-        jac[:,i] = calcJacobianColumn(trans_func, i, loc, dim, h, args)
+        jac[:,i] = calc_jacobian_column(trans_func, i, loc, dim, h, args)
     return jac
 
-def transformCovMat(cov, trans_func, loc, dim=6, args=None):
+def transform_covmatrix(cov, trans_func, loc, dim=6, args=None):
     """
     Transforming a covariance matrix from one coordinate frame to another
 
@@ -118,5 +118,5 @@ def transformCovMat(cov, trans_func, loc, dim=6, args=None):
     conv_cov : [dim,dim] float array
         The transformed covariance matrix
     """
-    jac = calcJacobian(trans_func, loc, dim=dim, args=args)
+    jac = calc_jacobian(trans_func, loc, dim=dim, args=args)
     return np.dot(jac, np.dot(cov, jac.T))

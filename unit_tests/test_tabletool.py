@@ -43,8 +43,8 @@ def transformAstrCovsToCartesian(astr_covs, astr_arr):
     nstars = astr_arr.shape[0]
     xyzuvw_covs = np.zeros((nstars, 6, 6))
     for ix in range(nstars):
-        xyzuvw_covs[ix] = transform.transformCovMat(
-            astr_covs[ix], coordinate.convertAstrometryToLSRXYZUVW, astr_arr[ix],
+        xyzuvw_covs[ix] = transform.transform_covmatrix(
+            astr_covs[ix], coordinate.convert_astrometry2lsrxyzuvw, astr_arr[ix],
             dim=6
         )
     return xyzuvw_covs
@@ -354,7 +354,7 @@ def convertMeasurementsToCartesian(t=None, loadfile='', astr_dict=None):
         raise StandardError
 
 
-    xyzuvw = coordinate.convertManyAstrometryToLSRXYZUVW(astr_arr, mas=True)
+    xyzuvw = coordinate.convert_many_astrometry2lsrxyzuvw(astr_arr, mas=True)
     xyzuvw_cov = transformAstrCovsToCartesian(astr_covs, astr_arr)
 
     xyzuvw_dict = {'table':t, 'xyzuvw':xyzuvw, 'xyzuvw_cov':xyzuvw_cov}
@@ -403,8 +403,8 @@ def test_convertTableXYZUVWToArray():
 
     orig_star_pars = loadDictFromTable(filename)
     main_colnames, error_colnames, corr_colnames =\
-        tabletool.getHistoricalCartColnames()
-    data = tabletool.buildDataFromTable(
+        tabletool.get_historical_cart_colnames()
+    data = tabletool.build_data_dict_from_table(
             orig_star_pars['table'][orig_star_pars['indices']],
             main_colnames=main_colnames,
             error_colnames=error_colnames,
@@ -435,7 +435,7 @@ def test_convertSynthTableToCart():
     synth_data.synthesise_everything()
 
     # Convert (inplace) astrometry to cartesian
-    tabletool.convertTableAstroToXYZUVW(synth_data.table)
+    tabletool.convert_table_astro2cart(synth_data.table)
 
     # Check consistency between true current-day kinematics and measured
     # current-day kinematics (with negliglbe error)
@@ -467,12 +467,12 @@ def test_convertAstrTableToCart():
 
     # load in original means and covs
     orig_cart_data =\
-        tabletool.buildDataFromTable(table=table, cartesian=True,
-                                     historical=True)
+        tabletool.build_data_dict_from_table(table=table, cartesian=True,
+                                             historical=True)
 
-    tabletool.convertTableAstroToXYZUVW(table=table, write_table=False)
+    tabletool.convert_table_astro2cart(table=table, write_table=False)
 
-    cart_data = tabletool.buildDataFromTable(table, cartesian=True)
+    cart_data = tabletool.build_data_dict_from_table(table, cartesian=True)
 
     assert np.allclose(orig_cart_data['means'], cart_data['means'])
     assert np.allclose(table['dX'], table['X_error'])
@@ -490,7 +490,7 @@ def test_badColNames():
     no issue.
     """
     main_colnames, error_colnames, corr_colnames = \
-        tabletool.getColnames(cartesian=False)
+        tabletool.get_colnames(cartesian=False)
 
     main_colnames[5] = 'radial_velocity_best'
     error_colnames[5] = 'radial_velocity_error_best'
@@ -507,7 +507,7 @@ def test_badColNames():
 
     # Catch when units are inconsistent
     try:
-        tabletool.convertTableAstroToXYZUVW(
+        tabletool.convert_table_astro2cart(
                 table,
                 main_colnames=main_colnames,
                 error_colnames=corrupted_error_colnames,
@@ -519,10 +519,10 @@ def test_badColNames():
     # In the case where units have not been provided, then just leave it be
     try:
         error_colnames[0] = 'ra_dec_corr'
-        tabletool.convertTableAstroToXYZUVW(table,
-                                            main_colnames=main_colnames,
-                                            error_colnames=error_colnames,
-                                            corr_colnames=corr_colnames)
+        tabletool.convert_table_astro2cart(table,
+                                           main_colnames=main_colnames,
+                                           error_colnames=error_colnames,
+                                           corr_colnames=corr_colnames)
     except:
         assert False
 

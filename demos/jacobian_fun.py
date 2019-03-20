@@ -62,7 +62,7 @@ def polar_demo():
     res = transform_ptcs(pol_samples[:, 0], pol_samples[:, 1])
 
     cart_mean = transform_ptc(pol_mean)
-    cart_cov  = tf.transformCovMat(pol_cov, transform_ptc, pol_mean, dim=2)
+    cart_cov  = tf.transform_covmatrix(pol_cov, transform_ptc, pol_mean, dim=2)
 
     cart_samples = np.random.multivariate_normal(cart_mean, cart_cov, nsamples)
 
@@ -129,12 +129,12 @@ if __name__ == '__main__':
         chronostar.fitplotter.plotCovEllipse(cov[:2, :2], mean, color='b', alpha=0.3)
 
     new_stars = np.zeros(stars.shape)
-    new_stars = torb.traceManyOrbitXYZUVW(stars, np.array(0, age))
+    new_stars = torb.trace_many_cartesian_orbit(stars, np.array(0, age))
 
 def stop():
     # calculate the new mean and cov
     new_mean = trace_forward(mean, age)
-    new_cov = tf.transformCovMat(cov, trace_forward, mean, dim=6, args=(age,))
+    new_cov = tf.transform_covmatrix(cov, trace_forward, mean, dim=6, args=(age,))
     new_eigvals = np.linalg.eigvalsh(new_cov)
 
     estimated_cov = np.cov(new_stars.T)

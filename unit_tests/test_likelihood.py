@@ -117,15 +117,15 @@ def test_get_lnoverlaps():
     nstars = len(star_comps)
     dummy_table = Table(data=np.arange(nstars).reshape(nstars,1),
                         names=['name'])
-    tabletool.appendCartColsToTable(dummy_table)
+    tabletool.append_cart_cols_to_table(dummy_table)
 
     for star_comp, row in zip(star_comps, dummy_table):
-        tabletool.insertDataIntoRow(row,
-                                    star_comp.get_mean(),
-                                    star_comp.get_covmatrix(),
-                                    cartesian=True,
-                                    )
-    dummy_data = tabletool.buildDataFromTable(dummy_table)
+        tabletool.insert_data_into_row(row,
+                                       star_comp.get_mean(),
+                                       star_comp.get_covmatrix(),
+                                       cartesian=True,
+                                       )
+    dummy_data = tabletool.build_data_dict_from_table(dummy_table)
     ln_overlaps = likelihood.get_lnoverlaps(sphere_comp, data=dummy_data)
 
     # Checks that ln_overlaps is descending
@@ -160,8 +160,8 @@ def test_lnprob_func():
         synth_data = SynthData(pars=[comp.get_pars()], starcounts=star_count,
                                 measurement_error=measurement_error)
         synth_data.synthesise_everything()
-        tabletool.convertTableAstroToXYZUVW(synth_data.table)
-        data[comp_name] = tabletool.buildDataFromTable(synth_data.table)
+        tabletool.convert_table_astro2cart(synth_data.table)
+        data[comp_name] = tabletool.build_data_dict_from_table(synth_data.table)
         comps[comp_name] = comp
 
     lnprob_comp1_data1 = likelihood.lnprob_func(pars=comps['comp1'].get_pars(),

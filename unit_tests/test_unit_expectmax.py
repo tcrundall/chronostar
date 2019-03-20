@@ -74,7 +74,7 @@ def test_expectation():
     synth_data = SynthData(pars=[ass_pars1, ass_pars2],
                            starcounts=starcounts)
     synth_data.synthesise_everything()
-    tabletool.convertTableAstroToXYZUVW(synth_data.table)
+    tabletool.convert_table_astro2cart(synth_data.table)
 
     true_memb_probs = np.zeros((np.sum(starcounts), 2))
     true_memb_probs[:starcounts[0], 0] = 1.
@@ -86,7 +86,7 @@ def test_expectation():
     # )
 
     fitted_memb_probs = em.expectation(
-            tabletool.buildDataFromTable(synth_data.table),
+            tabletool.build_data_dict_from_table(synth_data.table),
             [comp1, comp2]
     )
 

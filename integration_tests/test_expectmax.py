@@ -80,9 +80,9 @@ def test_fit_one_comp_with_background():
                            )
     synth_data.synthesise_everything()
 
-    tabletool.convertTableAstroToXYZUVW(synth_data.table,
-                                        write_table=True,
-                                        filename=data_filename)
+    tabletool.convert_table_astro2cart(synth_data.table,
+                                       write_table=True,
+                                       filename=data_filename)
     background_count = len(synth_data.table) - starcount
 
     # insert background densities
@@ -163,9 +163,9 @@ def test_fit_many_comps():
                            Components=SphereComponent,
                            )
     synth_data.synthesise_everything()
-    tabletool.convertTableAstroToXYZUVW(synth_data.table,
-                                        write_table=True,
-                                        filename=data_filename)
+    tabletool.convert_table_astro2cart(synth_data.table,
+                                       write_table=True,
+                                       filename=data_filename)
 
     origins = [SphereComponent(pars) for pars in sphere_comp_pars]
 

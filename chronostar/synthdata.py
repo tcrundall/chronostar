@@ -158,7 +158,7 @@ class SynthData():
     def generate_background_stars(self):
         """Embed association stars in a sea of background stars with
         twice the span as current data"""
-        init_means = tabletool.buildDataFromTable(
+        init_means = tabletool.build_data_dict_from_table(
                 self.table, main_colnames=[el+'0' for el in 'xyzuvw'],
                 only_means=True,
         )
@@ -192,8 +192,8 @@ class SynthData():
                 table=star,
                 colnames=[dim+'0' for dim in self.cart_labels],
             )
-            xyzuvw_now = traceorbit.traceOrbitXYZUVW(mean_then,
-                                                     times=star['age'])
+            xyzuvw_now = traceorbit.trace_cartesian_orbit(mean_then,
+                                                          times=star['age'])
             for ix, dim in enumerate(self.cart_labels):
                 star[dim+'_now'] = xyzuvw_now[ix]
 
@@ -216,7 +216,7 @@ class SynthData():
                  ])
 
         # Get perfect astrometry
-        astr = coordinate.convertManyLSRXYZUVWToAstrometry(xyzuvw_now)
+        astr = coordinate.convert_many_lsrxyzuvw2astrometry(xyzuvw_now)
 
         # Measurement errors are applied homogenously across data so we
         # can just tile to produce uncertainty

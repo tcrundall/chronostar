@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 sys.path.insert(0, '..')
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 import chronostar.retired2.datatool as dt
 
 def calcHistogramDensity(x, bin_heights, bin_edges):

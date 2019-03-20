@@ -64,8 +64,8 @@ def transformAstrCovsToCartesian(astr_covs, astr_arr):
     nstars = astr_arr.shape[0]
     xyzuvw_covs = np.zeros((nstars, 6, 6))
     for ix in range(nstars):
-        xyzuvw_covs[ix] = transform.transformCovMat(
-            astr_covs[ix], coordinate.convertAstrometryToLSRXYZUVW, astr_arr[ix],
+        xyzuvw_covs[ix] = transform.transform_covmatrix(
+            astr_covs[ix], coordinate.convert_astrometry2lsrxyzuvw, astr_arr[ix],
             dim=6
         )
     return xyzuvw_covs
@@ -99,10 +99,10 @@ def convertRowToCartesian(row, row_ix=None, nrows=None):
     except TypeError:
         pass
     astr_mean, astr_cov = datatool.convertRecToArray(row)
-    xyzuvw_mean = coordinate.convertAstrometryToLSRXYZUVW(astr_mean)
-    xyzuvw_cov = transform.transformCovMat(
+    xyzuvw_mean = coordinate.convert_astrometry2lsrxyzuvw(astr_mean)
+    xyzuvw_cov = transform.transform_covmatrix(
         astr_cov,
-        coordinate.convertAstrometryToLSRXYZUVW,
+        coordinate.convert_astrometry2lsrxyzuvw,
         astr_mean,
         dim=dim,
     )
@@ -178,7 +178,7 @@ def convertMeasurementsToCartesian(t=None, loadfile='', astr_dict=None,
         raise StandardError
 
 
-    xyzuvw = coordinate.convertManyAstrometryToLSRXYZUVW(astr_arr, mas=True)
+    xyzuvw = coordinate.convert_many_astrometry2lsrxyzuvw(astr_arr, mas=True)
     xyzuvw_cov = transformAstrCovsToCartesian(astr_covs, astr_arr)
 
     xyzuvw_dict = {'table':t, 'xyzuvw':xyzuvw, 'xyzuvw_cov':xyzuvw_cov}

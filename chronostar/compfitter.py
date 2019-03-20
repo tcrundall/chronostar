@@ -240,7 +240,7 @@ def fit_comp(data=None, memb_probs=None, burnin_steps=1000,
         [nwalkers, nsteps] array of probabilities for each sample
     """
     if not isinstance(data, dict):
-        data = tabletool.buildDataFromTable(data)
+        data = tabletool.build_data_dict_from_table(data)
     if memb_probs is None:
         memb_probs = np.ones(len(data['means']))
 

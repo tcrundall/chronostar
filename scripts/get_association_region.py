@@ -24,7 +24,7 @@ def get_region(assoc_name):
     # Extract all stars
     subtable = gagne_table[np.where(gagne_table['Moving group'] == assoc_name)]
 
-    star_means = tabletool.buildDataFromTable(subtable, only_means=True)
+    star_means = tabletool.build_data_dict_from_table(subtable, only_means=True)
 
     data_upper_bound = np.nanmax(star_means, axis=0)
     data_lower_bound = np.nanmin(star_means, axis=0)

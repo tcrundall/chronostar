@@ -145,17 +145,17 @@ except IOError:
         # mean_now_w_offset[0] += i * 50
         mean_now_w_offset += offsets[i]
     
-        mean_then = torb.traceOrbitXYZUVW(mean_now_w_offset, -extra_pars[i,-2],
-                                          single_age=True)
+        mean_then = torb.trace_cartesian_orbit(mean_now_w_offset, -extra_pars[i, -2],
+                                               single_age=True)
         group_pars = np.hstack((mean_then, extra_pars[i]))
         xyzuvw_init, origin = syn.synthesiseXYZUVW(group_pars, form='sphere',
                                                    return_group=True,
                                                    internal=False)
         origins.append(origin)
         all_xyzuvw_init = np.vstack((all_xyzuvw_init, xyzuvw_init))
-        xyzuvw_now_perf = torb.traceManyOrbitXYZUVW(xyzuvw_init,
-                                                    times=origin.age,
-                                                    single_age=True)
+        xyzuvw_now_perf = torb.trace_many_cartesian_orbit(xyzuvw_init,
+                                                          times=origin.age,
+                                                          single_age=True)
         all_xyzuvw_now_perf = np.vstack((all_xyzuvw_now_perf, xyzuvw_now_perf))
 
     # insert 'background stars' with density `BG_DENS` [pc km/s]^-3

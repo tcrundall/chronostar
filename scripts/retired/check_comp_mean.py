@@ -32,5 +32,5 @@ xyzuvw = sp['xyzuvw'][np.where(z[:,0] > 0.5)]
 xyzuvw.shape
 np.mean(xyzuvw, axis=0)
 mean_lsr = np.mean(xyzuvw, axis=0)
-mean_hc = coord.convertLSRToHelio(mean_lsr)
+mean_hc = coord.convert_lsr2helio(mean_lsr)
 mean_hc

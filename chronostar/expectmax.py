@@ -25,7 +25,7 @@ except ImportError:
 
 from chronostar.component import SphereComponent
 from chronostar import likelihood
-from . import groupfitter
+from . import compfitter
 from . import tabletool
 
 
@@ -109,7 +109,7 @@ def checkConvergence(old_best_comps, new_chains,
     # import pdb; pdb.set_trace()
 
     for old_best_comp, new_chain in zip(old_best_comps, new_chains):
-        errors = groupfitter.calc_med_and_span(new_chain, perc=perc)
+        errors = compfitter.calc_med_and_span(new_chain, perc=perc)
         upper_contained =\
             old_best_comp.internalise(old_best_comp.get_pars()) < errors[:, 1]
         lower_contained =\
@@ -277,7 +277,7 @@ def getAllLnOverlaps(data, comps, old_memb_probs=None,
         with the log background overlaps appended as the final column
     """
     if not isinstance(data, dict):
-        data = tabletool.buildDataFromTable(data)
+        data = tabletool.build_data_dict_from_table(data)
     nstars = len(data['means'])
     ncomps = len(comps)
     using_bg = 'bg_lnols' in data.keys()
@@ -393,7 +393,7 @@ def expectation(data, comps, old_memb_probs=None,
         each group, and the entire array sums to the number of stars.
     """
     if not isinstance(data, dict):
-        data = tabletool.buildDataFromTable(data)
+        data = tabletool.build_data_dict_from_table(data)
     # import pdb; pdb.set_trace()
     ncomps = len(comps)
     nstars = len(data['means'])
@@ -624,7 +624,7 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
                     i, np.sum(memb_probs[:, i])
             ))
         else:
-            best_comp, chain, lnprob = groupfitter.fit_comp(
+            best_comp, chain, lnprob = compfitter.fit_comp(
                     data=data,
                     memb_probs=memb_probs[:, i],
                     burnin_steps=burnin_steps,
@@ -782,7 +782,7 @@ def fitManyGroups(data, ncomps, rdir='',
     """
     # Tidying up input
     if not isinstance(data, dict):
-        data = tabletool.buildDataFromTable(
+        data = tabletool.build_data_dict_from_table(
                 data, get_background_overlaps=use_background
         )
     if rdir == '':                      # Ensure results directory has a
@@ -994,7 +994,7 @@ def fitManyGroups(data, ncomps, rdir='',
             final_gdir = final_dir + "comp{}/".format(i)
             mkpath(final_gdir)
 
-            best_comp, chain, lnprob = groupfitter.fit_comp(
+            best_comp, chain, lnprob = compfitter.fit_comp(
                     data=data,
                     memb_probs=memb_probs_final[:, i],
                     burnin_steps=BURNIN_STEPS,
@@ -1010,7 +1010,7 @@ def fitManyGroups(data, ncomps, rdir='',
             # runs once
             logging.info("Finished fit")
             final_best_comps[i] = best_comp
-            final_med_and_spans[i] = groupfitter.calc_med_and_span(
+            final_med_and_spans[i] = compfitter.calc_med_and_span(
                     chain, intern_to_extern=True, Component=Component,
             )
             # np.save(final_gdir + "best_group_fit.npy", new_group)

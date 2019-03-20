@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0, "..")
 
 import chronostar.retired.hexplotter as hp
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 
 xyzuvw_file = "../data/gaia_dr2_bp_xyzuvw.fits"
 rdir = "../results/em_fit/gaia_dr2_bp/iter11/"

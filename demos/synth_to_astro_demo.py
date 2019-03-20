@@ -33,7 +33,7 @@ xyzuvw_init, group = syn.synthesiseXYZUVW(group_pars, form='sphere',
                                           xyzuvw_savefile=xyzuvw_init_savefile,
                                           group_savefile=group_savefile)
 logging.info("Age is: {} Myr".format(group.age))
-xyzuvw_now_true = to.traceManyOrbitXYZUVW(xyzuvw_init, np.array([0., group.age]))[:,1]
+xyzuvw_now_true = to.trace_many_cartesian_orbit(xyzuvw_init, np.array([0., group.age]))[:, 1]
 #assert np.allclose(np.mean(xyzuvw_now, axis=0), group.mean, rtol=1e-1)
 logging.info("Mean of initial stars: {}".format(np.mean(xyzuvw_init, axis=0)))
 logging.info("Mean of final stars: {}".format(np.mean(xyzuvw_now_true, axis=0)))
@@ -44,7 +44,7 @@ nstars = len(star_table)
 
 astr_covs = cv.convertAstroErrsToCovs(err_arr)
 
-xyzuvw_now = cc.convertManyAstrometryToLSRXYZUVW(astr_arr, mas=True)
+xyzuvw_now = cc.convert_many_astrometry2lsrxyzuvw(astr_arr, mas=True)
 logging.info("Mean of retrieved stars: {}".format(np.mean(xyzuvw_now, axis=0)))
 
 if plot_it:
@@ -55,8 +55,8 @@ if plot_it:
 
 xyzuvw_covs = np.zeros((nstars,6,6))
 for ix in range(nstars):
-    xyzuvw_covs[ix] = tf.transformCovMat(
-        astr_covs[ix], cc.convertAstrometryToLSRXYZUVW, astr_arr[ix], dim=6
+    xyzuvw_covs[ix] = tf.transform_covmatrix(
+        astr_covs[ix], cc.convert_astrometry2lsrxyzuvw, astr_arr[ix], dim=6
     )
 
 if plot_it:

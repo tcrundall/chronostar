@@ -44,7 +44,7 @@ astr_mean, astr_cov = dt.convertRecToArray(star_tab[0])
 xyzuvw_cov = cv.transformAstrCovsToCartesian(np.array([astr_cov]),
                                              np.array([astr_mean])
                                              )[0]
-xyzuvw = cc.convertAstrometryToLSRXYZUVW(astr_mean)
+xyzuvw = cc.convert_astrometry2lsrxyzuvw(astr_mean)
 
 ln_bg_ols = dt.getKernelDensities(gaia_xyzuvw_file, [xyzuvw])
 

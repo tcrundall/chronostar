@@ -199,7 +199,7 @@ def test_multiple_synth_components():
     synth_data.synthesise_everything()
 
     assert len(synth_data.table) == np.sum(starcounts)
-    means = tabletool.buildDataFromTable(
+    means = tabletool.build_data_dict_from_table(
             synth_data.table,
             main_colnames=[el+'0' for el in 'xyzuvw'],
             only_means=True
@@ -260,7 +260,7 @@ def test_background_component():
                            background_density=background_density)
     synth_data.generate_all_init_cartesian()
 
-    means = tabletool.buildDataFromTable(
+    means = tabletool.build_data_dict_from_table(
             synth_data.table[2:],
             main_colnames=[el+'0' for el in 'xyzuvw'],
             only_means=True,

@@ -25,7 +25,7 @@ ntimes = int(max_age) + 1
 #ntimes = 3
 times = np.linspace(1e-5, max_age, ntimes)
 
-traceforward = torb.traceManyOrbitXYZUVW(xyzuvw_init, times, False)
+traceforward = torb.trace_many_cartesian_orbit(xyzuvw_init, times, False)
 nstars = xyzuvw_init.shape[0]
 
 def plot_subplot(traceforward, t_ix, dim1, dim2, ax):

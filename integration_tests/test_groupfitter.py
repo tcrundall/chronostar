@@ -7,9 +7,9 @@ import sys
 sys.path.insert(0,'..')
 from chronostar.component import SphereComponent
 from chronostar.synthdata import SynthData
-from chronostar.traceorbit import traceOrbitXYZUVW
+from chronostar.traceorbit import trace_cartesian_orbit
 from chronostar import tabletool
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 
 PY_VERS = sys.version[0]
 
@@ -37,9 +37,9 @@ def run_fit_helper(true_comp, starcounts, measurement_error,
                            starcounts=starcounts,
                            measurement_error=measurement_error)
     synth_data.synthesise_everything()
-    tabletool.convertTableAstroToXYZUVW(synth_data.table,
-                                        write_table=True,
-                                        filename=data_filename)
+    tabletool.convert_table_astro2cart(synth_data.table,
+                                       write_table=True,
+                                       filename=data_filename)
     res = gf.fit_comp(
             data=synth_data.table,
             plot_it=True,
@@ -107,7 +107,7 @@ def test_lcc_like():
     mean_now = np.array([50., -100., 25., 1.1, -7.76, 2.25])
 
     age = 10.
-    mean = traceOrbitXYZUVW(mean_now, times=-age)
+    mean = trace_cartesian_orbit(mean_now, times=-age)
     dx = 5.
     dv = 2.
     covmatrix = np.identity(6)
