@@ -817,6 +817,8 @@ def fitManyGroups(data, ncomps, rdir='',
         logging.info('Initialised by components')
         all_init_pars = [Component.internalise(ic.get_pars()) for ic in init_comps]
         skip_first_e_step = False
+        memb_probs_old = np.ones((nstars, ncomps+use_background))\
+                         / (ncomps+use_background)
 
     # If initialising with membership probabilities, we need to skip first
     # expectation step, but make sure other values are iterable
@@ -825,6 +827,7 @@ def fitManyGroups(data, ncomps, rdir='',
         skip_first_e_step = True
         all_init_pars = ncomps * [None]
         init_comps = ncomps * [None]
+        memb_probs_old = init_memb_probs
 
     # If no initialisation provided, assume each star is equally probable to belong
     # to each component, but 0% likely to be part of the background
@@ -833,6 +836,7 @@ def fitManyGroups(data, ncomps, rdir='',
         init_memb_probs = np.ones((nstars, ncomps)) / ncomps
         if use_background:
             init_memb_probs = np.hstack((init_memb_probs, np.zeros((nstars,1))))
+        memb_probs_old = init_memb_probs
         skip_first_e_step = True
         all_init_pars = ncomps * [None]
         init_comps = ncomps * [None]
@@ -841,7 +845,6 @@ def fitManyGroups(data, ncomps, rdir='',
 
     # Initialise values for upcoming iterations
     old_comps = init_comps
-    memb_probs_old = init_memb_probs
     old_overallLnLike = -np.inf
     all_init_pos = ncomps * [None]
     all_converged = False
