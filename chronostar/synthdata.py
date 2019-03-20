@@ -192,8 +192,8 @@ class SynthData():
                 table=star,
                 colnames=[dim+'0' for dim in self.cart_labels],
             )
-            xyzuvw_now = traceorbit.traceOribtXYZUVW(mean_then,
-                                                     times=star['age'])
+            xyzuvw_now = traceorbit.trace_cartesian_orbit(mean_then,
+                                                          times=star['age'])
             for ix, dim in enumerate(self.cart_labels):
                 star[dim+'_now'] = xyzuvw_now[ix]
 

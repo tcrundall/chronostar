@@ -41,7 +41,7 @@ def test_LSR():
     xyzuvw_lsr = [0.,0.,0.,0.,0.,0.]
     times = np.linspace(0,100,101)
 
-    xyzuvws = torb.traceOribtXYZUVW(xyzuvw_lsr, times, single_age=False)
+    xyzuvws = torb.trace_cartesian_orbit(xyzuvw_lsr, times, single_age=False)
     assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5])
 
 def test_rotatedLSR():
@@ -51,7 +51,7 @@ def test_rotatedLSR():
     rot_lsr_gp_coords = np.array([1., 0., 1., 0., 0., np.pi])
     xyzuvw_rot_lsr = torb.convert_galpycoords2cart(rot_lsr_gp_coords)
     times = np.linspace(0,100,101)
-    xyzuvws = torb.traceOribtXYZUVW(xyzuvw_rot_lsr, times, single_age=False)
+    xyzuvws = torb.trace_cartesian_orbit(xyzuvw_rot_lsr, times, single_age=False)
 
     # On a circular orbit, same radius as LSR, so shouldn't vary at all
     assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5])
@@ -78,8 +78,8 @@ def test_singleTime():
     xyzuvws_now = torb.trace_many_cartesian_orbit(xyzuvws, age, single_age=True)
     assert np.allclose(xyzuvws_both[:,1], xyzuvws_now)
 
-    xyzuvw_both = torb.traceOribtXYZUVW(xyzuvws[0], times, single_age=False)
-    xyzuvw_now = torb.traceOribtXYZUVW(xyzuvws[0], age, single_age=True)
+    xyzuvw_both = torb.trace_cartesian_orbit(xyzuvws[0], times, single_age=False)
+    xyzuvw_now = torb.trace_cartesian_orbit(xyzuvws[0], age, single_age=True)
     assert np.allclose(xyzuvw_both[1], xyzuvw_now)
 
 
@@ -96,13 +96,13 @@ def test_traceforwardThenBack():
     age = 100.
     times = np.linspace(0,100,1001)
     for xyzuvw_start in xyzuvws:
-        xyzuvw_end = torb.traceOribtXYZUVW(xyzuvw_start,
-                                           times=age,
-                                           single_age=True,
-                                           )
-        xyzuvw_start_again = torb.traceOribtXYZUVW(xyzuvw_end,
-                                                   times=-age,
-                                                   single_age=True,
-                                                   )
+        xyzuvw_end = torb.trace_cartesian_orbit(xyzuvw_start,
+                                                times=age,
+                                                single_age=True,
+                                                )
+        xyzuvw_start_again = torb.trace_cartesian_orbit(xyzuvw_end,
+                                                        times=-age,
+                                                        single_age=True,
+                                                        )
         assert np.allclose(xyzuvw_start, xyzuvw_start_again,
                            atol=ABS_TOLERANCE)

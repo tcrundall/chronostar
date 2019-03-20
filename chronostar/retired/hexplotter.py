@@ -331,12 +331,12 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
 
     means['fitted_then'] = np.array([best_group.mean])
     means['fitted_now']  =\
-        np.array([torb.traceOribtXYZUVW(best_group.mean, best_group.age)])
+        np.array([torb.trace_cartesian_orbit(best_group.mean, best_group.age)])
 
     covs['fitted_then'] = np.array([best_group.generateCovMatrix()])
     covs['fitted_now']  =\
         np.array([
-            tf.transform_covmatrix(covs['fitted_then'][0], torb.traceOribtXYZUVW,
+            tf.transform_covmatrix(covs['fitted_then'][0], torb.trace_cartesian_orbit,
                                    means['fitted_then'][0],
                                    args=(best_group.age,True)
                                    )
@@ -495,12 +495,12 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
         fitted_then_mns.append(best_group.mean)
         fitted_then_covs.append(best_group.generateCovMatrix())
 
-        fitted_now_mn = torb.traceOribtXYZUVW(fitted_then_mns[group_ix],
-                                              best_group.age,
-                                              single_age=True)
+        fitted_now_mn = torb.trace_cartesian_orbit(fitted_then_mns[group_ix],
+                                                   best_group.age,
+                                                   single_age=True)
         fitted_now_cov =\
             tf.transform_covmatrix(fitted_then_covs[group_ix],
-                                   torb.traceOribtXYZUVW,
+                                   torb.trace_cartesian_orbit,
                                    fitted_then_mns[group_ix],
                                    args=(best_group.age,))
         fitted_now_mns.append(fitted_now_mn)

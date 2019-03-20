@@ -63,7 +63,7 @@ for ncomps in range(1,4):
         means = {}
         means['fitted_then'] = [g.mean for g in groups]
         means['fitted_now'] = [
-            torb.traceOribtXYZUVW(g.mean, g.age, single_age=True)
+            torb.trace_cartesian_orbit(g.mean, g.age, single_age=True)
             for g in groups
         ]
         covs = {}
@@ -71,7 +71,7 @@ for ncomps in range(1,4):
             g.generateSphericalCovMatrix() for g in groups
         ])
         covs['fitted_now'] = np.array([
-                tf.transform_covmatrix(covs['fitted_then'][0], torb.traceOribtXYZUVW,
+                tf.transform_covmatrix(covs['fitted_then'][0], torb.trace_cartesian_orbit,
                                        means['fitted_then'][0],
                                        args=(g.age,True)
                                        )

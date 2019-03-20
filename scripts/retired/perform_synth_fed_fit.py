@@ -133,7 +133,7 @@ logging.info("In the directory: {}".format(rdir))
 mean_now_lsr = np.array([50., -100., 25., 1.1, -7.76, 2.25])
 
 # Calculate appropriate starting point
-mean_then = torb.traceOribtXYZUVW(mean_now_lsr, -age)
+mean_then = torb.trace_cartesian_orbit(mean_now_lsr, -age)
 # gather inputs
 # group_pars = np.hstack((mean_then, dX, dV, age, nstars))
 

@@ -18,7 +18,7 @@ import numpy as np
 from scipy.stats.mstats import gmean
 
 from . import transform
-from chronostar.traceorbit import traceOribtXYZUVW
+from chronostar.traceorbit import trace_cartesian_orbit
 from . import traceorbit
 
 
@@ -170,7 +170,7 @@ class AbstractComponent(object):
 
         # Set cartesian orbit tracing function
         if trace_orbit_func is None:
-            self.trace_orbit_func = traceOribtXYZUVW
+            self.trace_orbit_func = trace_cartesian_orbit
         else:
             self.trace_orbit_func = trace_orbit_func
 

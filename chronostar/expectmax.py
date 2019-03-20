@@ -737,19 +737,31 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
     while prev_iters:
         try:
             idir = rdir+"iter{:02}/".format(iter_count)
-            old_comps = Component.load_components(idir + 'best_comps.npy')
-            memb_probs_old = np.load(idir + 'membership.npy')
-            old_overall_lnlike = get_overall_lnlikelihood(data, old_comps,
-                                                         inc_posterior=False)
-            all_init_pars = [Component.internalise(old_comp.get_pars())
-                             for old_comp in old_comps]
-            skip_first_e_step = False
+            try:
+                old_comps = Component.load_components(idir + 'best_comps.npy')
+                all_init_pars = [Component.internalise(old_comp.get_pars())
+                                 for old_comp in old_comps]
+                old_overall_lnlike = get_overall_lnlikelihood(data, old_comps,
+                                                              inc_posterior=False)
+                memb_probs_old = np.load(idir + 'membership.npy')
+                skip_first_e_step = False
+            # End up here if components aren't loadable due to change in module
+            # Still, don't want all the work to go to waste..
+            # So we pick up where we left off with the old memberships only
+            except AttributeError:
+                old_comps = init_comps
+                all_init_pars = ncomps * [None]
+                memb_probs_old = np.load(idir + 'membership.npy')
+                skip_first_e_step = True
+                logging.info("Couldn't load components, but found memberships")
             iter_count += 1
+
         except IOError:
             logging.info("Managed to find {} previous iterations".format(
                 iter_count
             ))
             prev_iters = False
+
 
     # Until convergence is achieved (or MAX_ITERS is exceeded) iterate through
     # the Expecation and Maximisation stages
@@ -762,7 +774,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
 
         # EXPECTATION
         if skip_first_e_step:
-            logging.info("Using initialising memb_probs for first iteration")
+            logging.info("Skipping expectation step since we have memb probs")
             logging.info("memb_probs: {}".format(init_memb_probs.sum(axis=0)))
             memb_probs_new = init_memb_probs
             skip_first_e_step = False

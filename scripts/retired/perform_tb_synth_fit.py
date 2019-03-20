@@ -128,7 +128,7 @@ mean_now_lsr = cc.convert_helio2lsr(np.array([50., -100., 0.,
                                               -10., -20., -5.]))
 # !!!!! WHICH EQUALS [50., -100., 25., 1.1, -7.76, 2.25], much smaller vels
 # Calculate appropriate starting point
-mean_then = torb.traceOribtXYZUVW(mean_now, -age)
+mean_then = torb.trace_cartesian_orbit(mean_now, -age)
 # gather inputs
 group_pars = np.hstack((mean_then, dX, dV, age, nstars))
 

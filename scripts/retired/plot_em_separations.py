@@ -29,11 +29,11 @@ xyzuvw_dict = gf.loadXYZUVW(xyzuvw_file)
 
 
 ass_cov_now = tf.transform_covmatrix(final_groups[0].generateCovMatrix(),
-                                     torb.traceOribtXYZUVW,
+                                     torb.trace_cartesian_orbit,
                                      final_groups[0].mean,
                                      args=(final_groups[0].age,))
-ass_mn_now = torb.traceOribtXYZUVW(final_groups[0].mean,
-                                   final_groups[0].age)
+ass_mn_now = torb.trace_cartesian_orbit(final_groups[0].mean,
+                                        final_groups[0].age)
 simple_cov_now = np.copy(ass_cov_now)
 simple_cov_now[3:6,:3] = 0
 simple_cov_now[:3,3:6] = 0

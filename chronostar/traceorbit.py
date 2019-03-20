@@ -131,7 +131,7 @@ def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
         xyzuvw = xyzuvw[0]
     return xyzuvw
 
-def traceOribtXYZUVW(xyzuvw_start, times=None, single_age=True):
+def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -239,8 +239,8 @@ def trace_many_cartesian_orbit(xyzuvw_starts, times=None, single_age=True,
     else:
         xyzuvw_to = np.zeros((nstars, ntimes, 6))
     for st_ix in range(nstars):
-        xyzuvw_to[st_ix] = traceOribtXYZUVW(xyzuvw_starts[st_ix], times,
-                                            single_age=single_age)
+        xyzuvw_to[st_ix] = trace_cartesian_orbit(xyzuvw_starts[st_ix], times,
+                                                 single_age=single_age)
     #TODO: test this
     if savefile:
         np.save(savefile, xyzuvw_to)

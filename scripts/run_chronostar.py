@@ -30,6 +30,7 @@ from get_association_region import get_region
 sys.path.insert(0, os.path.abspath('..'))
 from chronostar.synthdata import SynthData
 from chronostar import tabletool
+from chronostar import compfitter
 from chronostar import expectmax
 
 
@@ -231,14 +232,11 @@ init_memb_probs[:,0] = 1.
 
 # Try and recover any results from previous run
 try:
-    prev_comps = Component.load_components(run_dir + 'final/'
-                                           + final_comps_file)
     prev_med_and_spans = np.load(run_dir + 'final/'
                             + final_med_and_spans_file)
     prev_memb_probs = np.load(run_dir + 'final/' + final_memb_probs_file)
-    # new_comps = Component.load_components(run_dir + 'final/final_comps.npy')
-    # new_med_and_spans = np.load(run_dir + 'final/final_med_and_spans.npy')
-    # new_memb_probs = np.load(run_dir + 'final/final_membership.npy')
+    prev_comps = Component.load_components(run_dir + 'final/'
+                                           + final_comps_file)
     logging.info('Loaded from previous run')
 except IOError:
     prev_comps, prev_med_and_spans, prev_memb_probs = \
@@ -250,6 +248,20 @@ except IOError:
                                     'include_background_distribution'],
                                  init_memb_probs=init_memb_probs,
                                  )
+# Final comps are there, they just can't be read by current module
+# so quickly fit them based on fixed prev membership probabilities
+except AttributeError:
+    logging.info('Could only load memberships, but not components')
+    prev_comps = ncomps * [None]
+    for i in range(ncomps):
+        logging.info('Retrofitting component {}'.format(0))
+        prev_comps[i], _, _ = compfitter.fit_comp(
+                data=data_dict, memb_probs=prev_memb_probs[:,i],
+                burnin_steps=config.advanced['burnin_steps'],
+                sampling_steps=config.advanced['sampling_steps'],
+                trace_orbit_func=trace_orbit_func,
+        )
+
 
 # Calculate global score of fit for comparison with future fits with different
 # component counts
@@ -313,6 +325,19 @@ while ncomps < MAX_COMPS:
                     burnin=config.advanced['burnin_steps'],
                     sampling_steps=config.advanced['sampling_steps'],
             )
+        # Comps are there, they just can't be read by current module
+        # so quickly fit them based on fixed prev membership probabilities
+        except AttributeError:
+            logging.info('Could only load memberships, but not components')
+            prev_comps = ncomps * [None]
+            for comp_ix in range(ncomps):
+                logging.info('Retrofitting component {}'.format(0))
+                prev_comps[i], _, _ = compfitter.fit_comp(
+                        data=data_dict, memb_probs=prev_memb_probs[:, i],
+                        burnin_steps=config.advanced['burnin_steps'],
+                        sampling_steps=config.advanced['sampling_steps'],
+                        trace_orbit_func=trace_orbit_func,
+                )
 
         best_fits.append(comps)
         all_med_and_spans.append(med_and_spans)

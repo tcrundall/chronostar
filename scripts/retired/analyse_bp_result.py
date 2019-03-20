@@ -83,10 +83,10 @@ bp_core_xyzuvw = bp_xyzuvw[bp_core_mask]
 
 
 bpmg_then = np.load(final_groups_file)[0]
-bpmg_mean_now = torb.traceOribtXYZUVW(bpmg_then.mean, bpmg_then.age,
-                                      single_age=True)
+bpmg_mean_now = torb.trace_cartesian_orbit(bpmg_then.mean, bpmg_then.age,
+                                           single_age=True)
 bpmg_cov_now = tf.transform_covmatrix(
-    bpmg_then.generateCovMatrix(), torb.traceOribtXYZUVW,
+    bpmg_then.generateCovMatrix(), torb.trace_cartesian_orbit,
     bpmg_then.mean, dim=6,
     args=(bpmg_then.age, True)
 )

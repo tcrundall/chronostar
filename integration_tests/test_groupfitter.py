@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0,'..')
 from chronostar.component import SphereComponent
 from chronostar.synthdata import SynthData
-from chronostar.traceorbit import traceOribtXYZUVW
+from chronostar.traceorbit import trace_cartesian_orbit
 from chronostar import tabletool
 import chronostar.compfitter as gf
 
@@ -107,7 +107,7 @@ def test_lcc_like():
     mean_now = np.array([50., -100., 25., 1.1, -7.76, 2.25])
 
     age = 10.
-    mean = traceOribtXYZUVW(mean_now, times=-age)
+    mean = trace_cartesian_orbit(mean_now, times=-age)
     dx = 5.
     dv = 2.
     covmatrix = np.identity(6)

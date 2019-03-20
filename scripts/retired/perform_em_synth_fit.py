@@ -100,8 +100,8 @@ logging.info("---------- Generating synthetic data...")
 # to the current day mean of mean_now
 for i in range(ngroups):
     logging.info(" generating from group {}".format(i))
-    mean_then = torb.traceOribtXYZUVW(mean_now, -extra_pars[i, -2],
-                                      single_age=True)
+    mean_then = torb.trace_cartesian_orbit(mean_now, -extra_pars[i, -2],
+                                           single_age=True)
     group_pars = np.hstack((mean_then, extra_pars[i]))
 
 all_xyzuvw_init, origins = syn.synthesiseManyXYZUVW(
