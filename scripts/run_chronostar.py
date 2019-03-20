@@ -347,28 +347,13 @@ while ncomps < MAX_COMPS:
                     burnin=config.advanced['burnin_steps'],
                     sampling_steps=config.advanced['sampling_steps'],
             )
-        # Comps are there, they just can't be read by current module
-        # so quickly fit them based on fixed prev membership probabilities
-        except AttributeError:
-            logging.info('Could only load memberships, but not components')
-            prev_comps = ncomps * [None]
-            for comp_ix in range(ncomps):
-                logging.info('Retrofitting component {}'.format(0))
-                prev_comps[i], _, _ = compfitter.fit_comp(
-                        data=data_dict, memb_probs=prev_memb_probs[:, i],
-                        burnin_steps=config.advanced['burnin_steps'],
-                        sampling_steps=config.advanced['sampling_steps'],
-                        trace_orbit_func=trace_orbit_func,
-                )
 
         best_fits.append(comps)
         all_med_and_spans.append(med_and_spans)
         all_memb_probs.append(memb_probs)
-        lnlikes.append(
-               expectmax.get_overall_lnlikelihood(data_dict, comps, bg_ln_ols=None, )
-        )
+        lnlikes.append(expectmax.get_overall_lnlikelihood(data_dict, comps))
         lnposts.append(
-                expectmax.get_overall_lnlikelihood(data_dict, comps, bg_ln_ols=None,
+                expectmax.get_overall_lnlikelihood(data_dict, comps,
                                                    inc_posterior=True)
         )
         bics.append(expectmax.calc_bic(data_dict, ncomps, lnlikes[-1]))
