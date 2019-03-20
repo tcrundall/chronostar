@@ -155,8 +155,7 @@ else:
 
     # By the end of this, data will be a astropy table
     # with cartesian data written in
-    # columns in default way. (Unless cartesian data was already
-    # provided in non default way - handle this side-case later)
+    # columns in default way.
     if config.config['convert_to_cartesian']:
         # Performs conversion in place (in memory) on `data_table`
         if (not 'c_XU' in data_table.colnames and

@@ -14,7 +14,7 @@ config = {
                                                     # Cartesian data of all Gaia DR2 stars
                                                     # e.g. ../data/gaia_dr2_mean_xyzuvw.npy
     'run_with_mpi':False,       # not yet inpmlemented
-    'convert_to_cartesian':True,        # whehter need to convert data from astrometry to cartesian
+    'convert_to_cartesian':False,        # whehter need to convert data from astrometry to cartesian
     'overwrite_datafile':False,         # whether to store results in same talbe and rewrite to file
     'cartesian_savefile':'../results/{}/{}_subset.fit'.format(assoc_name, assoc_name),
     'save_cartesian_data':True,         #
