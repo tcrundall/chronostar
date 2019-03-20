@@ -235,8 +235,25 @@ try:
     prev_med_and_spans = np.load(run_dir + 'final/'
                             + final_med_and_spans_file)
     prev_memb_probs = np.load(run_dir + 'final/' + final_memb_probs_file)
-    prev_comps = Component.load_components(run_dir + 'final/'
-                                           + final_comps_file)
+    try:
+        prev_comps = Component.load_components(
+                str(run_dir+'final/'+final_comps_file))
+    # Final comps are there, they just can't be read by current module
+    # so quickly fit them based on fixed prev membership probabilities
+    except AttributeError:
+        logging.info('Component class has been modified, reconstructing from'
+                     'chain.')
+        prev_comps = ncomps * [None]
+        for i in range(ncomps):
+            final_cdir = rdir + 'final/comp{}/'.format(i)
+            chain = np.load(final_cdir + 'final_chain.npy')
+            lnprob = np.load(final_cdir + 'final_lnprob.npy')
+            npars = len(Component.PARAMETER_FORMAT)
+            best_ix = np.argmax(lnprob)
+            best_pars = chain.reshape(-1,npars)
+            prev_comps[i] = Component(pars=best_pars, internal=True)
+        np.save(str(rdir+'final/'+final_comps_file), prev_comps)
+
     logging.info('Loaded from previous run')
 except IOError:
     prev_comps, prev_med_and_spans, prev_memb_probs = \
@@ -248,19 +265,6 @@ except IOError:
                                     'include_background_distribution'],
                                  init_memb_probs=init_memb_probs,
                                  )
-# Final comps are there, they just can't be read by current module
-# so quickly fit them based on fixed prev membership probabilities
-except AttributeError:
-    logging.info('Could only load memberships, but not components')
-    prev_comps = ncomps * [None]
-    for i in range(ncomps):
-        logging.info('Retrofitting component {}'.format(0))
-        prev_comps[i], _, _ = compfitter.fit_comp(
-                data=data_dict, memb_probs=prev_memb_probs[:,i],
-                burnin_steps=config.advanced['burnin_steps'],
-                sampling_steps=config.advanced['sampling_steps'],
-                trace_orbit_func=trace_orbit_func,
-        )
 
 
 # Calculate global score of fit for comparison with future fits with different
@@ -309,11 +313,29 @@ while ncomps < MAX_COMPS:
         # Run em fit
         # First try and find any previous runs
         try:
-            comps = Component.load_components(run_dir + 'final/'
-                                              + final_comps_file)
             med_and_spans = np.load(run_dir + 'final/'
                                     + final_med_and_spans_file)
             memb_probs = np.load(run_dir + 'final/' + final_memb_probs_file)
+            try:
+                comps = Component.load_components(run_dir + 'final/'
+                                                  + final_comps_file)
+            # Final comps are there, they just can't be read by current module
+            # so quickly fit them based on fixed prev membership probabilities
+            except AttributeError:
+                logging.info(
+                    'Component class has been modified, reconstructing from'
+                    'chain.')
+                prev_comps = ncomps * [None]
+                for i in range(ncomps):
+                    final_cdir = run_dir + 'final/comp{}/'.format(i)
+                    chain = np.load(final_cdir + 'final_chain.npy')
+                    lnprob = np.load(final_cdir + 'final_lnprob.npy')
+                    npars = len(Component.PARAMETER_FORMAT)
+                    best_ix = np.argmax(lnprob)
+                    best_pars = chain.reshape(-1, npars)
+                    prev_comps[i] = Component(pars=best_pars, internal=True)
+                np.save(str(run_dir + 'final/' + final_comps_file), prev_comps)
+
             logging.info('Fit loaded from previous run')
         except IOError:
             comps, med_and_spans, memb_probs = \
