@@ -98,6 +98,8 @@ final_comps_file = 'final_comps.npy'
 final_med_and_spans_file = 'final_med_and_spans.npy'
 final_memb_probs_file = 'final_membership.npy'
 
+historical = False
+
 # First see if a data savefile path has been provided, and if
 # so, then just assume this script has already been performed
 # and the data prep has already been done
@@ -153,6 +155,7 @@ else:
     # columns in default way. (Unless cartesian data was already
     # provided in non default way - handle this side-case later)
     if config.config['convert_to_cartesian']:
+        historical = 'c_XU' in data_table.colnames
         # Performs conversion in place (in memory) on `data_table`
         log_message('Converting to cartesian')
         tabletool.convert_table_astro2cart(
@@ -202,7 +205,8 @@ else:
 log_message('Building data dictionary')
 data_dict = tabletool.build_data_dict_from_table(
         data_table,
-        get_background_overlaps=config.config['include_background_distribution']
+        get_background_overlaps=config.config['include_background_distribution'],
+        historical=historical,
 )
 
 STARTING_NCOMPS = 1
