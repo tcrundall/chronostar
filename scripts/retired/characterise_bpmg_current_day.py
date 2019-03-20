@@ -47,8 +47,8 @@ for chaindir, label in zip(chaindirs, labels):
             mean = sample[:6]
             group = chronostar.component.Component(sample, internal=True)
 
-            cd_mean = torb.trace_cartesian_orbit(group.mean, group.age)
-            cd_cov = tf.transform_covmatrix(group.generateSphericalCovMatrix(), torb.trace_cartesian_orbit,
+            cd_mean = torb.traceOribtXYZUVW(group.mean, group.age)
+            cd_cov = tf.transform_covmatrix(group.generateSphericalCovMatrix(), torb.traceOribtXYZUVW,
                                             group.mean, args=(group.age, True))
 
             # fill in cartesian mean

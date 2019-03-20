@@ -110,9 +110,9 @@ def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
             color = COLORS[group_ix]
 
     # orb_alpha = 0.1
-    gorb = torb.trace_cartesian_orbit(pos_now,
-                                      times=np.linspace(0, end_age, ntimes),
-                                      single_age=False)
+    gorb = torb.traceOribtXYZUVW(pos_now,
+                                 times=np.linspace(0, end_age, ntimes),
+                                 single_age=False)
     line_obj = ax.plot(gorb[:, dim1], gorb[:, dim2], ls='-',
                        alpha=0.1,
                        color=color)
@@ -381,9 +381,9 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
 
         # plot group current day distribution (should match well with stars)
         if group_now:
-            mean_now = torb.trace_cartesian_orbit(mean_then, group.age,
-                                                  single_age=True)
-            cov_now = tf.transform_covmatrix(cov_then, torb.trace_cartesian_orbit,
+            mean_now = torb.traceOribtXYZUVW(mean_then, group.age,
+                                             single_age=True)
+            cov_now = tf.transform_covmatrix(cov_then, torb.traceOribtXYZUVW,
                                              mean_then, args=[group.age])
             ax.plot(mean_now[dim1], mean_now[dim2], marker='+', alpha=0.3,
                    color=COLORS[i])
@@ -811,9 +811,9 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     # xs = np.linspace(np.min(bins), np.max(bins), npoints)
     combined_gauss = np.zeros(xs.shape)
     for i, (group, weight) in enumerate(zip(groups, weights)):
-        mean_now = torb.trace_cartesian_orbit(group.mean, group.age, single_age=True)
+        mean_now = torb.traceOribtXYZUVW(group.mean, group.age, single_age=True)
         cov_now = tf.transform_covmatrix(group.generateCovMatrix(),
-                                         torb.trace_cartesian_orbit,
+                                         torb.traceOribtXYZUVW,
                                          group.mean, args=[group.age])
         group_gauss = weight*dt.gauss(xs, mean_now[dim],
                                       np.sqrt(cov_now[dim,dim]))

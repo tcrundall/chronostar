@@ -145,8 +145,8 @@ except IOError:
         # mean_now_w_offset[0] += i * 50
         mean_now_w_offset += offsets[i]
     
-        mean_then = torb.trace_cartesian_orbit(mean_now_w_offset, -extra_pars[i, -2],
-                                               single_age=True)
+        mean_then = torb.traceOribtXYZUVW(mean_now_w_offset, -extra_pars[i, -2],
+                                          single_age=True)
         group_pars = np.hstack((mean_then, extra_pars[i]))
         xyzuvw_init, origin = syn.synthesiseXYZUVW(group_pars, form='sphere',
                                                    return_group=True,
