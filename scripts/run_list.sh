@@ -13,4 +13,4 @@ nohup python run_chronostar.py ../config/32-ori.py &
 nohup python run_chronostar.py ../config/ucl.py & 
 nohup python run_chronostar.py ../config/usco.py & 
 nohup python run_chronostar.py ../config/upper-cra.py & 
-nohup python run_chronostar.py ../config/twa_fit.py & 
+# nohup python run_chronostar.py ../config/twa_fit.py & 

@@ -749,7 +749,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
                     lnprob = np.load(idir + 'comp{}/final_lnprob.npy'.format(i))
                     npars = len(Component.PARAMETER_FORMAT)
                     best_ix = np.argmax(lnprob)
-                    best_pars = chain.reshape(-1, npars)
+                    best_pars = chain.reshape(-1, npars)[best_ix]
                     old_comps[i] = Component(pars=best_pars, internal=True)
 
             all_init_pars = [Component.internalise(old_comp.get_pars())

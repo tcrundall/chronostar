@@ -241,18 +241,18 @@ try:
     # Final comps are there, they just can't be read by current module
     # so quickly fit them based on fixed prev membership probabilities
     except AttributeError:
-        logging.info('Component class has been modified, reconstructing from'
-                     'chain.')
+        logging.info('Component class has been modified, reconstructing '
+                     'from chain')
         prev_comps = ncomps * [None]
         for i in range(ncomps):
-            final_cdir = rdir + 'final/comp{}/'.format(i)
+            final_cdir = run_dir + 'final/comp{}/'.format(i)
             chain = np.load(final_cdir + 'final_chain.npy')
             lnprob = np.load(final_cdir + 'final_lnprob.npy')
             npars = len(Component.PARAMETER_FORMAT)
             best_ix = np.argmax(lnprob)
-            best_pars = chain.reshape(-1,npars)
+            best_pars = chain.reshape(-1,npars)[best_ix]
             prev_comps[i] = Component(pars=best_pars, internal=True)
-        np.save(str(rdir+'final/'+final_comps_file), prev_comps)
+        np.save(str(run_dir+'final/'+final_comps_file), prev_comps)
 
     logging.info('Loaded from previous run')
 except IOError:
