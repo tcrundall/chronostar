@@ -154,9 +154,9 @@ if NGROUPS == 1:
 logging.info("Using data file {}".format(xyzuvw_file))
 logging.info("Everything loaded, about to fit with {} components"\
     .format(NGROUPS))
-em.fitManyGroups(star_pars, NGROUPS,
-                 rdir=rdir, pool=pool, offset=True, bg_hist_file=bg_hist_file,
-                 origins=origins, init_with_origin=init_origin,
-                 )
+em.fit_many_comps(star_pars, NGROUPS,
+                  rdir=rdir, pool=pool, offset=True, bg_hist_file=bg_hist_file,
+                  origins=origins, init_with_origin=init_origin,
+                  )
 if using_mpi:
     pool.close()

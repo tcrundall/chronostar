@@ -46,16 +46,16 @@ def test_calcMembershipProbs():
     """
     # case 1
     star_ols = [10, 10]
-    assert np.allclose([.5,.5], em.calcMembershipProbs(np.log(star_ols)))
+    assert np.allclose([.5,.5], em.calc_membership_probs(np.log(star_ols)))
 
     # case 2
     star_ols = [10, 30]
-    assert np.allclose([.25,.75], em.calcMembershipProbs(np.log(star_ols)))
+    assert np.allclose([.25,.75], em.calc_membership_probs(np.log(star_ols)))
 
     # case 3
     star_ols = [10, 10, 20]
     assert np.allclose([.25, .25, .5],
-                       em.calcMembershipProbs(np.log(star_ols)))
+                       em.calc_membership_probs(np.log(star_ols)))
 
 
 def test_expectation():

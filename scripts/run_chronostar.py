@@ -175,8 +175,8 @@ else:
             star_means = tabletool.build_data_dict_from_table(
                     data_table, only_means=True,
             )
-            ln_bg_ols = expectmax.getKernelDensities(background_means,
-                                                     star_means,)
+            ln_bg_ols = expectmax.get_kernel_densities(background_means,
+                                                       star_means, )
 
             # If allowed, save to original file path
             if config.config['overwrite_datafile']:
@@ -233,24 +233,24 @@ try:
     logging.info('Loaded from previous run')
 except IOError:
     prev_comps, prev_med_and_spans, prev_memb_probs = \
-        expectmax.fitManyGroups(data=data_dict, ncomps=ncomps, rdir=run_dir,
-                                trace_orbit_func=trace_orbit_func,
-                                burnin=config.advanced['burnin_steps'],
-                                sampling_steps=config.advanced['sampling_steps'],
-                                use_background=config.config[
+        expectmax.fit_many_comps(data=data_dict, ncomps=ncomps, rdir=run_dir,
+                                 trace_orbit_func=trace_orbit_func,
+                                 burnin=config.advanced['burnin_steps'],
+                                 sampling_steps=config.advanced['sampling_steps'],
+                                 use_background=config.config[
                                     'include_background_distribution'],
-                                init_memb_probs=init_memb_probs,
-                                )
+                                 init_memb_probs=init_memb_probs,
+                                 )
 
 # Calculate global score of fit for comparison with future fits with different
 # component counts
-prev_lnlike = expectmax.getOverallLnLikelihood(data_dict, prev_comps,
-                                       # bg_ln_ols=bg_ln_ols,
-                                              )
-prev_lnpost = expectmax.getOverallLnLikelihood(data_dict, prev_comps,
-                                       # bg_ln_ols=bg_ln_ols,
-                                       inc_posterior=True)
-prev_bic = expectmax.calcBIC(data_dict, ncomps, prev_lnlike)
+prev_lnlike = expectmax.get_overall_lnlikelihood(data_dict, prev_comps,
+                                                 # bg_ln_ols=bg_ln_ols,
+                                                 )
+prev_lnpost = expectmax.get_overall_lnlikelihood(data_dict, prev_comps,
+                                                 # bg_ln_ols=bg_ln_ols,
+                                                 inc_posterior=True)
+prev_bic = expectmax.calc_bic(data_dict, ncomps, prev_lnlike)
 
 ncomps += 1
 
@@ -296,7 +296,7 @@ while ncomps < MAX_COMPS:
             logging.info('Fit loaded from previous run')
         except IOError:
             comps, med_and_spans, memb_probs = \
-            expectmax.fitManyGroups(
+            expectmax.fit_many_comps(
                     data=data_dict, ncomps=ncomps, rdir=run_dir,
                     init_comps=init_comps, trace_orbit_func=trace_orbit_func,
                     use_background=config.config[
@@ -309,13 +309,13 @@ while ncomps < MAX_COMPS:
         all_med_and_spans.append(med_and_spans)
         all_memb_probs.append(memb_probs)
         lnlikes.append(
-               expectmax.getOverallLnLikelihood(data_dict, comps, bg_ln_ols=None,)
+               expectmax.get_overall_lnlikelihood(data_dict, comps, bg_ln_ols=None, )
         )
         lnposts.append(
-                expectmax.getOverallLnLikelihood(data_dict, comps, bg_ln_ols=None,
-                                                 inc_posterior=True)
+                expectmax.get_overall_lnlikelihood(data_dict, comps, bg_ln_ols=None,
+                                                   inc_posterior=True)
         )
-        bics.append(expectmax.calcBIC(data_dict, ncomps, lnlikes[-1]))
+        bics.append(expectmax.calc_bic(data_dict, ncomps, lnlikes[-1]))
         logging.info('Decomposiiton finished with \nBIC: {}\nlnlike: {}\n'
                      'lnpost: {}'.format(
                 bics[-1], lnlikes[-1], lnposts[-1],

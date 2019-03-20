@@ -52,8 +52,8 @@ for ncomps in range(1,4):
 
         bg_ln_ols = em.backgroundLogOverlaps(star_pars['xyzuvw'], bg_hists)
 
-        overall_lnlike, z = em.getOverallLnLikelihood(star_pars, groups,
-                                                   bg_ln_ols, return_z=True)
+        overall_lnlike, z = em.get_overall_lnlikelihood(star_pars, groups,
+                                                        bg_ln_ols, return_memb_probs=True)
         print("overall_lnlike with {} comps is: {:.5}".format(ncomps, overall_lnlike))
         bic = calcBIC(star_pars, ncomps, overall_lnlike)
         print("BIC is: {}".format(bic))

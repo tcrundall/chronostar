@@ -55,6 +55,6 @@ ln_bp_ols = np.log(nbp_stars) + chronostar.likelihood.get_lnoverlaps(beta_fit.ge
 
 combined_lnols = np.hstack((ln_bp_ols, ln_bg_ols))
 
-membership_probs = em.calcMembershipProbs(combined_lnols)
+membership_probs = em.calc_membership_probs(combined_lnols)
 print(membership_probs)
 

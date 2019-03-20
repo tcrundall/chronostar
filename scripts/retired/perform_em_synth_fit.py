@@ -127,10 +127,10 @@ astro_table = chronostar.synthdata.measureXYZUVW(all_xyzuvw_now_perf, 1.0,
 star_pars = cv.convertMeasurementsToCartesian(
     astro_table, savefile=rdir+xyzuvw_conv_savefile,
 )
-em.fitManyGroups(star_pars, ngroups, origins=origins,
-                 rdir=rdir, pool=pool,
-                 #init_with_origin=True
-                 )
+em.fit_many_comps(star_pars, ngroups, origins=origins,
+                  rdir=rdir, pool=pool,
+                  #init_with_origin=True
+                  )
 
 if using_mpi:
     pool.close()

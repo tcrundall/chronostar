@@ -167,16 +167,16 @@ while ncomps < MAX_COMP:
             logging.info("Loaded from previous run")
         except IOError:
             new_groups, new_meds, new_z = \
-                em.fitManyGroups(star_pars, ncomps, rdir=run_dir, pool=pool,
-                                 bg_ln_ols=bg_ln_ols) # kill component here
+                em.fit_many_comps(star_pars, ncomps, rdir=run_dir, pool=pool,
+                                  bg_ln_ols=bg_ln_ols) # kill component here
             new_groups = np.array(new_groups)
 
-        new_lnlike = em.getOverallLnLikelihood(star_pars, new_groups,
-                                               bg_ln_ols=bg_ln_ols)
-        new_lnpost = em.getOverallLnLikelihood(star_pars, new_groups,
-                                               bg_ln_ols=bg_ln_ols,
-                                               inc_posterior=True)
-        new_BIC = em.calcBIC(star_pars, ncomps, new_lnlike)
+        new_lnlike = em.get_overall_lnlikelihood(star_pars, new_groups,
+                                                 bg_ln_ols=bg_ln_ols)
+        new_lnpost = em.get_overall_lnlikelihood(star_pars, new_groups,
+                                                 bg_ln_ols=bg_ln_ols,
+                                                 inc_posterior=True)
+        new_BIC = em.calc_bic(star_pars, ncomps, new_lnlike)
     # handle multiple components
     else:
         logging.info("******************************************")
@@ -216,21 +216,21 @@ while ncomps < MAX_COMP:
                 logging.info("Fit loaded from previous run")
             except IOError:
                 groups, meds, z = \
-                    em.fitManyGroups(star_pars, ncomps, rdir=run_dir,
-                                     pool=pool,
-                                     init_comps=init_groups,
-                                     bg_ln_ols=bg_ln_ols)
+                    em.fit_many_comps(star_pars, ncomps, rdir=run_dir,
+                                      pool=pool,
+                                      init_comps=init_groups,
+                                      bg_ln_ols=bg_ln_ols)
             best_fits.append(groups)
             all_meds.append(meds)
             all_zs.append(z)
 
-            lnlike = em.getOverallLnLikelihood(star_pars, groups,
-                                               bg_ln_ols=bg_ln_ols)
+            lnlike = em.get_overall_lnlikelihood(star_pars, groups,
+                                                 bg_ln_ols=bg_ln_ols)
             lnlikes.append(lnlike)
-            lnposts.append(em.getOverallLnLikelihood(star_pars, groups,
-                                                     bg_ln_ols=bg_ln_ols,
-                                                     inc_posterior=True))
-            BICs.append(em.calcBIC(star_pars, ncomps, lnlike))
+            lnposts.append(em.get_overall_lnlikelihood(star_pars, groups,
+                                                       bg_ln_ols=bg_ln_ols,
+                                                       inc_posterior=True))
+            BICs.append(em.calc_bic(star_pars, ncomps, lnlike))
             logging.info("Decomp finished with\nBIC: {}\nLnlike: {}"
                          "\nlnpost: {}".format(
                 BICs[-1], lnlikes[-1], lnposts[-1]

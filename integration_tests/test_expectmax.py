@@ -92,11 +92,11 @@ def test_fit_one_comp_with_background():
     origins = [SphereComponent(pars) for pars in sphere_comp_pars]
 
     best_comps, med_and_spans, memb_probs = \
-        expectmax.fitManyGroups(data=synth_data.table,
-                                ncomps=ncomps,
-                                rdir=savedir,
-                                trace_orbit_func=dummy_trace_orbit_func,
-                                use_background=True)
+        expectmax.fit_many_comps(data=synth_data.table,
+                                 ncomps=ncomps,
+                                 rdir=savedir,
+                                 trace_orbit_func=dummy_trace_orbit_func,
+                                 use_background=True)
 
     return best_comps, med_and_spans, memb_probs
 
@@ -170,10 +170,10 @@ def test_fit_many_comps():
     origins = [SphereComponent(pars) for pars in sphere_comp_pars]
 
     best_comps, med_and_spans, memb_probs = \
-        expectmax.fitManyGroups(data=synth_data.table,
-                                ncomps=ncomps,
-                                rdir=savedir,
-                                trace_orbit_func=dummy_trace_orbit_func, )
+        expectmax.fit_many_comps(data=synth_data.table,
+                                 ncomps=ncomps,
+                                 rdir=savedir,
+                                 trace_orbit_func=dummy_trace_orbit_func, )
 
     # compare fit with input
     try:
