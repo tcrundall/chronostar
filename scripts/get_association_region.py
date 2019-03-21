@@ -7,11 +7,11 @@ sys.path.insert(0, '..')
 from chronostar import tabletool
 
 
-def get_region(assoc_name):
-
-    gagne_reference_data =\
-        '../data/gagne_bonafide_full_kinematics_with_lit_and_best_radial_velocity' \
-        '_comb_binars_with_banyan_radec.fits'
+def get_region(assoc_name, gagne_reference_data = None):
+    if gagne_reference_data is None:
+        gagne_reference_data =\
+            '../data/gagne_bonafide_full_kinematics_with_lit_and_best_radial_velocity' \
+            '_comb_binars_with_banyan_radec.fits'
 
     gagne_table = tabletool.read(gagne_reference_data)
 
