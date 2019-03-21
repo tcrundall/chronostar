@@ -21,6 +21,8 @@ def get_region(assoc_name, gagne_reference_data = None):
                     list(set(gagne_table['Moving group'])), assoc_name
             )
 
+    # Dummy comment
+
     # Extract all stars
     subtable = gagne_table[np.where(gagne_table['Moving group'] == assoc_name)]
 
