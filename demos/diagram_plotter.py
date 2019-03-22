@@ -5,6 +5,7 @@ from __future__ import division, print_function
 
 import matplotlib as mpl
 
+import chronostar.component
 import chronostar.fitplotter
 
 mpl.use('Agg')
@@ -13,7 +14,7 @@ import numpy as np
 import sys
 sys.path.insert(0,'..')
 
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.errorellipse as ee
 import chronostar.expectmax as em
 
@@ -40,10 +41,8 @@ xyzuvw = np.zeros((0,6))
 dividers = [0]
 
 for i in range(ngroups):
-    groups[i] = syn.Group(group_pars[i])
-    xyzuvw = np.vstack((xyzuvw, syn.synthesiseXYZUVW(
-        group_pars[i]
-    )))
+    groups[i] = chronostar.component.Component(group_pars[i])
+    xyzuvw = np.vstack((xyzuvw, syn.synthesiseXYZUVW(group_pars[i])))
     dividers.append(dividers[-1] + group_pars[i,-1])
 
 plt.clf()
@@ -66,7 +65,8 @@ for offset in offset_opts:
         color = 'b'
 
     for i in range(ngroups):
-        comp_groups[i] = syn.Group(init_comps[i], internal=True, starcount=False)
+        comp_groups[i] = chronostar.component.Component(init_comps[i],
+                                                        internal=True)
         chronostar.fitplotter.plotCovEllipse(comp_groups[i].generateCovMatrix()[3:5, 3:5],
                           comp_groups[i].mean[3:5], with_line=True, color=color)
     plt.xlabel('U [km/s]')

@@ -10,88 +10,200 @@ from __future__ import division, print_function
 import logging
 import numpy as np
 import sys
+from distutils.dir_util import mkpath
+
 
 sys.path.insert(0, '..')  # hacky way to get access to module
+from chronostar.component import SphereComponent
+from chronostar.synthdata import SynthData
+from chronostar import tabletool
+from chronostar import expectmax
 
-import chronostar.expectmax as em
-import chronostar.synthesiser as syn
-import chronostar.traceorbit as torb
-import chronostar.measurer as ms
-import chronostar.converter as cv
+PY_VERS = sys.version[0]
 
-group_pars = np.array([
+def dummy_trace_orbit_func(loc, times=None):
+    """Dummy trace orbit func to skip irrelevant computation"""
+    if times is not None:
+        if np.all(times > 1.0):
+            return loc + 1000.
+    return loc
+
+SPHERE_COMP_PARS = np.array([
     # X, Y, Z, U, V, W, dX, dV, age,nstars
-    [ 0, 0, 0, 0, 0, 0, 10,  5,  10,  500],
-    [50,50, 0, 0, 0, 0, 10,  5,  10,  500],
+    [ 0, 0, 0, 0, 0, 0, 10,  5,  10],
+    [50,50, 0, 0, 0, 0, 10,  5,  10],
 ])
+STARCOUNTS = [200, 200]
 
-data_dir = 'temp_data/'
-synth_file = data_dir + 'synth_data.pkl'
-tb_file = data_dir + 'tb_data.pkl'
+run_name = 'stationary'
+savedir = 'temp_data/{}_expectmax_{}/'.format(PY_VERS, run_name)
+mkpath(savedir)
+data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
+                                                             run_name)
+log_filename = 'logs/{}_expectmax_{}.log'.format(PY_VERS, run_name)
+plot_dir = 'temp_plots/{}_expectmax_{}'.format(PY_VERS, run_name)
 
-
-def test_calc_errors():
-    means = np.array([10,50,100,10,10,10, .2, .2, .2,  .1,  0 , 0,  0,10])
-    stds  = np.array([ 2, 5, 10, 2, 2, 2,.05,.05,.05,.025,.05,.05,.05, 1])
-
-
-def test_maximisation():
+def test_fit_one_comp_with_background():
     """
-    Synthesise a tb file with negligible error, retrieve initial
+    Synthesise a file with negligible error, retrieve initial
     parameters
 
-    Takes a while... maybe this belongs in integration tests
+    Takes a while... maybe this belongs in integration unit_tests
     """
+    run_name = 'background'
+    savedir = 'temp_data/{}_expectmax_{}/'.format(PY_VERS, run_name)
+    mkpath(savedir)
+    data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
+                                                                 run_name)
+    # log_filename = 'temp_data/{}_expectmax_{}/log.log'.format(PY_VERS,
+    #                                                           run_name)
+
     logging.basicConfig(level=logging.INFO, filemode='w',
-                        filename='temp_logs/test_maximisation.log')
-    uniform_age = 100
-    group_pars = np.array([
-        # X, Y, Z, U, V, W, dX, dV, age,nstars
-        [ 0, 0, 0, 0, 0, 0, 10.,  5,  10,  uniform_age],
-        [50,50, 0, 0, 0, 0, 10.,  5,  10,  uniform_age],
+                        filename=log_filename)
+    uniform_age = 1e-10
+    sphere_comp_pars = np.array([
+        # X, Y, Z, U, V, W, dX, dV,  age,
+        [ 0, 0, 0, 0, 0, 0, 10.,  5, uniform_age],
     ])
-    ngroups = group_pars.shape[0]
-    nstars = int(np.sum(group_pars[:,-1]))
-    z = np.zeros((nstars, ngroups))
+    starcount = 100
+
+    background_density = 1e-9
+
+    ncomps = sphere_comp_pars.shape[0]
+
+    # true_memb_probs = np.zeros((starcount, ncomps))
+    # true_memb_probs[:,0] = 1.
+
+    synth_data = SynthData(pars=sphere_comp_pars, starcounts=[starcount],
+                           Components=SphereComponent,
+                           background_density=background_density,
+                           )
+    synth_data.synthesise_everything()
+
+    tabletool.convert_table_astro2cart(synth_data.table,
+                                       write_table=True,
+                                       filename=data_filename)
+    background_count = len(synth_data.table) - starcount
+
+    # insert background densities
+    synth_data.table['background_log_overlap'] =\
+        len(synth_data.table) * [np.log(background_density)]
+
+    origins = [SphereComponent(pars) for pars in sphere_comp_pars]
+
+    best_comps, med_and_spans, memb_probs = \
+        expectmax.fit_many_comps(data=synth_data.table,
+                                 ncomps=ncomps,
+                                 rdir=savedir,
+                                 trace_orbit_func=dummy_trace_orbit_func,
+                                 use_background=True)
+
+    return best_comps, med_and_spans, memb_probs
+
+    # Check parameters are close
+    assert np.allclose(sphere_comp_pars, best_comps[0].get_pars(),
+                       atol=1.)
+
+    # Check most assoc members are correctly classified
+    recovery_count_threshold = 0.95 * starcounts[0]
+    recovery_count_actual =  np.sum(np.round(memb_probs[:starcount,0]))
+    assert recovery_count_threshold < recovery_count_actual
+
+    # Check most background stars are correctly classified
+    contamination_count_threshold = 0.05 * len(memb_probs[100:])
+    contamination_count_actual = np.sum(np.round(memb_probs[starcount:,0]))
+    assert contamination_count_threshold < contamination_count_actual
+
+    # Check reported membership probabilities are consistent with recovery
+    # rate (within 5%)
+    mean_membership_confidence = np.mean(memb_probs[:starcount,0])
+    assert np.isclose(recovery_count_actual/100., mean_membership_confidence,
+                      atol=0.05)
+
+
+def test_fit_many_comps():
+    """
+    Synthesise a file with negligible error, retrieve initial
+    parameters
+
+    Takes a while... maybe this belongs in integration unit_tests
+    """
+
+    run_name = 'stationary'
+    savedir = 'temp_data/{}_expectmax_{}/'.format(PY_VERS, run_name)
+    mkpath(savedir)
+    data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
+                                                                 run_name)
+    # log_filename = 'temp_data/{}_expectmax_{}/log.log'.format(PY_VERS,
+    #                                                           run_name)
+
+    logging.basicConfig(level=logging.INFO, filemode='w',
+                        filename=log_filename)
+    uniform_age = 1e-10
+    sphere_comp_pars = np.array([
+        #  X,  Y,  Z, U, V, W, dX, dV,  age,
+        [-50,-50,-50, 0, 0, 0, 10.,  5, uniform_age],
+        [ 50, 50, 50, 0, 0, 0, 10.,  5, uniform_age],
+    ])
+    starcounts = [200,200]
+    ncomps = sphere_comp_pars.shape[0]
 
     # initialise z appropriately
-    start = 0
-    for i in range(ngroups):
-        nstars_in_group = int(group_pars[i,-1])
-        z[start:start+nstars_in_group,i] = 1.0
-        start += nstars_in_group
+    # start = 0
+    # for i in range(ngroups):
+    #     nstars_in_group = int(group_pars[i,-1])
+    #     z[start:start+nstars_in_group,i] = 1.0
+    #     start += nstars_in_group
 
-    # generate data
-    init_xyzuvw, origins = syn.synthesiseManyXYZUVW(group_pars,
-                                                    return_groups=True,
-                                                    internal=False,
-                                                    )
-    # NEED TO TRACE STARS FORWARD!!!
-    now_xyzuvw = torb.traceManyOrbitXYZUVW(init_xyzuvw,uniform_age,)
-    astro_table = ms.measureXYZUVW(now_xyzuvw, 1.0)
-    star_pars = cv.convertMeasurementsToCartesian(astro_table)
+    true_memb_probs = np.zeros((np.sum(starcounts), ncomps))
+    true_memb_probs[:200,0] = 1.
+    true_memb_probs[200:,1] = 1.
 
-    import pdb;
-    all_init_pars = [o.getInternalSphericalPars() for o in origins]
+    synth_data = SynthData(pars=sphere_comp_pars, starcounts=starcounts,
+                           Components=SphereComponent,
+                           )
+    synth_data.synthesise_everything()
+    tabletool.convert_table_astro2cart(synth_data.table,
+                                       write_table=True,
+                                       filename=data_filename)
 
-    # perform maximisation step
-    best_groups, all_samples, all_lnprob, all_init_pos =\
-        em.maximisation(
-            star_pars, ngroups, z, burnin_steps=100, idir=data_dir,
-            all_init_pars=all_init_pars, plot_it=True
-        )
+    origins = [SphereComponent(pars) for pars in sphere_comp_pars]
+
+    best_comps, med_and_spans, memb_probs = \
+        expectmax.fit_many_comps(data=synth_data.table,
+                                 ncomps=ncomps,
+                                 rdir=savedir,
+                                 trace_orbit_func=dummy_trace_orbit_func, )
 
     # compare fit with input
-    for origin, best_group in zip(origins, best_groups):
-        o_pars = origin.getSphericalPars()
-        b_pars = best_group.getSphericalPars()
+    try:
+        assert np.allclose(true_memb_probs, memb_probs)
+    except AssertionError:
+        # If not close, check if flipping component order fixes things
+        memb_probs = memb_probs[:,::-1]
+        best_comps = best_comps[::-1]
+        assert np.allclose(true_memb_probs, memb_probs)
+    for origin, best_comp in zip(origins, best_comps):
+        assert (isinstance(origin, SphereComponent) and
+                isinstance(best_comp, SphereComponent))
+        o_pars = origin.get_pars()
+        b_pars = best_comp.get_pars()
 
         logging.info("origin pars:   {}".format(o_pars))
         logging.info("best fit pars: {}".format(b_pars))
-        assert np.allclose(origin.mean, best_group.mean, atol=5.)
-        assert np.allclose(origin.sphere_dx, best_group.sphere_dx, atol=2.)
-        assert np.allclose(origin.dv, best_group.dv, atol=2.)
-        assert np.allclose(origin.age, best_group.age, atol=1.)
+        assert np.allclose(origin.get_mean(),
+                           best_comp.get_mean(),
+                           atol=5.)
+        assert np.allclose(origin.get_sphere_dx(),
+                           best_comp.get_sphere_dx(),
+                           atol=2.)
+        assert np.allclose(origin.get_sphere_dv(),
+                           best_comp.get_sphere_dv(),
+                           atol=2.)
+        assert np.allclose(origin.get_age(),
+                           best_comp.get_age(),
+                           atol=1.)
+
 
 
 """
@@ -143,3 +255,6 @@ def test_expectation(self):
     self.assertTrue( (z[nstars1:,0] < z[nstars1:,1]).all() )
 
 """
+
+if __name__ == '__main__':
+    res = test_fit_one_comp_with_background()

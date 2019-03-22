@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 
+import chronostar.component
+
 """
 A script which gathers all plotting of all relevant figures into
 one spot to facilitate quick and simple replotting as needed.
@@ -13,10 +15,8 @@ import numpy as np
 import sys
 sys.path.insert(0, '../..')
 
-import chronostar.datatool as dt
-import chronostar.synthesiser as syn
+import chronostar.retired2.datatool as dt
 import chronostar.fitplotter as fp
-import chronostar.traceorbit as torb
 
 debugging_circles=False
 
@@ -371,7 +371,7 @@ if PLOT_FED_STARS:
     lnprobs = np.load(lnprob_file)
     # best_fit_pars = np.load(chain_file)[np.unravel_index(np.argmax(lnprobs), lnprobs.shape)]
     best_fit_pars = chain[np.argmax(lnprobs)]
-    groups = [syn.Group(best_fit_pars, internal=True, starcount=False)]
+    groups = [chronostar.component.Component(best_fit_pars, internal=True)]
     origins = dt.loadGroups(origins_file)
     raw_init_xyzuvw = np.load(init_xyzuvw_file)
     # perf_xyzuvw = np.load(perf_xyzuvw_file)
@@ -629,7 +629,8 @@ if PLOT_FAILURE:
         lnprobs = np.load(lnprob_file)
         # best_fit_pars = np.load(chain_file)[np.unravel_index(np.argmax(lnprobs), lnprobs.shape)]
         best_fit_pars = chain[np.argmax(lnprobs)]
-        groups.append(syn.Group(best_fit_pars, internal=True, starcount=False))
+        groups.append(
+            chronostar.component.Component(best_fit_pars, internal=True))
         # origins = dt.loadGroups(origins_file)
         # raw_init_xyzuvw = np.load(init_xyzuvw_file)
         # perf_xyzuvw = np.load(perf_xyzuvw_file)

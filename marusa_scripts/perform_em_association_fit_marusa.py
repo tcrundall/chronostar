@@ -10,14 +10,11 @@ from distutils.dir_util import mkpath
 from distutils.errors import DistutilsFileError
 import logging
 import numpy as np
-import pdb
 import sys
 from emcee.utils import MPIPool
 sys.path.insert(0, '..')
 import chronostar.expectmax as em
-import chronostar.groupfitter as gf
-import chronostar.synthesiser as syn
-import chronostar.datatool as dt
+import chronostar.retired2.datatool as dt
 
 
 try:
@@ -164,8 +161,8 @@ print('init_z successful!! Yey')
 logging.info("Using data file {}".format(xyzuvw_file))
 logging.info("Everything loaded, about to fit with {} components"\
     .format(ncomps))
-final_groups, final_med_errs, z = em.fitManyGroups(star_pars, ncomps, bg_ln_ols=bg_ln_ols,
-                 rdir=rdir, pool=pool, init_z=init_z, ignore_dead_comps=True)
+final_groups, final_med_errs, z = em.fit_many_comps(star_pars, ncomps, bg_ln_ols=bg_ln_ols,
+                                                    rdir=rdir, pool=pool, init_memb_probs=init_z, ignore_dead_comps=True)
 
 
 # --------------------------------------------------------------------------

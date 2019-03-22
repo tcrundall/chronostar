@@ -3,18 +3,14 @@ from __future__ import division, print_function
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
-import pdb
 
 from astropy.io import fits
 
-import chronostar.errorellipse as ee
-import chronostar.analyser as al
-
+import chronostar.component
 import chronostar.fitplotter
 import chronostar.traceorbit as torb
 import chronostar.transform as tf
-import chronostar.datatool as dt
-import chronostar.synthesiser as syn
+import chronostar.retired2.datatool as dt
 
 COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']*12
@@ -319,8 +315,9 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
     chain = np.array([chain])
     lnprob = np.load(lnprob_file)
     best_sample = dt.getBestSample(chain, lnprob)
-    best_group = syn.Group(best_sample, internal=True,
-                           sphere=len(best_sample) == 9)
+    best_group = chronostar.component.Component(best_sample,
+                                                form=len(best_sample) == 9,
+                                                internal=True)
 
     star_pars['xyzuvw'] = fits.getdata(xyzuvw_file, 1)
     star_pars['xyzuvw_cov'] = fits.getdata(xyzuvw_file, 2)
@@ -334,15 +331,15 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
 
     means['fitted_then'] = np.array([best_group.mean])
     means['fitted_now']  =\
-        np.array([torb.traceOrbitXYZUVW(best_group.mean, best_group.age)])
+        np.array([torb.trace_cartesian_orbit(best_group.mean, best_group.age)])
 
     covs['fitted_then'] = np.array([best_group.generateCovMatrix()])
     covs['fitted_now']  =\
         np.array([
-            tf.transformCovMat(covs['fitted_then'][0], torb.traceOrbitXYZUVW,
-                               means['fitted_then'][0],
-                               args=(best_group.age,True)
-                               )
+            tf.transform_covmatrix(covs['fitted_then'][0], torb.trace_cartesian_orbit,
+                                   means['fitted_then'][0],
+                                   args=(best_group.age,True)
+                                   )
         ])
 
     plot_hexplot(star_pars, means, covs, chain, iter_count=0,
@@ -498,14 +495,14 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
         fitted_then_mns.append(best_group.mean)
         fitted_then_covs.append(best_group.generateCovMatrix())
 
-        fitted_now_mn = torb.traceOrbitXYZUVW(fitted_then_mns[group_ix],
-                                              best_group.age,
-                                              single_age=True)
+        fitted_now_mn = torb.trace_cartesian_orbit(fitted_then_mns[group_ix],
+                                                   best_group.age,
+                                                   single_age=True)
         fitted_now_cov =\
-            tf.transformCovMat(fitted_then_covs[group_ix],
-                               torb.traceOrbitXYZUVW,
-                               fitted_then_mns[group_ix],
-                               args=(best_group.age,))
+            tf.transform_covmatrix(fitted_then_covs[group_ix],
+                                   torb.trace_cartesian_orbit,
+                                   fitted_then_mns[group_ix],
+                                   args=(best_group.age,))
         fitted_now_mns.append(fitted_now_mn)
         fitted_now_covs.append(fitted_now_cov)
 

@@ -4,7 +4,6 @@ import numpy as np
 import sys
 sys.path.insert(0, '..')
 
-import chronostar.converter as cv
 
 def convertListToCovMatrix(data):
     ra = data[0]

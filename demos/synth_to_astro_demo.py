@@ -5,16 +5,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-import chronostar.fitplotter
+import chronostar.synthdata
 
 sys.path.insert(0, '..')
 
-import chronostar.synthesiser as syn
+import chronostar.synthdata as syn
 import chronostar.traceorbit as to
-import chronostar.measurer as ms
-import chronostar.converter as cv
+import chronostar.retired2.measurer as ms
+import chronostar.retired2.converter as cv
 import chronostar.coordinate as cc
-import chronostar.errorellipse as ee
 import chronostar.transform as tf
 
 
@@ -29,23 +28,23 @@ astro_savefile = save_dir + 'astro_table.txt'
 
 
 group_pars = [0., 0., 0., 0., 0., 0., 1., 1., 0.5, 20]
-xyzuvw_init, group = syn.synthesiseXYZUVW(
-    group_pars, sphere=True, xyzuvw_savefile=xyzuvw_init_savefile,
-    group_savefile=group_savefile, return_group=True
-)
+xyzuvw_init, group = syn.synthesiseXYZUVW(group_pars, form='sphere',
+                                          return_group=True,
+                                          xyzuvw_savefile=xyzuvw_init_savefile,
+                                          group_savefile=group_savefile)
 logging.info("Age is: {} Myr".format(group.age))
-xyzuvw_now_true = to.traceManyOrbitXYZUVW(xyzuvw_init, np.array([0., group.age]))[:,1]
+xyzuvw_now_true = to.trace_many_cartesian_orbit(xyzuvw_init, np.array([0., group.age]))[:, 1]
 #assert np.allclose(np.mean(xyzuvw_now, axis=0), group.mean, rtol=1e-1)
 logging.info("Mean of initial stars: {}".format(np.mean(xyzuvw_init, axis=0)))
 logging.info("Mean of final stars: {}".format(np.mean(xyzuvw_now_true, axis=0)))
 
-star_table = ms.measureXYZUVW(xyzuvw_now_true, 20.0, astro_savefile)
+star_table = chronostar.synthdata.measureXYZUVW(xyzuvw_now_true, 20.0, astro_savefile)
 astr_arr, err_arr = ms.convertTableToArray(star_table)
 nstars = len(star_table)
 
 astr_covs = cv.convertAstroErrsToCovs(err_arr)
 
-xyzuvw_now = cc.convertManyAstrometryToLSRXYZUVW(astr_arr, mas=True)
+xyzuvw_now = cc.convert_many_astrometry2lsrxyzuvw(astr_arr, mas=True)
 logging.info("Mean of retrieved stars: {}".format(np.mean(xyzuvw_now, axis=0)))
 
 if plot_it:
@@ -56,8 +55,8 @@ if plot_it:
 
 xyzuvw_covs = np.zeros((nstars,6,6))
 for ix in range(nstars):
-    xyzuvw_covs[ix] = tf.transformCovMat(
-        astr_covs[ix], cc.convertAstrometryToLSRXYZUVW, astr_arr[ix], dim=6
+    xyzuvw_covs[ix] = tf.transform_covmatrix(
+        astr_covs[ix], cc.convert_astrometry2lsrxyzuvw, astr_arr[ix], dim=6
     )
 
 if plot_it:

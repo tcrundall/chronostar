@@ -3,7 +3,6 @@ Provides many functions that aid plotting of stellar data sets and their fits
 """
 
 import matplotlib as mpl
-from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
 mpl.use('Agg')
@@ -11,11 +10,9 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
-import synthesiser as syn
-import errorellipse as ee
 import traceorbit as torb
 import transform as tf
-import datatool as dt
+from chronostar.retired2 import datatool as dt
 
 COLORS = ['xkcd:blue','xkcd:red', 'xkcd:tangerine', 'xkcd:shit', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:neon purple', 'xkcd:bright pink']
@@ -113,9 +110,9 @@ def plotOrbit(pos_now, dim1, dim2, ax, end_age, ntimes=50, group_ix=None,
             color = COLORS[group_ix]
 
     # orb_alpha = 0.1
-    gorb = torb.traceOrbitXYZUVW(pos_now,
-                                 times=np.linspace(0, end_age, ntimes),
-                                 single_age=False)
+    gorb = torb.trace_cartesian_orbit(pos_now,
+                                      times=np.linspace(0, end_age, ntimes),
+                                      single_age=False)
     line_obj = ax.plot(gorb[:, dim1], gorb[:, dim2], ls='-',
                        alpha=0.1,
                        color=color)
@@ -384,10 +381,10 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
 
         # plot group current day distribution (should match well with stars)
         if group_now:
-            mean_now = torb.traceOrbitXYZUVW(mean_then, group.age,
-                                             single_age=True)
-            cov_now = tf.transformCovMat(cov_then, torb.traceOrbitXYZUVW,
-                                         mean_then, args=[group.age])
+            mean_now = torb.trace_cartesian_orbit(mean_then, group.age,
+                                                  single_age=True)
+            cov_now = tf.transform_covmatrix(cov_then, torb.trace_cartesian_orbit,
+                                             mean_then, args=[group.age])
             ax.plot(mean_now[dim1], mean_now[dim2], marker='+', alpha=0.3,
                    color=COLORS[i])
             plotCovEllipse(cov_now[np.ix_([dim1, dim2], [dim1, dim2])],
@@ -814,10 +811,10 @@ def plot1DProjection(dim, star_pars, groups, weights, ax=None, horizontal=False,
     # xs = np.linspace(np.min(bins), np.max(bins), npoints)
     combined_gauss = np.zeros(xs.shape)
     for i, (group, weight) in enumerate(zip(groups, weights)):
-        mean_now = torb.traceOrbitXYZUVW(group.mean, group.age, single_age=True)
-        cov_now = tf.transformCovMat(group.generateCovMatrix(),
-                                     torb.traceOrbitXYZUVW,
-                                     group.mean, args=[group.age])
+        mean_now = torb.trace_cartesian_orbit(group.mean, group.age, single_age=True)
+        cov_now = tf.transform_covmatrix(group.generateCovMatrix(),
+                                         torb.trace_cartesian_orbit,
+                                         group.mean, args=[group.age])
         group_gauss = weight*dt.gauss(xs, mean_now[dim],
                                       np.sqrt(cov_now[dim,dim]))
         combined_gauss += group_gauss

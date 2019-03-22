@@ -249,6 +249,6 @@ timings(
     group_icov, group_mean, group_icov_det, star_icovs,
     star_means, star_icov_dets, batch_size, noverlaps)
 
-print("___ swig module passsing all tests ___")
+print("___ swig module passsing all unit_tests ___")
 
 sys.path.insert(0,'.')
