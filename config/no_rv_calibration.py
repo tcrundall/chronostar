@@ -21,6 +21,7 @@ config = {
                                         # exist, and if so picks up from where left off
     'dummy_trace_orbit_function':True,  # For testing, simple function to skip computation
     'pickup_prev_run':True,             # Pick up where left off if possible
+    'data_savefile':'', # This is pre-prepared data XYZUVW???
 }
 
 # synth = None
