@@ -15,3 +15,4 @@ except:
 from chronostar.synthdata import SynthData
 from chronostar import tabletool
 from chronostar.component import SphereComponent
+from chronostar import coordinate
