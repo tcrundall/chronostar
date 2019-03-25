@@ -78,8 +78,8 @@ assert os.access(rdir, os.W_OK)
 # ------------------------------------------------------------
 
 # Set up some filename constants (INPUT files) FOR COMPARISON and expectmax
-final_comps_file_with_rv = 'beta_pic_sphere_component.npy'
-final_memb_probs_file_with_rv = 'beta_memb_probs.npy'
+final_comps_file_with_rv = '/home/marusa/chronostar/data/no_rv_paper/beta_pic_sphere_component.npy'
+final_memb_probs_file_with_rv = '/home/marusa/chronostar/data/no_rv_paper/beta_memb_probs.npy'
 
 bp_comp_with_rv = SphereComponent.load_components(final_comps_file_with_rv)
 bp_probs_with_rv = np.load(final_memb_probs_file_with_rv)
