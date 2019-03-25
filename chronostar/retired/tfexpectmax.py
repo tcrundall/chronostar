@@ -317,7 +317,7 @@ def calc_mns_covs(new_gps, ngroups, origins=None):
             )
             all_origin_mn_now[i] = tb.trace_forward(all_origin_mn_then[i],
                                                     origins[i][-2])
-            all_origin_cov_now[i] = tf.transform_cov(
+            all_origin_cov_now[i] = tf.transform_covmatrix(
                 all_origin_cov_then[i], tb.trace_forward, all_origin_mn_then[i],
                 dim=6, args=(origins[i][-2],)
             )
@@ -325,7 +325,7 @@ def calc_mns_covs(new_gps, ngroups, origins=None):
         all_fitted_cov_then[i] = tfgf.generate_cov(new_gps[i])
         all_fitted_mn_now[i] = tb.trace_forward(all_fitted_mn_then[i],
                                                 new_gps[i][-1])
-        all_fitted_cov_now[i] = tf.transform_cov(
+        all_fitted_cov_now[i] = tf.transform_covmatrix(
             all_fitted_cov_then[i], tb.trace_forward, all_fitted_mn_then[i],
             dim=6, args=(new_gps[i][-1],)
         )

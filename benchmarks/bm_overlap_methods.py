@@ -32,7 +32,6 @@ def compute_overlap(A,a,A_det,B,b,B_det):
     #the determinants of the sum of positive definite matrices is
     #greater than the sum of their determinants    
     if (ApB_det < 0) | (B_det<0):
-        pdb.set_trace()
         return -np.inf
     
     #Solve for c
@@ -53,30 +52,50 @@ def correctness(group_icov, group_mean, group_icov_det, star_icovs,
     """
     
     # Using swig-numpy module with multiple stars per call
-    swig_np_ms_ols =  overlap.get_overlaps(
+    swig_np_ms_ols = overlap.get_overlaps(
         group_icov, group_mean, group_icov_det, star_icovs,
         star_means, star_icov_dets, nstars)
 
+
+    # Using swig-numpy module with multiple stars per call and log results
+    group_cov = np.linalg.inv(group_icov)
+    star_covs = np.zeros(star_icovs.shape)
+    for i in range(nstars):
+        star_covs[i] = np.linalg.inv(star_icovs[i])
+    swig_np_ms_lnols = overlap.get_lnoverlaps(
+        group_cov, group_mean, star_covs,
+        star_means, nstars
+    )
+
+    # Compare with various implementations of calculating one star at a time
     for i in range(nstars):
         # Using numpy
-        numpy_ols =  compute_overlap(
+        numpy_ols = compute_overlap(
             group_icov, group_mean, group_icov_det,
             star_icovs[i], star_means[i], star_icov_dets[i])
 
-        # Using swig module
-        swig_ols =  overlap.get_overlap2(
+        # Using swig module (input passed as python list)
+        swig_ols = overlap.get_overlap2(
             group_icov.flatten().tolist(), group_mean.flatten().tolist(),
             group_icov_det, star_icovs[i].flatten().tolist(),
             star_means[i].flatten().tolist(), star_icov_dets[i])
 
-        # Using swig-numpy module
-        swig_np_ols =  overlap.get_overlap(
+        # Using swig module (input passed as numpy arrays)
+        swig_np_ols = overlap.get_overlap(
             group_icov, group_mean, group_icov_det, star_icovs[i],
             star_means[i], star_icov_dets[i])
 
-        assert (numpy_ols - swig_np_ms_ols[i])/numpy_ols < 1e-8
-        assert (numpy_ols - swig_ols)/numpy_ols < 1e-8
-        assert (numpy_ols - swig_np_ols)/numpy_ols < 1e-8
+        # # Using swig module (input passed as numpy arrays, output in log)
+        # swig_np_lnol = overlap.get_lnoverlap(
+        #     group_icov, group_mean, group_icov_det, star_icovs[i],
+        #     star_means[i], star_icov_dets[i])
+
+        assert np.isclose(numpy_ols, swig_np_ms_ols[i], rtol=1e-8)
+        assert np.isclose(numpy_ols, swig_ols, rtol=1e-8)
+        assert np.isclose(numpy_ols, swig_np_ols, rtol=1e-8)
+        assert np.isclose(numpy_ols, np.exp(swig_np_ms_lnols[i]), rtol=1e-8)
+
+    print("All implementations return same result to 8 sigfigs")
 
 def timings(group_icov, group_mean, group_icov_det,
               star_icovs, star_means, star_icov_dets, batch_size, noverlaps=10000):
@@ -215,7 +234,7 @@ star_means = np.array(
  [ 17.58529809,-25.56197368,-20.64041645, -0.86932298, -6.32809279,
    -6.419595  ]] )
 
-nstars = 2
+nstars = star_icovs.shape[0]
 
 print("Testing correctnesss")
 correctness(group_icov, group_mean, group_icov_det, star_icovs,
@@ -230,6 +249,6 @@ timings(
     group_icov, group_mean, group_icov_det, star_icovs,
     star_means, star_icov_dets, batch_size, noverlaps)
 
-print("___ swig module passsing all tests ___")
+print("___ swig module passsing all unit_tests ___")
 
 sys.path.insert(0,'.')

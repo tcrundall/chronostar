@@ -14,13 +14,17 @@ from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014 as mp
 from galpy.util import bovy_conversion
 
-import coordinate as cc
-import transform as tf
+from . import coordinate
 
 
-def convertMyrToBovyTime(times):
+def convert_myr2bovytime(times):
     """
-    Convert times provided in Myr into times in bovy internal units
+    Convert times provided in Myr into times in bovy internal units.
+
+    Galpy parametrises time based on the natural initialising values
+    (r_0 and v_0) such that after 1 unit of time, a particle in a
+    circular orbit at r_0, with circular velocity of v_0 will travel
+    1 radian, azimuthally.
 
     Paramters
     ---------
@@ -36,7 +40,7 @@ def convertMyrToBovyTime(times):
     return bovy_times
 
 
-def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
+def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
     """
     Converts orbits from galpy internal coords to chronostar coords
 
@@ -127,7 +131,7 @@ def convertGalpyCoordsToXYZUVW(data, ts=None, ro=8., vo=220., rc=True):
         xyzuvw = xyzuvw[0]
     return xyzuvw
 
-def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
+def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -135,12 +139,16 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     Positive times --> traceforward
     Negative times --> traceback
 
+    TODO: Primary source of inefficiencies, 1366.2 (s)
+
     Parameters
     ----------
     xyzuvw : [pc,pc,pc,km/s,km/s,km/s]
-    times : [ntimes] float array
+    times : (float) or ([ntimes] float array)
         Myr - time of 0.0 must be present in the array. Times need not be
         spread linearly.
+    single_age: (bool) {True}
+        Set this flag if only providing a single age to trace to
 
     Returns
     -------
@@ -150,43 +158,50 @@ def traceOrbitXYZUVW(xyzuvw_start, times=None, single_age=True):
     """
     # convert positions to kpc
     if single_age:
+        # replace 0 with some tiny number
+        if times == 0.:
+            times = 1e-10
         times = np.array([0., times])
     else:
         times = np.array(times)
-        #times[np.where(times == 0.)] = 1e-5
+        # times[np.where(times == 0.)] = 1e-10
 
     xyzuvw_start = np.copy(xyzuvw_start)
     xyzuvw_start[:3] *= 1e-3
-    bovy_times = convertMyrToBovyTime(times)
-    logging.debug("Tracing up to {} Myr".format(times[-1]))
-    logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
-    logging.debug("Initial lsr start: {}".format(xyzuvw_start))
+    # profiling:   3 (s)
+    bovy_times = convert_myr2bovytime(times)
+    # logging.debug("Tracing up to {} Myr".format(times[-1]))
+    # logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
+    # logging.debug("Initial lsr start: {}".format(xyzuvw_start))
 
-    xyzuvw_helio = cc.convertLSRToHelio(xyzuvw_start, kpc=True)
-    logging.debug("Initial helio start: {}".format(xyzuvw_helio))
-    logging.debug("Galpy vector: {}".format(xyzuvw_helio))
+    # profiling:   9 (s)
+    xyzuvw_helio = coordinate.convert_lsr2helio(xyzuvw_start, kpc=True)
+    # logging.debug("Initial helio start: {}".format(xyzuvw_helio))
+    # logging.debug("Galpy vector: {}".format(xyzuvw_helio))
 
-    l,b,dist = cc.convertCartesianToAngles(
-        *xyzuvw_helio[:3], return_dist=True, value=True
-    )
+    # profiling: 141 (s)
+    l,b,dist = coordinate.convert_cartesian2angles(*xyzuvw_helio[:3], return_dist=True)
     vxvv = [l,b,dist,xyzuvw_helio[3],xyzuvw_helio[4],xyzuvw_helio[5]]
-    logging.debug("vxvv: {}".format(vxvv))
+    # logging.debug("vxvv: {}".format(vxvv))
+    # profiling:  67 (s)
     o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich')
 
+    # profiling: 546 (s)
     o.integrate(bovy_times,mp,method='odeint')
     data_gp = o.getOrbit()
-    xyzuvw = convertGalpyCoordsToXYZUVW(data_gp, bovy_times)
+    # profiling:  32 (s)
+    xyzuvw = convert_galpycoords2cart(data_gp, bovy_times)
 
-    logging.debug("Started orbit at {}".format(xyzuvw[0]))
-    logging.debug("Finished orbit at {}".format(xyzuvw[-1]))
+    # logging.debug("Started orbit at {}".format(xyzuvw[0]))
+    # logging.debug("Finished orbit at {}".format(xyzuvw[-1]))
 
     if single_age:
         return xyzuvw[-1]
     return xyzuvw
 
 
-def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=True,
-                         savefile=''):
+def trace_many_cartesian_orbit(xyzuvw_starts, times=None, single_age=True,
+                               savefile=''):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -224,63 +239,64 @@ def traceManyOrbitXYZUVW(xyzuvw_starts, times=None, single_age=True,
     else:
         xyzuvw_to = np.zeros((nstars, ntimes, 6))
     for st_ix in range(nstars):
-        xyzuvw_to[st_ix] = traceOrbitXYZUVW(xyzuvw_starts[st_ix], times,
-                                            single_age=single_age)
+        xyzuvw_to[st_ix] = trace_cartesian_orbit(xyzuvw_starts[st_ix], times,
+                                                 single_age=single_age)
     #TODO: test this
     if savefile:
         np.save(savefile, xyzuvw_to)
     return xyzuvw_to
 
-def generateTracebackFile(star_pars_now, times, savefile=''):
-    """
-    Take XYZUVW of the stars at the current time and trace back for
-    timesteps
 
-    Parameters
-    ----------
-    star_pars_now: dict
-        'xyzuvw': [nstars, 6] numpy array
-            the mean XYZUVW for each star at t=0
-        'xyzuvw_cov': [nstars, 6, 6] numpy array
-            the covariance for each star at t=0
-    times: [ntimes] array
-        the times at which to be traced back to
-    """
-    times = np.array(times)
-    ntimes = times.shape[0]
-    nstars = star_pars_now['xyzuvw'].shape[0]
-    logging.debug("Attempting traced means")
-    means = traceManyOrbitXYZUVW(star_pars_now['xyzuvw'], times,
-                                 single_age=False)
-    logging.debug("Successfully traced means")
-
-    covs = np.zeros((nstars, ntimes, 6, 6))
-    for star_ix in range(nstars):
-        for time_ix in range(ntimes):
-            if times[time_ix] == 0.0:
-                covs[star_ix, time_ix] = star_pars_now['xyzuvw_cov'][star_ix]
-            else:
-                covs[star_ix, time_ix] =\
-                    tf.transform_cov(cov=star_pars_now['xyzuvw_cov'][star_ix],
-                                     trans_func=traceOrbitXYZUVW,
-                                     loc=star_pars_now['xyzuvw'][star_ix],
-                                     args=(times[time_ix],)
-                                     )
-    logging.debug("Successfully traced covs")
-    star_pars_all = {'xyzuvw':means,
-                     'xyzuvw_cov':covs,
-                     'times':times}
-    if savefile:
-        if (savefile[-3:] != 'fit') and (savefile[-4:] != 'fits'):
-            savefile = savefile + ".fits"
-        hl = fits.HDUList()
-        hl.append(fits.PrimaryHDU())
-        hl.append(fits.ImageHDU(star_pars_all['xyzuvw']))
-        hl.append(fits.ImageHDU(star_pars_all['xyzuvw_cov']))
-        hl.append(fits.ImageHDU(star_pars_all['times']))
-        hl.writeto(savefile, overwrite=True)
-
-    return star_pars_all
-
-
+# def generateTracebackFile(star_pars_now, times, savefile=''):
+#     """
+#     Take XYZUVW of the stars at the current time and trace back for
+#     timesteps
+#
+#     Parameters
+#     ----------
+#     star_pars_now: dict
+#         'xyzuvw': [nstars, 6] numpy array
+#             the mean XYZUVW for each star at t=0
+#         'xyzuvw_cov': [nstars, 6, 6] numpy array
+#             the covariance for each star at t=0
+#     times: [ntimes] array
+#         the times at which to be traced back to
+#     """
+#     times = np.array(times)
+#     ntimes = times.shape[0]
+#     nstars = star_pars_now['xyzuvw'].shape[0]
+#     logging.debug("Attempting traced means")
+#     means = traceManyOrbitXYZUVW(star_pars_now['xyzuvw'], times,
+#                                  single_age=False)
+#     logging.debug("Successfully traced means")
+#
+#     covs = np.zeros((nstars, ntimes, 6, 6))
+#     for star_ix in range(nstars):
+#         for time_ix in range(ntimes):
+#             if times[time_ix] == 0.0:
+#                 covs[star_ix, time_ix] = star_pars_now['xyzuvw_cov'][star_ix]
+#             else:
+#                 covs[star_ix, time_ix] =\
+#                     tf.transformCovMat(cov=star_pars_now['xyzuvw_cov'][star_ix],
+#                                        trans_func=traceOrbitXYZUVW,
+#                                        loc=star_pars_now['xyzuvw'][star_ix],
+#                                        args=(times[time_ix],)
+#                                        )
+#     logging.debug("Successfully traced covs")
+#     star_pars_all = {'xyzuvw':means,
+#                      'xyzuvw_cov':covs,
+#                      'times':times}
+#     if savefile:
+#         if (savefile[-3:] != 'fit') and (savefile[-4:] != 'fits'):
+#             savefile = savefile + ".fits"
+#         hl = fits.HDUList()
+#         hl.append(fits.PrimaryHDU())
+#         hl.append(fits.ImageHDU(star_pars_all['xyzuvw']))
+#         hl.append(fits.ImageHDU(star_pars_all['xyzuvw_cov']))
+#         hl.append(fits.ImageHDU(star_pars_all['times']))
+#         hl.writeto(savefile, overwrite=True)
+#
+#     return star_pars_all
+#
+#
 

@@ -239,7 +239,7 @@ def lnlike(pars, star_pars, z=None, return_lnols=False):
     age = pars[8]
 
     mean_now = trace_forward(mean_then, age)
-    cov_now = tf.transform_cov(
+    cov_now = tf.transform_covmatrix(
         cov_then, trace_forward, mean_then, dim=6, args=(age,)
     )
 

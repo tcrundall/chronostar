@@ -1,5 +1,19 @@
-int sum(int* npyArray3D, int npyLength1D, int npyLength2D, int npyLength3D);
-double get_det(PyObject *A);
+/*
+ * Function: get_lnoverlaps
+ * ------------------------
+ * Get the elemntwise log overlap between `n` 6D Gaussians (in `st_covs`
+ * and `st_mns`) with the group 6D Gaussian
+ *
+ * This is the only useful function in this module
+ */
+void get_lnoverlaps(
+  double* gr_cov, int gr_dim1, int gr_dim2,
+  double* gr_mn, int gr_mn_dim,
+  double* st_covs, int st_dim1, int st_dim2, int st_dim3,
+  double* st_mns, int st_mn_dim1, int st_mn_dim2,
+  double* lnols_output, int n
+  );
+
 double get_overlap2(PyObject *gr_icov, PyObject *gr_mn, double gr_icov_det,
                     PyObject *st_icov, PyObject *st_mn, double st_icov_det);
 
@@ -26,11 +40,4 @@ double new_get_lnoverlap(
   );
 
 
-void get_lnoverlaps(
-  double* gr_cov, int gr_dim1, int gr_dim2,
-  double* gr_mn, int gr_mn_dim,
-  double* st_covs, int st_dim1, int st_dim2, int st_dim3,
-  double* st_mns, int st_mn_dim1, int st_mn_dim2,
-  double* rangevec, int n
-  );
 

@@ -2,12 +2,15 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+
+import chronostar.fitplotter
+
 sys.path.insert(0, '..')
 
 #from chronostar.retired.tracingback import trace_forward
 #from chronostar.retired import utils
 import chronostar.traceorbit as torb
-from chronostar.synthesiser import Group
+from chronostar.component import Component
 import chronostar.errorellipse as ee
 import chronostar.transform as tf
 
@@ -59,7 +62,7 @@ def polar_demo():
     res = transform_ptcs(pol_samples[:, 0], pol_samples[:, 1])
 
     cart_mean = transform_ptc(pol_mean)
-    cart_cov  = tf.transform_cov(pol_cov, transform_ptc, pol_mean, dim=2)
+    cart_cov  = tf.transform_covmatrix(pol_cov, transform_ptc, pol_mean, dim=2)
 
     cart_samples = np.random.multivariate_normal(cart_mean, cart_cov, nsamples)
 
@@ -112,7 +115,7 @@ if __name__ == '__main__':
         [0,0,0,0,10,0,10, 1, 1, .1, 0., 0., 0., 1000, nstars],
     ]
 
-    my_group = Group(dummy_groups[0], sphere=False)
+    my_group = Component(dummy_groups[0], form=False)
 
     #for cnt, dummy_group_pars_ex in enumerate(dummy_groups):
     mean = my_group.mean
@@ -123,15 +126,15 @@ if __name__ == '__main__':
         plt.clf()
         plt.plot(stars[:,0], stars[:,1], 'b.')
         #plt.hist2d(stars[:,0], stars[:,1], bins=20)
-        ee.plotCovEllipse(cov[:2, :2], mean, color='b', alpha=0.3)
+        chronostar.fitplotter.plotCovEllipse(cov[:2, :2], mean, color='b', alpha=0.3)
 
     new_stars = np.zeros(stars.shape)
-    new_stars = torb.traceManyOrbitXYZUVW(stars, np.array(0, age))
+    new_stars = torb.trace_many_cartesian_orbit(stars, np.array(0, age))
 
 def stop():
     # calculate the new mean and cov
     new_mean = trace_forward(mean, age)
-    new_cov = tf.transform_cov(cov, trace_forward, mean, dim=6, args=(age,))
+    new_cov = tf.transform_covmatrix(cov, trace_forward, mean, dim=6, args=(age,))
     new_eigvals = np.linalg.eigvalsh(new_cov)
 
     estimated_cov = np.cov(new_stars.T)
@@ -150,7 +153,7 @@ def stop():
 
         plt.xlim(upper, lower)
         plt.ylim(lower, upper)
-        ee.plotCovEllipse(
+        chronostar.fitplotter.plotCovEllipse(
             new_cov[:2,:2], new_mean, color='r', alpha=0.1
         )
         plt.savefig("temp_plots/trace_forward{}.png".format(cnt))

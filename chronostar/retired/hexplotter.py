@@ -3,15 +3,14 @@ from __future__ import division, print_function
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
-import pdb
 
 from astropy.io import fits
 
-import chronostar.errorellipse as ee
-import chronostar.analyser as al
+import chronostar.component
+import chronostar.fitplotter
 import chronostar.traceorbit as torb
 import chronostar.transform as tf
-import chronostar.synthesiser as syn
+import chronostar.retired2.datatool as dt
 
 COLORS = ['xkcd:neon purple','xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']*12
@@ -77,7 +76,7 @@ def plot_then(star_pars, means, covs, ngroups, iter_count, ax, dim1, dim2):
         if origins_inc:
             #import pdb; pdb.set_trace()
             try:
-                ee.plotCovEllipse(
+                chronostar.fitplotter.plotCovEllipse(
                     covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                     means['origin_then'][i][np.ix_([dim1,dim2])],
                     with_line=True,
@@ -95,7 +94,7 @@ def plot_then(star_pars, means, covs, ngroups, iter_count, ax, dim1, dim2):
             ax.plot(means['fitted_then'][i][dim1],
                     means['fitted_then'][i][dim2],
                     color=COLORS[i], marker='x', alpha=1)
-            ee.plotCovEllipse(
+            chronostar.fitplotter.plotCovEllipse(
                 covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['fitted_then'][i][np.ix_([dim1,dim2])],
                 with_line=True,
@@ -130,21 +129,21 @@ def plot_now(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
                     color=COLORS[i], alpha=0.6)
             for mn, cov in zip(xyzuvw[mask], xyzuvw_cov[mask]):
                 try:
-                    ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
-                                      mn[np.ix_([dim1,dim2])],
-                                      ax=ax, color=COLORS[i], alpha=0.1)
+                    chronostar.fitplotter.plotCovEllipse(cov[np.ix_([dim1, dim2], [dim1, dim2])],
+                                                         mn[np.ix_([dim1,dim2])],
+                                                         ax=ax, color=COLORS[i], alpha=0.1)
                 except IndexError:
                     pass
     else:
         ax.plot(xyzuvw[:, dim1], xyzuvw[:, dim2], 'b.')
         for mn, cov in zip(xyzuvw, xyzuvw_cov):
-            ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
-                                mn[np.ix_([dim1,dim2])],
-                                ax=ax, color='b', alpha=0.1)
+            chronostar.fitplotter.plotCovEllipse(cov[np.ix_([dim1, dim2], [dim1, dim2])],
+                                                 mn[np.ix_([dim1,dim2])],
+                                                 ax=ax, color='b', alpha=0.1)
     for i in range(ngroups):
         try:
             #pdb.set_trace()
-            ee.plotCovEllipse(
+            chronostar.fitplotter.plotCovEllipse(
                 covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['fitted_now'][i][np.ix_([dim1,dim2])],
                 with_line=True,
@@ -177,13 +176,13 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
     xyzuvw_cov = star_pars['xyzuvw_cov']
     ax.plot(xyzuvw[:, dim1], xyzuvw[:, dim2], 'b.')
     for mn, cov in zip(xyzuvw, xyzuvw_cov):
-        ee.plotCovEllipse(cov[np.ix_([dim1,dim2],[dim1,dim2])],
-                            mn[np.ix_([dim1,dim2])],
-                            ax=ax, color='b', alpha=0.1)
+        chronostar.fitplotter.plotCovEllipse(cov[np.ix_([dim1, dim2], [dim1, dim2])],
+                                             mn[np.ix_([dim1,dim2])],
+                                             ax=ax, color='b', alpha=0.1)
     for i in range(ngroups):
         if origins_inc:
             #import pdb; pdb.set_trace()
-            ee.plotCovEllipse(
+            chronostar.fitplotter.plotCovEllipse(
                 covs['origin_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
                 means['origin_then'][i][np.ix_([dim1,dim2])],
                 with_line=True,
@@ -198,13 +197,13 @@ def plot_fit(star_pars, means, covs, ngroups, iter_count, ax, dim1=0,
         ax.plot(means['fitted_then'][i][dim1],
                 means['fitted_then'][i][dim2],
                 color=COLORS[i], marker='x', alpha=1)
-        ee.plotCovEllipse(
+        chronostar.fitplotter.plotCovEllipse(
             covs['fitted_then'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_then'][i][np.ix_([dim1,dim2])],
             with_line=True,
             ax=ax, color=COLORS[i], alpha=0.3, ls='-.', #hatch='/',
         )
-        ee.plotCovEllipse(
+        chronostar.fitplotter.plotCovEllipse(
             covs['fitted_now'][i][np.ix_([dim1,dim2],[dim1,dim2])],
             means['fitted_now'][i][np.ix_([dim1,dim2])],
             with_line=True,
@@ -315,7 +314,10 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
     chain = np.load(chain_file)
     chain = np.array([chain])
     lnprob = np.load(lnprob_file)
-    best_group = al.getBestSample(chain, lnprob)
+    best_sample = dt.getBestSample(chain, lnprob)
+    best_group = chronostar.component.Component(best_sample,
+                                                form=len(best_sample) == 9,
+                                                internal=True)
 
     star_pars['xyzuvw'] = fits.getdata(xyzuvw_file, 1)
     star_pars['xyzuvw_cov'] = fits.getdata(xyzuvw_file, 2)
@@ -329,15 +331,15 @@ def dataGatherer(res_dir='', save_dir='', data_dir='', xyzuvw_file='',
 
     means['fitted_then'] = np.array([best_group.mean])
     means['fitted_now']  =\
-        np.array([torb.traceOrbitXYZUVW(best_group.mean, best_group.age)])
+        np.array([torb.trace_cartesian_orbit(best_group.mean, best_group.age)])
 
     covs['fitted_then'] = np.array([best_group.generateCovMatrix()])
     covs['fitted_now']  =\
         np.array([
-            tf.transform_cov(covs['fitted_then'][0], torb.traceOrbitXYZUVW,
-                             means['fitted_then'][0],
-                             args=(best_group.age,True)
-                             )
+            tf.transform_covmatrix(covs['fitted_then'][0], torb.trace_cartesian_orbit,
+                                   means['fitted_then'][0],
+                                   args=(best_group.age,True)
+                                   )
         ])
 
     plot_hexplot(star_pars, means, covs, chain, iter_count=0,
@@ -493,14 +495,14 @@ def dataGathererEM(ngroups, iter_count, res_dir='', save_dir='', data_dir='',
         fitted_then_mns.append(best_group.mean)
         fitted_then_covs.append(best_group.generateCovMatrix())
 
-        fitted_now_mn = torb.traceOrbitXYZUVW(fitted_then_mns[group_ix],
-                                              best_group.age,
-                                              single_age=True)
+        fitted_now_mn = torb.trace_cartesian_orbit(fitted_then_mns[group_ix],
+                                                   best_group.age,
+                                                   single_age=True)
         fitted_now_cov =\
-            tf.transform_cov(fitted_then_covs[group_ix],
-                             torb.traceOrbitXYZUVW,
-                             fitted_then_mns[group_ix],
-                             args=(best_group.age,))
+            tf.transform_covmatrix(fitted_then_covs[group_ix],
+                                   torb.trace_cartesian_orbit,
+                                   fitted_then_mns[group_ix],
+                                   args=(best_group.age,))
         fitted_now_mns.append(fitted_now_mn)
         fitted_now_covs.append(fitted_now_cov)
 

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 import sys
 sys.path.insert(0, '..')
-import chronostar.groupfitter as gf
+import chronostar.compfitter as gf
 
 COLORS = ['xkcd:orange', 'xkcd:cyan',
           'xkcd:sun yellow', 'xkcd:shit', 'xkcd:bright pink']
