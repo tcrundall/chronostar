@@ -20,6 +20,16 @@ def read(filename, **kwargs):
 
 
 def get_historical_cart_colnames():
+    """
+    COlnames look like X, Y, Z...
+    dX, dY, dZ
+    c_XY, c_CU
+
+    (as opposed to modern colnames:
+    X, Y, Z...
+    X_error, Y_error ...
+    X_Y_corr,
+    """
     main_colnames = 'XYZUVW'
     error_colnames = ['d'+el for el in main_colnames]
     corr_colnames = []
@@ -33,6 +43,39 @@ def get_colnames(main_colnames=None, error_colnames=None, corr_colnames=None,
                  cartesian=True):
     """
     Utility function for generating standard column names
+
+    Parameters
+    ----------
+    main_colnames: [6] str array_like {None}
+        The column names of the measurements. If left as None then
+        if `cartesian` is true:
+            ['X', 'Y', 'Z', 'U', 'V', 'W']
+        if `cartesian` is false:
+            ['ra', 'dec', 'parallax', 'pmra', 'pmdec', 'radial_velocity']
+    error_colnames: [6] str array_like {None}
+        The column names of the measurements. If left as None then
+        we try to infer the names by appending '_error' to the main
+        column names.
+    corr_colnames: [15] str array_like {None}
+        The column names of the correlations between the errors of
+        each measurement pair. If left as None we try to infer the
+        names by pairing each measurmenet and appending '_corr', e.g.:
+        'X_Y_corr'.
+
+    Notes
+    -----
+    If all column names are provided as argument, this function does
+    nothing.
+
+    The default format for column names for errors and correlations is,
+    e.g.:
+        X_error, Y_error, ...
+        X_Y_corr, X_Z_corr, X_U_corr, X_V_corr, X_W_corr, Y_Z_corr, ...
+    The correlations are listed in the same way one would read the upper
+    triangle of the correlation matrix, where the rows (and columns) of
+    the matrix are in the same order as `main_colnames`.
+
+
     """
     if main_colnames is None:
         if cartesian:
@@ -91,6 +134,7 @@ def build_data_dict_from_table(table, main_colnames=None, error_colnames=None,
         Array of the mean measurements
     covs : [n,6,6] float array_like
         Array of the covariance matrix for each of the `n` measured objects
+
     """
     # Tidy up input
     if isinstance(table, str):
@@ -221,6 +265,24 @@ def convert_astro2cart(astr_mean, astr_cov):
 
 def insert_data_into_row(row, mean, cov, main_colnames=None, error_colnames=None,
                          corr_colnames=None, cartesian=True):
+    """
+    Insert data, error and correlations into a single row
+
+    Given the mean and covariance matrix, we derive the standard
+    deviations in each dimension as well as each pair-wise correlation,
+    which are then inserted into the row (as per the provided column names).
+
+    The columns must already exist!
+
+    Parameters
+    row: astropy table row
+        The row in which the data will be inserted, with required columns
+        already existing
+    mean: [6] float array
+        The mean of data
+    cov: [6,6] float array
+        The covariance matrix of data
+    """
 
     main_colnames, error_colnames, corr_colnames = get_colnames(
             main_colnames, error_colnames, corr_colnames, cartesian=cartesian
@@ -235,13 +297,7 @@ def insert_data_into_row(row, mean, cov, main_colnames=None, error_colnames=None
         row[error_colname] = standard_devs[ix]
 
     # Build correlation matrix by dividing through by stdevs in both axes
-
     corr_matrix = cov / standard_devs / standard_devs.reshape(6, 1)
-
-    # corr_matrix = np.copy(cov)
-    # inv_standard_devs = 1./standard_devs
-    # corr_matrix = np.einsum('jk,j->jk', corr_matrix, inv_standard_devs) # rows
-    # corr_matrix = np.einsum('jk,k->jk', corr_matrix, inv_standard_devs) # cols
 
     # Insert correlations
     indices = np.triu_indices(6,1)      # the indices of the upper right
@@ -252,14 +308,31 @@ def insert_data_into_row(row, mean, cov, main_colnames=None, error_colnames=None
             snd_ix = indices[1][ix]
             row[corr_colnames[ix]] = corr_matrix[fst_ix, snd_ix]
         except KeyError:
+            # It's fine if some correlation columns are missing
             pass
-            # raise UserWarning, '{} missing from columns'.format(
-            #         corr_colnames[ix]
-            # )
 
 
 def insert_column(table, col_data, col_name, filename=''):
-    """Little helper to insert column data"""
+    """
+    Little helper to insert column data
+
+    Parameters
+    ----------
+    table: astropy table
+        the table in which the new column will be inserted
+    col_data: array_like
+        An array of the column data. Must be same length as table
+        (we don't check this)
+    col_name: str
+        The name of the new column
+    filename: str {''}
+        If not empty, save the new table to file
+
+    Returns
+    -------
+    table: astropy table
+        The same table, with the modification.
+    """
     table[col_name] = col_data
     if filename != '':
         table.write(filename, overwrite=True)
@@ -269,10 +342,61 @@ def insert_column(table, col_data, col_name, filename=''):
 def convert_table_astro2cart(table, return_table=False, write_table=False,
                              main_colnames=None, error_colnames=None,
                              corr_colnames=None, filename=''):
+    """
+    Use this function to convert astrometry data to cartesian data.
+
+    Parameters
+    ----------
+    table: astropy table (or string)
+        The table with astrometry data (and radial velocities), either
+        with column names consistent with defaults, or provided as input.
+        If column names aren't specified we assume the measurements
+        have column names:
+            ['ra', 'dec', 'parallax', 'pmra', 'pmdec', 'radial_velocity']
+        With the error column names:
+            ['ra_error', 'dec_error', ... ]
+        And correlation column names:
+            ['ra_dec_corr', 'ra_parallax_corr', 'ra_pmra_corr' ... ,
+             'dec_parallax_corr', 'dec_pmra_corr' ... ,
+             'parallax_pmra_corr', ... ,
+             ... ]
+    return_table: bool {False}
+        Whether to return the converted table
+    write_table: bool {False}
+        Whether to write the converted table to filename. It is not
+        sufficient to simply supply a filename to write as we do not
+        want to risk overwriting someone's table (even though we simply
+        extend with new columns).
+    main_colnames: [6] string array_like
+        Set of column names of the main measurements
+        e.g. ['ra', 'dec', 'parallax', 'pmra', 'pmdec', 'radial_velocity']
+        would be the input for the default format of Gaia data
+    error_colnames: [6] string array_like {None}
+        Set of column names for the errors. If left as None will be
+        generated by appending '_error' to each of the main_colnames
+    corr_colnames: [15] string array_like {None}
+        Set of column names for the pairwise correlations between each
+        of the six main measurements. If left as None will be generated
+        by joining each pair of main_colnames with an underscore then
+        appending '_corr'.
+        It is assumed that the correlation column names are given in
+        a certain order based on input order of main_colnames.
+        e.g. ['ra_dec_corr', 'ra_parallax_corr', ... 'ra_radial_velocity_corr',
+              'dec_parallax_corr', ... 'dec_radial_velocity_corr',
+              'parallax_pmra_corr' ... etc]
+    filename: str {''}
+        Save filename for storing the resulting table
+
+    Returns
+    -------
+    res: astropy table
+        If `return_table` flag is set, will return the resulting
+        astropy table
+    """
     if isinstance(table, str):
         if filename and not write_table:
-            raise UserWarning('Specify how to handle result, won\'t overwrite'
-                              'without explicit permission.')
+            raise UserWarning('Specify how to handle result, I won\'t'
+                              'overwrite without explicit permission.')
         filename = table
         table = Table.read(table)
 
