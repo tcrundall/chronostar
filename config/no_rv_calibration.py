@@ -4,7 +4,10 @@ assoc_name = 'no_rv_calib'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(assoc_name),
-    'datafile':'../results/{}/data.fits'.format(assoc_name), # beta_Pictoris_with_gaia_small_everything_final
+    'data_loadfile': '../data/gaia_cartesian_full_6d_table.fits',
+    'data_savefile': '../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # This is pre-prepared data XYZUVW???
+    #'datafile':'../results/{}/data.fits'.format(assoc_name), # beta_Pictoris_with_gaia_small_everything_final
+    'datafile': '../data/no_rv_paper/beta_Pictoris_with_gaia_small_everything_final.fits',
     'plot_it':True,
     # 'background_overlaps_file':'',
     'include_background_distribution':True,
@@ -21,17 +24,16 @@ config = {
                                         # exist, and if so picks up from where left off
     'dummy_trace_orbit_function':True,  # For testing, simple function to skip computation
     'pickup_prev_run':True,             # Pick up where left off if possible
-    'data_savefile':'', # This is pre-prepared data XYZUVW???
 }
 
 # synth = None
 synth = {
-    'pars':np.array([
-        [ 50., 0.,10., 0., 0., 3., 5., 2., 1e-10],
-        [-50., 0.,20., 0., 5., 2., 5., 2., 1e-10],
-        [  0.,50.,30., 0., 0., 1., 5., 2., 1e-10],
-    ]),
-    'starcounts':[100,50,50]
+   # 'pars':np.array([
+   #     [ 50., 0.,10., 0., 0., 3., 5., 2., 1e-10],
+   #     [-50., 0.,20., 0., 5., 2., 5., 2., 1e-10],
+   #     [  0.,50.,30., 0., 0., 1., 5., 2., 1e-10],
+   # ]),
+   # 'starcounts':[100,50,50]
 }
 
 astro_colnames = {
