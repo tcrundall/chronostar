@@ -54,6 +54,7 @@ def calc_jacobian_column(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
     else:
         return (trans_func(loc_pl, *args) - trans_func(loc_mi, *args)) / (2*h)
 
+
 def calc_jacobian(trans_func, loc, dim=2, h=1e-3, args=None):
     """
     Calculate the Jacobian of the coordinate transfromation `trans_func` about
@@ -84,11 +85,19 @@ def calc_jacobian(trans_func, loc, dim=2, h=1e-3, args=None):
     -------
     jac : [dim,dim] float array
         A jacobian matrix
+
+    Notes
+    -----
+        OPTIMISATION TARGET
+    The application of `trans_func` is the bottleneck of Chronostar
+    (at least when `trans_func` is traceorbit.trace_cartesian_orbit).
+    Since this is a loop, there is scope for parallelisation.
     """
     jac = np.zeros((dim, dim))
     for i in range(dim):
         jac[:,i] = calc_jacobian_column(trans_func, i, loc, dim, h, args)
     return jac
+
 
 def transform_covmatrix(cov, trans_func, loc, dim=6, args=None):
     """

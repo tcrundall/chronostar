@@ -21,7 +21,7 @@ def read(filename, **kwargs):
 
 def get_historical_cart_colnames():
     """
-    COlnames look like X, Y, Z...
+    Colnames look like X, Y, Z...
     dX, dY, dZ
     c_XY, c_CU
 
@@ -74,8 +74,6 @@ def get_colnames(main_colnames=None, error_colnames=None, corr_colnames=None,
     The correlations are listed in the same way one would read the upper
     triangle of the correlation matrix, where the rows (and columns) of
     the matrix are in the same order as `main_colnames`.
-
-
     """
     if main_colnames is None:
         if cartesian:
@@ -253,6 +251,32 @@ def append_cart_cols_to_table(table, main_colnames=None, error_colnames=None,
 
 
 def convert_astro2cart(astr_mean, astr_cov):
+    """
+    Convert astrometry data (mean and covariance) into cartesian
+    coordinates, centred on the local standard of rest (Schoenrich 2010).
+
+    Parameters
+    ----------
+    astr_mean: [6] float array_like
+        The central estimate of a star's astrometry values. Provided in
+        the order:
+            ra [deg]
+            dec [deg]
+            parallax [mas]
+            pmra*cos(dec) [mas/yr]
+            pmdec [mas/yr]
+            radial velocity [km/s]
+    astr_cov: [6,6] float array_like
+        The covariance matrix of the measurments with columns (and rows)
+        in same order as `astr_mean`.
+
+    Returns
+    -------
+    xyzuvw_mean: [6] float array_like
+        The cartesian mean (XYZUVW)
+    xyzuvw_cov: [6,6] float array_like
+        The carteisan covariance matrix
+    """
     xyzuvw_mean = coordinate.convert_astrometry2lsrxyzuvw(astr_mean)
 
     xyzuvw_cov = transform.transform_covmatrix(

@@ -155,6 +155,12 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True):
     xyzuvw_tf : [ntimes, 6] array
         [pc, pc, pc, km/s, km/s, km/s] - the traced orbit with positions
         and velocities
+
+    Notes
+    -----
+    Profiling comments have been left in for future reference, but note
+    that the profiling was done with previous versions of coordinate
+    functions - ones that utilised astropy.units (and thus symbolic algebra)
     """
     # convert positions to kpc
     if single_age:
@@ -170,19 +176,14 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True):
     xyzuvw_start[:3] *= 1e-3
     # profiling:   3 (s)
     bovy_times = convert_myr2bovytime(times)
-    # logging.debug("Tracing up to {} Myr".format(times[-1]))
-    # logging.debug("Tracing up to {} Bovy yrs".format(bovy_times[-1]))
-    # logging.debug("Initial lsr start: {}".format(xyzuvw_start))
 
     # profiling:   9 (s)
     xyzuvw_helio = coordinate.convert_lsr2helio(xyzuvw_start, kpc=True)
-    # logging.debug("Initial helio start: {}".format(xyzuvw_helio))
-    # logging.debug("Galpy vector: {}".format(xyzuvw_helio))
 
     # profiling: 141 (s)
     l,b,dist = coordinate.convert_cartesian2angles(*xyzuvw_helio[:3], return_dist=True)
     vxvv = [l,b,dist,xyzuvw_helio[3],xyzuvw_helio[4],xyzuvw_helio[5]]
-    # logging.debug("vxvv: {}".format(vxvv))
+
     # profiling:  67 (s)
     o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich')
 
@@ -191,9 +192,6 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True):
     data_gp = o.getOrbit()
     # profiling:  32 (s)
     xyzuvw = convert_galpycoords2cart(data_gp, bovy_times)
-
-    # logging.debug("Started orbit at {}".format(xyzuvw[0]))
-    # logging.debug("Finished orbit at {}".format(xyzuvw[-1]))
 
     if single_age:
         return xyzuvw[-1]
