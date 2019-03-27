@@ -5,7 +5,7 @@ config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(assoc_name),
     'data_loadfile': '../data/no_rv_paper/beta_Pictoris_with_gaia_small_everything_final.fits', # CHANGE RV UNCERTAINTIES HERE
-    'data_savefile': '',#''../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # Chronostar adds XYZUVW columns and
+    'data_savefile': '../results/{}/beta_Pictoris_with_background.fits'.format(assoc_name), #,#''../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # Chronostar adds XYZUVW columns and
                                         # if you don't want to override the original file then save into data_savefile.
     'plot_it':True,
     # 'background_overlaps_file':'',

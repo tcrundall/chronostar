@@ -78,8 +78,8 @@ assert os.access(rdir, os.W_OK)
 # ------------------------------------------------------------
 
 # Set up some filename constants (INPUT files) FOR COMPARISON and expectmax
-final_comps_file_with_rv = '/home/marusa/chronostar/data/no_rv_paper/beta_pic_sphere_component.npy'
-final_memb_probs_file_with_rv = '/home/marusa/chronostar/data/no_rv_paper/beta_memb_probs.npy'
+final_comps_file_with_rv = '../data/no_rv_paper/beta_pic_sphere_component.npy'
+final_memb_probs_file_with_rv = '../data/no_rv_paper/beta_memb_probs.npy'
 
 bp_comp_with_rv = SphereComponent.load_components(final_comps_file_with_rv)
 bp_probs_with_rv = np.load(final_memb_probs_file_with_rv)
@@ -96,6 +96,7 @@ final_memb_probs_file = 'final_membership.npy'
 # and the data prep has already been done
 if (config.config['data_savefile'] != '' and
         os.path.isfile(config.config['data_savefile'])):
+    import pdb; pdb.set_trace()
     log_message('Loading pre-prepared data')
     data_table = tabletool.load(config.config['data_savefile'])
     historical = 'c_XU' in data_table.colnames
@@ -110,6 +111,8 @@ else:
     log_message('Read data into table')
     data_table = tabletool.read(datafile)
 
+    import pdb; pdb.set_trace()
+
     historical = 'c_XU' in data_table.colnames # column names...
 
 
@@ -120,6 +123,7 @@ else:
     # with cartesian data written in
     # columns in default way.
     if config.config['convert_to_cartesian']:
+        print('Converting to cartesian')
         # Performs conversion in place (in memory) on `data_table`
         if (not 'c_XU' in data_table.colnames and
             not 'X_U_corr' in data_table.colnames):
@@ -131,9 +135,11 @@ else:
                     corr_colnames=config.astro_colnames.get('corr_colnames', None),
                     return_table=True)
 
+
     # Calculate background overlaps, storing in data
     bg_lnol_colname = 'background_log_overlap'
     if config.config['include_background_distribution']:
+        print("Calculating background overlaps")
         # Only calculate if missing
         if bg_lnol_colname not in data_table.colnames:
             log_message('Calculating background densities')
@@ -167,6 +173,8 @@ data_dict = tabletool.build_data_dict_from_table(
         get_background_overlaps=config.config['include_background_distribution'],
         historical=historical,
 )
+
+import pdb; pdb.set_trace()
 
 # Some values are nan. Mask them out
 mask=[~np.any(np.isnan(x)) for x in data_dict['covs']]
