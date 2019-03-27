@@ -97,7 +97,7 @@ final_memb_probs_file = 'final_membership.npy'
 if (config.config['data_savefile'] != '' and
         os.path.isfile(config.config['data_savefile'])):
     import pdb; pdb.set_trace()
-    log_message('Loading pre-prepared data')
+    log_message('Loading pre-prepared data (with background)')
     data_table = tabletool.load(config.config['data_savefile'])
     historical = 'c_XU' in data_table.colnames
 
@@ -110,8 +110,6 @@ else:
     # Read in data as table
     log_message('Read data into table')
     data_table = tabletool.read(datafile)
-
-    import pdb; pdb.set_trace()
 
     historical = 'c_XU' in data_table.colnames # column names...
 
@@ -173,8 +171,6 @@ data_dict = tabletool.build_data_dict_from_table(
         get_background_overlaps=config.config['include_background_distribution'],
         historical=historical,
 )
-
-import pdb; pdb.set_trace()
 
 # Some values are nan. Mask them out
 mask=[~np.any(np.isnan(x)) for x in data_dict['covs']]
