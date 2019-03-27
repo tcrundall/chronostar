@@ -4,10 +4,10 @@ assoc_name = 'no_rv_calib'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(assoc_name),
-    'data_loadfile': '../data/gaia_cartesian_full_6d_table.fits',
+    'data_loadfile': '../data/no_rv_paper/beta_Pictoris_with_gaia_small_everything_final.fits'
     'data_savefile': '../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # This is pre-prepared data XYZUVW???
     #'datafile':'../results/{}/data.fits'.format(assoc_name), # beta_Pictoris_with_gaia_small_everything_final
-    'datafile': '../data/no_rv_paper/beta_Pictoris_with_gaia_small_everything_final.fits',
+    #'datafile': '../data/no_rv_paper/beta_Pictoris_with_gaia_small_everything_final.fits', # I CHANGE RV UNCERTAINTIES HERE
     'plot_it':True,
     # 'background_overlaps_file':'',
     'include_background_distribution':True,
