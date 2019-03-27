@@ -89,6 +89,8 @@ final_comps_file = 'final_comps.npy'
 final_med_and_spans_file = 'final_med_and_spans.npy'
 final_memb_probs_file = 'final_membership.npy'
 
+# TODO: data_loadfile: mask out rows with nans
+
 # First see if a data savefile path has been provided, and if
 # so, then just assume this script has already been performed
 # and the data prep has already been done
@@ -165,6 +167,12 @@ data_dict = tabletool.build_data_dict_from_table(
         get_background_overlaps=config.config['include_background_distribution'],
         historical=historical,
 )
+
+# Some values are nan. Mask them out
+mask=[~np.any(np.isnan(x)) for x in data_dict['covs']]
+for k, v in data_dict.items():
+    v2=v[mask]
+    data_dict[k]=v2
 
 memb_probs_no_rv = expectmax.expectation(data=data_dict, comps=bp_comp_with_rv, old_memb_probs=bp_probs_with_rv)
 print(memb_probs_no_rv)
