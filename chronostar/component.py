@@ -9,6 +9,8 @@ as a Gaussian. As such there are three key attributes:
 - age: how long the stars have been travelling
 
 TODO: Have actual names for parameters for clarity when logging results
+TODO: Write brief justification about decorators
+TODO: Give reference to inheritance for new users
 """
 
 from __future__ import print_function, division, unicode_literals
@@ -211,22 +213,21 @@ class AbstractComponent(object):
     def __repr__(self):
         return self.__str__()
 
-    @classmethod
-    def check_parameter_format(cls):
+    def check_parameter_format(self):
         """
         A check for valid implementation. If this throws an error then
         the PARAMETER_FORMAT attribute has been incorrectly defined.
         """
-        if cls.PARAMETER_FORMAT is None:
+        if self.PARAMETER_FORMAT is None:
             raise NotImplementedError('Need to define PARAMETER_FORMAT '
                                       'as a class parameter')
-        if not np.all(np.isin(cls.PARAMETER_FORMAT,
-                              list(cls.SENSIBLE_WALKER_SPREADS.keys()))):
+        if not np.all(np.isin(self.PARAMETER_FORMAT,
+                              list(self.SENSIBLE_WALKER_SPREADS.keys()))):
             raise NotImplementedError('Label in PARAMETER_FORMAT doesn\'t '
                                       'seem to be in SENSIBLE_WALKER_SPREADS. '
                                       'Extend dictionary in AbstractComponent '
                                       'accordingly: {}'.format(
-                                              cls.PARAMETER_FORMAT
+                                              self.PARAMETER_FORMAT
                                     ))
 
     @staticmethod
@@ -472,7 +473,6 @@ class AbstractComponent(object):
 
         return comps
 
-
     def get_peak(self, amplitude=1.):
         """
         Get the density at the peak of distribution.
@@ -485,7 +485,6 @@ class AbstractComponent(object):
         det = np.linalg.det(self.get_covmatrix_now())
         coeff = 1./np.sqrt( (2*np.pi)**6 * det)
         return amplitude * coeff * np.exp(expon)
-
 
     @staticmethod
     def load_components(filename):
@@ -639,5 +638,4 @@ class EllipComponent(AbstractComponent):
             self._pars[6:9] = dx, dy, dz
             self._pars[9] = dv
             self._pars[10:13] = c_xy, c_xz, c_yz
-
 

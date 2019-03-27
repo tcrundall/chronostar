@@ -4,7 +4,7 @@ assoc_name = 'no_rv_calib'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(assoc_name),
-    'data_loadfile': '../data/no_rv_paper/beta_Pictoris_with_gaia_small_everything_final.fits'
+    'data_loadfile': '../data/no_rv_paper/beta_Pictoris_with_gaia_small_everything_final.fits',
     'data_savefile': '../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # This is pre-prepared data XYZUVW???
     #'datafile':'../results/{}/data.fits'.format(assoc_name), # beta_Pictoris_with_gaia_small_everything_final
     #'datafile': '../data/no_rv_paper/beta_Pictoris_with_gaia_small_everything_final.fits', # I CHANGE RV UNCERTAINTIES HERE
@@ -25,6 +25,8 @@ config = {
     'dummy_trace_orbit_function':True,  # For testing, simple function to skip computation
     'pickup_prev_run':True,             # Pick up where left off if possible
 }
+
+# dummy change
 
 # synth = None
 synth = {
