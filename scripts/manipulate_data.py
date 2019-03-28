@@ -5,10 +5,14 @@ Data manipulation.
 from __future__ import print_function, division, unicode_literals
 
 from astropy.table import Table
+import numpy as np
 
-data=Table.read('../data/no_rv_paper/beta_Pictoris_with_gaia_small_everything_final.fits')
+data=Table.read('../data/no_rv_paper/bpmg_run_subset.fits')
 
-sigma_rv = [30.0 for x in range(len(data['radial_velocity_error_best']))]
-data['radial_velocity_error_best'] = sigma_rv
+data['radial_velocity_error'] = [100.0 for x in range(len(data))]
 
-data.write('../data/no_rv_paper/beta_Pictoris_with_gaia_small_everything_final_big_fake_rv_errors.fits', format='fits')
+data['radial_velocity'] = 42.0 * np.random.randn(len(data), 1) -2.8
+
+print(data['radial_velocity'])
+
+data.write('../data/no_rv_paper/bpmg_run_subset_fake_rv_errors.fits', format='fits')

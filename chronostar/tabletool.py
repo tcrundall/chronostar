@@ -451,7 +451,7 @@ def convert_table_astro2cart(table, return_table=False, write_table=False,
                                       astr_corr_colnames)
 
     # if cartesian columns don't exist, then insert them
-    if 'X_V_corr' not in table.keys() and 'c_XV' not in table.keys():
+    if 'X_V_corr' not in table.keys(): # and 'c_XV' not in table.keys():
         append_cart_cols_to_table(table)
     cart_main_colnames, cart_error_colnames, cart_corr_colnames = \
         get_colnames(cartesian=True)
