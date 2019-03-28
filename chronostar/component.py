@@ -120,8 +120,8 @@ class AbstractComponent(object):
         'angle_deg':45.,
     }
 
-    def __init__(self, pars=None, attributes=None, internal=False,
-                 trace_orbit_func=None):
+    def __init__(self, pars=None, emcee_pars=None, attributes=None,
+                 internal=False, trace_orbit_func=None):
         """
         An abstraction for the parametrisation of a moving group
         component origin. As a 6D Gaussian, a Component has three key
@@ -178,11 +178,18 @@ class AbstractComponent(object):
 
         # If parameters are provided in internal form (the form used by emcee),
         # then externalise before setting of various other attributes.
+        if pars is not None and emcee_pars is not None:
+            raise UserWarning('Should only initialise with either `pars` or '
+                              '`emcee_pars` but not both.')
+
+        # If initialising with parameters in 'emcee' parameter space, then
+        # convert to 'real' parameter space before constructing attributes.
+        if emcee_pars is not None:
+            pars = self.externalise(emcee_pars)
+
+        # Set _pars, setting to all zeroes if no pars input is provided.
         if pars is not None:
-            if internal:
-                self._pars = self.externalise(pars)
-            else:
-                self._pars = np.copy(pars)
+            self._pars = np.copy(pars)
         else:
             self._pars = np.zeros(len(self.PARAMETER_FORMAT))
 
@@ -230,8 +237,7 @@ class AbstractComponent(object):
                                               self.PARAMETER_FORMAT
                                     ))
 
-    @staticmethod
-    def externalise(pars):
+    def externalise(self, pars):
         """
         Take parameter set in internal form (as used by emcee) and
         convert to external form (as used to build attributes).
@@ -243,8 +249,7 @@ class AbstractComponent(object):
         """
         raise NotImplementedError
 
-    @staticmethod
-    def internalise(pars):
+    def internalise(self, pars):
         """
         Take parameter set in external form (as used to build attributes)
         and convert to internal form (as used by emcee).
@@ -262,6 +267,13 @@ class AbstractComponent(object):
         the Component
         """
         return np.copy(self._pars)
+
+    def get_emcee_pars(self):
+        """
+        Return a copy of the 'emcee' space parameterisation of the
+        Component
+        """
+        return self.internalise(self._pars)
 
     def _set_mean(self, mean=None):
         """
@@ -285,7 +297,6 @@ class AbstractComponent(object):
         """Return a copy of the mean (initial) of the component"""
         return np.copy(self._mean)
 
-    @abstractmethod
     def _set_covmatrix(self, covmatrix=None):
         """
         Builds covmatrix from self._pars. If setting from an externally
@@ -294,7 +305,7 @@ class AbstractComponent(object):
         This is the sole method that needs implmentation to build a
         usable Component class
         """
-        pass
+        raise NotImplementedError
 
     def get_covmatrix(self):
         """Return a copy of the covariance matrix (initial)"""
@@ -526,8 +537,7 @@ class SphereComponent(AbstractComponent):
                         'log_pos_std', 'log_vel_std',
                         'age']
 
-    @staticmethod
-    def externalise(pars):
+    def externalise(self, pars):
         """
         Take parameter set in internal form (as used by emcee) and
         convert to external form (as used to build attributes).
@@ -536,8 +546,7 @@ class SphereComponent(AbstractComponent):
         extern_pars[6:8] = np.exp(extern_pars[6:8])
         return extern_pars
 
-    @staticmethod
-    def internalise(pars):
+    def internalise(self, pars):
         """
         Take parameter set in external form (as used to build attributes)
         and convert to internal form (as used by emcee).
@@ -582,8 +591,7 @@ class EllipComponent(AbstractComponent):
                         'corr', 'corr', 'corr',
                         'age']
 
-    @staticmethod
-    def externalise(pars):
+    def externalise(self, pars):
         """
         Take parameter set in internal form (as used by emcee) and
         convert to external form (as used to build attributes).
@@ -592,8 +600,7 @@ class EllipComponent(AbstractComponent):
         extern_pars[6:10] = np.exp(extern_pars[6:10])
         return extern_pars
 
-    @staticmethod
-    def internalise(pars):
+    def internalise(self, pars):
         """
         Take parameter set in external form (as used to build attributes)
         and convert to internal form (as used by emcee).

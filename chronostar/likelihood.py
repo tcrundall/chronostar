@@ -217,8 +217,6 @@ def lnlike(comp, data, memb_probs, memb_threshold=1e-5,
     # Only consider contributions of stars with larger than provided
     # threshold membership prob
     nearby_star_mask = np.where(memb_probs > memb_threshold)
-    # data['means'] = data['means'][nearby_star_mask]
-    # data['covs'] = data['covs'][nearby_star_mask]
 
     # Calculate log overlaps of relevant stars
     lnols = np.zeros(len(memb_probs))
@@ -267,7 +265,7 @@ def lnprob_func(pars, data, memb_probs=None,
     """
     if memb_probs is None:
         memb_probs = np.ones(len(data))
-    comp = Component(pars, internal=True, trace_orbit_func=trace_orbit_func)
+    comp = Component(emcee_pars=pars, trace_orbit_func=trace_orbit_func)
     lp = lnprior(comp, memb_probs)
     if not np.isfinite(lp):
         return -np.inf

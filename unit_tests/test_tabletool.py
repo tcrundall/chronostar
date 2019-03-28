@@ -399,9 +399,10 @@ def test_convertTableXYZUVWToArray():
     Check that generating cartesian means and covariance matrices matches
     previous implementation
     """
-    filename = '../data/paper1/beta_Pictoris_with_gaia_small_everything_final.fits'
+    filename_historical = '../data/paper1/' \
+                          'historical_beta_Pictoris_with_gaia_small_everything_final.fits'
 
-    orig_star_pars = loadDictFromTable(filename)
+    orig_star_pars = loadDictFromTable(filename_historical)
     main_colnames, error_colnames, corr_colnames =\
         tabletool.get_historical_cart_colnames()
     data = tabletool.build_data_dict_from_table(
@@ -457,25 +458,26 @@ def test_convertAstrTableToCart():
     converting to cartesian (stored back into table) then building data
     from newly inserted table cart cols.
     """
-    filename = '../data/paper1/beta_Pictoris_with_gaia_small_everything_final.fits'
-    table = Table.read(filename)
+    hist_filename = '../data/paper1/historical_beta_Pictoris_with_gaia_small_everything_final.fits'
+    hist_table = Table.read(hist_filename)
+
+    curr_filename = '../data/paper1/beta_Pictoris_with_gaia_small_everything_final.fits'
+    curr_table = Table.read(curr_filename)
     # Drop stars that have gone through any binary checking
-    table = Table(table[100:300])
-    # Manually change different colnames
-    table['radial_velocity'] = table['radial_velocity_best']
-    table['radial_velocity_error'] = table['radial_velocity_error_best']
+    hist_table = Table(hist_table[100:300])
+    curr_table = Table(curr_table[100:300])
 
     # load in original means and covs
     orig_cart_data =\
-        tabletool.build_data_dict_from_table(table=table, cartesian=True,
+        tabletool.build_data_dict_from_table(table=hist_table, cartesian=True,
                                              historical=True)
 
-    tabletool.convert_table_astro2cart(table=table, write_table=False)
+    tabletool.convert_table_astro2cart(table=curr_table, write_table=False)
 
-    cart_data = tabletool.build_data_dict_from_table(table, cartesian=True)
+    cart_data = tabletool.build_data_dict_from_table(curr_table, cartesian=True)
 
     assert np.allclose(orig_cart_data['means'], cart_data['means'])
-    assert np.allclose(table['dX'], table['X_error'])
+    assert np.allclose(hist_table['dX'], curr_table['X_error'])
     assert np.allclose(orig_cart_data['covs'], cart_data['covs'])
 
 
@@ -492,8 +494,8 @@ def test_badColNames():
     main_colnames, error_colnames, corr_colnames = \
         tabletool.get_colnames(cartesian=False)
 
-    main_colnames[5] = 'radial_velocity_best'
-    error_colnames[5] = 'radial_velocity_error_best'
+    # main_colnames[5] = 'radial_velocity_best'
+    # error_colnames[5] = 'radial_velocity_error_best'
     # corrupt ordering of column names
     corrupted_error_colnames = list(error_colnames)
     corrupted_error_colnames[0], corrupted_error_colnames[3] =\
@@ -523,8 +525,9 @@ def test_badColNames():
                                            main_colnames=main_colnames,
                                            error_colnames=error_colnames,
                                            corr_colnames=corr_colnames)
+
     except:
         assert False
 
 if __name__ == '__main__':
-    pass
+    test_badColNames()

@@ -53,7 +53,9 @@ def calc_med_and_span(chain, perc=34, intern_to_extern=False,
         # Externalise each sample
         for ix in range(flat_chain.shape[0]):
             flat_chain = np.copy(flat_chain)
-            flat_chain[ix] = Component.externalise(flat_chain[ix])
+            temp_comp = Component(emcee_pars=flat_chain[ix])
+            flat_chain[ix] = temp_comp.get_pars()
+            # flat_chain[ix] = Component.externalise(flat_chain[ix])
 
     return np.array(list(map(lambda v: (v[1], v[2], v[0]),
                             zip(*np.percentile(flat_chain,
@@ -202,7 +204,7 @@ def get_init_emcee_pos(data, memb_probs=None, nwalkers=None,
         # Exploit the component logic to generate closest set of pars
         dummy_comp = Component(attributes={'mean':rough_mean_now,
                                            'covmatrix':rough_cov_now,})
-        init_pars = Component.internalise(dummy_comp.get_pars())
+        init_pars = dummy_comp.get_emcee_pars()
 
     init_std = Component.get_sensible_walker_spread()
 
@@ -391,7 +393,7 @@ def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
     # Identify the best component
     final_best_ix = np.argmax(sampler.lnprobability)
     best_sample = sampler.flatchain[final_best_ix]
-    best_component = Component(pars=best_sample, internal=True)
+    best_component = Component(emcee_pars=best_sample)
 
     # Determining the median and span of each parameter
     med_and_span = calc_med_and_span(sampler.chain)

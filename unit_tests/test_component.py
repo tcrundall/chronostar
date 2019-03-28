@@ -51,7 +51,7 @@ def test_general_initialisation():
 
 
 def test_spherecomponent_initialisation():
-    sphere_comp = SphereComponent(pars=SPHERE_PARS, internal=False)
+    sphere_comp = SphereComponent(pars=SPHERE_PARS)
     assert np.allclose(SPHERE_PARS[:6], sphere_comp._mean)
     assert np.allclose(AGE, sphere_comp._age)
     assert np.isclose(DX, sphere_comp.get_sphere_dx())
@@ -63,7 +63,7 @@ def test_ellipcomponent_initialisation():
     # remove correlations for sphere_dx checks
     ellip_pars[10:13] = 0.
 
-    ellip_comp = EllipComponent(pars=ellip_pars, internal=False)
+    ellip_comp = EllipComponent(pars=ellip_pars)
     assert np.allclose(ellip_pars[:6], ellip_comp._mean)
     assert np.allclose(AGE, ellip_comp._age)
 
@@ -74,11 +74,14 @@ def test_ellipcomponent_initialisation():
 
 def test_generic_externalise_and_internalise():
     for name, ComponentClass in COMPONENT_CLASSES.items():
-        comp = ComponentClass(pars=DEFAULT_PARS[name], internal=False)
+        comp = ComponentClass(pars=DEFAULT_PARS[name])
 
+        emcee_pars = comp.get_emcee_pars()
         internal_pars = comp.internalise(comp.get_pars())
         external_pars = comp.externalise(internal_pars)
 
+        # emcee pars and internal pars are the same thing (by definition)
+        assert np.allclose(emcee_pars, internal_pars)
         assert np.allclose(comp.get_pars(), external_pars)
 
 
@@ -89,19 +92,21 @@ def test_externalise_and_internalise_pars():
     # Check SphereComponent
     internal_sphere_pars = np.copy(SPHERE_PARS)
     internal_sphere_pars[6:8] = np.log(internal_sphere_pars[6:8])
-    external_sphere_pars = SphereComponent.externalise(internal_sphere_pars)
+    sphere_comp = SphereComponent(emcee_pars=internal_sphere_pars)
+    external_sphere_pars = sphere_comp.get_pars()
     assert np.allclose(SPHERE_PARS, external_sphere_pars)
 
-    re_internal_sphere_pars = SphereComponent.internalise(external_sphere_pars)
+    re_internal_sphere_pars = sphere_comp.internalise(external_sphere_pars)
     assert np.allclose(internal_sphere_pars, re_internal_sphere_pars)
 
     # Check EllipComponent
     internal_ellip_pars = np.copy(ELLIP_PARS)
     internal_ellip_pars[6:10] = np.log(internal_ellip_pars[6:10])
-    external_ellip_pars = EllipComponent.externalise(internal_ellip_pars)
+    ellip_comp = EllipComponent(emcee_pars=internal_ellip_pars)
+    external_ellip_pars = ellip_comp.get_pars()
     assert np.allclose(ELLIP_PARS, external_ellip_pars)
 
-    re_internal_ellip_pars = EllipComponent.internalise(external_ellip_pars)
+    re_internal_ellip_pars = ellip_comp.internalise(external_ellip_pars)
     assert np.allclose(internal_ellip_pars, re_internal_ellip_pars)
 
 

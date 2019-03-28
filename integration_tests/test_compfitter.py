@@ -26,9 +26,9 @@ def run_fit_helper(true_comp, starcounts, measurement_error,
                    trace_orbit_func=None,
                    ):
     py_vers = sys.version[0]
-    data_filename = 'temp_data/{}_groupfitter_{}.fits'.format(py_vers, run_name)
-    log_filename = 'logs/{}_groupfitter_{}.log'.format(py_vers, run_name)
-    plot_dir = 'temp_plots/{}_groupfitter_{}'.format(py_vers, run_name)
+    data_filename = 'temp_data/{}_compfitter_{}.fits'.format(py_vers, run_name)
+    log_filename = 'logs/{}_compfitter_{}.log'.format(py_vers, run_name)
+    plot_dir = 'temp_plots/{}_compfitter_{}'.format(py_vers, run_name)
     save_dir = 'temp_data/'
     logging.basicConfig(level=logging.INFO,
                         filename=log_filename,
@@ -54,14 +54,14 @@ def test_stationary_component():
     """
     Integrated test which fits a single component to a synthetic association.
 
-    Runtime on my mac (single thread) is ~ 20 mins. Check logs/groupfitter.log
+    Runtime on my mac (single thread) is ~ 20 mins. Check logs/compfitter.log
     and temp_plots/*.png for progress.
 
     Takes about 10 mins single thread with C implementation of overlap
     or ~40 mins with python implementation of overlap
     """
-    # log_filename = 'logs/groupfitter_stationary.log'
-    # synth_data_savefile = 'temp_data/groupfitter_stationary_synthdata.fits'
+    # log_filename = 'logs/compfitter_stationary.log'
+    # synth_data_savefile = 'temp_data/compfitter_stationary_synthdata.fits'
 
     short_burnin_step = 200
 
@@ -87,7 +87,7 @@ def test_stationary_component():
             burnin_step=short_burnin_step,
             trace_orbit_func=dummy_trace_orbit_func,
     )
-    np.save('temp_data/{}_groupfitter_stationary_' \
+    np.save('temp_data/{}_compfitter_stationary_' \
             'true_and_best_comp.npy'.format(PY_VERS),
             [true_comp, best_comp],)
 
@@ -131,7 +131,7 @@ def test_lcc_like():
             run_name='lcc_like',
     )
 
-    np.save('temp_data/{}_groupfitter_lcc_like_'\
+    np.save('temp_data/{}_compfitter_lcc_like_'\
             'true_and_best_comp.npy'.format(PY_VERS),
             [true_comp, best_comp],)
 

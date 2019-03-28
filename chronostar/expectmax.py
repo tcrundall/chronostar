@@ -20,7 +20,7 @@ try:
 except ImportError:
     print("Warning: matplotlib not imported")
 
-from component import SphereComponent
+from chronostar.component import SphereComponent
 from . import likelihood
 from . import compfitter
 from . import tabletool
@@ -111,9 +111,9 @@ def check_convergence(old_best_comps, new_chains, perc=40):
     for old_best_comp, new_chain in zip(old_best_comps, new_chains):
         med_and_spans = compfitter.calc_med_and_span(new_chain, perc=perc)
         upper_contained =\
-            old_best_comp.internalise(old_best_comp.get_pars()) < med_and_spans[:,1]
-        lower_contained =\
-            old_best_comp.internalise(old_best_comp.get_pars()) > med_and_spans[:,2]
+            old_best_comp.get_emcee_pars() < med_and_spans[:,1]
+        lower_contained = \
+            old_best_comp.get_emcee_pars() < med_and_spans[:,2]
         each_converged.append(
             np.all(upper_contained) and np.all(lower_contained))
 
@@ -693,7 +693,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
     # If initialising with components then need to convert to emcee parameter lists
     if init_comps is not None:
         logging.info('Initialised by components')
-        all_init_pars = [Component.internalise(ic.get_pars()) for ic in init_comps]
+        all_init_pars = [ic.get_emcee_pars() for ic in init_comps]
         skip_first_e_step = False
         memb_probs_old = np.ones((nstars, ncomps+use_background))\
                          / (ncomps+use_background)
@@ -750,9 +750,9 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
                     npars = len(Component.PARAMETER_FORMAT)
                     best_ix = np.argmax(lnprob)
                     best_pars = chain.reshape(-1, npars)[best_ix]
-                    old_comps[i] = Component(pars=best_pars, internal=True)
+                    old_comps[i] = Component(emcee_pars=best_pars)
 
-            all_init_pars = [Component.internalise(old_comp.get_pars())
+            all_init_pars = [old_comp.get_emcee_pars()
                              for old_comp in old_comps]
             old_overall_lnlike = get_overall_lnlikelihood(data, old_comps,
                                                           inc_posterior=False)
