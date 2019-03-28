@@ -646,3 +646,67 @@ class EllipComponent(AbstractComponent):
             self._pars[9] = dv
             self._pars[10:13] = c_xy, c_xz, c_yz
 
+
+# class FilamentComponent(AbstractComponent):
+#     PARAMETER_FORMAT = ['pos', 'pos', 'pos', 'vel', 'vel', 'vel',
+#                         'log_pos_std', 'log_pos_std', 'log_pos_std',
+#                         'log_vel_std',
+#                         'corr', 'corr', 'corr',
+#                         'age']
+#
+#     @staticmethod
+#     def externalise(pars):
+#         """
+#         Take parameter set in internal form (as used by emcee) and
+#         convert to external form (as used to build attributes).
+#         """
+#         extern_pars = np.copy(pars)
+#         extern_pars[6:10] = np.exp(extern_pars[6:10])
+#         return extern_pars
+#
+#     @staticmethod
+#     def internalise(pars):
+#         """
+#         Take parameter set in external form (as used to build attributes)
+#         and convert to internal form (as used by emcee).
+#         """
+#         intern_pars = np.copy(pars)
+#         intern_pars[6:10] = np.log(intern_pars[6:10])
+#         return intern_pars
+#
+#     def _set_covmatrix(self, covmatrix=None):
+#         """Builds covmatrix from self.pars. If setting from an externally
+#         provided covariance matrix then updates self.pars for consistency"""
+#         # If covmatrix hasn't been provided, generate from self._pars
+#         # and set.
+#         if covmatrix is None:
+#             dx, dy, dz = self._pars[6:9]
+#             dv = self._pars[9]
+#             c_xy, c_xz, c_yz = self._pars[10:13]
+#             self._covmatrix = np.array([
+#                 [dx**2,      c_xy*dx*dy, c_xz*dx*dz, 0.,    0.,    0.],
+#                 [c_xy*dx*dy, dy**2,      c_yz*dy*dz, 0.,    0.,    0.],
+#                 [c_xz*dx*dz, c_yz*dy*dz, dz**2,      0.,    0.,    0.],
+#                 [0.,         0.,         0.,         dv**2, 0.,    0.],
+#                 [0.,         0.,         0.,         0.,    dv**2, 0.],
+#                 [0.,         0.,         0.,         0.,    0.,    dv**2],
+#             ])
+#         # If covmatrix has been provided, reverse engineer the most
+#         # suitable set of parameters and update self._pars accordingly
+#         # (e.g. take the geometric mean of the (square-rooted) velocity
+#         # eigenvalues as dv, as this at least ensures constant volume
+#         # in velocity space).
+#         else:
+#             self._covmatrix = np.copy(covmatrix)
+#             pos_stds = np.sqrt(np.diagonal(self._covmatrix[:3, :3]))
+#             dx, dy, dz = pos_stds
+#             pos_corr_matrix = (self._covmatrix[:3, :3]
+#                                / pos_stds
+#                                / pos_stds.reshape(1,3).T)
+#             c_xy, c_xz, c_yz = pos_corr_matrix[np.triu_indices(3,1)]
+#             dv = gmean(np.sqrt(
+#                 np.linalg.eigvalsh(self._covmatrix[3:, 3:]))
+#             )
+#             self._pars[6:9] = dx, dy, dz
+#             self._pars[9] = dv
+#             self._pars[10:13] = c_xy, c_xz, c_yz

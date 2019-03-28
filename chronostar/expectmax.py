@@ -276,7 +276,8 @@ def expectation(data, comps, old_memb_probs=None,
     comps: [ncomps] Component list
         The best fit for each component from previous runs
     old_memb_probs: [nstars, ncomps (+1)] float array
-        See fit_many_comps
+        Memberhsip probab ility of each star to each fromponent. Only used here
+        to set amplitudes of each component.
     inc_posterior: bool {False}
         Whether to rebalance the weighting of each component by their
         relative priors
@@ -598,6 +599,8 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
     """
     Entry point: Fit multiple Gaussians to data set
 
+    This is where we apply the expectation maximisation algorithm.
+
     There are two ways to initialise this function, either:
     membership probabilities -or- initial components.
     If only fitting with one component (and a background) this function
@@ -651,12 +654,12 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
 
     Return
     ------
-    final_comps: [ngroups] list of synthesiser.Group objects
+    final_comps: [ncomps] list of synthesiser.Group objects
         the best fit for each component
-    final_med_errs: [ngroups, npars, 3] array
+    final_med_errs: [ncomps, npars, 3] array
         the median, -34 perc, +34 perc values of each parameter from
         each final sampling chain
-    memb_probs: [nstars, ngroups] array
+    memb_probs: [nstars, ncomps] array
         membership probabilities
     """
     # Tidying up input
