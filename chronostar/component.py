@@ -8,9 +8,30 @@ as a Gaussian. As such there are three key attributes:
 - covariance matrix: the spread in each dimension along with any correlations
 - age: how long the stars have been travelling
 
-TODO: Have actual names for parameters for clarity when logging results
-TODO: Write brief justification about decorators
-TODO: Give reference to inheritance for new users
+Method decorators are used for two methods of AbstractComponent.
+
+load_components() is a "static" method (and hence has a @staticmethod
+decorator). This means that it can be called directly from the Class, e.g.:
+my_comps = SphereComponent.load_components('filename')
+In practical terms, this method has no 'self' in the signature and thus
+cannot access any attributes that would otherwise be accessible by e.g.
+self.blah
+
+get_sensible_walker_spread() is a "class" method (and hence has a
+@classmethod decorator). This means that it can be called directly from
+the Class, e.g.:
+sensible_spread = SphereComponent.get_sensible_walker_spread()
+This is similar to a static method, but needs access to the class
+attribute SENSIBLE_WALKER_SPREADS.
+In practical terms, instead of the first argument of the method's
+signature being 'self', it is 'cls', meaning the method has access to
+the class attributes.
+
+It doesn't make sense for these methods to be used by instantiated objects
+of the class, but they are still very closely tied to the Class. They could
+be left in the global namespace of this module, however then two separate
+imports would be required throughout Chronostar, and it would complicate
+the process of plugging in a different, modularised Component class.
 """
 
 from __future__ import print_function, division, unicode_literals
@@ -121,7 +142,7 @@ class AbstractComponent(object):
     }
 
     def __init__(self, pars=None, emcee_pars=None, attributes=None,
-                 internal=False, trace_orbit_func=None):
+                 trace_orbit_func=None):
         """
         An abstraction for the parametrisation of a moving group
         component origin. As a 6D Gaussian, a Component has three key
@@ -132,10 +153,17 @@ class AbstractComponent(object):
         Parameters
         ----------
         pars: 1D float array_like
-            Raw values for the parameters of the component. Can be
-            provided in "external" form (standard) or "internal" form
-            (e.g. treating standard deviations in log space to ensure
-            uninformed prior)
+            Raw values for the parameters of the component. Parameters
+            should be provided in real space (as opposed to any
+            modifications made for emcee's sake). In simple terms,
+            if you are initialising a component based on parameters
+            that have real units, then use this argument.
+        emcee_pars: 1D float array_like
+            Raw values for the parameters of the component but in
+            converted style used by emcee (e.g. log space for standard
+            deviations etc). In simple terms, if you are initialising
+            a component based on parameters taken from an emcee chain,
+            then use this argument.
         attributes: dict with all the following keys:
             mean: [6] float array_like
                 The mean of the initial Gaussian distribution in
@@ -525,7 +553,12 @@ class AbstractComponent(object):
     def get_sensible_walker_spread(cls):
         """Get an array of sensible walker spreads (based on class
         constants `PARAMTER_FORMAT` and `SENSIBLE_WALKER_SPREADS` to
-        guide emcee in a sensible starting range of parameters."""
+        guide emcee in a sensible starting range of parameters.
+
+        The sensible walker spreads are intuitively set by Tim Crundall.
+        The values probably only matter as far as converging quickly to a
+        good fit.
+        """
         sensible_spread = []
         for par_form in cls.PARAMETER_FORMAT:
             sensible_spread.append(cls.SENSIBLE_WALKER_SPREADS[par_form])
