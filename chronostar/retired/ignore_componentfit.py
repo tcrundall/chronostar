@@ -32,7 +32,7 @@ import numpy as np
 import emcee
 
 from component import Component
-from . import tabletool
+from chronostar import tabletool
 from likelihood import lnprob_func
 
 class ComponentFit():

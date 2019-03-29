@@ -224,7 +224,8 @@ def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
              burnin_steps=1000, Component=SphereComponent, plot_it=False,
              pool=None, convergence_tol=0.25, plot_dir='', save_dir='',
              sampling_steps=None, max_iter=None, trace_orbit_func=None):
-    """Fits a single gaussian to a weighted set of traceback orbits.
+    """Fits a single 6D gaussian to a weighted set (by membership
+    probabilities) of stellar phase-space positions.
 
     Stores the final sampling chain and lnprob in `save_dir`, but also
     returns the best fit (walker step corresponding to maximum lnprob),

@@ -152,6 +152,9 @@ def get_lnoverlaps(comp, data, star_mask=None):
             the central estimates of each star in XYZUVW space
         'xyzuvw_cov': [nstars,6,6] float array
             the covariance of each star in XYZUVW space
+    star_mask: [len(data)] indices
+        A mask that excludes stars that have negliglbe membership probablities
+        (and thus have their log overlaps scaled to tiny numbers).
     """
     # Prepare star arrays
     if star_mask is not None:
@@ -209,6 +212,8 @@ def lnlike(comp, data, memb_probs, memb_threshold=1e-5,
 
     """
     # Boost expect star count to some minimum threshold
+    # This is a bit of a hack to prevent component amplitudes dwindling
+    # to nothing
     exp_starcount = np.sum(memb_probs)
     if exp_starcount < minimum_exp_starcount:
         memb_probs = np.copy(memb_probs)

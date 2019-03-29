@@ -11,7 +11,7 @@ import numpy as np
 
 from astropy.io import fits
 from galpy.orbit import Orbit
-from galpy.potential import MWPotential2014 as mp
+from galpy.potential import MWPotential2014
 from galpy.util import bovy_conversion
 
 from . import coordinate
@@ -52,7 +52,7 @@ def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
     By default, positions are scaled by LSR distance from galactic centre,
     ro=8kpc, and velocities scaled by the LSR circular velocity,
     vo = 220km/s. Time is scaled such that after 1 time unit has passed,
-    the LSR hastravelled 1 radian about the galactic centre. The values are
+    the LSR has travelled 1 radian about the galactic centre. The values are
     returned in a [ntimes, 6]
 
     array:
@@ -173,7 +173,7 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True):
         # times[np.where(times == 0.)] = 1e-10
 
     xyzuvw_start = np.copy(xyzuvw_start)
-    xyzuvw_start[:3] *= 1e-3
+    xyzuvw_start[:3] *= 1e-3 # pc to kpc
     # profiling:   3 (s)
     bovy_times = convert_myr2bovytime(times)
 
@@ -188,7 +188,7 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True):
     o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich')
 
     # profiling: 546 (s)
-    o.integrate(bovy_times,mp,method='odeint')
+    o.integrate(bovy_times, MWPotential2014, method='odeint')
     data_gp = o.getOrbit()
     # profiling:  32 (s)
     xyzuvw = convert_galpycoords2cart(data_gp, bovy_times)
@@ -201,6 +201,9 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True):
 def trace_many_cartesian_orbit(xyzuvw_starts, times=None, single_age=True,
                                savefile=''):
     """
+    (This function is not used by Chronostar (yet). It is currently here
+    purely for testing reasons.)
+
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
 
@@ -243,6 +246,7 @@ def trace_many_cartesian_orbit(xyzuvw_starts, times=None, single_age=True,
     if savefile:
         np.save(savefile, xyzuvw_to)
     return xyzuvw_to
+
 
 
 # def generateTracebackFile(star_pars_now, times, savefile=''):

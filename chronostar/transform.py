@@ -50,7 +50,7 @@ def calc_jacobian_column(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
     loc_pl = loc + offset
     loc_mi = loc - offset
     if args is None:
-        return (trans_func(loc_pl) - trans_func(loc_mi)) / (2*h)
+        return (trans_func(loc_pl) - trans_func(loc_mi)) / (2*h) 
     else:
         return (trans_func(loc_pl, *args) - trans_func(loc_mi, *args)) / (2*h)
 
