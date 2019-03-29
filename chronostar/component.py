@@ -36,13 +36,11 @@ the process of plugging in a different, modularised Component class.
 
 from __future__ import print_function, division, unicode_literals
 
-from abc import ABCMeta, abstractmethod
 import numpy as np
 from scipy.stats.mstats import gmean
 
 from . import transform
 from chronostar.traceorbit import trace_cartesian_orbit
-from . import traceorbit
 
 
 class AbstractComponent(object):
@@ -107,7 +105,7 @@ class AbstractComponent(object):
         only need to implement _set_covmatrix(). Of course if you wish,
         you can override _set_mean() or _set_age().
     """
-    __metaclass__ = ABCMeta
+    # __metaclass__ = ABCMeta
 
     DEFAULT_TINY_AGE = 1e-10
 
@@ -175,10 +173,6 @@ class AbstractComponent(object):
             age: float
                 the age of the component (positive) in millions of
                 years
-        internal: boolean {False}
-            If set, and if `pars` is provided, treats input pars as
-            internal form, and first externalises them before building
-            attributes.
         trace_orbit_func: function {traceOrbitXYZUVW}
             Function used to calculate an orbit through cartesian space
             (centred on, and co-rotating with, the local standard of
@@ -258,12 +252,13 @@ class AbstractComponent(object):
                                       'as a class parameter')
         if not np.all(np.isin(self.PARAMETER_FORMAT,
                               list(self.SENSIBLE_WALKER_SPREADS.keys()))):
-            raise NotImplementedError('Label in PARAMETER_FORMAT doesn\'t '
-                                      'seem to be in SENSIBLE_WALKER_SPREADS. '
-                                      'Extend dictionary in AbstractComponent '
-                                      'accordingly: {}'.format(
-                                              self.PARAMETER_FORMAT
-                                    ))
+            raise NotImplementedError(
+                    'Label in PARAMETER_FORMAT doesn\'t seem to be in '
+                    'SENSIBLE_WALKER_SPREADS. Extend dictionary in '
+                    'AbstractComponent accordingly: {}'.format(
+                            self.PARAMETER_FORMAT
+                    )
+            )
 
     def externalise(self, pars):
         """
@@ -522,7 +517,7 @@ class AbstractComponent(object):
         """
         expon = 0   # because we are evaluating the ditribution *at* the mean
         det = np.linalg.det(self.get_covmatrix_now())
-        coeff = 1./np.sqrt( (2*np.pi)**6 * det)
+        coeff = 1./np.sqrt((2*np.pi)**6 * det)
         return amplitude * coeff * np.exp(expon)
 
     @staticmethod
