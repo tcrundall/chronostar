@@ -252,6 +252,17 @@ def trace_many_cartesian_orbit(xyzuvw_starts, times=None, single_age=True,
     return xyzuvw_to
 
 
+def trace_orbit_builder(potential):
+    """
+    Build a replica of trace_cartesian_orbit but with custom
+    potential. e.g. MiyamotoNagaiPotential
+    With parameters (from website):
+    MiyamotoNagaiPotential(a=0.5,b=0.0375,amp=1.,normalize=1.)
+    """
+    def f_(xyzuvw_start, times):
+        return trace_cartesian_orbit(xyzuvw_start, times, potential=potential)
+    return f_
+
 
 # def generateTracebackFile(star_pars_now, times, savefile=''):
 #     """

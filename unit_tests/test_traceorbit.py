@@ -27,6 +27,7 @@ import numpy as np
 import sys
 
 sys.path.insert(0, '..')
+from galpy.potential import
 import chronostar.traceorbit as torb
 
 LOGGINGLEVEL = logging.DEBUG
@@ -109,6 +110,7 @@ def test_traceforwardThenBack():
 
 if __name__ == '__main__':
     def build_func(potential):
-        return lambda xyzyuvw_start: torb.trace_cartesian_orbit(xyzuvw_start,
-                                                                times=1.0,)
+        return lambda xyzyuvw_start: torb.trace_cartesian_orbit(
+                xyzuvw_start, times=1.0, potential=potential
+        )
     my_variable_func = lambda 'MWPotential'
