@@ -259,8 +259,10 @@ def trace_orbit_builder(potential):
     With parameters (from website):
     MiyamotoNagaiPotential(a=0.5,b=0.0375,amp=1.,normalize=1.)
     """
-    def f_(xyzuvw_start, times):
-        return trace_cartesian_orbit(xyzuvw_start, times, potential=potential)
+    def f_(xyzuvw_start, times=None, single_age=True):
+        return trace_cartesian_orbit(xyzuvw_start=xyzuvw_start, times=times,
+                                     single_age=single_age,
+                                     potential=potential)
     return f_
 
 

@@ -21,6 +21,7 @@ import argparse
 import numpy as np
 import os
 import sys
+from emcee.utils import MPIPool
 import logging
 import imp      # TODO: address deprecation of imp
 from distutils.dir_util import mkpath
@@ -32,6 +33,27 @@ from chronostar.synthdata import SynthData
 from chronostar import tabletool
 from chronostar import compfitter
 from chronostar import expectmax
+
+# ------------------------------------------------------------
+# -----  BEGIN MPIRUN THING  ---------------------------------
+# ------------------------------------------------------------
+using_mpi = True
+try:
+    pool = MPIPool()
+    logging.info("Successfully initialised mpi pool")
+except:
+    #print("MPI doesn't seem to be installed... maybe install it?")
+    logging.info("MPI doesn't seem to be installed... maybe install it?")
+    using_mpi = False
+    pool=None
+
+if using_mpi:
+    if not pool.is_master():
+        print("One thread is going to sleep")
+        # Wait for instructions from the master process.
+        pool.wait()
+        sys.exit(0)
+print("Only one thread is master")
 
 
 def dummy_trace_orbit_func(loc, times=None):
@@ -68,6 +90,7 @@ elif config.special['component'].lower() == 'ellip':
     from chronostar.component import EllipComponent as Component
 else:
     raise UserWarning('Unknown (or missing) component parametrisation')
+
 
 
 # Check results directory is valid
@@ -411,3 +434,6 @@ while ncomps < MAX_COMPS:
 
     logging.info("Best fit:\n{}".format(
             [group.get_pars() for group in prev_comps]))
+
+if using_mpi:
+    pool.close()

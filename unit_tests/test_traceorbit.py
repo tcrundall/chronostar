@@ -27,8 +27,8 @@ import numpy as np
 import sys
 
 sys.path.insert(0, '..')
-from galpy.potential import
 import chronostar.traceorbit as torb
+from galpy.potential import MiyamotoNagaiPotential
 
 LOGGINGLEVEL = logging.DEBUG
 
@@ -108,9 +108,37 @@ def test_traceforwardThenBack():
         assert np.allclose(xyzuvw_start, xyzuvw_start_again,
                            atol=ABS_TOLERANCE)
 
+def test_different_potential():
+    miya_pot = MiyamotoNagaiPotential(a=0.5, b=0.0375, amp=1., normalize=1.)
+    miya_trace_cartesian_orbit = torb.trace_orbit_builder(miya_pot)
+
+    ABS_TOLERANCE = 1e-3
+    xyzuvws = np.array([
+        [0., 0., 25., 0., 0., 0.],
+        [10., 0., -50., 0., 0., 0.],
+        [10., 0., -50., 0., 0., -5.],
+        [0., 0., 0., 10., 25., 30.,],
+    ])
+    age = 100.
+    times = np.linspace(0, 100, 1001)
+    for xyzuvw_start in xyzuvws:
+        xyzuvw_end = miya_trace_cartesian_orbit(xyzuvw_start,
+                                                times=age,
+                                                single_age=True,
+                                                )
+        xyzuvw_start_again = miya_trace_cartesian_orbit(xyzuvw_end,
+                                                        times=-age,
+                                                        single_age=True,
+                                                        )
+
+        assert np.allclose(xyzuvw_start, xyzuvw_start_again,
+                           atol=ABS_TOLERANCE)
+
+        # Confirm that tracing forward with one potential but back with another
+        # gives different starting position
+        xyzuvw_start_but_with_diff_pot = torb.trace_cartesian_orbit(xyzuvw_end,
+                                                                    times=-age,)
+        assert not np.allclose(xyzuvw_start, xyzuvw_start_but_with_diff_pot)
+
 if __name__ == '__main__':
-    def build_func(potential):
-        return lambda xyzyuvw_start: torb.trace_cartesian_orbit(
-                xyzuvw_start, times=1.0, potential=potential
-        )
-    my_variable_func = lambda 'MWPotential'
+    test_different_potential()
