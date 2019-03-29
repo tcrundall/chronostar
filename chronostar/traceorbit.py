@@ -11,8 +11,11 @@ import numpy as np
 
 from astropy.io import fits
 from galpy.orbit import Orbit
-from galpy.potential import MWPotential2014
+from galpy.potential import MWPotential2014, MiyamotoNagaiPotential
 from galpy.util import bovy_conversion
+
+# mp = MWPotential2014
+mp = MiyamotoNagaiPotential(a=0.5,b=0.0375,amp=1.,normalize=1.) # Params from the example webpage. No idea if that's good or not.
 
 from . import coordinate
 
