@@ -106,3 +106,9 @@ def test_traceforwardThenBack():
                                                         )
         assert np.allclose(xyzuvw_start, xyzuvw_start_again,
                            atol=ABS_TOLERANCE)
+
+if __name__ == '__main__':
+    def build_func(potential):
+        return lambda xyzyuvw_start: torb.trace_cartesian_orbit(xyzuvw_start,
+                                                                times=1.0,)
+    my_variable_func = lambda 'MWPotential'
