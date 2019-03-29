@@ -7,7 +7,7 @@ config = {
     'data_loadfile': '../data/synth_data_for_marusa_from_paper_1/same_centroid_synth_measurements.fits',
     'data_savefile': '../results/{}/same_centroid_synth_measurements.fits'.format(assoc_name), #,#''../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # Chronostar adds XYZUVW columns and
                                         # if you don't want to override the original file then save into data_savefile.
-    'plot_it':True,
+    'plot_it':True, # What kind of plots?
     # 'background_overlaps_file':'',
     'include_background_distribution':True,
     'kernel_density_input_datafile':'../data/gaia_cartesian_full_6d_table.fits',
@@ -43,6 +43,13 @@ cart_colnames = {
     # 'main_colnames':None,
     # 'error_colnames':None,
     # 'corr_colnames':None,
+}
+
+from galpy.potential import MiyamotoNagaiPotential, MWPotential2014
+orbit = {
+    # 'potential': None,
+    'potential': MWPotential2014,
+    # 'potential': MiyamotoNagaiPotential(a=0.5,b=0.0375,amp=1.,normalize=1.), # Params from the example webpage. No idea if that's good or not.
 }
 
 special = {

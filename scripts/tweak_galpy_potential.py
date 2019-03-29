@@ -32,6 +32,7 @@ from chronostar.synthdata import SynthData
 from chronostar import tabletool
 from chronostar import compfitter
 from chronostar import expectmax
+from chronostar import traceorbit
 
 
 def dummy_trace_orbit_func(loc, times=None):
@@ -203,6 +204,13 @@ if config.config['dummy_trace_orbit_function']:
     trace_orbit_func = dummy_trace_orbit_func
 else:
     trace_orbit_func = None
+
+# Use custom potential
+if config.orbit['potential']:
+    trace_orbit_func = trace_orbit_builder(config.orbit['potential'])
+else:
+    trace_orbit_func = None
+
 
 if historical:
     log_message('Data set already has historical cartesian columns')
