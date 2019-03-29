@@ -34,27 +34,6 @@ from chronostar import tabletool
 from chronostar import compfitter
 from chronostar import expectmax
 
-# ------------------------------------------------------------
-# -----  BEGIN MPIRUN THING  ---------------------------------
-# ------------------------------------------------------------
-using_mpi = True
-try:
-    pool = MPIPool()
-    logging.info("Successfully initialised mpi pool")
-except:
-    #print("MPI doesn't seem to be installed... maybe install it?")
-    logging.info("MPI doesn't seem to be installed... maybe install it?")
-    using_mpi = False
-    pool=None
-
-if using_mpi:
-    if not pool.is_master():
-        print("One thread is going to sleep")
-        # Wait for instructions from the master process.
-        pool.wait()
-        sys.exit(0)
-print("Only one thread is master")
-
 
 def dummy_trace_orbit_func(loc, times=None):
     """
@@ -92,7 +71,6 @@ else:
     raise UserWarning('Unknown (or missing) component parametrisation')
 
 
-
 # Check results directory is valid
 # If path exists, make a new results_directory with a random int
 if os.path.exists(config.config['results_dir']) and\
@@ -106,6 +84,30 @@ mkpath(rdir)
 
 # Now that results directory is set up, can set up log file
 logging.basicConfig(filename=rdir+'log.log', level=logging.INFO)
+
+# ------------------------------------------------------------
+# -----  BEGIN MPIRUN THING  ---------------------------------
+# ------------------------------------------------------------
+using_mpi = True
+try:
+    pool = MPIPool()
+    logging.info("Successfully initialised mpi pool")
+except:
+    #print("MPI doesn't seem to be installed... maybe install it?")
+    logging.info("MPI doesn't seem to be installed... maybe install it?")
+    using_mpi = False
+    pool=None
+
+if using_mpi:
+    if not pool.is_master():
+        print("One thread is going to sleep")
+        # Wait for instructions from the master process.
+        pool.wait()
+        sys.exit(0)
+print("Only one thread is master")
+
+
+
 log_message('Beginning Chronostar run',
             symbol='_', surround=True)
 

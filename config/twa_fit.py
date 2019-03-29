@@ -1,6 +1,6 @@
 import numpy as np
 
-assoc_name = 'twa_run'
+assoc_name = 'twa_run_2'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(assoc_name),
