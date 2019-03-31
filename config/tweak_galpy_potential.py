@@ -36,6 +36,8 @@ synth = {
    # 'starcounts':[100,50,50]
 }
 
+data_bound = None
+
 astro_colnames = {
     # 'main_colnames':None,     # list of names
     # 'error_colnames':None,
