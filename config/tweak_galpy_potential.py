@@ -1,11 +1,12 @@
 import numpy as np
 
-assoc_name = 'tweak_galpy_potential'
+assoc_name = ''
+prefix = 'tweak_galpy_potential'
 config = {
     # 'datafile':'',
-    'results_dir':'../results/{}'.format(assoc_name),
+    'results_dir':'../results/{}'.format(prefix),
     'data_loadfile': '../data/synth_data_for_marusa_from_paper_1/same_centroid_synth_measurements.fits',
-    'data_savefile': '../results/{}/same_centroid_synth_measurements.fits'.format(assoc_name), #,#''../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # Chronostar adds XYZUVW columns and
+    'data_savefile': '../results/{}/same_centroid_synth_measurements.fits'.format(prefix), #,#''../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # Chronostar adds XYZUVW columns and
                                         # if you don't want to override the original file then save into data_savefile.
     'plot_it':True, # What kind of plots?
     # 'background_overlaps_file':'',
