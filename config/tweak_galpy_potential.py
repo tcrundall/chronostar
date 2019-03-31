@@ -22,6 +22,8 @@ config = {
     'overwrite_prev_run':True,          # explores provided results directorty and sees if results already
                                         # exist, and if so picks up from where left off
     'pickup_prev_run':True,             # Pick up where left off if possible
+
+    'banyan_assoc_name': '',
 }
 
 # synth = None
