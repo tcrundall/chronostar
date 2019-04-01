@@ -1,12 +1,12 @@
 import numpy as np
 
 assoc_name = ''
-prefix = 'tweak_galpy_potential'
+prefix = 'tweak_galpy_potential_mw2014'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(prefix),
     'data_loadfile': '../data/synth_data_for_marusa_from_paper_1/same_centroid_synth_measurements.fits',
-    'data_savefile': '../results/{}/same_centroid_synth_measurements.fits'.format(prefix), #,#''../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # Chronostar adds XYZUVW columns and
+    'data_savefile': '../results/{}/same_centroid_synth_measurements_output.fits'.format(prefix), #,#''../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # Chronostar adds XYZUVW columns and
                                         # if you don't want to override the original file then save into data_savefile.
     'plot_it':True, # What kind of plots?
     # 'background_overlaps_file':'',
@@ -16,11 +16,12 @@ config = {
                                                     # e.g. ../data/gaia_dr2_mean_xyzuvw.npy
     'run_with_mpi':False,       # not yet inpmlemented
     'convert_to_cartesian':True,        # whehter need to convert data from astrometry to cartesian
-    'overwrite_datafile':True,         # whether to store results in same talbe and rewrite to file
+    'overwrite_datafile':False,         # whether to store results in same talbe and rewrite to file
     'cartesian_savefile':'',
     'save_cartesian_data':True,         #
     'overwrite_prev_run':True,          # explores provided results directorty and sees if results already
                                         # exist, and if so picks up from where left off
+    'dummy_trace_orbit_function':False,  # For testing, simple function to skip computation
     'pickup_prev_run':True,             # Pick up where left off if possible
 
     'banyan_assoc_name': '',

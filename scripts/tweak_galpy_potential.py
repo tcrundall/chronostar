@@ -207,7 +207,7 @@ else:
 
 # Use custom potential
 if config.orbit['potential']:
-    trace_orbit_func = trace_orbit_builder(config.orbit['potential'])
+    trace_orbit_func = traceorbit.trace_orbit_builder(config.orbit['potential'])
 else:
     trace_orbit_func = None
 
