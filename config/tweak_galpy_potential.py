@@ -11,7 +11,7 @@ config = {
     'plot_it':True, # What kind of plots?
     # 'background_overlaps_file':'',
     'include_background_distribution':True,
-    'kernel_density_input_datafile':'~tcrun/chronostar/data/gaia_cartesian_full_6d_table.fits', # absolute path as I ran out of space
+    'kernel_density_input_datafile':'/home/tcrun/chronostar/data/gaia_cartesian_full_6d_table.fits', # absolute path as I ran out of space
                                                     # Cartesian data of all Gaia DR2 stars
                                                     # e.g. ../data/gaia_dr2_mean_xyzuvw.npy
     'run_with_mpi':False,       # not yet inpmlemented
