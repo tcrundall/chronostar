@@ -1,10 +1,15 @@
 import numpy as np
 
 assoc_name = 'demo_run'
+prefix = 'marusa_testing'
 config = {
+    'banyan_assoc_name': '',
     # 'datafile':'',
     'results_dir':'../results/{}'.format(assoc_name),
+    'data_loadfile':'../data/gaia_cartesian_full_6d_table.fits',
     'datafile':'../results/{}/data.fits'.format(assoc_name),
+    'data_savefile': '../results/{}/same_centroid_synth_measurements_output.fits'.format(prefix), #,#''../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # Chronostar adds XYZUVW columns and
+                                        # if you don't want to override the original file then save into data_savefile.
     'plot_it':True,
     # 'background_overlaps_file':'',
     'include_background_distribution':True,
@@ -32,6 +37,8 @@ synth = {
     ]),
     'starcounts':[100,50,50]
 }
+
+data_bound = None
 
 astro_colnames = {
     # 'main_colnames':None,     # list of names

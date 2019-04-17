@@ -88,7 +88,7 @@ logging.basicConfig(filename=rdir+'log.log', level=logging.INFO)
 # ------------------------------------------------------------
 # -----  BEGIN MPIRUN THING  ---------------------------------
 # ------------------------------------------------------------
-using_mpi = True
+using_mpi = False # True
 try:
     pool = MPIPool()
     logging.info("Successfully initialised mpi pool")
@@ -123,6 +123,8 @@ assert os.access(rdir, os.W_OK)
 final_comps_file = 'final_comps.npy'
 final_med_and_spans_file = 'final_med_and_spans.npy'
 final_memb_probs_file = 'final_membership.npy'
+
+print('After filenames')
 
 # First see if a data savefile path has been provided, and if
 # so, then just assume this script has already been performed
