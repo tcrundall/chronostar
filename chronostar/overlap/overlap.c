@@ -621,7 +621,7 @@ double new_get_lnoverlap(
   printf("Memory allocated\n");
   // INITIALISE STAR MATRICES
   for (i=0; i<MAT_DIM; i++)
-    for (j=0; j<MAT_DIM; j++)
+    for (j=0; j<MAT_DIM; j++) {
       //perform B+A as part of the initialisation
       gsl_matrix_set(
         BpA,i,j,
@@ -630,6 +630,7 @@ double new_get_lnoverlap(
       );
       printf("Printing BpA\n");
       print_matrix(fout, BpA);
+    }
 
   for (i=0; i<MAT_DIM; i++) {
     gsl_vector_set(
