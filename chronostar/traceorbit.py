@@ -135,7 +135,7 @@ def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
     return xyzuvw
 
 def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
-                          potential=MWPotential2014):
+                          potential=MWPotential2014, ro=8., vo=220.):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -176,7 +176,7 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
         times = np.array(times)
         # times[np.where(times == 0.)] = 1e-10
 
-    xyzuvw_start = np.copy(xyzuvw_start)
+    xyzuvw_start = np.copy(xyzuvw_start).astype(np.float)
     xyzuvw_start[:3] *= 1e-3 # pc to kpc
     # profiling:   3 (s)
     bovy_times = convert_myr2bovytime(times)
@@ -189,13 +189,13 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
     vxvv = [l,b,dist,xyzuvw_helio[3],xyzuvw_helio[4],xyzuvw_helio[5]]
 
     # profiling:  67 (s)
-    o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich')
+    o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich', ro=ro, vo=vo)
 
     # profiling: 546 (s)
     o.integrate(bovy_times, potential, method='odeint')
     data_gp = o.getOrbit()
     # profiling:  32 (s)
-    xyzuvw = convert_galpycoords2cart(data_gp, bovy_times)
+    xyzuvw = convert_galpycoords2cart(data_gp, bovy_times, ro=ro, vo=vo)
 
     if single_age:
         return xyzuvw[-1]

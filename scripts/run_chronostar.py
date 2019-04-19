@@ -363,7 +363,7 @@ while ncomps < MAX_COMPS:
                     npars = len(Component.PARAMETER_FORMAT)
                     best_ix = np.argmax(lnprob)
                     best_pars = chain.reshape(-1, npars)
-                    prev_comps[i] = Component(pars=best_pars, internal=True)
+                    prev_comps[i] = Component(emcee_pars=best_pars)
                 np.save(str(run_dir + 'final/' + final_comps_file), prev_comps)
 
             logging.info('Fit loaded from previous run')
