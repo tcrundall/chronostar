@@ -84,6 +84,36 @@ mkpath(rdir)
 
 # Now that results directory is set up, can set up log file
 logging.basicConfig(filename=rdir+'log.log', level=logging.INFO)
+
+
+# ------------------------------------------------------------
+# -----  BEGIN MPIRUN THING  ---------------------------------
+# ------------------------------------------------------------
+
+# Only even try to use MPI if config file says so
+if config.config.get('run_with_mpi', False):
+    using_mpi = False # True
+    try:
+        pool = MPIPool()
+        logging.info("Successfully initialised mpi pool")
+    except:
+        #print("MPI doesn't seem to be installed... maybe install it?")
+        logging.info("MPI doesn't seem to be installed... maybe install it?")
+        using_mpi = False
+        pool=None
+
+    if using_mpi:
+        if not pool.is_master():
+            print("One thread is going to sleep")
+            # Wait for instructions from the master process.
+            pool.wait()
+            sys.exit(0)
+    print("Only one thread is master")
+else:
+    print("MPI flag was not set in config file")
+
+
+
 log_message('Beginning Chronostar run',
             symbol='_', surround=True)
 
