@@ -26,49 +26,11 @@ half a minute
 Python libraries (i.e. pip install [library name])
 - astropy
 - emcee
-- galpy==1.1
+- galpy
 
 Other tools:
 - mpirun
 
-#### Note
-Unfortunately there seems to be a bug in galpy for our purposes which
-requires us to use an older version (see unit_tests/test_galpy.py).
-This version has a couple of 
-incompatibilities (a bugged scipy importer and outdated Warnings function
-signature) which we have to edit manually.
-If the most recent installation of galpy suits your needs, then simply
-reinstall galpy in a virtual environment (instructions below).
-
-In galpy/orbit_src/FullOrbit.py: to accommodate the existance of scipy 1.0
-and later, replace line 7
-
-    if int(scipy.__version__.split('.')[1]) < 10: #pragma: no cover
-
-with
-
-    if int(scipy.__version__.split('.')[0]) == 0 and\
-        int(scipy.__version__.split('.')[1]) < 10: #pragma: no cover
-
-In galpy/utils/\_\_init\_\_.py: to ensure the _warning signature has
-enough arguments, insert two placeholder arguments such that line 15 goes
-from:
-
-    ...
-    lineno = -1):
-    ...
-   
-to
-
-    ...
-    lineno = -1,
-    placeholder1 = None,
-    placeholder2 = None):
-    ...
-
-Chronostar **can** run with latest releases of galpy, but the unit
-tests will fail. Feel free to skip this step for now and inspect the
-results of unit_tests/test_galpy.py yourself.
 
 ## Setup
 Now that python dependencies are met, we need to install swig, a means
