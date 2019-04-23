@@ -449,3 +449,6 @@ while ncomps < MAX_COMPS:
 
     logging.info("Best fit:\n{}".format(
             [group.get_pars() for group in prev_comps]))
+
+if using_mpi:
+    pool.close()
