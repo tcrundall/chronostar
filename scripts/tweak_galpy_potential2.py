@@ -40,6 +40,9 @@ from chronostar.synthdata import SynthData
 from chronostar import tabletool
 from chronostar import compfitter
 from chronostar import expectmax
+from chronostar import traceorbit
+
+print('YES traceorbit is defined!!!')
 
 
 def dummy_trace_orbit_func(loc, times=None):
