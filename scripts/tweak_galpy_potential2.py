@@ -1,4 +1,11 @@
 """
+Let's try again with tweak_galpy_potential.
+This is a fresh copy of run_chronostar (April 23) in case something was
+missed in the previous version.
+REMOVE multiparallel mode for now.
+"""
+
+"""
 Primary Chronostar script.
 
 Perform a kinematic fit to data as described in Crundall et al. (2019).
@@ -21,6 +28,7 @@ import argparse
 import numpy as np
 import os
 import sys
+from emcee.utils import MPIPool
 import logging
 import imp      # TODO: address deprecation of imp
 from distutils.dir_util import mkpath
@@ -32,7 +40,6 @@ from chronostar.synthdata import SynthData
 from chronostar import tabletool
 from chronostar import compfitter
 from chronostar import expectmax
-from chronostar import traceorbit
 
 
 def dummy_trace_orbit_func(loc, times=None):
@@ -85,7 +92,6 @@ mkpath(rdir)
 # Now that results directory is set up, can set up log file
 logging.basicConfig(filename=rdir+'log.log', level=logging.INFO)
 
-
 # ------------------------------------------------------------
 # -----  BEGIN MPIRUN THING  ---------------------------------
 # ------------------------------------------------------------
@@ -112,8 +118,6 @@ if config.config.get('run_with_mpi', False):
 else:
     print("MPI flag was not set in config file")
 
-
-
 log_message('Beginning Chronostar run',
             symbol='_', surround=True)
 
@@ -129,6 +133,8 @@ assert os.access(rdir, os.W_OK)
 final_comps_file = 'final_comps.npy'
 final_med_and_spans_file = 'final_med_and_spans.npy'
 final_memb_probs_file = 'final_membership.npy'
+
+print('After filenames')
 
 # First see if a data savefile path has been provided, and if
 # so, then just assume this script has already been performed
@@ -240,7 +246,6 @@ if config.orbit['potential']:
     trace_orbit_func = traceorbit.trace_orbit_builder(config.orbit['potential'])
 else:
     trace_orbit_func = None
-
 
 if historical:
     log_message('Data set already has historical cartesian columns')
