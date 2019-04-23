@@ -226,7 +226,6 @@ def test_careful_traceback_and_forward():
 
 def test_traceback_and_forward():
     """The test that shows things are broken"""
-    NEW_IMP = True
     time = 10. #Myr
     times = np.array([0., 10.])
     init_pos_chron = np.array([10.,0.,30.,0.,0.,0.])
@@ -236,8 +235,7 @@ def test_traceback_and_forward():
                           -np.cos(np.pi/3)*220.,
                           0])
     final_pos_chron = torb.trace_cartesian_orbit(
-        init_pos_chron, times=times, single_age=False,
-        NEW_IMPLEMENTATION=NEW_IMP)[-1]
+        init_pos_chron, times=times, single_age=False)[-1]
     final_pos_chron = torb.traceforward_from_now(
         init_pos_chron, time=time,
     )
@@ -265,3 +263,34 @@ def test_multi_traceback_and_forward():
         final_pos = torb.traceback_from_now(pos, time)
         init_pos = torb.traceforward_to_now(final_pos, time)
         assert np.allclose(pos, init_pos, atol=1e-3)
+
+
+def test_interval_tracing():
+    np.random.seed(0)
+    start = np.random.rand(6) * 20 - 10
+
+    time_steps = [3.,-10.,-3.,10]
+
+    current_pos = start
+    for time_step in time_steps:
+         current_pos = torb.base_trace_cartesian_orbit(
+             current_pos,
+             end_time = time_step,
+         )
+    assert np.allclose(start, current_pos, atol=1e-3)
+
+
+def test_interval_tracing_orig():
+    np.random.seed(0)
+    start = np.random.rand(6) * 20 - 10
+
+    time_steps = [3.,-10.,-3.,10]
+
+    current_pos = start
+    for time_step in time_steps:
+         current_pos = torb.trace_cartesian_orbit(
+             current_pos,
+             times=time_step,
+             single_age=True,
+         )
+    assert np.allclose(start, current_pos, 1e-3)
