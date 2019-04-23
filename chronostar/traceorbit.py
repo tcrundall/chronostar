@@ -314,82 +314,20 @@ def traceforward_to_now(xyzuvw_start, time, ro=8., vo=220.):
         time *= -1
     return base_trace_cartesian_orbit(xyzuvw_start, start_time=time)
 
-    times = np.array([time, 0.])
-
-    bovy_times = convert_myr2bovytime(times)
-    print(bovy_times)
-
-    galpy_coord_start = convert_cart2galpycoords(
-        xyzuvw_start, bovy_times=bovy_times[0],
-    )
-    print(galpy_coord_start)
-
-    o = Orbit(vxvv=galpy_coord_start, ro=ro, vo=vo)
-    o.integrate(bovy_times, MWPotential2014, method='odeint')
-    orbit = o.getOrbit()
-
-    xyzuvw = convert_galpycoords2cart(orbit, bovy_times, ro=ro, vo=vo)
-    return xyzuvw[-1]
-
 
 def traceforward_from_now(xyzuvw_start, time, ro=8., vo=220.):
     return base_trace_cartesian_orbit(xyzuvw_start, end_time=time)
-
-    times = np.array([0., time])
-    bovy_times = convert_myr2bovytime(times)
-
-    galpy_coord_start = convert_cart2galpycoords(
-        xyzuvw_start, bovy_times=bovy_times[0],
-    )
-
-    o = Orbit(vxvv=galpy_coord_start, ro=ro, vo=vo)
-    o.integrate(bovy_times, MWPotential2014, method='odeint')
-    orbit = o.getOrbit()
-
-    xyzuvw = convert_galpycoords2cart(orbit, bovy_times, ro=ro, vo=vo)
-    return xyzuvw[-1]
 
 
 def traceback_from_now(xyzuvw_start, time, ro=8., vo=220.):
     if time > 0:
         time *= -1
     return base_trace_cartesian_orbit(xyzuvw_start, end_time=time)
-    times = np.array([0., time])
-
-    bovy_times = convert_myr2bovytime(times)
-
-    galpy_coord_start = convert_cart2galpycoords(
-        xyzuvw_start, bovy_times=bovy_times[0],
-    )
-
-    o = Orbit(vxvv=galpy_coord_start, ro=ro, vo=vo)
-    o.integrate(bovy_times, MWPotential2014, method='odeint')
-    orbit = o.getOrbit()
-
-    xyzuvw = convert_galpycoords2cart(orbit, bovy_times, ro=ro, vo=vo)
-    return xyzuvw[-1]
 
 
 def traceback_to_now(xyzuvw_start, time, ro=8., vo=220.):
     # e.g. 10
     return base_trace_cartesian_orbit(xyzuvw_start, start_time=time)
-    times = np.array([time, 0.])
-
-    bovy_times = convert_myr2bovytime(times)
-
-    #
-    galpy_coord_start = convert_cart2galpycoords(
-        xyzuvw_start, bovy_times=bovy_times[0],
-    )
-
-    o = Orbit(vxvv=galpy_coord_start, ro=ro, vo=vo)
-    o.integrate(bovy_times, MWPotential2014, method='odeint')
-    orbit = o.getOrbit()
-
-    xyzuvw = convert_galpycoords2cart(orbit, bovy_times, ro=ro, vo=vo)
-
-    return xyzuvw[-1]
-
 
 
 def trace_many_cartesian_orbit(xyzuvw_starts, times=None, single_age=True,
