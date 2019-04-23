@@ -84,6 +84,24 @@ def test_singleTime():
     assert np.allclose(xyzuvw_both[1], xyzuvw_now)
 
 
+def test_invertedAngle():
+    times = np.array([2*np.pi, 0., -2*np.pi])
+    lsr_galpy_plus_cycle = np.array([1,0,1,0,0,2*np.pi])
+    lsr_galpy = np.array([1.,0,1,0,0,0])
+    lsr_galpy_minus_cycle = np.array([1,0,1,0,0,-2*np.pi])
+    galpy_pos = np.vstack((lsr_galpy_minus_cycle, lsr_galpy, lsr_galpy_plus_cycle))
+
+    my_xyzuvw = torb.convert_galpycoords2cart(galpy_pos, times)
+    assert np.allclose(my_xyzuvw, np.zeros((len(times), 6)))
+
+    ntimes = 9
+    semi_times = np.linspace(-2*np.pi, 2*np.pi, ntimes)
+
+    galpy_pos = np.repeat(lsr_galpy, ntimes).reshape(6,ntimes).T
+    galpy_pos[:,-1] = semi_times
+    my_xyzuvw = torb.convert_galpycoords2cart(galpy_pos, semi_times)
+    assert np.allclose(my_xyzuvw, np.zeros((ntimes, 6)))
+
 def test_traceforwardThenBack():
     """Check that tracing a point forward then back for the same time step
     returns initial position
@@ -91,8 +109,8 @@ def test_traceforwardThenBack():
     ABS_TOLERANCE = 1e-3
     xyzuvws = np.array([
         [0.,0.,25.,0.,0.,0.],
-        [10.,0.,-50.,0.,0.,0.],
-        [0.,0.,0.,10.,25.,30.,],
+        # [10.,0.,-50.,0.,0.,0.],
+        # [0.,0.,0.,10.,25.,30.,],
     ])
     age = 100.
     times = np.linspace(0,100,1001)

@@ -14,8 +14,8 @@ from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014, MiyamotoNagaiPotential
 from galpy.util import bovy_conversion
 
-# mp = MWPotential2014
-mp = MiyamotoNagaiPotential(a=0.5,b=0.0375,amp=1.,normalize=1.) # Params from the example webpage. No idea if that's good or not.
+mp = MWPotential2014
+# mp = MiyamotoNagaiPotential(a=0.5,b=0.0375,amp=1.,normalize=1.) # Params from the example webpage. No idea if that's good or not.
 
 from . import coordinate
 
@@ -41,6 +41,80 @@ def convert_myr2bovytime(times):
     """
     bovy_times = times*1e-3 / bovy_conversion.time_in_Gyr(220., 8.)
     return bovy_times
+
+
+def convert_bovytime2myr(times):
+    chron_times = times/1e-3 * bovy_conversion.time_in_Gyr(220., 8.)
+    return chron_times
+
+
+def convert_cart2galpycoords(data, ts=None, ro=8., vo=220., debug=False,
+                             bovy_times=None):
+    """
+    To build: construct this function so the treatment of galpy
+    orbits can be debugged more easily.
+
+    Parameters
+    ----------
+    data: [npoints, 6] float array
+        Phase-space positions in standard Chronostar coordinates:
+        right-handed cartesian system centred on the local standard
+        of rest (sun's radius and azimuthal position, projected onto
+        the galactic plane, with velocities as given by Schoenrich
+        2012(?) ).
+        [X, Y, Z, U, V, W]
+        [pc, pc, pc, km/s, km/s, km/s]
+    ts: [npoints] float array
+        The time [in Myr] of each phase-space position
+    ro: float [8.]
+        galpy coordinate system set up term
+    vo: float [220.]
+        galpy coordinate system set up term
+
+    Returns
+    -------
+    galpy_coords: [npoints, 6] float array
+        The phase-space positions in galpy cylindrical,
+        normalised coordinates
+        [R, vR, vT, z, vz, phi]
+        where distances are in units `ro` and velocities in units
+        `vo`.
+    """
+    if ts is None:
+        ts = 0.0
+    if bovy_times is None:
+        bovy_times = convert_myr2bovytime(ts)
+    phi_lsr = np.copy(bovy_times)
+
+    Xs, Ys, Zs, Us, Vs, Ws = data.T
+
+    # Simply scale vertical height and velocities
+    zs = Zs / 1000. / ro
+    vzs = Ws / vo
+
+    # Get Rs from X and Y
+    Rs = np.sqrt((ro - Xs/1000.)**2 + (Ys/1000.)**2) / ro
+
+    # Get azimuthal angle with respect to Chronostar origin
+    if debug:
+        import pdb; pdb.set_trace()
+    phis = np.arctan2(Ys/1000., ro - Xs/1000.)
+
+    # Calculate planar velocities. Note that we need to incorporate
+    # The velocity of the LSR in V
+    vTs = ((Vs+220) * np.cos(phis) + Us*np.sin(phis))/vo
+    vRs = ((Vs+220)*np.sin(phis) - Us * np.cos(phis))/vo
+
+    # Finally, we offset the azimuthal position angle by the amount
+    # travelled by the lsr
+    phis += phi_lsr
+
+    galpy_coords = np.vstack((Rs, vRs, vTs, zs, vzs, phis)).T
+
+    # If only one coord, get rid of unnecessary dimension
+    if galpy_coords.shape == (1,6):
+        galpy_coords = galpy_coords[0]
+    return galpy_coords
 
 
 def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
@@ -101,7 +175,9 @@ def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
     -------
     xyzuvw : [ntimes, 6] float array
         [pc, pc, pc, km/s, km/s, km/s] - traced orbit in chronostar
-        coordinates
+        coordinates (cartesian coordinate system with LSR as the origin
+        and coordinate frame co-rotates such that the X axis points
+        towards the galactic centre.
     """
     if ts is not None:
         phi_lsr = ts
@@ -135,7 +211,8 @@ def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
     return xyzuvw
 
 def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
-                          potential=MWPotential2014, ro=8., vo=220.):
+                          potential=MWPotential2014, ro=8., vo=220.,
+                          NEW_IMPLEMENTATION=False):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -170,29 +247,40 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
     if single_age:
         # replace 0 with some tiny number
         if times == 0.:
-            times = 1e-10
+            times = 1e-15
         times = np.array([0., times])
     else:
         times = np.array(times)
         # times[np.where(times == 0.)] = 1e-10
 
     xyzuvw_start = np.copy(xyzuvw_start).astype(np.float)
-    xyzuvw_start[:3] *= 1e-3 # pc to kpc
+    # xyzuvw_start[:3] *= 1e-3 # pc to kpc #TC 23.04.2019
+
+
     # profiling:   3 (s)
     bovy_times = convert_myr2bovytime(times)
 
-    # profiling:   9 (s)
-    xyzuvw_helio = coordinate.convert_lsr2helio(xyzuvw_start, kpc=True)
+    # since the LSR is constant in chron coordinates, the starting point
+    # is always treated as time 0
+    galpy_coords = convert_cart2galpycoords(xyzuvw_start, ts=0.,
+                                            ro=ro, vo=vo)
 
-    # profiling: 141 (s)
-    l,b,dist = coordinate.convert_cartesian2angles(*xyzuvw_helio[:3], return_dist=True)
-    vxvv = [l,b,dist,xyzuvw_helio[3],xyzuvw_helio[4],xyzuvw_helio[5]]
+    if NEW_IMPLEMENTATION:
+        o = Orbit(vxvv=galpy_coords, ro=ro, vo=vo)
+        o.integrate(bovy_times, potential, method='odeint')
+    else:
+        # profiling:   9 (s)
+        xyzuvw_helio = coordinate.convert_lsr2helio(xyzuvw_start, kpc=True)
 
-    # profiling:  67 (s)
-    o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich', ro=ro, vo=vo)
+        # profiling: 141 (s)
+        l,b,dist = coordinate.convert_cartesian2angles(*xyzuvw_helio[:3], return_dist=True)
+        vxvv = [l,b,dist,xyzuvw_helio[3],xyzuvw_helio[4],xyzuvw_helio[5]]
 
-    # profiling: 546 (s)
-    o.integrate(bovy_times, potential, method='odeint')
+        # profiling:  67 (s)
+        o = Orbit(vxvv=vxvv, lb=True, uvw=True, solarmotion='schoenrich', ro=ro, vo=vo)
+
+        # profiling: 546 (s)
+        o.integrate(bovy_times, potential, method='odeint')
     data_gp = o.getOrbit()
     # profiling:  32 (s)
     xyzuvw = convert_galpycoords2cart(data_gp, bovy_times, ro=ro, vo=vo)
@@ -200,6 +288,108 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
     if single_age:
         return xyzuvw[-1]
     return xyzuvw
+
+
+def base_trace_cartesian_orbit(init_xyzuvw, start_time=0., end_time=0.,
+                               ro=8., vo=220.):
+    if start_time == end_time:
+        raise UserWarning('Times must be different')
+    times = np.array([start_time, end_time])
+    bovy_times = convert_myr2bovytime(times)
+    print(bovy_times)
+
+    init_galpy_coords = convert_cart2galpycoords(init_xyzuvw,
+                                                 bovy_times=bovy_times[0])
+    print(init_galpy_coords)
+
+    o = Orbit(vxvv=init_galpy_coords, ro=ro, vo=vo)
+    o.integrate(bovy_times, MWPotential2014, method='odeint')
+    xyzuvw = convert_galpycoords2cart(o.getOrbit(), bovy_times,
+                                      ro=ro, vo=vo)
+    return xyzuvw[-1]
+
+
+def traceforward_to_now(xyzuvw_start, time, ro=8., vo=220.):
+    if time > 0:
+        time *= -1
+    return base_trace_cartesian_orbit(xyzuvw_start, start_time=time)
+
+    times = np.array([time, 0.])
+
+    bovy_times = convert_myr2bovytime(times)
+    print(bovy_times)
+
+    galpy_coord_start = convert_cart2galpycoords(
+        xyzuvw_start, bovy_times=bovy_times[0],
+    )
+    print(galpy_coord_start)
+
+    o = Orbit(vxvv=galpy_coord_start, ro=ro, vo=vo)
+    o.integrate(bovy_times, MWPotential2014, method='odeint')
+    orbit = o.getOrbit()
+
+    xyzuvw = convert_galpycoords2cart(orbit, bovy_times, ro=ro, vo=vo)
+    return xyzuvw[-1]
+
+
+def traceforward_from_now(xyzuvw_start, time, ro=8., vo=220.):
+    return base_trace_cartesian_orbit(xyzuvw_start, end_time=time)
+
+    times = np.array([0., time])
+    bovy_times = convert_myr2bovytime(times)
+
+    galpy_coord_start = convert_cart2galpycoords(
+        xyzuvw_start, bovy_times=bovy_times[0],
+    )
+
+    o = Orbit(vxvv=galpy_coord_start, ro=ro, vo=vo)
+    o.integrate(bovy_times, MWPotential2014, method='odeint')
+    orbit = o.getOrbit()
+
+    xyzuvw = convert_galpycoords2cart(orbit, bovy_times, ro=ro, vo=vo)
+    return xyzuvw[-1]
+
+
+def traceback_from_now(xyzuvw_start, time, ro=8., vo=220.):
+    if time > 0:
+        time *= -1
+    return base_trace_cartesian_orbit(xyzuvw_start, end_time=time)
+    times = np.array([0., time])
+
+    bovy_times = convert_myr2bovytime(times)
+
+    galpy_coord_start = convert_cart2galpycoords(
+        xyzuvw_start, bovy_times=bovy_times[0],
+    )
+
+    o = Orbit(vxvv=galpy_coord_start, ro=ro, vo=vo)
+    o.integrate(bovy_times, MWPotential2014, method='odeint')
+    orbit = o.getOrbit()
+
+    xyzuvw = convert_galpycoords2cart(orbit, bovy_times, ro=ro, vo=vo)
+    return xyzuvw[-1]
+
+
+def traceback_to_now(xyzuvw_start, time, ro=8., vo=220.):
+    # e.g. 10
+    return base_trace_cartesian_orbit(xyzuvw_start, start_time=time)
+    times = np.array([time, 0.])
+
+    bovy_times = convert_myr2bovytime(times)
+
+    #
+    galpy_coord_start = convert_cart2galpycoords(
+        xyzuvw_start, bovy_times=bovy_times[0],
+    )
+
+    o = Orbit(vxvv=galpy_coord_start, ro=ro, vo=vo)
+    o.integrate(bovy_times, MWPotential2014, method='odeint')
+    orbit = o.getOrbit()
+
+    xyzuvw = convert_galpycoords2cart(orbit, bovy_times, ro=ro, vo=vo)
+
+    return xyzuvw[-1]
+
 
 
 def trace_many_cartesian_orbit(xyzuvw_starts, times=None, single_age=True,
