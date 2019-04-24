@@ -1,7 +1,7 @@
 import numpy as np
 
 assoc_name = ''
-prefix = 'tweak_galpy_potential2_miyamotonagai'
+prefix = 'tweak_galpy_potential2_test'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(prefix),
