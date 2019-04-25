@@ -458,5 +458,10 @@ while ncomps < MAX_COMPS:
     logging.info("Best fit:\n{}".format(
             [group.get_pars() for group in prev_comps]))
 
-if using_mpi:
-    pool.close()
+# TODO: using_mpi is not defined if you don't use MPI.
+#  Try-except is not the best thing here but will do for now.
+try:
+    if using_mpi:
+        pool.close()
+except:
+    pass
