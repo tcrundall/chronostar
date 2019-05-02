@@ -113,7 +113,7 @@ def check_convergence(old_best_comps, new_chains, perc=40):
         upper_contained =\
             old_best_comp.get_emcee_pars() < med_and_spans[:,1]
         lower_contained = \
-            old_best_comp.get_emcee_pars() < med_and_spans[:,2]
+            old_best_comp.get_emcee_pars() > med_and_spans[:,2]
         each_converged.append(
             np.all(upper_contained) and np.all(lower_contained))
 
