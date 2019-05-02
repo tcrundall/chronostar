@@ -220,6 +220,24 @@ def get_init_emcee_pos(data, memb_probs=None, nwalkers=None,
     return init_pos
 
 
+def get_best_component(chain, lnprob, Component=SphereComponent):
+    """
+    Simple tool to extract the sample that yielded the highest log prob
+    and return the corresponding Component object
+    """
+    # Identify the best component
+    final_best_ix = np.argmax(lnprob)
+
+    # If chain hasn't been flattened, the flatten, preserving only the
+    # last dimension
+    if len(chain.shape) == 3:
+        chain = chain.reshape(-1, chain.shape[-1])
+
+    best_sample = chain[final_best_ix]
+    best_component = Component(emcee_pars=best_sample)
+    return best_component
+
+
 def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
              burnin_steps=1000, Component=SphereComponent, plot_it=False,
              pool=None, convergence_tol=0.25, plot_dir='', save_dir='',
@@ -392,9 +410,10 @@ def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
         logging.info("Plotting done")
 
     # Identify the best component
-    final_best_ix = np.argmax(sampler.lnprobability)
-    best_sample = sampler.flatchain[final_best_ix]
-    best_component = Component(emcee_pars=best_sample)
+    best_component = get_best_component(sampler.chain, sampler.lnprobability)
+    # final_best_ix = np.argmax(sampler.lnprobability)
+    # best_sample = sampler.flatchain[final_best_ix]
+    # best_component = Component(emcee_pars=best_sample)
 
     # Determining the median and span of each parameter
     med_and_span = calc_med_and_span(sampler.chain)

@@ -173,7 +173,7 @@ class AbstractComponent(object):
             age: float
                 the age of the component (positive) in millions of
                 years
-        trace_orbit_func: function {traceOrbitXYZUVW}
+        trace_orbit_func: function {trace_cartesian_orbit}
             Function used to calculate an orbit through cartesian space
             (centred on, and co-rotating with, the local standard of
             rest). Function must be able to take two parameters, the
@@ -192,6 +192,7 @@ class AbstractComponent(object):
         # Some basic implementation checks
         self.check_parameter_format()
 
+
         # Set cartesian orbit tracing function
         if trace_orbit_func is None:
             self.trace_orbit_func = trace_cartesian_orbit
@@ -203,6 +204,16 @@ class AbstractComponent(object):
         if pars is not None and emcee_pars is not None:
             raise UserWarning('Should only initialise with either `pars` or '
                               '`emcee_pars` but not both.')
+
+        # Check length of parameter input (if provided) matches implementation
+        if pars is not None or emcee_pars is not None:
+            par_length = len(pars) if pars is not None else len(emcee_pars)
+            if par_length != len(self.PARAMETER_FORMAT):
+                raise UserWarning('Parameter length does not match '
+                                  'implementation of {}. Are you using the '
+                                  'correct Component class?'.\
+                                  format(self.__class__))
+
 
         # If initialising with parameters in 'emcee' parameter space, then
         # convert to 'real' parameter space before constructing attributes.
@@ -545,6 +556,97 @@ class AbstractComponent(object):
             return res
 
     @classmethod
+    def load_raw_components(cls, filename, use_emcee_pars=False):
+        """
+        Load parameters from a *.npy file and build Component objects
+
+        Parameters
+        ----------
+        filename: str
+            Name of file from which data is loaded
+        use_emcee_pars: bool {False}
+            Set to true if stored data is parameters in emcee parametrisation
+
+        Returns
+        -------
+        comps: [Component] list
+            A list of Component objects
+
+        Notes
+        -----
+        This is a class method (as opposed to static or normal method) because
+        this method needs access to information on which implementation to use
+        to convert parameters into objects. One *could* rewrite this function
+        to accept the component class as input, but this would be ugly and look
+        like:
+        SphereComponent.load_raw_components(SphereComponent, filename)
+        as opposed to
+        SphereComponent.load_raw_components(filename)
+        """
+        pars_array = cls.load_components(filename)
+
+        comps = []
+        for pars in pars_array:
+            if use_emcee_pars:
+                comps.append(cls(emcee_pars=pars))
+            else:
+                comps.append(cls(pars=pars))
+        return comps
+
+    @staticmethod
+    def store_raw_components(filename, components, use_emcee_pars=False):
+        """
+        Store components as an array of raw parameters, in either
+        real space (external) or emcee parameters space (internal)
+
+        Parameters
+        ----------
+        filename: str
+            The name of the file to which we are saving parameter data
+        components: [Component] list
+            The list of components that we are saving
+        use_emcee_pars: bool {False}
+            Set to true to store parameters in emcee parametrisation form
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        This is a static method because it needs as input a list of
+        components, not just the component itself
+        """
+        if use_emcee_pars:
+            pars = np.array([c.get_emcee_pars() for c in components])
+        else:
+            pars = np.array([c.get_pars() for c in components])
+        np.save(filename, pars)
+
+    def store_attributes(self, filename):
+        """
+        Store the attributes (mean, covmatrix and age) of single component
+
+        Parameters
+        ----------
+        filename: str
+            The name of the file to which we are saving attributes
+        """
+        attributes = {'mean':self.get_mean(),
+                      'covmatrix':self.get_covmatrix(),
+                      'age':self.get_age()}
+        np.save(filename, attributes)
+
+    @classmethod
+    def load_from_attributes(cls, filename):
+        """
+        Load single component from attributes saved to file in dictionary format
+        """
+        attributes = np.load(filename).item()
+        comp = cls(attributes=attributes)
+        return comp
+
+    @classmethod
     def get_sensible_walker_spread(cls):
         """Get an array of sensible walker spreads (based on class
         constants `PARAMTER_FORMAT` and `SENSIBLE_WALKER_SPREADS` to
@@ -553,6 +655,12 @@ class AbstractComponent(object):
         The sensible walker spreads are intuitively set by Tim Crundall.
         The values probably only matter as far as converging quickly to a
         good fit.
+
+        Notes
+        -----
+        This is a class method because this needs access to certain
+        attributes that are class specific, yet doesn't make sense to
+        have a whole component object in order to access this.
         """
         sensible_spread = []
         for par_form in cls.PARAMETER_FORMAT:
@@ -674,67 +782,3 @@ class EllipComponent(AbstractComponent):
             self._pars[9] = dv
             self._pars[10:13] = c_xy, c_xz, c_yz
 
-
-# class FilamentComponent(AbstractComponent):
-#     PARAMETER_FORMAT = ['pos', 'pos', 'pos', 'vel', 'vel', 'vel',
-#                         'log_pos_std', 'log_pos_std', 'log_pos_std',
-#                         'log_vel_std',
-#                         'corr', 'corr', 'corr',
-#                         'age']
-#
-#     @staticmethod
-#     def externalise(pars):
-#         """
-#         Take parameter set in internal form (as used by emcee) and
-#         convert to external form (as used to build attributes).
-#         """
-#         extern_pars = np.copy(pars)
-#         extern_pars[6:10] = np.exp(extern_pars[6:10])
-#         return extern_pars
-#
-#     @staticmethod
-#     def internalise(pars):
-#         """
-#         Take parameter set in external form (as used to build attributes)
-#         and convert to internal form (as used by emcee).
-#         """
-#         intern_pars = np.copy(pars)
-#         intern_pars[6:10] = np.log(intern_pars[6:10])
-#         return intern_pars
-#
-#     def _set_covmatrix(self, covmatrix=None):
-#         """Builds covmatrix from self.pars. If setting from an externally
-#         provided covariance matrix then updates self.pars for consistency"""
-#         # If covmatrix hasn't been provided, generate from self._pars
-#         # and set.
-#         if covmatrix is None:
-#             dx, dy, dz = self._pars[6:9]
-#             dv = self._pars[9]
-#             c_xy, c_xz, c_yz = self._pars[10:13]
-#             self._covmatrix = np.array([
-#                 [dx**2,      c_xy*dx*dy, c_xz*dx*dz, 0.,    0.,    0.],
-#                 [c_xy*dx*dy, dy**2,      c_yz*dy*dz, 0.,    0.,    0.],
-#                 [c_xz*dx*dz, c_yz*dy*dz, dz**2,      0.,    0.,    0.],
-#                 [0.,         0.,         0.,         dv**2, 0.,    0.],
-#                 [0.,         0.,         0.,         0.,    dv**2, 0.],
-#                 [0.,         0.,         0.,         0.,    0.,    dv**2],
-#             ])
-#         # If covmatrix has been provided, reverse engineer the most
-#         # suitable set of parameters and update self._pars accordingly
-#         # (e.g. take the geometric mean of the (square-rooted) velocity
-#         # eigenvalues as dv, as this at least ensures constant volume
-#         # in velocity space).
-#         else:
-#             self._covmatrix = np.copy(covmatrix)
-#             pos_stds = np.sqrt(np.diagonal(self._covmatrix[:3, :3]))
-#             dx, dy, dz = pos_stds
-#             pos_corr_matrix = (self._covmatrix[:3, :3]
-#                                / pos_stds
-#                                / pos_stds.reshape(1,3).T)
-#             c_xy, c_xz, c_yz = pos_corr_matrix[np.triu_indices(3,1)]
-#             dv = gmean(np.sqrt(
-#                 np.linalg.eigvalsh(self._covmatrix[3:, 3:]))
-#             )
-#             self._pars[6:9] = dx, dy, dz
-#             self._pars[9] = dv
-#             self._pars[10:13] = c_xy, c_xz, c_yz
