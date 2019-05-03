@@ -68,6 +68,7 @@ def get_kernel_densities(data, points, amp_scale=1.0):
     nstars = amp_scale * data.shape[0]
 
     kernel = stats.gaussian_kde(data.T)
+    print('KERNEL.COVARIANCE', kernel.covariance) # MZ
     points = np.copy(points)
     points[:,2] *= -1
     points[:,5] *= -1
@@ -75,6 +76,47 @@ def get_kernel_densities(data, points, amp_scale=1.0):
     bg_lnols = np.log(nstars)+kernel.logpdf(points.T)
     return bg_lnols
 
+def get_background_comp(data, points, amp_scale=1.0):
+    """
+    MZ
+
+    Build a PDF from `data`, then
+
+    The Z and W value of points (height above, and velocity through the plane,
+    respectively) are inverted in an effort to make the inferred background
+    phase-space density independent of over-densities caused by suspected
+    moving groups/associations. The idea is that the Galactic density is
+    vertically symmetric about the plane, and any deviations are temporary.
+
+
+    Parameters
+    ----------
+    data: [nstars,6] float array_like
+        Phase-space positions of some star set that greatly envelops points
+        in question. Typically contents of gaia_xyzuvw.npy.
+    points: [npoints,6] float array_like
+        Phase-space positions of stellar data that we are fitting components to
+    amp_scale: float {1.0}
+        One can optionally weight the background density so as to make over-densities
+        more or less prominent. For e.g., amp_scale of 0.1 will make background
+        overlaps an order of magnitude lower.
+
+    Returns
+    -------
+    bg_lnols: [nstars] float array_like
+
+    """
+    if type(data) is str:
+        data = np.load(data)
+    nstars = amp_scale * data.shape[0]
+
+    kernel = stats.gaussian_kde(data.T)
+    points = np.copy(points)
+    points[:,2] *= -1
+    points[:,5] *= -1
+
+    bg_lnols = np.log(nstars)+kernel.logpdf(points.T)
+    return bg_lnols
 
 def check_convergence(old_best_comps, new_chains, perc=40):
     """Check if the last maximisation step yielded is consistent to new fit
