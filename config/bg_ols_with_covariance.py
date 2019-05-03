@@ -1,6 +1,6 @@
 import numpy as np
 
-assoc_name = 'demo_run'
+assoc_name = ''
 prefix = 'marusa_testing'
 config = {
     'banyan_assoc_name': '',
@@ -13,7 +13,7 @@ config = {
     'plot_it':True,
     # 'background_overlaps_file':'',
     'include_background_distribution':True,
-    'kernel_density_input_datafile':'../data/gaia_cartesian_full_6d_table.fits',
+    'kernel_density_input_datafile':'/home/tcrun/chronostar/data/gaia_cartesian_full_6d_table.fits',
                                                     # Cartesian data of all Gaia DR2 stars
                                                     # e.g. ../data/gaia_dr2_mean_xyzuvw.npy
     'run_with_mpi':False,       # not yet inpmlemented
