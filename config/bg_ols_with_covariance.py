@@ -3,12 +3,11 @@ import numpy as np
 assoc_name = ''
 prefix = 'marusa_testing'
 config = {
-    'banyan_assoc_name': '',
     # 'datafile':'',
-    'results_dir':'../results/{}'.format(assoc_name),
+    'results_dir':'../results/{}'.format(prefix),
     #'data_loadfile':'../data/gaia_cartesian_full_6d_table.fits',
     'data_loadfile': '../data/synth_data_for_marusa_from_paper_1/same_centroid_synth_measurements.fits',
-    'datafile':'../results/{}/data.fits'.format(assoc_name),
+    'datafile':'../results/{}/data.fits'.format(prefix),
     'data_savefile': '../results/{}/same_centroid_synth_measurements_output.fits'.format(prefix), #,#''../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # Chronostar adds XYZUVW columns and
                                         # if you don't want to override the original file then save into data_savefile.
     'plot_it':True,
@@ -27,6 +26,8 @@ config = {
                                         # exist, and if so picks up from where left off
     'dummy_trace_orbit_function':True,  # For testing, simple function to skip computation
     'pickup_prev_run':True,             # Pick up where left off if possible
+
+    'banyan_assoc_name': '',
 }
 
 # synth = None
