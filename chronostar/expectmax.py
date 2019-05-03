@@ -68,7 +68,6 @@ def get_kernel_densities(data, points, amp_scale=1.0):
     nstars = amp_scale * data.shape[0]
 
     kernel = stats.gaussian_kde(data.T)
-    print('KERNEL.COVARIANCE', kernel.covariance) # MZ
     points = np.copy(points)
     points[:,2] *= -1
     points[:,5] *= -1
@@ -111,6 +110,7 @@ def get_background_comp(data, points, amp_scale=1.0):
     nstars = amp_scale * data.shape[0]
 
     kernel = stats.gaussian_kde(data.T)
+    #print('KERNEL.COVARIANCE', kernel.covariance) # MZ
     points = np.copy(points)
     points[:,2] *= -1
     points[:,5] *= -1

@@ -209,9 +209,15 @@ else:
                     config.config['kernel_density_input_datafile'],
                     only_means=True,
             )
+            print('BG MEANS', background_means)
+
             star_means = tabletool.build_data_dict_from_table(
                     data_table, only_means=True,
             )
+            print('STAR MEANS', star_means)
+
+            #Component = SphereComponent
+
             ln_bg_ols = expectmax.get_kernel_densities(background_means,
                                                        star_means, )
 
