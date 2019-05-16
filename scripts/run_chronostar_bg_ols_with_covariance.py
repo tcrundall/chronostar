@@ -217,6 +217,7 @@ else:
             print('STAR MEANS', star_means)
 
             #Component = SphereComponent
+            background_covariance = expectmax.get_background_covariance(data)
 
             ln_bg_ols = expectmax.get_kernel_densities(background_means,
                                                        star_means, )

@@ -75,7 +75,7 @@ def get_kernel_densities(data, points, amp_scale=1.0):
     bg_lnols = np.log(nstars)+kernel.logpdf(points.T)
     return bg_lnols
 
-def get_background_comp(data, points, amp_scale=1.0):
+def get_background_covariance(data, amp_scale=1.0):
     """
     MZ
 
