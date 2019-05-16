@@ -33,6 +33,7 @@ from chronostar.synthdata import SynthData
 from chronostar import tabletool
 from chronostar import compfitter
 from chronostar import expectmax
+from chronostar.component import SphereComponent
 
 
 def dummy_trace_orbit_func(loc, times=None):
@@ -127,7 +128,7 @@ final_comps_file = 'final_comps.npy'
 final_med_and_spans_file = 'final_med_and_spans.npy'
 final_memb_probs_file = 'final_membership.npy'
 
-print('After filenames')
+#print('After filenames')
 
 # First see if a data savefile path has been provided, and if
 # so, then just assume this script has already been performed
@@ -205,22 +206,49 @@ else:
         # Only calculate if missing
         if bg_lnol_colname not in data_table.colnames:
             log_message('Calculating background densities')
+
+            star_means = tabletool.build_data_dict_from_table(
+                    data_table, only_means=True,
+            )
+
+            data_dict = tabletool.build_data_dict_from_table(
+                    data_table,
+            )
+
+            print('STAR MEANS', star_means)
+
+            # star_covariance
+
+
+            """
+            MZ: determine background overlaps: 
+            Background need to be a component, just like other components.
+            So we need means and background covariance.
+            """
             background_means = tabletool.build_data_dict_from_table(
                     config.config['kernel_density_input_datafile'],
                     only_means=True,
             )
             print('BG MEANS', background_means)
 
-            star_means = tabletool.build_data_dict_from_table(
-                    data_table, only_means=True,
-            )
-            print('STAR MEANS', star_means)
-
-            #Component = SphereComponent
             background_covariance = expectmax.get_background_covariance(data)
+            print('background_covariance', background_covariance)
 
+            BackgroundComponent = SphereComponent(attributes={'mean': background_means, 'covmatrix': background_covariance, 'age': 1})
+            print('BACKGROUND COMPONENT')
+            print(BackgroundComponent)
+
+
+            log_message('Determining ln_bg_ols2...')
+            ln_bg_ols2 = expectmax.get_all_lnoverlaps(data_dict, [BackgroundComponent])
+            log_message('FINISHED ln_bg_ols2...')
+            print('LN_BL_OLS2')
+            print(ln_bg_ols2)
+
+            # Background overlap with no covariance matrix
             ln_bg_ols = expectmax.get_kernel_densities(background_means,
                                                        star_means, )
+
 
             # If allowed, save to original file path
             if config.config['overwrite_datafile']:
