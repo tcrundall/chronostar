@@ -229,21 +229,21 @@ else:
                     config.config['kernel_density_input_datafile'],
                     only_means=True,
             )
-            print('BG MEANS', background_means)
+            log_message('BG MEANS', background_means)
 
             background_covariance = expectmax.get_background_covariance(config.config['kernel_density_input_datafile'])
-            print('background_covariance', background_covariance)
+            log_message('background_covariance', background_covariance)
 
             BackgroundComponent = SphereComponent(attributes={'mean': background_means, 'covmatrix': background_covariance, 'age': 1})
-            print('BACKGROUND COMPONENT')
-            print(BackgroundComponent)
+            log_message('BACKGROUND COMPONENT')
+            log_message(BackgroundComponent)
 
 
             log_message('Determining ln_bg_ols2...')
             ln_bg_ols2 = expectmax.get_all_lnoverlaps(data_dict, [BackgroundComponent])
             log_message('FINISHED ln_bg_ols2...')
-            print('LN_BL_OLS2')
-            print(ln_bg_ols2)
+            log_message('LN_BL_OLS2')
+            log_message(ln_bg_ols2)
 
             # Background overlap with no covariance matrix
             ln_bg_ols = expectmax.get_kernel_densities(background_means,
