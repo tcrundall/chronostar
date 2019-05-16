@@ -7,12 +7,12 @@ import chronostar.retired2.datatool as dt
 #~ sys.path.insert(0, '/home/marusa/chronostar/')
 
 root = sys.argv[1]
-print root
+print(root)
 
 #~ fmerrs = np.load('final_med_errs.npy')
 #~ fmerrs.shape
 #~ fmerrs[:,-1]
-z = np.load('final_membership.npy')
+z = np.load(os.path.join(root, 'final_membership.npy'))
 print z.shape
 print z.sum(axis=0)
 
