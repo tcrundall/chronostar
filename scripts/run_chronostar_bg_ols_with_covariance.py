@@ -215,7 +215,7 @@ else:
                     data_table,
             )
 
-            print('STAR MEANS', star_means)
+            #print('STAR MEANS', star_means)
 
             # star_covariance
 
@@ -231,7 +231,7 @@ else:
             )
             print('BG MEANS', background_means)
 
-            background_covariance = expectmax.get_background_covariance(data)
+            background_covariance = expectmax.get_background_covariance(config.config['kernel_density_input_datafile'])
             print('background_covariance', background_covariance)
 
             BackgroundComponent = SphereComponent(attributes={'mean': background_means, 'covmatrix': background_covariance, 'age': 1})
