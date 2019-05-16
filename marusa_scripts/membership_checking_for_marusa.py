@@ -2,6 +2,7 @@
 
 import numpy as np
 import sys
+import os
 import chronostar.retired2.datatool as dt
 
 #~ sys.path.insert(0, '/home/marusa/chronostar/')
