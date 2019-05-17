@@ -225,10 +225,7 @@ else:
             Background need to be a component, just like other components.
             So we need means and background covariance.
             """
-            #background_means = tabletool.build_data_dict_from_table(
-            #        config.config['kernel_density_input_datafile'],
-            #        only_means=True,
-            #)
+
 
             from astropy.table import Table
             tab=Table.read(config.config['kernel_density_input_datafile'])
@@ -262,10 +259,23 @@ else:
 
             ln_bg_ols=ln_bg_ols2
 
-            # Background overlap with no covariance matrix
-            #ln_bg_ols = expectmax.get_kernel_densities(background_means,
-            #                                           star_means, )
 
+
+            background_means = tabletool.build_data_dict_from_table(
+                    config.config['kernel_density_input_datafile'],
+                    only_means=True,
+            )
+
+
+            log_message('ORIGINAL background_means')
+            log_message(background_means)
+
+            # Background overlap with no covariance matrix
+            ln_bg_ols = expectmax.get_kernel_densities(background_means,
+                                                       star_means, )
+
+            log_message('ORIGINAL ln_bg_ols')
+            log_message(ln_bg_ols)
 
             # If allowed, save to original file path
             if config.config['overwrite_datafile']:
