@@ -236,13 +236,16 @@ else:
             background_means = np.array(
                 [np.nanmedian(tab['X']), np.nanmedian(tab['Y']), np.nanmedian(tab['Z']), np.nanmedian(tab['U']),
                  np.nanmedian(tab['V']), np.nanmedian(tab['W'])])
+            log_message('')
             log_message('BG MEANS', background_means)
+            log_message('')
 
             # Create covariance matrix: just a very simple diagonal matrix for testing purposes
             background_covariance = np.array([[np.nanstd(tab['X']), 0, 0, 0, 0, 0], [0, np.nanstd(tab['Y']), 0, 0, 0, 0], [0, 0, np.nanstd(tab['Z']), 0, 0, 0], [0, 0, 0, np.nanstd(tab['U']), 0, 0], [0, 0, 0, 0, np.nanstd(tab['V']), 0], [0, 0, 0, 0, 0, np.nanstd(tab['W'])]])
 
             #background_covariance = expectmax.get_background_covariance(config.config['kernel_density_input_datafile'])
             log_message('background_covariance', background_covariance)
+            log_message('')
 
             BackgroundComponent = SphereComponent(attributes={'mean': background_means, 'covmatrix': background_covariance, 'age': 1})
             log_message('BACKGROUND COMPONENT')
