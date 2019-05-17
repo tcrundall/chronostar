@@ -225,10 +225,15 @@ else:
             Background need to be a component, just like other components.
             So we need means and background covariance.
             """
-            background_means = tabletool.build_data_dict_from_table(
-                    config.config['kernel_density_input_datafile'],
-                    only_means=True,
-            )
+            #background_means = tabletool.build_data_dict_from_table(
+            #        config.config['kernel_density_input_datafile'],
+            #        only_means=True,
+            #)
+
+            background_means = np.array(
+                [[np.nanmedian(tab['X']), 0, 0, 0, 0, 0], [0, np.nanmedian(tab['Y']), 0, 0, 0, 0],
+                 [0, 0, np.nanmedian(tab['Z']), 0, 0, 0], [0, 0, 0, np.nanmedian(tab['U']), 0, 0],
+                 [0, 0, 0, 0, np.nanmedian(tab['V']), 0], [0, 0, 0, 0, 0, np.nanmedian(tab['W'])]])
             log_message('BG MEANS', background_means)
 
             # Create covariance matrix: just a very simple diagonal matrix for testing purposes
