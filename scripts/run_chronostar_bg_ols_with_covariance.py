@@ -247,7 +247,9 @@ else:
             log_message('background_covariance', background_covariance)
             log_message('')
 
-            BackgroundComponent = SphereComponent(attributes={'mean': background_means, 'covmatrix': background_covariance, 'age': 1})
+            #BackgroundComponent = SphereComponent(attributes={'mean': background_means, 'covmatrix': background_covariance, 'age': 1})
+            BackgroundComponent = SphereComponent(
+                attributes={'mean': background_means, 'covmatrix': background_covariance})
             log_message('BACKGROUND COMPONENT')
             log_message(BackgroundComponent)
 
