@@ -226,7 +226,7 @@ else:
             So we need means and background covariance.
             """
 
-            """
+            #"""
             from astropy.table import Table
             tab=Table.read(config.config['kernel_density_input_datafile'])
 
@@ -253,29 +253,30 @@ else:
 
             log_message('Determining ln_bg_ols2...')
             ln_bg_ols2 = expectmax.get_all_lnoverlaps(data_dict, [BackgroundComponent])
+            ln_bg_ols2 = [x[0] for x in ln_bg_ols2] # previous line gives results in a different format
             log_message('FINISHED ln_bg_ols2...')
             log_message('LN_BL_OLS2')
             log_message(ln_bg_ols2)
 
             ln_bg_ols=ln_bg_ols2
 
-            """
+            #"""
 
-            background_means = tabletool.build_data_dict_from_table(
-                    config.config['kernel_density_input_datafile'],
-                    only_means=True,
-            )
+            #background_means = tabletool.build_data_dict_from_table(
+            #        config.config['kernel_density_input_datafile'],
+            #        only_means=True,
+            #)
 
 
-            log_message('ORIGINAL background_means')
-            log_message(background_means)
+            #log_message('ORIGINAL background_means')
+            #log_message(background_means)
 
             # Background overlap with no covariance matrix
-            ln_bg_ols = expectmax.get_kernel_densities(background_means,
+            #ln_bg_ols = expectmax.get_kernel_densities(background_means,
                                                        star_means, )
 
-            log_message('ORIGINAL ln_bg_ols')
-            log_message(ln_bg_ols)
+            #log_message('ORIGINAL ln_bg_ols')
+            #log_message(ln_bg_ols)
 
             # If allowed, save to original file path
             if config.config['overwrite_datafile']:
