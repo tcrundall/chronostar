@@ -226,7 +226,7 @@ else:
             So we need means and background covariance.
             """
 
-
+            """
             from astropy.table import Table
             tab=Table.read(config.config['kernel_density_input_datafile'])
 
@@ -259,7 +259,7 @@ else:
 
             ln_bg_ols=ln_bg_ols2
 
-
+            """
 
             background_means = tabletool.build_data_dict_from_table(
                     config.config['kernel_density_input_datafile'],
