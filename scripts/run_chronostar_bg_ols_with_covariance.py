@@ -260,9 +260,11 @@ else:
             log_message('LN_BL_OLS2')
             log_message(ln_bg_ols2)
 
+            ln_bg_ols=ln_bg_ols2
+
             # Background overlap with no covariance matrix
-            ln_bg_ols = expectmax.get_kernel_densities(background_means,
-                                                       star_means, )
+            #ln_bg_ols = expectmax.get_kernel_densities(background_means,
+            #                                           star_means, )
 
 
             # If allowed, save to original file path
