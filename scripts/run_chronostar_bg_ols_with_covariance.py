@@ -230,15 +230,15 @@ else:
             #        only_means=True,
             #)
 
+            from astropy.table import Table
+            tab=Table.read(config.config['kernel_density_input_datafile'])
+
             background_means = np.array(
-                [[np.nanmedian(tab['X']), 0, 0, 0, 0, 0], [0, np.nanmedian(tab['Y']), 0, 0, 0, 0],
-                 [0, 0, np.nanmedian(tab['Z']), 0, 0, 0], [0, 0, 0, np.nanmedian(tab['U']), 0, 0],
-                 [0, 0, 0, 0, np.nanmedian(tab['V']), 0], [0, 0, 0, 0, 0, np.nanmedian(tab['W'])]])
+                [np.nanmedian(tab['X']), np.nanmedian(tab['Y']), np.nanmedian(tab['Z']), np.nanmedian(tab['U']),
+                 np.nanmedian(tab['V']), np.nanmedian(tab['W'])])
             log_message('BG MEANS', background_means)
 
             # Create covariance matrix: just a very simple diagonal matrix for testing purposes
-            from astropy.table import Table
-            tab=Table.read(config.config['kernel_density_input_datafile'])
             background_covariance = np.array([[np.nanstd(tab['X']), 0, 0, 0, 0, 0], [0, np.nanstd(tab['Y']), 0, 0, 0, 0], [0, 0, np.nanstd(tab['Z']), 0, 0, 0], [0, 0, 0, np.nanstd(tab['U']), 0, 0], [0, 0, 0, 0, np.nanstd(tab['V']), 0], [0, 0, 0, 0, 0, np.nanstd(tab['W'])]])
 
             #background_covariance = expectmax.get_background_covariance(config.config['kernel_density_input_datafile'])
