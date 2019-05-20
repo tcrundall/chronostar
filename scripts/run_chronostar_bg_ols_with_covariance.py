@@ -273,7 +273,7 @@ else:
 
             # Background overlap with no covariance matrix
             #ln_bg_ols = expectmax.get_kernel_densities(background_means,
-                                                       star_means, )
+            #                                           star_means, )
 
             #log_message('ORIGINAL ln_bg_ols')
             #log_message(ln_bg_ols)
