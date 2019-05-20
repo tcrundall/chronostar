@@ -1,7 +1,7 @@
 import numpy as np
 
 assoc_name = ''
-prefix = 'marusa_testing_3'
+prefix = 'marusa_bg_ols'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(prefix),
