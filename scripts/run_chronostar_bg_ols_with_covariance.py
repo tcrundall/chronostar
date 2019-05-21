@@ -242,6 +242,8 @@ else:
 
             # Don't know any faster way yet:
             # Maybe write this into a separate file so it is faster next time
+            # Take only every 10th star as there is a MemoryError
+            tab=tab[::10]
             tab2 = np.array([[x, y, z, u, v, w] for x, y, z, u, v, w in zip(tab['X'], tab['Y'], tab['Z'], tab['U'], tab['V'], tab['W'])])
 
             background_covariance = expectmax.get_background_covariance_marusa(tab2)
