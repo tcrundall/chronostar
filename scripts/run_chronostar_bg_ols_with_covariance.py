@@ -240,7 +240,7 @@ else:
             # Create covariance matrix: just a very simple diagonal matrix for testing purposes
             #background_covariance = np.array([[np.nanstd(tab['X']), 0, 0, 0, 0, 0], [0, np.nanstd(tab['Y']), 0, 0, 0, 0], [0, 0, np.nanstd(tab['Z']), 0, 0, 0], [0, 0, 0, np.nanstd(tab['U']), 0, 0], [0, 0, 0, 0, np.nanstd(tab['V']), 0], [0, 0, 0, 0, 0, np.nanstd(tab['W'])]])
 
-            background_covariance = expectmax.get_background_covariance(np.array(np.array(tabt[['X', 'Y', 'Z', 'U', 'V', 'W']])))
+            background_covariance = expectmax.get_background_covariance(np.array(np.array(tab[['X', 'Y', 'Z', 'U', 'V', 'W']])))
             log_message('background_covariance', background_covariance)
             log_message('')
 
