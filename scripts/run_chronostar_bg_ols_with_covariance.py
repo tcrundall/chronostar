@@ -242,7 +242,7 @@ else:
 
             # Don't know any faster way yet:
             # Maybe write this into a separate file so it is faster next time
-            tab2 = np.array([[x, y, z, u, v, w] for x, yz, u, v, w in zip(tab['X'], tab['Y'], tab['Z'], tab['U'], tab['V'], tab['W'])])
+            tab2 = np.array([[x, y, z, u, v, w] for x, y, z, u, v, w in zip(tab['X'], tab['Y'], tab['Z'], tab['U'], tab['V'], tab['W'])])
 
             background_covariance = expectmax.get_background_covariance(tab2)
             log_message('background_covariance', background_covariance)
