@@ -111,7 +111,7 @@ def get_background_covariance(data, amp_scale=1.0):
 
     kernel = stats.gaussian_kde(data.T)
     #print('KERNEL.COVARIANCE', kernel.covariance) # MZ
-    points = np.copy(data)
+    points = np.copy(points)
     points[:,2] *= -1
     points[:,5] *= -1
 
