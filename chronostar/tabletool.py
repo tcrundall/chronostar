@@ -375,6 +375,8 @@ def insert_column(table, col_data, col_name, filename=''):
     """
     table[col_name] = col_data
     if filename != '':
+        # TODO work out proper way to writ etables that is consistnet across python
+        # Table.write(table, filename, overwrite=True, format='ascii') # TC
         table.write(filename, overwrite=True)
     return table
 

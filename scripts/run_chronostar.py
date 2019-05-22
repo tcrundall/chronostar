@@ -90,8 +90,8 @@ logging.basicConfig(filename=rdir+'log.log', level=logging.INFO)
 # ------------------------------------------------------------
 
 # Only even try to use MPI if config file says so
-if config.config.get('run_with_mpi', False):
-    using_mpi = False # True
+using_mpi = config.config.get('run_with_mpi', False)
+if using_mpi:
     try:
         pool = MPIPool()
         logging.info("Successfully initialised mpi pool")
@@ -101,15 +101,13 @@ if config.config.get('run_with_mpi', False):
         using_mpi = False
         pool=None
 
-    if using_mpi:
-        if not pool.is_master():
-            print("One thread is going to sleep")
-            # Wait for instructions from the master process.
-            pool.wait()
-            sys.exit(0)
-    print("Only one thread is master")
-else:
-    print("MPI flag was not set in config file")
+if using_mpi:
+    if not pool.is_master():
+        print("One thread is going to sleep")
+        # Wait for instructions from the master process.
+        pool.wait()
+        sys.exit(0)
+print("Only one thread is master")
 
 log_message('Beginning Chronostar run',
             symbol='_', surround=True)

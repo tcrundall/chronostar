@@ -16,10 +16,10 @@ def get_region(assoc_name, gagne_reference_data = None):
     gagne_table = tabletool.read(gagne_reference_data)
 
     if assoc_name not in set(gagne_table['Moving group']):
-        raise UserWarning,\
+        raise UserWarning(
             'Association name must be one of:\n{}\nReceived: "{}"'.format(
                     list(set(gagne_table['Moving group'])), assoc_name
-            )
+            ))
 
     # Dummy comment
 

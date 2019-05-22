@@ -356,6 +356,7 @@ def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
     while (not converged) and cnt != max_iter:
         logging.info("Burning in cnt: {}".format(cnt))
         sampler.reset()
+        np.save(plot_dir+'lnprob_last.npy', sampler.lnprobability)
         init_pos, lnprob, state = sampler.run_mcmc(init_pos, burnin_steps, state)
         converged = burnin_convergence(sampler.lnprobability,
                                        tol=convergence_tol)
