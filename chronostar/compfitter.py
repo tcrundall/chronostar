@@ -164,9 +164,11 @@ def burnin_convergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
     end_lnprob_mn = np.mean(lnprob[:, -slice_size:])
     end_lnprob_std = np.std(lnprob[:, -slice_size:])
 
-    return (np.isclose(start_lnprob_mn, end_lnprob_mn,
-                       atol=tol*end_lnprob_std)
-            and no_stuck_walkers(lnprob))
+    stable = np.isclose(start_lnprob_mn, end_lnprob_mn,
+                        atol=tol*end_lnprob_std)
+    logging.info("Stable? {}".format(stable))
+
+    return stable
 
 
 def get_init_emcee_pos(data, memb_probs=None, nwalkers=None,
@@ -356,10 +358,17 @@ def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
     while (not converged) and cnt != max_iter:
         logging.info("Burning in cnt: {}".format(cnt))
         sampler.reset()
-        np.save(plot_dir+'lnprob_last.npy', sampler.lnprobability)
         init_pos, lnprob, state = sampler.run_mcmc(init_pos, burnin_steps, state)
-        converged = burnin_convergence(sampler.lnprobability,
-                                       tol=convergence_tol)
+        np.save(plot_dir+'lnprob_last.npy', sampler.lnprobability)
+        stable = burnin_convergence(sampler.lnprobability, tol=convergence_tol)
+        no_stuck = no_stuck_walkers(sampler.lnprobability)
+
+        # For debugging cases where walkers have stabilised but apparently some are stuck
+        if stable and not no_stuck:
+            np.save(plot_dir+'burnin_chain{:02}.npy'.format(cnt), sampler.lnprobability)
+            logging.info('Lnprob chain saved for debugging...')
+
+        converged = stable and no_stuck
         logging.info("Burnin status: {}".format(converged))
 
         if plot_it and plt_avail:

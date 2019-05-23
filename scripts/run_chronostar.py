@@ -26,6 +26,7 @@ import logging
 import imp      # TODO: address deprecation of imp
 from distutils.dir_util import mkpath
 import random
+import time
 
 from get_association_region import get_region
 sys.path.insert(0, os.path.abspath('..'))
@@ -107,6 +108,8 @@ if using_mpi:
         # Wait for instructions from the master process.
         pool.wait()
         sys.exit(0)
+
+time.sleep(5)
 print("Only one thread is master")
 
 log_message('Beginning Chronostar run',
@@ -394,8 +397,8 @@ while ncomps < MAX_COMPS:
     # best_split_ix = np.argmax(lnposts)
     best_split_ix = np.argmin(bics)
     new_comps, new_meds, new_z, new_lnlike, new_lnpost, new_bic = \
-        zip(best_fits, all_med_and_spans, all_memb_probs,
-            lnlikes, lnposts, bics)[best_split_ix]
+        list(zip(best_fits, all_med_and_spans, all_memb_probs,
+            lnlikes, lnposts, bics))[best_split_ix]
     logging.info("Selected {} as best decomposition".format(best_split_ix))
     logging.info("Turned\n{}".format(prev_comps[best_split_ix].get_pars()))
     logging.info("into\n{}\n&\n{}".format(

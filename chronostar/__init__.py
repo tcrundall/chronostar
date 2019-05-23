@@ -12,9 +12,9 @@ __version__ = "0.1"
 #from chronostar import synthesiser
 #from chronostar import converter
 
-try:
-    import _overlap
-except:
-    print("overlap not imported, SWIG not possible. Need to make in"
-            " directory...")
-
+# try:
+#     import _overlap
+# except:
+#     print("overlap not imported, SWIG not possible. Need to make in"
+#             " directory...")
+# 
