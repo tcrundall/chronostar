@@ -170,6 +170,8 @@ def get_lnoverlaps(comp, data, star_mask=None):
     # Get current day projection of component
     mean_now, cov_now = comp.get_currentday_projection()
 
+    print('SHAPES***', cov_now.shape, mean_now.shape, star_covs.shape, star_means.shape)
+
     # Calculate overlap integral of each star
     if USE_C_IMPLEMENTATION:
         lnols = c_get_lnoverlaps(cov_now, mean_now, star_covs, star_means,
