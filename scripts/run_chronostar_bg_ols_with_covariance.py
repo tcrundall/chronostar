@@ -205,84 +205,19 @@ else:
     if config.config['include_background_distribution']:
         # Only calculate if missing
         if bg_lnol_colname not in data_table.colnames:
-            log_message('Calculating background densities')
+            log_message('Calculating background densities with covariance matrices')
 
-            star_means = tabletool.build_data_dict_from_table(
-                    data_table, only_means=True,
+            ln_bg_ols = expectmax.get_background_overlaps_with_covariances(
+                config.config['kernel_density_input_datafile'],
+                data_table,
             )
-
-            data_dict = tabletool.build_data_dict_from_table(
-                    data_table,
-            )
-
-            #print('STAR MEANS', star_means)
-
-            # star_covariance
-
-
-            """
-            MZ: determine background overlaps: 
-            Background need to be a component, just like other components.
-            So we need means and background covariance.
-            """
-
-            #"""
-            from astropy.table import Table
-            tab=Table.read(config.config['kernel_density_input_datafile'])
-
-            background_means = np.array(
-                [np.nanmedian(tab['X']), np.nanmedian(tab['Y']), np.nanmedian(tab['Z']), np.nanmedian(tab['U']),
-                 np.nanmedian(tab['V']), np.nanmedian(tab['W'])])
-            log_message('')
-            log_message('BG MEANS', background_means)
-            log_message('')
-
-            # Create covariance matrix: just a very simple diagonal matrix for testing purposes
-            #background_covariance = np.array([[np.nanstd(tab['X']), 0, 0, 0, 0, 0], [0, np.nanstd(tab['Y']), 0, 0, 0, 0], [0, 0, np.nanstd(tab['Z']), 0, 0, 0], [0, 0, 0, np.nanstd(tab['U']), 0, 0], [0, 0, 0, 0, np.nanstd(tab['V']), 0], [0, 0, 0, 0, 0, np.nanstd(tab['W'])]])
-
-            # Don't know any faster way yet:
-            # Maybe write this into a separate file so it is faster next time
-            # Take only every 10th star as there is a MemoryError
-            tab=tab[::1000]
-            tab2 = np.array([[x, y, z, u, v, w] for x, y, z, u, v, w in zip(tab['X'], tab['Y'], tab['Z'], tab['U'], tab['V'], tab['W'])])
-
-            background_covariance = expectmax.get_background_covariance_marusa(tab2)
-            log_message('background_covariance', background_covariance)
-            log_message('')
-
-            #BackgroundComponent = SphereComponent(attributes={'mean': background_means, 'covmatrix': background_covariance, 'age': 1})
-            BackgroundComponent = SphereComponent(
-                attributes={'mean': background_means, 'covmatrix': background_covariance})
-            log_message('BACKGROUND COMPONENT')
-            log_message(BackgroundComponent)
-
-
-            log_message('Determining ln_bg_ols2...')
-            ln_bg_ols2 = expectmax.get_all_lnoverlaps(data_dict, [BackgroundComponent])
-            ln_bg_ols2 = [x[0] for x in ln_bg_ols2] # previous line gives results in a different format
-            log_message('FINISHED ln_bg_ols2...')
-            log_message('LN_BL_OLS2')
-            log_message(ln_bg_ols2)
-
-            ln_bg_ols=ln_bg_ols2
-
-            #"""
-
-            #background_means = tabletool.build_data_dict_from_table(
-            #        config.config['kernel_density_input_datafile'],
-            #        only_means=True,
-            #)
-
-
-            #log_message('ORIGINAL background_means')
-            #log_message(background_means)
 
             # Background overlap with no covariance matrix
             #ln_bg_ols = expectmax.get_kernel_densities(background_means,
             #                                           star_means, )
 
-            #log_message('ORIGINAL ln_bg_ols')
-            #log_message(ln_bg_ols)
+            log_message('ln_bg_ols finished')
+            log_message(ln_bg_ols)
 
             # If allowed, save to original file path
             if config.config['overwrite_datafile']:

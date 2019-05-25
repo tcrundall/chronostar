@@ -24,6 +24,7 @@ from chronostar.component import SphereComponent
 from . import likelihood
 from . import compfitter
 from . import tabletool
+from _overlap import get_lnoverlaps as c_get_lnoverlaps
 
 
 def log_message(msg, symbol='.', surround=False):
@@ -73,6 +74,49 @@ def get_kernel_densities(data, points, amp_scale=1.0):
     points[:,5] *= -1
 
     bg_lnols = np.log(nstars)+kernel.logpdf(points.T)
+    return bg_lnols
+
+def get_background_overlaps_with_covariances(kernel_density_input_datafile, data_stars):
+    """
+    author: Marusa Zerjal 2019 - 05 - 25
+
+    Determine background overlaps using means and covariances for both background and stars.
+    Covariance matrices for the background are Identity*bandwidth.
+
+    Parameters
+    ----------
+    data_background: [nstars,6] float array_like
+        Phase-space positions of some star set that greatly envelops points
+        in question. Typically contents of gaia_xyzuvw.npy.
+    data_stars: [npoints,6] float array_like
+        Phase-space positions of stellar data that we are fitting components to
+    covariance_stars: []
+
+    Returns
+    -------
+    bg_lnols: [nstars] float array_like
+        Background log overlaps of stars with background probability density
+        function.
+    """
+
+    # Stellar means and covs
+    star_dict = tabletool.build_data_dict_from_table(data_stars)
+    star_means = star_dict['means']
+    star_covs = star_dict['covs']
+
+    # Background means
+    background_means = tabletool.build_data_dict_from_table(kernel_density_input_datafile,
+        only_means=True,
+    )
+
+    # Background covs with bandwidth using Scott's rule
+    d = 6.0 # number of dimensions
+    nstars = background_means.shape[0]
+    bandwidth = nstars**(-1.0 / (d + 4.0))
+    background_covs = [np.identity(6) * bandwidth ** 2] * nstars
+
+    bg_lnols = c_get_lnoverlaps(star_covs, star_means, background_covs, background_means, nstars)
+
     return bg_lnols
 
 def check_convergence(old_best_comps, new_chains, perc=40):
