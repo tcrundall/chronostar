@@ -1,7 +1,7 @@
 import numpy as np
 
 assoc_name = ''
-prefix = 'marusa_bg_ols_infinite_errors'
+prefix = 'marusa_bg_ols_v2'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(prefix),
