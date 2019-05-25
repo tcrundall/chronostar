@@ -113,15 +113,20 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
     d = 6.0 # number of dimensions
     nstars = background_means.shape[0]
     bandwidth = nstars**(-1.0 / (d + 4.0))
-    #background_covs = np.array(nstars * [np.eye(6)* bandwidth ** 2])
-    background_cov = np.eye(6) * bandwidth**2
+    background_covs = np.array(nstars * [np.eye(6)* bandwidth ** 2])
 
-    #print(background_covs)
+    # shapes of the c_get_lnoverlaps input must be: (6, 6), (6,), (120, 6, 6), (120, 6)
+    # So I do it in a loop for every star
+    #bg_lnols=[]
+    #i=0
+    #for star_mean, star_cov in zip(star_means, star_covs):
+    #    bg_lnol = c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)
+    #    bg_lnol = np.sum(bg_lnol)
+    #    print i, bg_lnol
+    #    bg_lnols.append(bg_lnol)
 
-    print(star_covs.shape, star_means.shape, background_means.shape, background_cov.shape)
+    bg_lnols = [np.sum(c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)) for star_mean, star_cov in zip(star_means, star_covs)]
 
-    #bg_lnols = c_get_lnoverlaps(star_covs, star_means, background_covs, background_means, nstars)
-    bg_lnols = c_get_lnoverlaps(background_cov, background_means, star_covs, star_means, nstars)
 
     return bg_lnols
 
