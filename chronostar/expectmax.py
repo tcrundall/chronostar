@@ -121,6 +121,7 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
     i=0
     for star_mean, star_cov in zip(star_means, star_covs):
         print(star_cov, star_mean)
+        print(bandwidth**2, background_means)
         bg_lnol = c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)
         print(bg_lnol)
         print(np.exp(bg_lnol))
