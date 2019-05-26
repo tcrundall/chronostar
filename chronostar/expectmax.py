@@ -123,7 +123,7 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
         print(star_cov, star_mean)
         bg_lnol = c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)
         #bg_lnol = np.sum(bg_lnol)
-        bg_lnol = np.logaddex(bg_lnol)
+        bg_lnol = np.logaddexp(bg_lnol)
         print(i, bg_lnol)
         print('')
         bg_lnols.append(bg_lnol)
