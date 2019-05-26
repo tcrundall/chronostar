@@ -113,55 +113,47 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
     d = 6.0 # number of dimensions
     nstars = background_means.shape[0]
     bandwidth = nstars**(-1.0 / (d + 4.0))
-    #bandwidth=1
-    #background_covs = np.array(nstars * [np.eye(6)* bandwidth ** 2])
-
-    print('START with background_covs')
     background_cov = np.cov(background_means.T) * bandwidth ** 2
-    print('bg covs 0', background_cov)
-    background_covs = np.array(nstars * [background_cov])
-    print('bg covs multiplied', background_covs.shape)
+    background_covs = np.array(nstars * [background_cov]) # same cov for every star
 
     # shapes of the c_get_lnoverlaps input must be: (6, 6), (6,), (120, 6, 6), (120, 6)
     # So I do it in a loop for every star
     bg_lnols=[]
     i=0
     for star_mean, star_cov in zip(star_means, star_covs):
-        #print(star_cov, star_mean)
-        #print(bandwidth**2, background_means)
         bg_lnol = c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)
-        mask = bg_lnol > -800
+        #mask = bg_lnol > -800
         #bg_lnol = bg_lnol[mask]
-        print('bg_lnol', len(bg_lnol[mask]), bg_lnol[mask])
-        mi=np.min(bg_lnol)
-        ma=np.max(bg_lnol)
-        print(mi, ma, mi-ma)
+        #print('bg_lnol', len(bg_lnol[mask]), bg_lnol[mask])
+        #mi=np.min(bg_lnol)
+        #ma=np.max(bg_lnol)
+        #print(mi, ma, mi-ma)
 
         # An alternative approach
-        if np.any(mask):
-            bg_lnol_sorted = sorted(bg_lnol[mask])
-            x0=bg_lnol_sorted[-1]
-            diff=bg_lnol_sorted[:-1]-x0
-            result = x0 + np.log(1.0 + np.sum(np.exp(diff)))
-        else:
-            result=0
+        #if np.any(mask):
+        #    bg_lnol_sorted = sorted(bg_lnol[mask])
+        #    x0=bg_lnol_sorted[-1]
+        #    diff=bg_lnol_sorted[:-1]-x0
+        #    result = x0 + np.log(1.0 + np.sum(np.exp(diff)))
+        #else:
+        #    result=0
 
-        try:
-            bg_lnol = np.log(np.sum(np.exp(bg_lnol)))
-        except:
-            bg_lnol=np.inf
-        print(i, 'bg_lnol', bg_lnol, 'result', result)
-        print('')
+        #try:
+        bg_lnol = np.log(np.sum(np.exp(bg_lnol)))
+        #except:
+        #    bg_lnol=np.inf
+        print(i, 'bg_lnol', bg_lnol)
+        #print('')
         bg_lnols.append(bg_lnol)
         i+=1
 
         # debugging
-        if i>10:
+        if i>100:
             break
 
     # This should be parallelized
     #bg_lnols = [np.sum(c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)) for star_mean, star_cov in zip(star_means, star_covs)]
-
+    #print(bg_lnols)
 
     return bg_lnols
 
