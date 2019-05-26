@@ -126,7 +126,7 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
             bg_lnol = c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)
             bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
         except:
-            bg_lnol =
+            bg_lnol = np.inf
         bg_lnols.append(bg_lnol)
         print(bg_lnol)
         print('')
