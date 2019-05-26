@@ -145,7 +145,7 @@ def build_data_dict_from_table(table, main_colnames=None, error_colnames=None,
         Array of the mean measurements
     covs: [n,6,6] float array_like
         Array of the covariance matrix for each of the `n` measured objects
-
+    Comment by Marusa: it is actually a dictionary that is returned.
     """
     # Tidy up input
     if isinstance(table, str):

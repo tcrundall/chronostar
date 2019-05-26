@@ -24,6 +24,7 @@ from chronostar.component import SphereComponent
 from . import likelihood
 from . import compfitter
 from . import tabletool
+from _overlap import get_lnoverlaps as c_get_lnoverlaps
 
 
 def log_message(msg, symbol='.', surround=False):
@@ -75,90 +76,65 @@ def get_kernel_densities(data, points, amp_scale=1.0):
     bg_lnols = np.log(nstars)+kernel.logpdf(points.T)
     return bg_lnols
 
-def get_background_covariance(data, amp_scale=1.0):
+def get_background_overlaps_with_covariances(kernel_density_input_datafile, data_stars):
     """
-    MZ
+    author: Marusa Zerjal 2019 - 05 - 25
 
-    Build a PDF from `data`, then
-
-    The Z and W value of points (height above, and velocity through the plane,
-    respectively) are inverted in an effort to make the inferred background
-    phase-space density independent of over-densities caused by suspected
-    moving groups/associations. The idea is that the Galactic density is
-    vertically symmetric about the plane, and any deviations are temporary.
-
+    Determine background overlaps using means and covariances for both background and stars.
+    Covariance matrices for the background are Identity*bandwidth.
 
     Parameters
     ----------
-    data: [nstars,6] float array_like
+    data_background: [nstars,6] float array_like
         Phase-space positions of some star set that greatly envelops points
         in question. Typically contents of gaia_xyzuvw.npy.
-    points: [npoints,6] float array_like
+    data_stars: [npoints,6] float array_like
         Phase-space positions of stellar data that we are fitting components to
-    amp_scale: float {1.0}
-        One can optionally weight the background density so as to make over-densities
-        more or less prominent. For e.g., amp_scale of 0.1 will make background
-        overlaps an order of magnitude lower.
+    covariance_stars: []
 
     Returns
     -------
     bg_lnols: [nstars] float array_like
-
+        Background log overlaps of stars with background probability density
+        function.
     """
-    if type(data) is str:
-        data = np.load(data)
-    nstars = amp_scale * data.shape[0]
 
-    kernel = stats.gaussian_kde(data.T)
-    #print('KERNEL.COVARIANCE', kernel.covariance) # MZ
-    points = np.copy(points)
-    points[:,2] *= -1
-    points[:,5] *= -1
+    # Stellar means and covs
+    star_dict = tabletool.build_data_dict_from_table(data_stars)
+    star_means = star_dict['means']
+    star_covs = star_dict['covs']
 
-    bg_lnols = np.log(nstars)+kernel.logpdf(points.T)
-    return bg_lnols
+    # Background means
+    background_means = tabletool.build_data_dict_from_table(kernel_density_input_datafile,
+        only_means=True,
+    )
 
-def get_background_covariance_marusa(data, amp_scale=1.0):
-    """
-    MZ
+    # Background covs with bandwidth using Scott's rule
+    d = 6.0 # number of dimensions
+    nstars = background_means.shape[0]
+    bandwidth = nstars**(-1.0 / (d + 4.0))
+    background_cov = np.cov(background_means.T) * bandwidth ** 2
+    background_covs = np.array(nstars * [background_cov]) # same cov for every star
 
-    Build a PDF from `data`, then
+    # shapes of the c_get_lnoverlaps input must be: (6, 6), (6,), (120, 6, 6), (120, 6)
+    # So I do it in a loop for every star
+    bg_lnols=[]
+    for star_mean, star_cov in zip(star_means, star_covs):
+        print(star_cov)
+        print(np.linalg.det(star_cov))
+        try:
+            bg_lnol = c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)
+            bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
+        except:
+            bg_lnol = np.inf
+        bg_lnols.append(bg_lnol)
+        print(bg_lnol)
+        print('')
 
-    The Z and W value of points (height above, and velocity through the plane,
-    respectively) are inverted in an effort to make the inferred background
-    phase-space density independent of over-densities caused by suspected
-    moving groups/associations. The idea is that the Galactic density is
-    vertically symmetric about the plane, and any deviations are temporary.
+    # This should be parallelized
+    #bg_lnols = [np.sum(c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)) for star_mean, star_cov in zip(star_means, star_covs)]
+    #print(bg_lnols)
 
-
-    Parameters
-    ----------
-    data: [nstars,6] float array_like
-        Phase-space positions of some star set that greatly envelops points
-        in question. Typically contents of gaia_xyzuvw.npy.
-    points: [npoints,6] float array_like
-        Phase-space positions of stellar data that we are fitting components to
-    amp_scale: float {1.0}
-        One can optionally weight the background density so as to make over-densities
-        more or less prominent. For e.g., amp_scale of 0.1 will make background
-        overlaps an order of magnitude lower.
-
-    Returns
-    -------
-    bg_lnols: [nstars] float array_like
-
-    """
-    if type(data) is str:
-        data = np.load(data)
-    nstars = amp_scale * data.shape[0]
-
-    kernel = stats.gaussian_kde(data.T)
-    #print('KERNEL.COVARIANCE', kernel.covariance) # MZ
-    points = np.copy(data) # MZ: changed np.copy(points) to np.copy(data)
-    points[:,2] *= -1
-    points[:,5] *= -1
-
-    bg_lnols = np.log(nstars)+kernel.logpdf(points.T)
     return bg_lnols
 
 def check_convergence(old_best_comps, new_chains, perc=40):
