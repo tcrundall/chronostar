@@ -136,8 +136,13 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
             x0=bg_lnol_sorted[-1]
             diff=bg_lnol_sorted[:-1]-x0
             result = x0 + np.log(1.0 + np.sum(np.exp(diff)))
+        else:
+            result=0
 
-        bg_lnol = np.log(np.sum(np.exp(bg_lnol)))
+        try:
+            bg_lnol = np.log(np.sum(np.exp(bg_lnol)))
+        except:
+            bg_lnol=np.inf
         print(i, 'bg_lnol', bg_lnol, 'result', result)
         print('')
         bg_lnols.append(bg_lnol)
