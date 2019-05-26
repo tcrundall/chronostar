@@ -120,28 +120,27 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
     bg_lnols=[]
     i=0
     for star_mean, star_cov in zip(star_means, star_covs):
-        print(star_cov, star_mean)
-        print(bandwidth**2, background_means)
+        #print(star_cov, star_mean)
+        #print(bandwidth**2, background_means)
         bg_lnol = c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)
-        print(bg_lnol)
+        mask = bg_lnol > -800
+        bg_lnol = bg_lnol[mask]
+        print('bg_lnol', len(bg_lnol), bg_lnol)
         mi=np.min(bg_lnol)
         ma=np.max(bg_lnol)
         print(mi, ma, mi-ma)
 
         # An alternative approach
-        result = bg_lnol[0] = np.log(1.0 + np.sum(np.exp(bg_lnol[1:]-bg_lnol[0])))
+        #result = bg_lnol[0] = np.log(1.0 + np.sum(np.exp(bg_lnol[1:]-bg_lnol[0])))
 
 
         mask=bg_lnol>-100
         bg_lnol=bg_lnol[mask]
-        print(np.exp(bg_lnol))
-        print(np.sum(np.exp(bg_lnol)))
+        print('exp(bg_lnol)', np.exp(bg_lnol))
+        print('sum(exp(bg_lnol))', np.sum(np.exp(bg_lnol)))
         #bg_lnol = np.sum(bg_lnol)
         bg_lnol = np.log(np.sum(np.exp(bg_lnol)))
         print(i, bg_lnol)
-
-
-
         print('')
         bg_lnols.append(bg_lnol)
         i+=1
