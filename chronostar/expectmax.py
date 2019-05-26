@@ -113,9 +113,10 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
     d = 6.0 # number of dimensions
     nstars = background_means.shape[0]
     bandwidth = nstars**(-1.0 / (d + 4.0))
-    bandwidth=1
-    background_covs = np.array(nstars * [np.eye(6)* bandwidth ** 2])
+    #bandwidth=1
+    #background_covs = np.array(nstars * [np.eye(6)* bandwidth ** 2])
 
+    print('START with background_covs')
     background_cov = np.cov(background_means) * bandwidth ** 2
     background_covs = np.array(nstars * background_cov)
     print('bg covs', background_covs.shape)
