@@ -6,8 +6,8 @@ config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(prefix),
     #'data_loadfile':'../data/gaia_cartesian_full_6d_table.fits',
-    #'data_loadfile': '../data/synth_data_for_marusa_from_paper_1/same_centroid_synth_measurements_infinite_errors.fits',
-    'data_loadfile': '../data/synth_data_for_marusa_from_paper_1/same_centroid_synth_measurements.fits',
+    'data_loadfile': '../data/synth_data_for_marusa_from_paper_1/same_centroid_synth_measurements_infinite_errors.fits',
+    #'data_loadfile': '../data/synth_data_for_marusa_from_paper_1/same_centroid_synth_measurements.fits',
     'datafile':'../results/{}/data.fits'.format(prefix),
     'data_savefile': '../results/{}/same_centroid_synth_measurements_infinite_errors_output2.fits'.format(prefix), #,#''../results/{}/{}_subset.fit'.format(assoc_name, assoc_name), # Chronostar adds XYZUVW columns and
                                         # if you don't want to override the original file then save into data_savefile.

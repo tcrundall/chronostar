@@ -139,7 +139,7 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
         #    result=0
 
         #try:
-        bg_lnol = np.log(np.sum(np.exp(bg_lnol)))
+        bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
         #except:
         #    bg_lnol=np.inf
         print(i, 'bg_lnol', bg_lnol)
@@ -148,7 +148,7 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
         i+=1
 
         # debugging
-        if i>100:
+        if i>10:
             break
 
     # This should be parallelized
