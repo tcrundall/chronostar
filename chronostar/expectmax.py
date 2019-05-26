@@ -119,9 +119,7 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
     print('START with background_covs')
     background_cov = np.cov(background_means.T) * bandwidth ** 2
     print('bg covs 0', background_cov)
-    #background_cov = np.cov(background_means[::100,:]) * bandwidth ** 2
-    #print('bg covs 1', background_cov.shape)
-    background_covs = np.array(nstars * background_cov)
+    background_covs = np.array(nstars * [background_cov])
     print('bg covs multiplied', background_covs.shape)
 
     # shapes of the c_get_lnoverlaps input must be: (6, 6), (6,), (120, 6, 6), (120, 6)
