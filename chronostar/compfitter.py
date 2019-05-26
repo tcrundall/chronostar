@@ -96,6 +96,24 @@ def approx_currentday_distribution(data, membership_probs):
     return mean_of_means, cov_of_means
 
 
+def stuck_walker(walker_lnprob, max_repeat=100):
+    """
+    Check if a walker is stuck by analysing its lnprob values across
+    its whole walk.
+
+    Notes
+    -----
+    A stuck walker is defined to be one which has not changed it's value
+    after (say) 100 steps. To simplify, we don't check for contiguous blocks,
+    but rather just examine the occurence of each unique lnprob in the walk
+    as it is unlikely a walker will reach the identical lnprob unless it
+    was stuck there.
+    """
+    unique_elements, counts_elements = np.unique(walker_lnprob,
+                                                 return_counts=True)
+    return np.max(counts_elements) > max_repeat
+
+
 def no_stuck_walkers(lnprob):
     """
     Examines lnprob to see if any walkers have flatlined far from pack
@@ -116,17 +134,23 @@ def no_stuck_walkers(lnprob):
           i.e. no walker should be more than 3*D from mean where
           D is np.perc(final_pos, 50) - np.perc(final_pos, 16)
     """
-    final_pos = lnprob[:,-1]
 
-    # Get a proxy for the standard deviation
-    rough_std = np.percentile(final_pos, 50) -\
-                 np.percentile(final_pos, 16)
+    stuck_walker_checks = []
+    for walker_lnprob in lnprob:
+        stuck_walker_checks.append(stuck_walker(walker_lnprob))
 
-    # Ensure the final lnprob of the worst walker (lowest lnprob) is
-    # not more than three "standard deviations" away from the 50th
-    # percentile.
-    worst_walker = np.min(final_pos)
-    res = worst_walker > np.percentile(final_pos, 50) - 3*rough_std
+#     final_pos = lnprob[:,-1]
+#
+#     # Get a proxy for the standard deviation
+#     rough_std = np.percentile(final_pos, 50) -\
+#                  np.percentile(final_pos, 16)
+#
+#     # Ensure the final lnprob of the worst walker (lowest lnprob) is
+#     # not more than three "standard deviations" away from the 50th
+#     # percentile.
+#     worst_walker = np.min(final_pos)
+#     res = worst_walker > np.percentile(final_pos, 50) - 6*rough_std
+    res = not np.any(stuck_walker_checks)
     logging.info("No stuck walkers? {}".format(res))
     return res
 
@@ -365,7 +389,7 @@ def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
 
         # For debugging cases where walkers have stabilised but apparently some are stuck
         if stable and not no_stuck:
-            np.save(plot_dir+'burnin_chain{:02}.npy'.format(cnt), sampler.lnprobability)
+            np.save(plot_dir+'burnin_lnprob{:02}.npy'.format(cnt), sampler.lnprobability)
             logging.info('Lnprob chain saved for debugging...')
 
         converged = stable and no_stuck

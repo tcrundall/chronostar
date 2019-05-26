@@ -35,13 +35,76 @@ SPHERE_COMP_PARS = np.array([
 ])
 STARCOUNTS = [200, 200]
 
-run_name = 'stationary'
-savedir = 'temp_data/{}_expectmax_{}/'.format(PY_VERS, run_name)
-mkpath(savedir)
-data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
-                                                             run_name)
-log_filename = 'logs/{}_expectmax_{}.log'.format(PY_VERS, run_name)
-plot_dir = 'temp_plots/{}_expectmax_{}'.format(PY_VERS, run_name)
+# run_name = 'stationary'
+# savedir = 'temp_data/{}_expectmax_{}/'.format(PY_VERS, run_name)
+# mkpath(savedir)
+# data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
+#                                                             run_name)
+log_filename = 'logs/{}_expectmax_all_tests.log'.format(PY_VERS)
+# plot_dir = 'temp_plots/{}_expectmax_{}'.format(PY_VERS, run_name)
+print('logging in {}'.format(log_filename))
+logging.basicConfig(level=logging.INFO, filemode='w',
+                    filename=log_filename)
+
+
+def dummy_test_execution_simple_fit():
+    """
+    Don't test for correctness, but check that everything actually executes
+    """
+    run_name = 'quickdirty'
+    logging.info(50*'-')
+    logging.info(15*'-' + '{:^20}'.format(run_name) + 15*'-')
+    logging.info(50*'-')
+
+    savedir = 'temp_data/{}_expectmax_{}/'.format(PY_VERS, run_name)
+    mkpath(savedir)
+    data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
+                                                                 run_name)
+    # log_filename = 'temp_data/{}_expectmax_{}/log.log'.format(PY_VERS,
+    #                                                           run_name)
+
+    uniform_age = 1e-10
+    sphere_comp_pars = np.array([
+        # X, Y, Z, U, V, W, dX, dV,  age,
+        [ 0, 0, 0, 0, 0, 0, 10.,  5, uniform_age],
+    ])
+    starcount = 100
+
+    background_density = 1e-9
+
+    ncomps = sphere_comp_pars.shape[0]
+
+    # true_memb_probs = np.zeros((starcount, ncomps))
+    # true_memb_probs[:,0] = 1.
+
+    synth_data = SynthData(pars=sphere_comp_pars, starcounts=[starcount],
+                           Components=SphereComponent,
+                           background_density=background_density,
+                           )
+    synth_data.synthesise_everything()
+
+    tabletool.convert_table_astro2cart(synth_data.table,
+                                       write_table=True,
+                                       filename=data_filename)
+    background_count = len(synth_data.table) - starcount
+
+    # insert background densities
+    synth_data.table['background_log_overlap'] =\
+        len(synth_data.table) * [np.log(background_density)]
+
+    origins = [SphereComponent(pars) for pars in sphere_comp_pars]
+
+    best_comps, med_and_spans, memb_probs = \
+        expectmax.fit_many_comps(data=synth_data.table,
+                                 ncomps=ncomps,
+                                 rdir=savedir,
+                                 trace_orbit_func=dummy_trace_orbit_func,
+                                 use_background=True,
+                                 burnin=10,
+                                 sampling_steps=10,
+
+                                 )
+
 
 def test_fit_one_comp_with_background():
     """
@@ -51,6 +114,11 @@ def test_fit_one_comp_with_background():
     Takes a while... maybe this belongs in integration unit_tests
     """
     run_name = 'background'
+
+    logging.info(50*'-')
+    logging.info(15*'-' + '{:^20}'.format(run_name) + 15*'-')
+    logging.info(50*'-')
+
     savedir = 'temp_data/{}_expectmax_{}/'.format(PY_VERS, run_name)
     mkpath(savedir)
     data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,
@@ -98,14 +166,14 @@ def test_fit_one_comp_with_background():
                                  trace_orbit_func=dummy_trace_orbit_func,
                                  use_background=True)
 
-    return best_comps, med_and_spans, memb_probs
+    # return best_comps, med_and_spans, memb_probs
 
     # Check parameters are close
     assert np.allclose(sphere_comp_pars, best_comps[0].get_pars(),
                        atol=1.)
 
     # Check most assoc members are correctly classified
-    recovery_count_threshold = 0.95 * starcounts[0]
+    recovery_count_threshold = 0.95 * starcount
     recovery_count_actual =  np.sum(np.round(memb_probs[:starcount,0]))
     assert recovery_count_threshold < recovery_count_actual
 
@@ -130,6 +198,11 @@ def test_fit_many_comps():
     """
 
     run_name = 'stationary'
+
+    logging.info(50*'-')
+    logging.info(15*'-' + '{:^20}'.format(run_name) + 15*'-')
+    logging.info(50*'-')
+
     savedir = 'temp_data/{}_expectmax_{}/'.format(PY_VERS, run_name)
     mkpath(savedir)
     data_filename = savedir + '{}_expectmax_{}_data.fits'.format(PY_VERS,

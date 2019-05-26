@@ -593,6 +593,13 @@ class AbstractComponent(object):
                 comps.append(cls(pars=pars))
         return comps
 
+    def store_raw(self, filename, use_emcee_pars=False):
+        """
+        Helper method that utilises the static method
+        """
+        self.store_raw_components(filename=filename, components=[self],
+                                  use_emcee_pars=use_emcee_pars)
+
     @staticmethod
     def store_raw_components(filename, components, use_emcee_pars=False):
         """
@@ -617,6 +624,8 @@ class AbstractComponent(object):
         This is a static method because it needs as input a list of
         components, not just the component itself
         """
+        if type(components) is not list:
+            components = [components]
         if use_emcee_pars:
             pars = np.array([c.get_emcee_pars() for c in components])
         else:

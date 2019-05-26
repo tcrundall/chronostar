@@ -267,7 +267,7 @@ try:
                             + final_med_and_spans_file)
     prev_memb_probs = np.load(run_dir + 'final/' + final_memb_probs_file)
     try:
-        prev_comps = Component.load_components(
+        prev_comps = Component.load_raw_components(
                 str(run_dir+'final/'+final_comps_file))
     # Final comps are there, they just can't be read by current module
     # so quickly fit them based on fixed prev membership probabilities
@@ -283,7 +283,9 @@ try:
             best_ix = np.argmax(lnprob)
             best_pars = chain.reshape(-1,npars)[best_ix]
             prev_comps[i] = Component(emcee_pars=best_pars)
-        np.save(str(run_dir+'final/'+final_comps_file), prev_comps)
+        Component.store_raw_components(str(run_dir+'final/'+final_comps_file),
+                                       prev_comps)
+        # np.save(str(run_dir+'final/'+final_comps_file), prev_comps)
 
     logging.info('Loaded from previous run')
 except IOError:
@@ -348,8 +350,8 @@ while ncomps < MAX_COMPS:
                                     + final_med_and_spans_file)
             memb_probs = np.load(run_dir + 'final/' + final_memb_probs_file)
             try:
-                comps = Component.load_components(run_dir + 'final/'
-                                                  + final_comps_file)
+                comps = Component.load_raw_components(run_dir + 'final/'
+                                                      + final_comps_file)
             # Final comps are there, they just can't be read by current module
             # so quickly fit them based on fixed prev membership probabilities
             except AttributeError:
@@ -365,7 +367,9 @@ while ncomps < MAX_COMPS:
                     best_ix = np.argmax(lnprob)
                     best_pars = chain.reshape(-1, npars)
                     prev_comps[i] = Component(emcee_pars=best_pars)
-                np.save(str(run_dir + 'final/' + final_comps_file), prev_comps)
+                Component.store_raw_components(str(run-dir+'final/'+final_comps_file),
+                                               prev_comps)
+                # np.save(str(run_dir + 'final/' + final_comps_file), prev_comps)
 
             logging.info('Fit loaded from previous run')
         except IOError:
@@ -422,7 +426,8 @@ while ncomps < MAX_COMPS:
         logging.info("lnlike: {} | {}".format(new_lnlike, prev_lnlike))
         logging.info("lnpost: {} | {}".format(new_lnpost, prev_lnpost))
         logging.info("... saving previous fit as best fit to data")
-        np.save(rdir + final_comps_file, prev_comps)
+        Component.store_raw_components(rdir + final_comps_file, prev_comps)
+        # np.save(rdir + final_comps_file, prev_comps)
         np.save(rdir + final_med_and_spans_file, prev_med_and_spans)
         np.save(rdir + final_memb_probs_file, prev_memb_probs)
         np.save(rdir + 'final_likelihood_post_and_bic',

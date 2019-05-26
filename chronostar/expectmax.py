@@ -618,7 +618,8 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
                                 np.std(chain[:,:,-1])))
 
             new_comps.append(best_comp)
-            np.save(gdir + "best_comp_fit.npy", best_comp)
+            best_comp.store_raw(gdir + 'best_comp_fit.npy')
+            np.save(gdir + "best_comp_fit_bak.npy", best_comp) # can remove this line when working
             np.save(gdir + 'final_chain.npy', chain)
             np.save(gdir + 'final_lnprob.npy', lnprob)
             all_samples.append(chain)
@@ -630,7 +631,8 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
             # record the final position of the walkers for each comp
             all_final_pos[i] = final_pos
 
-    np.save(idir + 'best_comps.npy', new_comps)
+    Component.store_raw_components(idir + 'best_comps.npy', new_comps)
+    np.save(idir + 'best_comps_bak.npy', new_comps)
 
     return np.array(new_comps), np.array(all_samples), np.array(all_lnprob),\
            np.array(all_final_pos), np.array(success_mask)
@@ -663,6 +665,7 @@ def check_stability(data, best_comps, memb_probs):
     TODO: For some reason runs are continuing past less than 2 members...
     """
     ncomps = len(best_comps)
+    logging.info('DEBUG: memb_probs shape: {}'.format(memb_probs.shape))
     if np.min(np.sum(memb_probs[:, :ncomps], axis=0)) <= 2.:
         logging.info("ERROR: A component has less than 2 members")
         return False
@@ -809,8 +812,10 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
         all_init_pars = ncomps * [None]
         init_comps = ncomps * [None]
 
-    # Store the initial component
-    np.save(rdir + init_comp_filename, init_comps)
+    # Store the initial components if available
+    if init_comps[0] is not None:
+        Component.store_raw_components(rdir + init_comp_filename, init_comps)
+    # np.save(rdir + init_comp_filename, init_comps)
 
     # Initialise values for upcoming iterations
     old_comps = init_comps
@@ -827,7 +832,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
             idir = rdir+"iter{:02}/".format(iter_count)
             memb_probs_old = np.load(idir + 'membership.npy')
             try:
-                old_comps = Component.load_components(idir + 'best_comps.npy')
+                old_comps = Component.load_raw_components(idir + 'best_comps.npy')
             # End up here if components aren't loadable due to change in module
             # So we rebuild from chains
             except AttributeError:
@@ -855,6 +860,8 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
 
     # Until convergence is achieved (or MAX_ITERS is exceeded) iterate through
     # the Expecation and Maximisation stages
+
+    # TODO: put convergence checking at the start of the loop so restarting doesn't repeat an iteration
     while not all_converged and stable_state and iter_count < MAX_ITERS:
         # for iter_count in range(10):
         idir = rdir+"iter{:02}/".format(iter_count)
@@ -864,7 +871,8 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
 
         # EXPECTATION
         if skip_first_e_step:
-            logging.info("Skipping expectation step since we have memb probs.Using initialising memb_probs for first iteration")
+            logging.info("Skipping expectation step since we have memb probs.")
+            logging.info("Using initialising memb_probs for first iteration")
             logging.info("memb_probs: {}".format(init_memb_probs.sum(axis=0)))
             memb_probs_new = init_memb_probs
             skip_first_e_step = False
@@ -902,11 +910,12 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
         else:
             memb_probs_new = memb_probs_new[:,success_mask]
 
+        logging.info('DEBUG: memb_probs_new shape: {}'.format(memb_probs_new.shape))
+        logging.info('DEBUG: new_comps length: {}'.format(len(new_comps)))
+
         # LOG RESULTS OF ITERATION
         overall_lnlike = get_overall_lnlikelihood(data, new_comps,
                                                  inc_posterior=False)
-        # TODO This seems to be bugged... returns same value as lnlike when only
-        # fitting one group; BECAUSE WEIGHTS ARE REBALANCED
         overall_lnposterior = get_overall_lnlikelihood(data, new_comps,
                                                       inc_posterior=True)
         logging.info("---        Iteration results         --")
@@ -967,6 +976,9 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
         memb_probs_final = expectation(data, new_comps, memb_probs_new,
                                        inc_posterior=inc_posterior)
         np.save(final_dir+"final_membership.npy", memb_probs_final)
+        logging.info('Membership distribution:\n{}'.format(
+            memb_probs_final.sum(axis=0)
+        ))
         final_med_and_spans = [None] * ncomps
         final_best_comps = [None] * ncomps
 
@@ -996,7 +1008,8 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
             all_init_pos[i] = chain[:, -1, :]
 
         # SAVE FINAL RESULTS IN MAIN SAVE DIRECTORY
-        np.save(final_dir+'final_comps.npy', final_best_comps)
+        Component.store_raw_components(final_dir+'final_comps.npy', final_best_comps)
+        np.save(final_dir+'final_comps_bak.npy', final_best_comps)
         np.save(final_dir+'final_med_and_spans.npy', final_med_and_spans)
 
         overall_lnlike = get_overall_lnlikelihood(

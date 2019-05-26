@@ -154,13 +154,13 @@ def test_load_components():
         comp0 = ComponentClass(pars=DEFAULT_PARS[name])
         comp1 = ComponentClass(pars=DEFAULT_PARS[name])
 
-        np.save(single_filename, comp0)
-        np.save(multi_filename, [comp0, comp1])
+        ComponentClass.store_raw_components(single_filename, comp0)
+        ComponentClass.store_raw_components(multi_filename, [comp0, comp1])
 
-        single_res = ComponentClass.load_components(single_filename)
+        single_res = ComponentClass.load_raw_components(single_filename)
         assert np.allclose(single_res[0].get_pars(), comp1.get_pars())
 
-        multi_res = ComponentClass.load_components(multi_filename)
+        multi_res = ComponentClass.load_raw_components(multi_filename)
         assert np.allclose(multi_res[0].get_pars(), comp0.get_pars())
         assert np.allclose(multi_res[1].get_pars(), comp1.get_pars())
 

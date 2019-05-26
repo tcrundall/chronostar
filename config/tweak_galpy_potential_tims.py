@@ -1,7 +1,7 @@
 import numpy as np
 
 assoc_name = ''
-prefix = 'tweak_galpy_potential_mw_tims_2'
+prefix = 'py2_tweak_galpy_potential_mnp_tims'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(prefix),
@@ -53,8 +53,8 @@ cart_colnames = {
 from galpy.potential import MiyamotoNagaiPotential, MWPotential2014
 orbit = {
     # 'potential': None,
-    'potential': MWPotential2014,
-    #'potential': MiyamotoNagaiPotential(a=0.5,b=0.0375,amp=1.,normalize=1.), # Params from the example webpage. No idea if that's good or not.
+    #'potential': MWPotential2014,
+    'potential': MiyamotoNagaiPotential(a=0.5,b=0.0375,amp=1.,normalize=1.), # Params from the example webpage. No idea if that's good or not.
 }
 
 special = {
