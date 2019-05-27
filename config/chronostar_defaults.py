@@ -1,7 +1,7 @@
 import numpy as np
 
 assoc_name = 'demo_run'
-prefix = 'marusa_testing'
+prefix = 'run_chronostar_small_errors_KDE'
 config = {
     'banyan_assoc_name': '',
     # 'datafile':'',
