@@ -42,6 +42,15 @@ from scipy.stats.mstats import gmean
 from . import transform
 from chronostar.traceorbit import trace_cartesian_orbit
 
+# Including plotting capabilities
+try:
+    import matplotlib as mpl
+    mpl.use('Agg') # stops auto displaying plots upon generation
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Ellipse
+except:
+    ImportError
+
 
 class AbstractComponent(object):
     """
@@ -650,6 +659,103 @@ class AbstractComponent(object):
                       'covmatrix':self.get_covmatrix(),
                       'age':self.get_age()}
         np.save(filename, attributes)
+
+    def plot_cov_ellipse(self, cov, pos, nstd=2, ax=None, with_line=True, **kwargs):
+        """
+        Plots an `nstd` sigma error ellipse based on the specified covariance
+        matrix (`cov`). Additional keyword arguments are passed on to the
+        ellipse patch artist.
+        Parameters
+        ----------
+            cov : The 2x2 covariance matrix to base the ellipse on
+            pos : The location of the center of the ellipse. Expects a 2-element
+                sequence of [x0, y0].
+            nstd : The radius of the ellipse in numbers of standard deviations.
+                Defaults to 2 standard deviations.
+            ax : The axis that the ellipse will be plotted on. Defaults to the
+                current axis.
+            Additional keyword arguments are pass on to the ellipse patch.
+        Returns
+        -------
+            A matplotlib ellipse artist
+        """
+
+        def eigsorted(cov):
+            vals, vecs = np.linalg.eigh(cov)
+            order = vals.argsort()[::-1]
+            return vals[order], vecs[:, order]
+
+        if ax is None:
+            ax = plt.gca()
+
+        # largest eigenvalue is first
+        vals, vecs = eigsorted(cov)
+        theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
+
+        # Width and height are "full" widths, not radius
+        width, height = 2 * nstd * np.sqrt(vals)
+        ellip = Ellipse(xy=pos, width=width, height=height, angle=theta, **kwargs)
+
+        if 'alpha' not in kwargs.keys():
+            ellip.set_alpha(0.3)
+        if 'color' not in kwargs.keys():# and 'c' not in kwargs.keys():
+            ellip.set_facecolor('red')
+
+        ax.add_patch(ellip)
+
+        # THEN just f***ing plot an invisible line across the ellipse.
+        if with_line:
+            # brute forcing axes limits so they contain ellipse patch
+            # maybe a cleaner way of doing this, but I couldn't work it out
+            x_extent = 0.5*(abs(width*np.cos(np.radians(theta))) +
+                            abs(height*np.sin(np.radians(theta))))
+            y_extent = 0.5*(abs(width*np.sin(np.radians(theta))) +
+                            abs(height*np.cos(np.radians(theta))))
+
+            lx = pos[0] - x_extent
+            ux = pos[0] + x_extent
+            ly = pos[1] - y_extent
+            uy = pos[1] + y_extent
+            ax.plot((lx, ux), (ly, uy), alpha=0.)
+
+        return ellip
+
+    def plot(self, dim1, dim2, ax=None, comp_now=True, comp_then=False, color='red'):
+        """
+        Conveniently displays the component on the provided axes (or most
+        recently used axes) on the provided phase-space plane.
+
+        :param ax:
+        :param comp_now:
+        :param comp_then:
+        :param color:
+        :return:
+        """
+        if ax is None:
+            ax = plt.gca()
+        labels = 'XYZUVW'
+
+        if type(dim1) is not int:
+            dim1 = labels.index(dim1.upper())
+        if type(dim2) is not int:
+            dim2 = labels.index(dim2.upper())
+
+        if comp_now:
+            ax.scatter(self.get_mean_now()[dim1], self.get_mean_now()[dim2], color=color,
+                       linewidth=0.0, marker='+')
+            self.plot_cov_ellipse(self.get_covmatrix_now()[np.ix_([dim1, dim2], [dim1, dim2])],
+                                  self.get_mean_now()[np.ix_([dim1, dim2])],
+                                  ax=ax, alpha=0.3, linewidth='0.1',
+                                  color=color)
+        if comp_then:
+            ax.scatter(self.get_mean()[dim1], self.get_mean()[dim2], color=color,
+                       linewidth=0.0, marker='+')
+            self.plot_cov_ellipse(self.get_covmatrix()[np.ix_([dim1, dim2], [dim1, dim2])],
+                                  self.get_mean()[np.ix_([dim1, dim2])],
+                                  ax=ax, alpha=0.3, linewidth='0.1',
+                                  color=color)
+
+        pass
 
     @classmethod
     def load_from_attributes(cls, filename):
