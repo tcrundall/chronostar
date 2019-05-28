@@ -841,12 +841,17 @@ class SphereComponent(AbstractComponent):
 
 
 class EllipComponent(AbstractComponent):
+    #PARAMETER_FORMAT = ['pos', 'pos', 'pos', 'vel', 'vel', 'vel',
+    #                    'log_pos_std', 'log_pos_std', 'log_pos_std',
+    #                    'log_vel_std',
+    #                    'corr', 'corr', 'corr',
+    #                    'age']
     PARAMETER_FORMAT = ['pos', 'pos', 'pos', 'vel', 'vel', 'vel',
-                        'log_pos_std', 'log_pos_std', 'log_pos_std',
-                        'log_vel_std',
-                        'corr', 'corr', 'corr',
+                        'log_pos_std', 'log_pos_std',
+                        'log_vel_std', 'log_vel_std',
+                        'corr',
+                        'rotangle', 'rotangle', 'rotangle',
                         'age']
-
     def externalise(self, pars):
         """
         Take parameter set in internal form (as used by emcee) and
@@ -854,6 +859,8 @@ class EllipComponent(AbstractComponent):
         """
         extern_pars = np.copy(pars)
         extern_pars[6:10] = np.exp(extern_pars[6:10])
+        # np.arccos returns angle on [0, pi]. So subtract pi/2 to translate it to [-pi/2, pi/2].
+        extern_pars[12] = (np.pi/2. - np.arccos(2.0*extern_pars[12]-1.0))
         return extern_pars
 
     def internalise(self, pars):
@@ -863,42 +870,90 @@ class EllipComponent(AbstractComponent):
         """
         intern_pars = np.copy(pars)
         intern_pars[6:10] = np.log(intern_pars[6:10])
+        intern_pars[12] = (1. + np.sin(intern_pars[12]))/2.
         return intern_pars
 
     def _set_covmatrix(self, covmatrix=None):
-        """Builds covmatrix from self.pars. If setting from an externally
+        """
+        Author: Marusa Zerjal, 2019 - 05 - 28
+
+        self._pars are external parameters, and this covariance matrix should be built
+        from them.
+
+        Builds covmatrix from self.pars. If setting from an externally
         provided covariance matrix then updates self.pars for consistency"""
         # If covmatrix hasn't been provided, generate from self._pars
         # and set.
         if covmatrix is None:
-            dx, dy, dz = self._pars[6:9]
-            dv = self._pars[9]
-            c_xy, c_xz, c_yz = self._pars[10:13]
+            dx, dy = self._pars[6:8]
+            du, dv = self._pars[8:10]
+            c_xv = self._pars[10]
             self._covmatrix = np.array([
-                [dx**2,      c_xy*dx*dy, c_xz*dx*dz, 0.,    0.,    0.],
-                [c_xy*dx*dy, dy**2,      c_yz*dy*dz, 0.,    0.,    0.],
-                [c_xz*dx*dz, c_yz*dy*dz, dz**2,      0.,    0.,    0.],
-                [0.,         0.,         0.,         dv**2, 0.,    0.],
-                [0.,         0.,         0.,         0.,    dv**2, 0.],
-                [0.,         0.,         0.,         0.,    0.,    dv**2],
+                [dx**2,   0.,       0.,       0.,    c_xv,  0.],
+                [0.,      dy**2,    0.,       0.,    0.,    0.],
+                [0.,      0.,       dy**2,    0.,    0.,    0.],
+                [0.,      0.,       0.,       du**2, 0.,    0.],
+                [c_xv,    0.,       0.        0.,    dv**2, 0.],
+                [0.,      0.,       0.,       0.,    0.,    du**2],
             ])
+
+
         # If covmatrix has been provided, reverse engineer the most
         # suitable set of parameters and update self._pars accordingly
         # (e.g. take the geometric mean of the (square-rooted) velocity
         # eigenvalues as dv, as this at least ensures constant volume
         # in velocity space).
         else:
-            self._covmatrix = np.copy(covmatrix)
-            pos_stds = np.sqrt(np.diagonal(self._covmatrix[:3, :3]))
-            dx, dy, dz = pos_stds
-            pos_corr_matrix = (self._covmatrix[:3, :3]
-                               / pos_stds
-                               / pos_stds.reshape(1,3).T)
-            c_xy, c_xz, c_yz = pos_corr_matrix[np.triu_indices(3,1)]
-            dv = gmean(np.sqrt(
-                np.linalg.eigvalsh(self._covmatrix[3:, 3:]))
-            )
-            self._pars[6:9] = dx, dy, dz
-            self._pars[9] = dv
-            self._pars[10:13] = c_xy, c_xz, c_yz
+            raise NotImplementedError('Need to work out how to reverse engineer')
+            # This matrix is not rotated.
+            #self._covmatrix = np.copy(covmatrix)
+            #pos_stds = np.sqrt(np.diagonal(self._covmatrix[:2, :2]))
+            #dx, dy = pos_stds
+            #pos_corr_matrix = (self._covmatrix[:3, :3] # don't understand this part
+            #                   / pos_stds
+            #                   / pos_stds.reshape(1,3).T)
+            #c_xv = pos_corr_matrix[np.triu_indices(3,1)]
+            #du, dv, _ = np.sqrt(
+            #    np.linalg.eigvalsh(self._covmatrix[3:, 3:])
+            #)
+            #self._pars[6:8] = dx, dy
+            #self._pars[8:10] = du, dv
+            #self._pars[10] = c_xv
 
+        self._rotate_covmatrix()
+
+    def _rotate_covmatrix(self):
+        """
+        Author: Marusa Zerjal, 2019 - 05 - 28
+
+        :return:
+        """
+        # in radians
+        alpha, beta, gamma = self._pars[11:14]
+
+        Rx = np.array([
+            [1.0, 0.0, 0.0],
+            [0.0, np.cos(gamma), -np.sin(gamma)],
+            [0.0, np.sin(gamma), np.cos(gamma)],
+        ])
+
+        Ry = np.array([
+            [np.cos(beta), 0.0, np.sin(beta)],
+            [0.0, 1.0, 0.0],
+            [-np.sin(beta), 0.0, np.cos(beta)],
+        ])
+
+        Rz = np.array([
+            [np.cos(alpha), -np.sin(alpha), 0.0],
+            [np.sin(alpha), np.cos(alpha), 0.0],
+            [0, 0, 1.0],
+        ])
+
+        R = np.dot(Rz, np.dot(Ry, Rx)) # Check if matrix multiplication is done this way in python
+
+        zero_matrix = np.zeros((6,6))
+        R6 = np.block([[R, zero_matrix], [zero_matrix, R]])
+
+        covmatrix_rotated = np.dot(R6, np.dot(self.get_covmatrix(), R6.T))
+
+        self._covmatrix = np.copy(covmatrix_rotated)
