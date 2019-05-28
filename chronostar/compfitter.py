@@ -250,7 +250,22 @@ def get_best_component(chain, lnprob, Component=SphereComponent):
     """
     Simple tool to extract the sample that yielded the highest log prob
     and return the corresponding Component object
+
+    Parameters
+    ----------
+    chain: [nwalkers, nsteps, npars] float array --or-- file name
+        The chain of walkers from which the best component parameters
+        will be extracted
+    lnprob:  [nwalkers, nsteps] float array --or-- file name
+        The log probabilities of each walker at each step.
+    Component: Component Class {SphereComponent}
+        An implmentation of chronostar.component.AbstractComponent
     """
+    if type(chain) is str:
+        chain = np.load(chain)
+    if type(lnprob) is str:
+        lnprob = np.load(lnprob)
+
     # Identify the best component
     final_best_ix = np.argmax(lnprob)
 

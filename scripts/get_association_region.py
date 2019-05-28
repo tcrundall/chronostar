@@ -7,7 +7,45 @@ sys.path.insert(0, '..')
 from chronostar import tabletool
 
 
-def get_region(assoc_name, gagne_reference_data = None):
+def get_region(assoc_name, pos_margin=30., vel_margin=5., gagne_reference_data = None):
+    """
+    Get a 6D box surrounding a known association with members from BANYAN
+
+    Parameters
+    ----------
+    assoc_name: str
+        Name of the association as listed in BANYAN table. One of:
+        {'118 Tau', '32 Orionis', 'AB Doradus', 'Carina', 'Carina-Near',
+        'Columba', 'Coma Ber', 'Corona Australis', 'Hyades', 'IC 2391',
+        'IC 2602', 'Lower Centaurus-Crux', 'Octans', 'Platais 8',
+        'Pleiades', 'TW Hya', 'Taurus', 'Tucana-Horologium',
+        'Upper Centaurus Lupus', 'Upper CrA',
+ 'Upper Scorpius',
+ 'Ursa Major',
+ 'beta Pictoris',
+ 'chi{ 1 For (Alessi 13)',
+ 'epsilon Cha',
+ 'eta Cha',
+ 'rho Ophiuci'}
+
+    pos_margin: float {30.}
+        Margin in position space around known members from which new candidate
+        members are included
+    vel_margin: float {5.}
+        Margin in velocity space around known members from which new candidate
+        members are included
+    gagne_reference_data: str
+        filename to BANYAN table
+
+    Returns
+    -------
+    box_lower_bounds: [6] float array
+        The lower bounds of the 6D box [X,Y,Z,U,V,W]
+    box_upper_bounds: [6] float array
+        The upper bounds of the 6D box [X,Y,Z,U,V,W]
+    """
+    pos_margin = 30 #pc
+    vel_margin = 5 #km/s
     if gagne_reference_data is None:
         gagne_reference_data =\
             '../data/gagne_bonafide_full_kinematics_with_lit_and_best_radial_velocity' \
@@ -21,8 +59,6 @@ def get_region(assoc_name, gagne_reference_data = None):
                     list(set(gagne_table['Moving group'])), assoc_name
             ))
 
-    # Dummy comment
-
     # Extract all stars
     subtable = gagne_table[np.where(gagne_table['Moving group'] == assoc_name)]
 
@@ -31,12 +67,16 @@ def get_region(assoc_name, gagne_reference_data = None):
     data_upper_bound = np.nanmax(star_means, axis=0)
     data_lower_bound = np.nanmin(star_means, axis=0)
 
-    data_span = data_upper_bound - data_lower_bound
-    data_centre = 0.5 * (data_upper_bound + data_lower_bound)
+    data_margin = np.array(3*[pos_margin] + 3*[vel_margin])
+
+    # data_span = data_upper_bound - data_lower_bound
+    # data_centre = 0.5 * (data_upper_bound + data_lower_bound)
 
     # Set up boundaries of box that span double the association
-    box_lower_bound = data_centre - data_span
-    box_upper_bound = data_centre + data_span
+    box_lower_bound = data_lower_bound - data_margin
+    box_upper_bound = data_upper_bound + data_margin
+    # box_lower_bound = data_centre - data_span
+    # box_upper_bound = data_centre + data_span
     return box_lower_bound, box_upper_bound
 
 if __name__ == '__main__':

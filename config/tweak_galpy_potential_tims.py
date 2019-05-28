@@ -1,7 +1,7 @@
 import numpy as np
 
 assoc_name = ''
-prefix = 'py2_tweak_galpy_potential_mnp_tims'
+prefix = 'py2_tweak_galpy_potential_mnp_tims_extreme'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(prefix),
@@ -54,7 +54,8 @@ from galpy.potential import MiyamotoNagaiPotential, MWPotential2014
 orbit = {
     # 'potential': None,
     #'potential': MWPotential2014,
-    'potential': MiyamotoNagaiPotential(a=0.5,b=0.0375,amp=1.,normalize=1.), # Params from the example webpage. No idea if that's good or not.
+    #'potential': MiyamotoNagaiPotential(a=0.5,b=0.0375,amp=1.,normalize=1.), # Params from the example webpage. No idea if that's good or not.
+    'potential': MiyamotoNagaiPotential(a=0.5,b=0.1375,amp=1.,normalize=1.), # TC: varied params randomly...
 }
 
 special = {

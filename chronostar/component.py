@@ -525,11 +525,16 @@ class AbstractComponent(object):
         Use this as a proxy of the characteristic density of the distribution,
         with the option to scale by the amplitude of the Gaussian. Note, the
         height of the peak is only dependent on the covariance matrix.
+
+        Notes
+        -----
+        since we are evaluating the distribution at the mean, the exponent
+        reduces to 0, and so we are left with only the coefficient of the
+        multi-variate Gaussian formula
         """
-        expon = 0   # because we are evaluating the ditribution *at* the mean
         det = np.linalg.det(self.get_covmatrix_now())
         coeff = 1./np.sqrt((2*np.pi)**6 * det)
-        return amplitude * coeff * np.exp(expon)
+        return amplitude * coeff
 
     @staticmethod
     def load_components(filename):

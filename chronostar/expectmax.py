@@ -24,7 +24,14 @@ from chronostar.component import SphereComponent
 from . import likelihood
 from . import compfitter
 from . import tabletool
-from _overlap import get_lnoverlaps as c_get_lnoverlaps
+try:
+    print('Using C implementation in expectmax')
+    from _overlap import get_lnoverlaps
+except:
+    print("WARNING: Couldn't import C implementation, using slow pythonic overlap instead")
+    logging.info("WARNING: Couldn't import C implementation, using slow pythonic overlap instead")
+    from chronostar.likelihood import slow_get_lnoverlaps as get_lnoverlaps
+
 
 
 def log_message(msg, symbol='.', surround=False):
@@ -123,7 +130,7 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
         print(star_cov)
         print(np.linalg.det(star_cov))
         try:
-            bg_lnol = c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)
+            bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)
             bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
         except:
             bg_lnol = np.inf
@@ -132,7 +139,7 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
         print('')
 
     # This should be parallelized
-    #bg_lnols = [np.sum(c_get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)) for star_mean, star_cov in zip(star_means, star_covs)]
+    #bg_lnols = [np.sum(get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)) for star_mean, star_cov in zip(star_means, star_covs)]
     #print(bg_lnols)
 
     return bg_lnols
