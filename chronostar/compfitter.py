@@ -7,7 +7,7 @@ import emcee
 import logging
 import os
 
-from chronostar.component import SphereComponent
+from chronostar.component import EllipComponent
 from chronostar.likelihood import lnprob_func
 from chronostar import tabletool
 
@@ -19,7 +19,7 @@ except ImportError:
 
 
 def calc_med_and_span(chain, perc=34, intern_to_extern=False,
-                      Component=SphereComponent):
+                      Component=EllipComponent):
     """
     Given a set of aligned samples, calculate the 50th, (50-perc)th and
      (50+perc)th percentiles.
@@ -196,7 +196,7 @@ def burnin_convergence(lnprob, tol=0.25, slice_size=100, cutoff=0):
 
 
 def get_init_emcee_pos(data, memb_probs=None, nwalkers=None,
-                       init_pars=None, Component=SphereComponent):
+                       init_pars=None, Component=EllipComponent):
     """
     Get the initial position of emcee walkers
 
@@ -246,7 +246,7 @@ def get_init_emcee_pos(data, memb_probs=None, nwalkers=None,
     return init_pos
 
 
-def get_best_component(chain, lnprob, Component=SphereComponent):
+def get_best_component(chain, lnprob, Component=EllipComponent):
     """
     Simple tool to extract the sample that yielded the highest log prob
     and return the corresponding Component object
@@ -280,7 +280,7 @@ def get_best_component(chain, lnprob, Component=SphereComponent):
 
 
 def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
-             burnin_steps=1000, Component=SphereComponent, plot_it=False,
+             burnin_steps=1000, Component=EllipComponent, plot_it=False,
              pool=None, convergence_tol=0.25, plot_dir='', save_dir='',
              sampling_steps=None, max_iter=None, trace_orbit_func=None):
     """Fits a single 6D gaussian to a weighted set (by membership
