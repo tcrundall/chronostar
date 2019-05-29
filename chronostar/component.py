@@ -889,6 +889,8 @@ class EllipComponent(AbstractComponent):
         provided covariance matrix then updates self.pars for consistency"""
         # If covmatrix hasn't been provided, generate from self._pars
         # and set.
+
+        print('COVMATRIX', covmatrix)
         if covmatrix is None:
             dx, dy = self._pars[6:8]
             du, dv = self._pars[8:10]
