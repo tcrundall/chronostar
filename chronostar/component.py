@@ -235,6 +235,7 @@ class AbstractComponent(object):
             self._pars = np.copy(pars)
         else:
             self._pars = np.zeros(len(self.PARAMETER_FORMAT))
+            print(self.PARAMETER_FORMAT)
             print('*** SELF._PARS', self._pars)
 
             # Age *must* be non-zero
@@ -855,14 +856,6 @@ class EllipComponent(AbstractComponent):
                         'corr',
                         'angle_rad', 'angle_param', 'angle_rad', # TODO: theta is on (0, 1), not an angle
                         'age']
-
-    # Set _pars, setting to all zeroes if no pars input is provided.
-    if pars is not None:
-        self._pars = np.copy(pars)
-    else:
-        self._pars = np.zeros(len(self.PARAMETER_FORMAT))
-        print('*** SELF._PARS', self._pars)
-
 
     def externalise(self, pars):
         """
