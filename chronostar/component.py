@@ -850,7 +850,7 @@ class EllipComponent(AbstractComponent):
                         'log_pos_std', 'log_pos_std',
                         'log_vel_std', 'log_vel_std',
                         'corr',
-                        'rotangle', 'rotangle', 'rotangle',
+                        'angle_rad', 'angle_rad', 'angle_rad',
                         'age']
     def externalise(self, pars):
         """
