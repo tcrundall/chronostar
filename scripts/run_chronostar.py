@@ -110,7 +110,8 @@ if using_mpi:
         sys.exit(0)
 
 time.sleep(5)
-print("Only one thread is master")
+print("Only one thread is master! (if not, ensure config "
+      "file has run_with_mpi=True")
 
 log_message('Beginning Chronostar run',
             symbol='_', surround=True)

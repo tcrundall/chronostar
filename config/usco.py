@@ -1,3 +1,4 @@
+
 import numpy as np
 
 assoc_name = 'usco_run'
@@ -13,7 +14,7 @@ config = {
     'kernel_density_input_datafile':'../data/gaia_cartesian_full_6d_table.fits',
                                                     # Cartesian data of all Gaia DR2 stars
                                                     # e.g. ../data/gaia_dr2_mean_xyzuvw.npy
-    'run_with_mpi':False,       # not yet inpmlemented
+    'run_with_mpi':True,       # not yet inpmlemented
     'convert_to_cartesian':False,        # whehter need to convert data from astrometry to cartesian
     'overwrite_datafile':False,         # whether to store results in same talbe and rewrite to file
     'cartesian_savefile':'../results/{}/{}_subset.fit'.format(assoc_name, assoc_name),
@@ -63,6 +64,6 @@ special = {
 }
 
 advanced = {
-    'burnin_steps':1000,        # emcee parameters, number of steps for each burnin iteraton
-    'sampling_steps':1000,
+    'burnin_steps':500,        # emcee parameters, number of steps for each burnin iteraton
+    'sampling_steps':500,
 }
