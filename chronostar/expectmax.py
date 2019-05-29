@@ -294,7 +294,7 @@ def get_all_lnoverlaps(data, comps, old_memb_probs=None,
     return lnols
 
 
-def calc_bic(data, ncomps, lnlike, memb_probs=None, Component=SphereComponent):
+def calc_bic(data, ncomps, lnlike, memb_probs=None, Component=EllipComponent):
     """Calculates the Bayesian Information Criterion
 
     A simple metric to judge whether added components are worthwhile.
@@ -493,7 +493,7 @@ def get_overall_lnlikelihood(data, comps, return_memb_probs=False,
 def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
                  all_init_pars, all_init_pos=None, plot_it=False, pool=None,
                  convergence_tol=0.25, ignore_dead_comps=False,
-                 Component=SphereComponent,
+                 Component=EllipComponent,
                  trace_orbit_func=None):
     """
     Performs the 'maximisation' step of the EM algorithm
