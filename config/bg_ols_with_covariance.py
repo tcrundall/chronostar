@@ -1,7 +1,7 @@
 import numpy as np
 
 assoc_name = ''
-prefix = 'marusa_bg_ols_small_errors_KDE'
+prefix = 'marusa_bg_ols_small_errors_KDE_will_it_work_now'
 config = {
     # 'datafile':'',
     'results_dir':'../results/{}'.format(prefix),

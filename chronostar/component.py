@@ -146,6 +146,7 @@ class AbstractComponent(object):
         'age':1.,
         'angle_rad':0.25*np.pi,
         'angle_deg':45.,
+        'angle_param': 0.3, # for beta parametrisation: beta = arccos(2v-1)
     }
 
     def __init__(self, pars=None, emcee_pars=None, attributes=None,
@@ -846,11 +847,12 @@ class EllipComponent(AbstractComponent):
     #                    'log_vel_std',
     #                    'corr', 'corr', 'corr',
     #                    'age']
+    # PARAMETER_FORMAT in internal format (emcee format)
     PARAMETER_FORMAT = ['pos', 'pos', 'pos', 'vel', 'vel', 'vel',
                         'log_pos_std', 'log_pos_std',
                         'log_vel_std', 'log_vel_std',
                         'corr',
-                        'angle_rad', 'angle_rad', 'angle_rad',
+                        'angle_rad', 'angle_param', 'angle_rad', # TODO: theta is on (0, 1), not an angle
                         'age']
     def externalise(self, pars):
         """
