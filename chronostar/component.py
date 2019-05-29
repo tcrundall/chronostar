@@ -235,6 +235,7 @@ class AbstractComponent(object):
             self._pars = np.copy(pars)
         else:
             self._pars = np.zeros(len(self.PARAMETER_FORMAT))
+            print('*** SELF._PARS', self._pars)
 
             # Age *must* be non-zero
             self._set_age(self.DEFAULT_TINY_AGE)
