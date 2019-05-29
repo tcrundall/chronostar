@@ -231,6 +231,7 @@ def get_init_emcee_pos(data, memb_probs=None, nwalkers=None,
         dummy_comp = Component(attributes={'mean':rough_mean_now,
                                            'covmatrix':rough_cov_now,})
         init_pars = dummy_comp.get_emcee_pars()
+        print('*** INIT_PARS', init_pars, len(init_pars))
 
     init_std = Component.get_sensible_walker_spread()
 
