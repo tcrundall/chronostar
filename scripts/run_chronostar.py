@@ -297,6 +297,7 @@ except IOError:
                                  use_background=config.config[
                                     'include_background_distribution'],
                                  init_memb_probs=init_memb_probs,
+                                 Component=Component,
                                  )
 
 
@@ -381,6 +382,7 @@ while ncomps < MAX_COMPS:
                         'include_background_distribution'],
                     burnin=config.advanced['burnin_steps'],
                     sampling_steps=config.advanced['sampling_steps'],
+                    Component=Component,
             )
 
         best_fits.append(comps)
