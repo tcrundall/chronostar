@@ -8,7 +8,7 @@ import logging
 import numpy as np
 
 from . import tabletool
-from chronostar.component import SphereComponent
+from chronostar.component import EllipComponent
 USE_C_IMPLEMENTATION = True
 try:
     from chronostar._overlap import get_lnoverlaps as c_get_lnoverlaps
@@ -236,7 +236,7 @@ def lnlike(comp, data, memb_probs, memb_threshold=1e-5,
 
 def lnprob_func(pars, data, memb_probs=None,
                 trace_orbit_func=None,
-                Component=SphereComponent, **kwargs):
+                Component=EllipComponent, **kwargs):
     """Computes the log-probability for a fit to a group.
 
     Parameters

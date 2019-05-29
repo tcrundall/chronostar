@@ -20,7 +20,7 @@ try:
 except ImportError:
     print("Warning: matplotlib not imported")
 
-from chronostar.component import SphereComponent
+from chronostar.component import EllipComponent
 from . import likelihood
 from . import compfitter
 from . import tabletool
@@ -665,7 +665,7 @@ def check_stability(data, best_comps, memb_probs):
 def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
                    init_comps=None, inc_posterior=False, burnin=1000,
                    sampling_steps=5000, ignore_dead_comps=False,
-                   Component=SphereComponent, trace_orbit_func=None,
+                   Component=EllipComponent, trace_orbit_func=None,
                    use_background=False):
     """
     Entry point: Fit multiple Gaussians to data set
