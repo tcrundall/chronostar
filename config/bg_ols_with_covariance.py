@@ -56,7 +56,8 @@ cart_colnames = {
 }
 
 special = {
-    'component':'sphere',       # parameterisation for the origin
+    #'component':'sphere',       # parameterisation for the origin
+    'component':'ellip',       # parameterisation for the origin
 }
 
 advanced = {
