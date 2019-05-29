@@ -9,7 +9,19 @@ from __future__ import print_function, division
 from distutils.dir_util import mkpath
 import logging
 import numpy as np
+
+# The placement of logsumexp varies wildly between scipy versions
+import scipy
+_SCIPY_VERSION= [int(v.split('rc')[0])
+                 for v in scipy.__version__.split('.')]
+if _SCIPY_VERSION[0] < 1 and _SCIPY_VERSION[1] < 10:
+    from scipy.maxentropy import logsumexp
+elif _SCIPY_VERSION[0] == 1 and _SCIPY_VERSION[1] >= 3:
+    from scipy.special import logsumexp
+else:
+    from scipy.misc import logsumexp
 from scipy import stats
+
 import os
 
 try:
@@ -42,7 +54,7 @@ def log_message(msg, symbol='.', surround=False):
     logging.info(res)
 
 
-def get_kernel_densities(data, points, amp_scale=1.0):
+def get_kernel_densities(background_means, star_means, amp_scale=1.0):
     """
     Build a PDF from `data`, then evaluate said pdf at `points`
 
@@ -55,10 +67,10 @@ def get_kernel_densities(data, points, amp_scale=1.0):
 
     Parameters
     ----------
-    data: [nstars,6] float array_like
+    background_means: [nstars,6] float array_like
         Phase-space positions of some star set that greatly envelops points
         in question. Typically contents of gaia_xyzuvw.npy.
-    points: [npoints,6] float array_like
+    star_means: [npoints,6] float array_like
         Phase-space positions of stellar data that we are fitting components to
     amp_scale: float {1.0}
         One can optionally weight the background density so as to make over-densities
@@ -71,50 +83,59 @@ def get_kernel_densities(data, points, amp_scale=1.0):
         Background log overlaps of stars with background probability density
         function.
     """
-    if type(data) is str:
-        data = np.load(data)
-    nstars = amp_scale * data.shape[0]
+    if type(background_means) is str:
+        background_means = np.load(background_means)
+    nstars = amp_scale * background_means.shape[0]
 
-    kernel = stats.gaussian_kde(data.T)
-    points = np.copy(points)
-    points[:,2] *= -1
-    points[:,5] *= -1
+    kernel = stats.gaussian_kde(background_means.T)
+    star_means = np.copy(star_means)
+    star_means[:, 2] *= -1
+    star_means[:, 5] *= -1
 
-    bg_lnols = np.log(nstars)+kernel.logpdf(points.T)
+    bg_lnols = np.log(nstars)+kernel.logpdf(star_means.T)
     return bg_lnols
 
-def get_background_overlaps_with_covariances(kernel_density_input_datafile, data_stars):
+
+def get_background_overlaps_with_covariances(background_means, star_means,
+                                             star_covs):
     """
     author: Marusa Zerjal 2019 - 05 - 25
 
-    Determine background overlaps using means and covariances for both background and stars.
+    Determine background overlaps using means and covariances for both
+    background and stars.
     Covariance matrices for the background are Identity*bandwidth.
 
     Parameters
     ----------
-    data_background: [nstars,6] float array_like
+    background_means: [nstars,6] float array_like
         Phase-space positions of some star set that greatly envelops points
-        in question. Typically contents of gaia_xyzuvw.npy.
-    data_stars: [npoints,6] float array_like
+        in question. Typically contents of gaia_xyzuvw.npy, or the output of
+        >> tabletool.build_data_dict_from_table(
+                   '../data/gaia_cartesian_full_6d_table.fits',
+                    historical=True)['means']
+    star_means: [npoints,6] float array_like
         Phase-space positions of stellar data that we are fitting components to
-    covariance_stars: []
+    star_covs: [npoints,6,6] float array_like
+        Phase-space covariances of stellar data that we are fitting components to
 
     Returns
     -------
     bg_lnols: [nstars] float array_like
         Background log overlaps of stars with background probability density
         function.
+
+    Notes
+    -----
+
+    Edits
+    -----
+    TC 2019-05-28: changed signature such that it follows similar usage as
+                   get_kernel_densitites
     """
-
-    # Stellar means and covs
-    star_dict = tabletool.build_data_dict_from_table(data_stars)
-    star_means = star_dict['means']
-    star_covs = star_dict['covs']
-
-    # Background means
-    background_means = tabletool.build_data_dict_from_table(kernel_density_input_datafile,
-        only_means=True,
-    )
+#     # Background means
+#     background_means = tabletool.build_data_dict_from_table(data,
+#                                                             only_means=True,
+#                                                             )
 
     # Background covs with bandwidth using Scott's rule
     d = 6.0 # number of dimensions
@@ -126,14 +147,22 @@ def get_background_overlaps_with_covariances(kernel_density_input_datafile, data
     # shapes of the c_get_lnoverlaps input must be: (6, 6), (6,), (120, 6, 6), (120, 6)
     # So I do it in a loop for every star
     bg_lnols=[]
-    for star_mean, star_cov in zip(star_means, star_covs):
+    for i, (star_mean, star_cov) in enumerate(zip(star_means, star_covs)):
+        print('{} of {}'.format(i, len(star_means)))
         print(star_cov)
         print(np.linalg.det(star_cov))
         try:
-            bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)
-            bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
+            bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
+                                     background_means, nstars)
+            # bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
+            bg_lnol = logsumexp(bg_lnol) # sum in linear space
+
+        # Do we really want to make exceptions here? If the sum fails then
+        # there's something wrong with the data.
         except:
-            bg_lnol = np.inf
+            # TC: Changed sign to negative (surely if it fails, we want it to
+            # have a neglible background overlap?
+            bg_lnol = -np.inf
         bg_lnols.append(bg_lnol)
         print(bg_lnol)
         print('')
