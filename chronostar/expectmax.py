@@ -523,7 +523,8 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
                  all_init_pars, all_init_pos=None, plot_it=False, pool=None,
                  convergence_tol=0.25, ignore_dead_comps=False,
                  Component=SphereComponent,
-                 trace_orbit_func=None):
+                 trace_orbit_func=None,
+                 store_burnin_chains=False,):
     """
     Performs the 'maximisation' step of the EM algorithm
 
@@ -619,6 +620,7 @@ def maximisation(data, ncomps, memb_probs, burnin_steps, idir,
                     plot_dir=gdir, save_dir=gdir, init_pos=all_init_pos[i],
                     init_pars=all_init_pars[i], Component=Component,
                     trace_orbit_func=trace_orbit_func,
+                    store_burnin_chains=store_burnin_chains,
             )
             logging.info("Finished fit")
             logging.info("Best comp pars:\n{}".format(
@@ -695,7 +697,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
                    init_comps=None, inc_posterior=False, burnin=1000,
                    sampling_steps=5000, ignore_dead_comps=False,
                    Component=SphereComponent, trace_orbit_func=None,
-                   use_background=False):
+                   use_background=False, store_burnin_chains=False):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -907,6 +909,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
                          all_init_pos=all_init_pos,
                          ignore_dead_comps=ignore_dead_comps,
                          trace_orbit_func=trace_orbit_func,
+                         store_burnin_chains=store_burnin_chains,
                          )
 
         # update number of comps to reflect any loss of dead components
@@ -1008,6 +1011,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
                     init_pos=all_init_pos[i],
                     sampling_steps=SAMPLING_STEPS,
                     trace_orbit_func=trace_orbit_func,
+                    store_burnin_chains=False,
             )
             logging.info("Finished fit")
             final_best_comps[i] = best_comp

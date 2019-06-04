@@ -282,7 +282,8 @@ def get_best_component(chain, lnprob, Component=SphereComponent):
 def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
              burnin_steps=1000, Component=SphereComponent, plot_it=False,
              pool=None, convergence_tol=0.25, plot_dir='', save_dir='',
-             sampling_steps=None, max_iter=None, trace_orbit_func=None):
+             sampling_steps=None, max_iter=None, trace_orbit_func=None,
+             store_burnin_chains=False):
     """Fits a single 6D gaussian to a weighted set (by membership
     probabilities) of stellar phase-space positions.
 
@@ -407,6 +408,11 @@ def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
             np.save(plot_dir+'burnin_lnprob{:02}.npy'.format(cnt), sampler.lnprobability)
             np.save(plot_dir+'burnin_chain{:02}.npy'.format(cnt), sampler.chain)
             logging.info('Lnprob and chain saved for debugging...')
+
+        if store_burnin_chains:
+            # There are cases where this chain will be stored twice, but
+            # that is fine.
+            np.save(plot_dir+'burnin_chain{:02}.npy'.format(cnt), sampler.chain)
 
         converged = stable and no_stuck
         logging.info("Burnin status: {}".format(converged))

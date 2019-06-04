@@ -267,7 +267,7 @@ using_bg = config.config.get('include_background_distribution', False)
 init_memb_probs = np.zeros((len(data_dict['means']),1+using_bg))
 init_memb_probs[:,0] = 1.
 
-store_burnin_chains = config.special.get('store_burnin_chains', False)
+store_burnin_chains = config.advanced.get('store_burnin_chains', False)
 log_message(msg='Storing burnin chains', symbol='-')
 
 # Try and recover any results from previous run
@@ -307,6 +307,7 @@ except IOError:
                                     'include_background_distribution'],
                                  init_memb_probs=init_memb_probs,
                                  Component=Component,
+                                 store_burnin_chains=store_burnin_chains,
                                  )
 
 
@@ -397,6 +398,7 @@ while ncomps < MAX_COMPS:
                     burnin=config.advanced['burnin_steps'],
                     sampling_steps=config.advanced['sampling_steps'],
                     Component=Component,
+                    store_burnin_chains=store_burnin_chains,
             )
 
         best_fits.append(comps)
