@@ -817,6 +817,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
         assert ncomps == 1, 'If no initialisation set, can only accept ncomp==1'
         logging.info('No specificed initialisation... assuming equal memberships')
         init_memb_probs = np.ones((nstars, ncomps)) / ncomps
+
         if use_background:
             init_memb_probs = np.hstack((init_memb_probs, np.zeros((nstars,1))))
         memb_probs_old = init_memb_probs
@@ -922,7 +923,6 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
         else:
             memb_probs_new = memb_probs_new[:,success_mask]
 
-        logging.info('DEBUG: memb_probs_new shape: {}'.format(memb_probs_new.shape))
         logging.info('DEBUG: new_comps length: {}'.format(len(new_comps)))
 
         # LOG RESULTS OF ITERATION

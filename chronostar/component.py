@@ -660,7 +660,95 @@ class AbstractComponent(object):
                       'age':self.get_age()}
         np.save(filename, attributes)
 
-    def plot_cov_ellipse(self, cov, pos, nstd=2, ax=None, with_line=True, **kwargs):
+    def add_arrow(self, line, position=None, indices=None, direction='right',
+                  size=15, color=None):
+        """
+        Add an arrow along a plotted line.
+
+        Parameters
+        ----------
+        line:       Line2D object
+        position:   x-position of the arrow. If None, mean of xdata is taken
+        direction:  'left' or 'right'
+        size:       size of the arrow in fontsize points
+        color:      if None, line color is taken.
+
+        -- credit to some forgotten contributor to stackoverflow --
+        https://stackoverflow.com/questions/34017866/arrow-on-a-line-plot
+        -with-matplotlib
+        thomas - https://stackoverflow.com/users/5543796/thomas
+        """
+        if color is None:
+            color = line.get_color()
+
+        xdata = line.get_xdata()
+        ydata = line.get_ydata()
+
+        if indices is None:
+            if position is None:
+                position = xdata.mean()
+            # find closest index
+            indices = [np.argmin(np.absolute(xdata - position))]
+
+        for start_ind in indices:
+            end_ind = start_ind + 1 if direction == 'right' else start_ind - 1
+
+            line.axes.annotate('',
+                               xytext=(xdata[start_ind], ydata[start_ind]),
+                               xy=(xdata[end_ind], ydata[end_ind]),
+                               arrowprops=dict(arrowstyle="->", color=color),
+                               size=size
+                               )
+
+    def plot_orbit(self, dim1, dim2, ax, ntimes=50,
+                  with_arrow=False, annotate=False, color=None):
+        """
+        For traceback use negative age
+
+        Parameters
+        ----------
+        pos_now: [6] array, known position of object
+        dim1: integer, x-axis dimension
+        dim2: integer, y-axis dimension
+        ax: axes object, axes on which to plot line
+        end_age: non-zero number, time to orbit till.
+            Negative value --> traceback
+            Positive value --> trace forward
+        ntimes: integer {50], number of timesteps to calculate
+        group_ix: index of group being plotted (for coloring reasons)
+        with_arrow: (bool) {False}, whether to include arrows along orbit
+        annotate: (bool) {False}, whether to include text
+        """
+        if color is None:
+            color = 'black'
+            # if group_ix is None:
+            #     color = COLORS[0]
+            # else:
+            #     color = COLORS[group_ix]
+
+        # orb_alpha = 0.1
+        comp_orb = trace_cartesian_orbit(
+                self.get_mean(),
+                times=np.linspace(0, self.get_age(), ntimes),
+                single_age=False
+        )
+        line_obj = ax.plot(comp_orb[:, dim1], comp_orb[:, dim2], ls='-',
+                           alpha=0.1,
+                           color=color)
+        indices = [int(ntimes / 3), int(2 * ntimes / 3)]
+        if with_arrow:
+            # make sure arrow is always pointing forwards through time
+            direction = 'right' if self.get_age() > 0 else 'left'
+            self.add_arrow(line_obj[0], indices=indices, direction=direction,
+                           color=color)
+        if annotate:
+            ax.annotate("Orbital trajectory",
+                        (comp_orb[int(ntimes / 2), dim1],
+                         comp_orb[int(ntimes / 2), dim2]),
+                        color=color)
+
+    def plot_cov_ellipse(self, cov, pos, nstd=2, ax=None, with_line=True,
+                         **kwargs):
         """
         Plots an `nstd` sigma error ellipse based on the specified covariance
         matrix (`cov`). Additional keyword arguments are passed on to the
@@ -720,7 +808,8 @@ class AbstractComponent(object):
 
         return ellip
 
-    def plot(self, dim1, dim2, ax=None, comp_now=True, comp_then=False, color='red'):
+    def plot(self, dim1, dim2, ax=None, comp_now=True, comp_then=False,
+             color='red', comp_orbit=False):
         """
         Conveniently displays the component on the provided axes (or most
         recently used axes) on the provided phase-space plane.
@@ -745,7 +834,9 @@ class AbstractComponent(object):
                        linewidth=0.0, marker='+')
             self.plot_cov_ellipse(self.get_covmatrix_now()[np.ix_([dim1, dim2], [dim1, dim2])],
                                   self.get_mean_now()[np.ix_([dim1, dim2])],
-                                  ax=ax, alpha=0.3, linewidth='0.1',
+                                  ax=ax, alpha=1., linewidth='3',
+                                  linestyle='--',
+                                  fill=False,
                                   color=color)
         if comp_then:
             ax.scatter(self.get_mean()[dim1], self.get_mean()[dim2], color=color,
@@ -755,6 +846,9 @@ class AbstractComponent(object):
                                   ax=ax, alpha=0.3, linewidth='0.1',
                                   color=color)
 
+        if comp_orbit:
+            self.plot_orbit(dim1, dim2, ax,
+                      with_arrow=True, annotate=False)
         pass
 
     @classmethod

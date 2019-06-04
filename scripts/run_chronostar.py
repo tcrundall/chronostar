@@ -143,9 +143,9 @@ if (config.config['data_savefile'] != '' and
 # Otherwise, perform entire process
 else:
     # Construct synthetic data if required
-    datafile = config.config['data_loadfile']
     if config.synth is not None:
         log_message('Getting synthetic data')
+        datafile = config.config['data_savefile']
         if not os.path.exists(datafile) and config.config['pickup_prev_run']:
             synth_data = SynthData(pars=config.synth['pars'],
                                    starcounts=config.synth['starcounts'],
@@ -154,6 +154,8 @@ else:
                                              overwrite=True)
         else:
             log_message('Synthetic data already exists')
+    else:
+        datafile = config.config['data_loadfile']
     assert os.path.exists(datafile)
 
     # Read in data as table
@@ -190,6 +192,7 @@ else:
     # with cartesian data written in
     # columns in default way.
     if config.config['convert_to_cartesian']:
+        log_message('Trying to convert to cartesian')
         # Performs conversion in place (in memory) on `data_table`
         if (not 'c_XU' in data_table.colnames and
             not 'X_U_corr' in data_table.colnames):
@@ -199,7 +202,8 @@ else:
                     main_colnames=config.astro_colnames.get('main_colnames', None),
                     error_colnames=config.astro_colnames.get('error_colnames', None),
                     corr_colnames=config.astro_colnames.get('corr_colnames', None),
-                    return_table=True)
+                    return_table=False
+            )
 
     # Calculate background overlaps, storing in data
     bg_lnol_colname = 'background_log_overlap'
@@ -259,13 +263,17 @@ log_message(msg='FITTING {} COMPONENT'.format(ncomps),
 run_dir = rdir + '{}/'.format(ncomps)
 
 # Initialise all stars in dataset to be full members of first component
-init_memb_probs = np.zeros((len(data_dict['means']),2))
+using_bg = config.config.get('include_background_distribution', False)
+init_memb_probs = np.zeros((len(data_dict['means']),1+using_bg))
 init_memb_probs[:,0] = 1.
+
+store_burnin_chains = config.special.get('store_burnin_chains', False)
+log_message(msg='Storing burnin chains', symbol='-')
 
 # Try and recover any results from previous run
 try:
     prev_med_and_spans = np.load(run_dir + 'final/'
-                            + final_med_and_spans_file)
+                                 + final_med_and_spans_file)
     prev_memb_probs = np.load(run_dir + 'final/' + final_memb_probs_file)
     try:
         prev_comps = Component.load_raw_components(
