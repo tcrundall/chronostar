@@ -298,6 +298,7 @@ except IOError:
                                  use_background=config.config[
                                     'include_background_distribution'],
                                  init_memb_probs=init_memb_probs,
+                                 Component=Component,
                                  )
 
 
@@ -309,7 +310,9 @@ prev_lnlike = expectmax.get_overall_lnlikelihood(data_dict, prev_comps,
 prev_lnpost = expectmax.get_overall_lnlikelihood(data_dict, prev_comps,
                                                  # bg_ln_ols=bg_ln_ols,
                                                  inc_posterior=True)
-prev_bic = expectmax.calc_bic(data_dict, ncomps, prev_lnlike)
+prev_bic = expectmax.calc_bic(data_dict, ncomps, prev_lnlike,
+                              memb_probs=prev_memb_probs,
+                              Component=Component)
 
 ncomps += 1
 
@@ -331,9 +334,10 @@ while ncomps < MAX_COMPS:
 
     # Iteratively try subdividing each previous component
     for i, target_comp in enumerate(prev_comps):
-        log_message(msg='DECOMPOSING COMPONENT {}'.format(chr(ord('A') + i)),
+        div_label = chr(ord('A') + i)
+        run_dir = rdir + '{}/{}/'.format(ncomps, div_label)
+        log_message(msg='Subdividing stage {}'.format(div_label),
                     symbol='+', surround=True)
-        run_dir = rdir + '{}/{}/'.format(ncomps, chr(ord('A') + i))
         mkpath(run_dir)
 
         assert isinstance(target_comp, Component)
@@ -370,7 +374,7 @@ while ncomps < MAX_COMPS:
                     best_ix = np.argmax(lnprob)
                     best_pars = chain.reshape(-1, npars)
                     prev_comps[i] = Component(emcee_pars=best_pars)
-                Component.store_raw_components(str(run-dir+'final/'+final_comps_file),
+                Component.store_raw_components(str(run_dir+'final/'+final_comps_file),
                                                prev_comps)
                 # np.save(str(run_dir + 'final/' + final_comps_file), prev_comps)
 
@@ -384,6 +388,7 @@ while ncomps < MAX_COMPS:
                         'include_background_distribution'],
                     burnin=config.advanced['burnin_steps'],
                     sampling_steps=config.advanced['sampling_steps'],
+                    Component=Component,
             )
 
         best_fits.append(comps)
@@ -394,10 +399,12 @@ while ncomps < MAX_COMPS:
                 expectmax.get_overall_lnlikelihood(data_dict, comps,
                                                    inc_posterior=True)
         )
-        bics.append(expectmax.calc_bic(data_dict, ncomps, lnlikes[-1]))
-        logging.info('Decomposiiton finished with \nBIC: {}\nlnlike: {}\n'
+        bics.append(expectmax.calc_bic(data_dict, ncomps, lnlikes[-1],
+                                       memb_probs=memb_probs,
+                                       Component=Component))
+        logging.info('Decomposition {} finished with \nBIC: {}\nlnlike: {}\n'
                      'lnpost: {}'.format(
-                bics[-1], lnlikes[-1], lnposts[-1],
+            div_label, bics[-1], lnlikes[-1], lnposts[-1],
         ))
 
     # identify the best performing decomposition
@@ -406,13 +413,21 @@ while ncomps < MAX_COMPS:
     new_comps, new_meds, new_z, new_lnlike, new_lnpost, new_bic = \
         list(zip(best_fits, all_med_and_spans, all_memb_probs,
             lnlikes, lnposts, bics))[best_split_ix]
-    logging.info("Selected {} as best decomposition".format(best_split_ix))
+    logging.info("Selected {} as best decomposition".format(
+        chr(ord('A') + best_split_ix)))
     logging.info("Turned\n{}".format(prev_comps[best_split_ix].get_pars()))
+    logging.info('with {} members'.format(prev_memb_probs.sum(axis=0)[best_split_ix]))
     logging.info("into\n{}\n&\n{}".format(
             new_comps[best_split_ix].get_pars(),
             new_comps[best_split_ix + 1].get_pars(),
     ))
-    logging.info("with membership breakdown\n{}".format(new_z.sum(axis=0)))
+    logging.info('with {} and {} members'.format(
+        new_z.sum(axis=0)[best_split_ix],
+        new_z.sum(axis=0)[best_split_ix + 1],
+    ))
+    logging.info("for an overall membership breakdown\n{}".format(
+            new_z.sum(axis=0)
+    ))
 
     # Check if the fit has improved
     if new_bic < prev_bic:

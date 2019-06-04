@@ -1030,10 +1030,10 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
         overall_lnposterior = get_overall_lnlikelihood(
                 data, new_comps, inc_posterior=True
         )
-        bic = calc_bic(data, ncomps, overall_lnlike, memb_probs=memb_probs_final,
-                       Component=Component)
+        bic = calc_bic(data, ncomps, overall_lnlike,
+                       memb_probs=memb_probs_final, Component=Component)
         logging.info("Final overall lnlikelihood: {}".format(overall_lnlike))
-        logging.info("Final overall lnposterior:  {}".format(overall_lnlike))
+        logging.info("Final overall lnposterior:  {}".format(overall_lnposterior))
         logging.info("Final BIC: {}".format(bic))
 
         np.save(final_dir+'likelihood_post_and_bic.npy', (overall_lnlike,
@@ -1050,6 +1050,8 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
         logging.info("Memberships: \n{}".format(
                 (memb_probs_final*100).astype(np.int)
         ))
+
+        logging.info(50*'=')
 
         return final_best_comps, np.array(final_med_and_spans), memb_probs_final
 
