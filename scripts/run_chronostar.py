@@ -331,6 +331,8 @@ while ncomps < MAX_COMPS:
 
     # Iteratively try subdividing each previous component
     for i, target_comp in enumerate(prev_comps):
+        log_message(msg='DECOMPOSING COMPONENT {}'.format(chr(ord('A') + i)),
+                    symbol='+', surround=True)
         run_dir = rdir + '{}/{}/'.format(ncomps, chr(ord('A') + i))
         mkpath(run_dir)
 
@@ -410,6 +412,7 @@ while ncomps < MAX_COMPS:
             new_comps[best_split_ix].get_pars(),
             new_comps[best_split_ix + 1].get_pars(),
     ))
+    logging.info("with membership breakdown\n{}".format(new_z.sum(axis=0)))
 
     # Check if the fit has improved
     if new_bic < prev_bic:

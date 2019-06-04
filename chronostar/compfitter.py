@@ -405,7 +405,8 @@ def fit_comp(data, memb_probs=None, init_pos=None, init_pars=None,
         # For debugging cases where walkers have stabilised but apparently some are stuck
         if stable and not no_stuck:
             np.save(plot_dir+'burnin_lnprob{:02}.npy'.format(cnt), sampler.lnprobability)
-            logging.info('Lnprob chain saved for debugging...')
+            np.save(plot_dir+'burnin_chain{:02}.npy'.format(cnt), sampler.chain)
+            logging.info('Lnprob and chain saved for debugging...')
 
         converged = stable and no_stuck
         logging.info("Burnin status: {}".format(converged))
