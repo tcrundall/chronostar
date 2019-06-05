@@ -254,7 +254,8 @@ data_dict = tabletool.build_data_dict_from_table(
 )
 
 STARTING_NCOMPS = 1
-MAX_COMPS = 20          # Set a ceiling on how long code can run for
+MAX_COMPS = config.special.get('max_component_count', 20)         # Set a ceiling on how long code can run for
+log_message('Component count cap set to {}'.format(MAX_COMPS))
 
 # Set up initial values
 ncomps = STARTING_NCOMPS
@@ -328,7 +329,7 @@ prev_bic = expectmax.calc_bic(data_dict, ncomps, prev_lnlike,
 ncomps += 1
 
 # Begin iterative loop, each time trialing the incorporation of a new component
-while ncomps < MAX_COMPS:
+while ncomps <= MAX_COMPS:
     if ncomps >= MAX_COMPS:
         log_message(msg='REACHED MAX COMP LIMIT', symbol='+', surround=True)
         break

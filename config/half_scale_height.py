@@ -65,6 +65,7 @@ orbit = {
 
 special = {
     'component':'sphere',       # parameterisation for the origin
+    'max_component_count':5,    # maximum number of componentns to fit
 }
 
 advanced = {
