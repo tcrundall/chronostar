@@ -661,7 +661,7 @@ class AbstractComponent(object):
         np.save(filename, attributes)
 
     def add_arrow(self, line, position=None, indices=None, direction='right',
-                  size=15, color=None):
+                  size=15, color=None, **kwargs):
         """
         Add an arrow along a plotted line.
 
@@ -696,12 +696,12 @@ class AbstractComponent(object):
             line.axes.annotate('',
                                xytext=(xdata[start_ind], ydata[start_ind]),
                                xy=(xdata[end_ind], ydata[end_ind]),
-                               arrowprops=dict(arrowstyle="->", color=color),
-                               size=size
+                               arrowprops=dict(arrowstyle="->", color=color, **kwargs),
+                               size=size,
                                )
 
     def plot_orbit(self, dim1, dim2, ax, ntimes=50,
-                  with_arrow=False, annotate=False, color=None):
+                  with_arrow=False, annotate=False, color=None, **kwargs):
         """
         For traceback use negative age
 
@@ -719,6 +719,7 @@ class AbstractComponent(object):
         with_arrow: (bool) {False}, whether to include arrows along orbit
         annotate: (bool) {False}, whether to include text
         """
+        alpha=0.3
         if color is None:
             color = 'black'
             # if group_ix is None:
@@ -733,14 +734,14 @@ class AbstractComponent(object):
                 single_age=False
         )
         line_obj = ax.plot(comp_orb[:, dim1], comp_orb[:, dim2], ls='-',
-                           alpha=0.1,
-                           color=color)
+                           alpha=alpha,
+                           color=color, **kwargs)
         indices = [int(ntimes / 3), int(2 * ntimes / 3)]
         if with_arrow:
             # make sure arrow is always pointing forwards through time
             direction = 'right' if self.get_age() > 0 else 'left'
             self.add_arrow(line_obj[0], indices=indices, direction=direction,
-                           color=color)
+                           color=color, alpha=alpha,)
         if annotate:
             ax.annotate("Orbital trajectory",
                         (comp_orb[int(ntimes / 2), dim1],
@@ -809,7 +810,8 @@ class AbstractComponent(object):
         return ellip
 
     def plot(self, dim1, dim2, ax=None, comp_now=True, comp_then=False,
-             color='red', comp_orbit=False):
+             color='red', comp_orbit=False, alpha=0.3, marker='+',
+             **kwargs):
         """
         Conveniently displays the component on the provided axes (or most
         recently used axes) on the provided phase-space plane.
@@ -831,24 +833,24 @@ class AbstractComponent(object):
 
         if comp_now:
             ax.scatter(self.get_mean_now()[dim1], self.get_mean_now()[dim2], color=color,
-                       linewidth=0.0, marker='+')
+                       linewidth=0.0, marker=marker, s=10)
             self.plot_cov_ellipse(self.get_covmatrix_now()[np.ix_([dim1, dim2], [dim1, dim2])],
                                   self.get_mean_now()[np.ix_([dim1, dim2])],
-                                  ax=ax, alpha=1., linewidth='3',
+                                  ax=ax, alpha=alpha, linewidth='3',
                                   linestyle='--',
                                   fill=False,
-                                  color=color)
+                                  color=color, **kwargs)
         if comp_then:
             ax.scatter(self.get_mean()[dim1], self.get_mean()[dim2], color=color,
-                       linewidth=0.0, marker='+')
+                       linewidth=0.0, marker=marker, s=10)
             self.plot_cov_ellipse(self.get_covmatrix()[np.ix_([dim1, dim2], [dim1, dim2])],
                                   self.get_mean()[np.ix_([dim1, dim2])],
-                                  ax=ax, alpha=0.3, linewidth='0.1',
-                                  color=color)
+                                  ax=ax, alpha=alpha, linewidth='0.1',
+                                  color=color, **kwargs)
 
         if comp_orbit:
             self.plot_orbit(dim1, dim2, ax,
-                      with_arrow=True, annotate=False)
+                      with_arrow=True, annotate=False, color=color, **kwargs)
         pass
 
     @classmethod

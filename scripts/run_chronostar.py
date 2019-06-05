@@ -152,6 +152,8 @@ else:
                                    Components=Component)
             synth_data.synthesise_everything(filename=datafile,
                                              overwrite=True)
+            np.save('true_synth_pars.npy', config.synth['pars'])
+            np.save('true_synth_starcounts.npy', config.synth['starcounts'])
         else:
             log_message('Synthetic data already exists')
     else:
