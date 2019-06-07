@@ -1,22 +1,23 @@
+
 import numpy as np
 
-assoc_name = 'ucl_run'
+run_name = 'ucl_run'
 config = {
     # 'datafile':'',
-    'results_dir':'../results/{}'.format(assoc_name),
+    'results_dir':'../results/{}'.format(run_name),
     'data_loadfile':'../data/gaia_cartesian_full_6d_table.fits',
-    'data_savefile':'../results/{}/{}_subset.fit'.format(assoc_name, assoc_name),
-    # 'datafile':'../results/{}/data.fits'.format(assoc_name),
+    'data_savefile':'../results/{}/{}_subset.fit'.format(run_name, run_name),
+    # 'datafile':'../results/{}/data.fits'.format(run_name),
     'plot_it':True,
     # 'background_overlaps_file':'',
     'include_background_distribution':True,
     'kernel_density_input_datafile':'../data/gaia_cartesian_full_6d_table.fits',
                                                     # Cartesian data of all Gaia DR2 stars
                                                     # e.g. ../data/gaia_dr2_mean_xyzuvw.npy
-    'run_with_mpi':False,       # not yet inpmlemented
+    'run_with_mpi':True,       # not yet inpmlemented
     'convert_to_cartesian':False,        # whehter need to convert data from astrometry to cartesian
     'overwrite_datafile':False,         # whether to store results in same talbe and rewrite to file
-    'cartesian_savefile':'../results/{}/{}_subset.fit'.format(assoc_name, assoc_name),
+    'cartesian_savefile':'../results/{}/{}_subset.fit'.format(run_name, run_name),
     'save_cartesian_data':True,         #
     'ncomps':10,                        # maximum number of components to reach
     'overwrite_prev_run':True,          # explores provided results directorty and sees if results already
@@ -63,6 +64,6 @@ special = {
 }
 
 advanced = {
-    'burnin_steps':1000,        # emcee parameters, number of steps for each burnin iteraton
-    'sampling_steps':1000,
+    'burnin_steps':500,        # emcee parameters, number of steps for each burnin iteraton
+    'sampling_steps':500,
 }
