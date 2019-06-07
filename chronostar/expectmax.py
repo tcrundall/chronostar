@@ -893,6 +893,8 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
             logging.info("Using previously found memberships")
             memb_probs_new = memb_probs_old
             found_prev_iters = False
+            skip_first_e_step = False       # Unset the flag to initialise with
+                                            # memb probs
         elif skip_first_e_step:
             logging.info("Using initialising memb_probs for first iteration")
             memb_probs_new = init_memb_probs
