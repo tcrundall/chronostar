@@ -842,6 +842,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
     # Look for previous iterations and update values as appropriate
     prev_iters = True
     iter_count = 0
+    found_prev_iters = False
     while prev_iters:
         try:
             idir = rdir+"iter{:02}/".format(iter_count)
@@ -867,6 +868,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
                                                           inc_posterior=False)
 
             iter_count += 1
+            found_prev_iters = True
 
         except IOError:
             logging.info("Managed to find {} previous iterations".format(
@@ -886,18 +888,21 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
         mkpath(idir)
 
         # EXPECTATION
-        if skip_first_e_step:
-            logging.info("Skipping expectation step since we have memb probs.")
+        # Need to handle couple of side cases of initalising by memberships.
+        if found_prev_iters:
+            logging.info("Using previously found memberships")
+            memb_probs_new = memb_probs_old
+            found_prev_iters = False
+        elif skip_first_e_step:
             logging.info("Using initialising memb_probs for first iteration")
-            logging.info("memb_probs: {}".format(init_memb_probs.sum(axis=0)))
             memb_probs_new = init_memb_probs
             skip_first_e_step = False
         else:
             memb_probs_new = expectation(data, old_comps, memb_probs_old,
                                          inc_posterior=inc_posterior)
-            logging.info("Membership distribution:\n{}".format(
-                memb_probs_new.sum(axis=0)
-            ))
+        logging.info("Membership distribution:\n{}".format(
+            memb_probs_new.sum(axis=0)
+        ))
         np.save(idir+"membership.npy", memb_probs_new)
 
         # MAXIMISE
