@@ -212,7 +212,7 @@ def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
 
 def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
                           potential=MWPotential2014, ro=8., vo=220.,
-                          method='dopr54_c'):
+                          method='rk6_c'):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -234,8 +234,13 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
         The integration method used by the galpy orbit integrator. An
         alternative is 'dopr54_c' which is a fast, high-order Dormand-Prince
         method.
-        ['odeint', 'dopr54_c']
-        'dopr54_c' is less accurate (1e-6 pc in position) but 3 times faster
+        Options (listed in improving speed):
+            'odeint',
+            'symplec4_c',
+            'rk4_c',
+            'dopr54_c',
+            'rk6_c',
+        Our tests show rk6_c to be the fastest, with errors of 1e-7 pc.
 
     Returns
     -------

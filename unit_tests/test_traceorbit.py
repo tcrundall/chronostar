@@ -31,6 +31,13 @@ import chronostar.traceorbit as torb
 from galpy.potential import MiyamotoNagaiPotential
 
 LOGGINGLEVEL = logging.DEBUG
+method_atols = {
+    'odeint':1e-11,
+    'symplec4_c':1e-5,
+    'rk4_c':1e-5,
+    'dopr54_c':1e-6,
+    'rk6_c':1e-6,
+}
 
 def test_LSR():
     """
@@ -41,19 +48,20 @@ def test_LSR():
     """
     xyzuvw_lsr = [0.,0.,0.,0.,0.,0.]
     times = np.linspace(0,100,101)
-    method_atols = {'odeint':1e-11, 'dopr54_c':1e-6}
+
     for method, atol in method_atols.items():
 
         xyzuvws = torb.trace_cartesian_orbit(xyzuvw_lsr, times,
                                              single_age=False,
                                              method=method)
-        assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5], atol=atol)
+        assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5], atol=atol), 'Method {}'.format(method)
+
 
 def test_rotatedLSR():
     """
     Check that LSRs with different azimuthal positions also remain constant
     """
-    method_atols = {'odeint':1e-11, 'dopr54_c':1e-6}
+    # method_atols = {'odeint':1e-11, 'dopr54_c':1e-6}
     for method, atol in method_atols.items():
         rot_lsr_gp_coords = np.array([1., 0., 1., 0., 0., np.pi])
         xyzuvw_rot_lsr = torb.convert_galpycoords2cart(rot_lsr_gp_coords)
@@ -64,7 +72,7 @@ def test_rotatedLSR():
 
         # On a circular orbit, same radius as LSR, so shouldn't vary at all
         # assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5])
-        assert np.allclose(xyzuvws[0],xyzuvws[-1], atol=atol)
+        assert np.allclose(xyzuvws[0],xyzuvws[-1], atol=atol), 'Method {}'.format(method)
 
         # Should be initialised on opposite side of galaxy (X = 16kpc)
         assert np.allclose(16000., xyzuvws[0,0])
