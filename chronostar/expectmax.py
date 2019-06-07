@@ -846,6 +846,7 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
         try:
             idir = rdir+"iter{:02}/".format(iter_count)
             memb_probs_old = np.load(idir + 'membership.npy')
+            logging.info(msg='DEBUG: iter {}, membership is {}'.format(iter_count, memb_probs_old.sum(axis=0)))
             try:
                 old_comps = Component.load_raw_components(idir + 'best_comps.npy')
             # End up here if components aren't loadable due to change in module
