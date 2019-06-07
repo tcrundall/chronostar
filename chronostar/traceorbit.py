@@ -211,7 +211,8 @@ def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
     return xyzuvw
 
 def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
-                          potential=MWPotential2014, ro=8., vo=220.):
+                          potential=MWPotential2014, ro=8., vo=220.,
+                          method='dopr54_c'):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -229,6 +230,12 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
         spread linearly.
     single_age: (bool) {True}
         Set this flag if only providing a single age to trace to
+    method: str {'odeint'}
+        The integration method used by the galpy orbit integrator. An
+        alternative is 'dopr54_c' which is a fast, high-order Dormand-Prince
+        method.
+        ['odeint', 'dopr54_c']
+        'dopr54_c' is less accurate (1e-6 pc in position) but 3 times faster
 
     Returns
     -------
@@ -259,7 +266,8 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
     galpy_coords = convert_cart2galpycoords(xyzuvw_start, ts=0.,
                                             ro=ro, vo=vo)
     o = Orbit(vxvv=galpy_coords, ro=ro, vo=vo)
-    o.integrate(bovy_times, potential, method='odeint')
+    o.integrate(bovy_times, potential, method=method)
+    # o.integrate(bovy_times, potential, method='dopr54_c')
 
     xyzuvw = convert_galpycoords2cart(o.getOrbit(), bovy_times,
                                       ro=ro, vo=vo)

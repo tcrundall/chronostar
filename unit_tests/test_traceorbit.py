@@ -41,24 +41,33 @@ def test_LSR():
     """
     xyzuvw_lsr = [0.,0.,0.,0.,0.,0.]
     times = np.linspace(0,100,101)
+    method_atols = {'odeint':1e-11, 'dopr54_c':1e-6}
+    for method, atol in method_atols.items():
 
-    xyzuvws = torb.trace_cartesian_orbit(xyzuvw_lsr, times, single_age=False)
-    assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5])
+        xyzuvws = torb.trace_cartesian_orbit(xyzuvw_lsr, times,
+                                             single_age=False,
+                                             method=method)
+        assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5], atol=atol)
 
 def test_rotatedLSR():
     """
     Check that LSRs with different azimuthal positions also remain constant
     """
-    rot_lsr_gp_coords = np.array([1., 0., 1., 0., 0., np.pi])
-    xyzuvw_rot_lsr = torb.convert_galpycoords2cart(rot_lsr_gp_coords)
-    times = np.linspace(0,100,101)
-    xyzuvws = torb.trace_cartesian_orbit(xyzuvw_rot_lsr, times, single_age=False)
+    method_atols = {'odeint':1e-11, 'dopr54_c':1e-6}
+    for method, atol in method_atols.items():
+        rot_lsr_gp_coords = np.array([1., 0., 1., 0., 0., np.pi])
+        xyzuvw_rot_lsr = torb.convert_galpycoords2cart(rot_lsr_gp_coords)
+        times = np.linspace(0,100,101)
+        xyzuvws = torb.trace_cartesian_orbit(xyzuvw_rot_lsr, times,
+                                             single_age=False,
+                                             method=method)
 
-    # On a circular orbit, same radius as LSR, so shouldn't vary at all
-    assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5])
+        # On a circular orbit, same radius as LSR, so shouldn't vary at all
+        # assert np.allclose(xyzuvws[0,:5],xyzuvws[-1,:5])
+        assert np.allclose(xyzuvws[0],xyzuvws[-1], atol=atol)
 
-    # Should be initialised on opposite side of galaxy (X = 16kpc)
-    assert np.allclose(xyzuvws[0,0], 16000.)
+        # Should be initialised on opposite side of galaxy (X = 16kpc)
+        assert np.allclose(16000., xyzuvws[0,0])
 
 def test_singleTime():
     """Test usage where we only provide the desired age, and not an array
