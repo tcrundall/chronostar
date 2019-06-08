@@ -255,6 +255,7 @@ data_dict = tabletool.build_data_dict_from_table(
 
 STARTING_NCOMPS = 1
 MAX_COMPS = config.special.get('max_component_count', 20)         # Set a ceiling on how long code can run for
+MAX_ITERS = config.special.get('max_em_iterations', 100)
 log_message('Component count cap set to {}'.format(MAX_COMPS))
 
 # Set up initial values
@@ -311,6 +312,7 @@ except IOError:
                                  init_memb_probs=init_memb_probs,
                                  Component=Component,
                                  store_burnin_chains=store_burnin_chains,
+                                 max_iters=MAX_ITERS,
                                  )
 
 
@@ -402,6 +404,7 @@ while ncomps <= MAX_COMPS:
                     sampling_steps=config.advanced['sampling_steps'],
                     Component=Component,
                     store_burnin_chains=store_burnin_chains,
+                    max_iters=MAX_ITERS,
             )
 
         best_fits.append(comps)

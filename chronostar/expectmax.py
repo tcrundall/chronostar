@@ -697,7 +697,8 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
                    init_comps=None, inc_posterior=False, burnin=1000,
                    sampling_steps=5000, ignore_dead_comps=False,
                    Component=SphereComponent, trace_orbit_func=None,
-                   use_background=False, store_burnin_chains=False):
+                   use_background=False, store_burnin_chains=False,
+                   max_iters=100):
     """
     Entry point: Fit multiple Gaussians to data set
 
@@ -786,12 +787,11 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
     BURNIN_STEPS = burnin
     SAMPLING_STEPS = sampling_steps
     C_TOL = 0.5
-    MAX_ITERS = 100
     AMPLITUDE_TOL = 1.0 # total sum of memberships for each component
                         # cannot vary by more than this value to be converged
 
-    logging.info("Fitting {} groups with {} burnin steps".format(ncomps,
-                                                                 BURNIN_STEPS))
+    logging.info("Fitting {} groups with {} burnin steps with cap "
+                 "of {} iterations".format(ncomps, BURNIN_STEPS, max_iters))
 
     # INITIALISE RUN PARAMETERS
 
@@ -876,11 +876,11 @@ def fit_many_comps(data, ncomps, rdir='', pool=None, init_memb_probs=None,
             ))
             prev_iters = False
 
-    # Until convergence is achieved (or MAX_ITERS is exceeded) iterate through
+    # Until convergence is achieved (or max_iters is exceeded) iterate through
     # the Expecation and Maximisation stages
 
     # TODO: put convergence checking at the start of the loop so restarting doesn't repeat an iteration
-    while not all_converged and stable_state and iter_count < MAX_ITERS:
+    while not all_converged and stable_state and iter_count < max_iters:
         # for iter_count in range(10):
         idir = rdir+"iter{:02}/".format(iter_count)
         log_message('Iteration {}'.format(iter_count),
