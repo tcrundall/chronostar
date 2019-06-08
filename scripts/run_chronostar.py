@@ -452,6 +452,10 @@ while ncomps <= MAX_COMPS:
         prev_bic = \
             (new_comps, new_meds, new_z, new_lnlike, new_lnpost, new_bic)
         ncomps += 1
+        log_message(msg="Commencing {} component fit on {}{}".format(
+                ncomps, ncomps-1,
+                chr(ord('A') + best_split_ix)), symbol='+'
+        )
     else:
         logging.info("Extra component has worsened BIC...")
         logging.info("New BIC: {} > Old BIC: {}".format(new_bic, prev_bic))
