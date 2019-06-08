@@ -66,4 +66,6 @@ special = {
 advanced = {
     'burnin_steps':500,        # emcee parameters, number of steps for each burnin iteraton
     'sampling_steps':500,
+    'store_burnin_chains':True, 
+    'max_em_iterations':200,
 }
