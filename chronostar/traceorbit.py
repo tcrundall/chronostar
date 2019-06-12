@@ -256,9 +256,17 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
     """
     if single_age:
         # replace 0 with some tiny number
-        if times == 0.:
-            times = 1e-15
-        times = np.array([0., times])
+        try:
+            if times == 0.:
+                times = 1e-15
+            times = np.array([0., times])
+        except ValueError as err:
+            if not err.args:
+                err.args = ('',)
+            err.args = err.args + ('WARNING: comparing array to float? '
+                                   'Did you leave single_age as True?',)
+            raise
+
     else:
         times = np.array(times)
 

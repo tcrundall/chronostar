@@ -256,7 +256,10 @@ data_dict = tabletool.build_data_dict_from_table(
 STARTING_NCOMPS = 1
 MAX_COMPS = config.special.get('max_component_count', 20)         # Set a ceiling on how long code can run for
 MAX_ITERS = config.special.get('max_em_iterations', 100)
-log_message('Component count cap set to {}'.format(MAX_COMPS))
+log_message(msg='Component count cap set to {}'.format(MAX_COMPS),
+        symbol='+', surround=True)
+log_message(msg='Iteration count cap set to {}'.format(MAX_ITERS),
+        symbol='+', surround=True)
 
 # Set up initial values
 ncomps = STARTING_NCOMPS
