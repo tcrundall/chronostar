@@ -80,10 +80,13 @@ def convert_cart2galpycoords(data, ts=None, ro=8., vo=220., debug=False,
         where distances are in units `ro` and velocities in units
         `vo`.
     """
+    # Tidy input
     if ts is None:
         ts = 0.0
     if bovy_times is None:
         bovy_times = convert_myr2bovytime(ts)
+    data = np.array(data)
+
     phi_lsr = np.copy(bovy_times)
 
     Xs, Ys, Zs, Us, Vs, Ws = data.T
