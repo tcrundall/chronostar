@@ -168,7 +168,11 @@ else:
 
     # If data cuts provided, then apply them
     if config.config['banyan_assoc_name'] != '':
-        bounds = get_region(config.config['banyan_assoc_name'])
+        bounds = get_region(
+                config.config['banyan_assoc_name'],
+                pos_margin=config.advanced.get('pos_margin', 30.),
+                vel_margin=config.advanced.get('vel_margin', 5.),
+        )
     elif config.data_bound is not None:
         bounds = (config.data_bound['lower_bound'],
                   config.data_bound['upper_bound'])

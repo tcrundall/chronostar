@@ -1,5 +1,6 @@
 from __future__ import print_function, division, unicode_literals
 
+import logging
 import numpy as np
 import sys
 sys.path.insert(0, '..')
@@ -19,14 +20,9 @@ def get_region(assoc_name, pos_margin=30., vel_margin=5., gagne_reference_data =
         'Columba', 'Coma Ber', 'Corona Australis', 'Hyades', 'IC 2391',
         'IC 2602', 'Lower Centaurus-Crux', 'Octans', 'Platais 8',
         'Pleiades', 'TW Hya', 'Taurus', 'Tucana-Horologium',
-        'Upper Centaurus Lupus', 'Upper CrA',
- 'Upper Scorpius',
- 'Ursa Major',
- 'beta Pictoris',
- 'chi{ 1 For (Alessi 13)',
- 'epsilon Cha',
- 'eta Cha',
- 'rho Ophiuci'}
+        'Upper Centaurus Lupus', 'Upper CrA', 'Upper Scorpius',
+        'Ursa Major', 'beta Pictoris', 'chi{ 1 For (Alessi 13)',
+        'epsilon Cha', 'eta Cha', 'rho Ophiuci'}
 
     pos_margin: float {30.}
         Margin in position space around known members from which new candidate
@@ -44,8 +40,7 @@ def get_region(assoc_name, pos_margin=30., vel_margin=5., gagne_reference_data =
     box_upper_bounds: [6] float array
         The upper bounds of the 6D box [X,Y,Z,U,V,W]
     """
-    pos_margin = 30 #pc
-    vel_margin = 5 #km/s
+
     if gagne_reference_data is None:
         gagne_reference_data =\
             '../data/gagne_bonafide_full_kinematics_with_lit_and_best_radial_velocity' \
@@ -61,11 +56,16 @@ def get_region(assoc_name, pos_margin=30., vel_margin=5., gagne_reference_data =
 
     # Extract all stars
     subtable = gagne_table[np.where(gagne_table['Moving group'] == assoc_name)]
+    logging.info('Initial membership list has {} members'.format(len(subtable)))
 
     star_means = tabletool.build_data_dict_from_table(subtable, only_means=True)
 
     data_upper_bound = np.nanmax(star_means, axis=0)
     data_lower_bound = np.nanmin(star_means, axis=0)
+    logging.info('Stars span from {} to {}'.format(
+        np.round(data_lower_bound),
+        np.round(data_upper_bound)
+    ))
 
     data_margin = np.array(3*[pos_margin] + 3*[vel_margin])
 
@@ -75,8 +75,12 @@ def get_region(assoc_name, pos_margin=30., vel_margin=5., gagne_reference_data =
     # Set up boundaries of box that span double the association
     box_lower_bound = data_lower_bound - data_margin
     box_upper_bound = data_upper_bound + data_margin
-    # box_lower_bound = data_centre - data_span
-    # box_upper_bound = data_centre + data_span
+
+    logging.info('Range extended.\nLower: {}\nUpper: {}'.format(
+        np.round(box_lower_bound),
+        np.round(box_upper_bound)
+    ))
+
     return box_lower_bound, box_upper_bound
 
 if __name__ == '__main__':
