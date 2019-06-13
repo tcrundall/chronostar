@@ -36,13 +36,6 @@ the process of plugging in a different, modularised Component class.
 
 from __future__ import print_function, division, unicode_literals
 
-import numpy as np
-from scipy.stats.mstats import gmean
-
-from . import transform
-from chronostar.traceorbit import trace_cartesian_orbit
-
-# Including plotting capabilities
 try:
     import matplotlib as mpl
     mpl.use('Agg') # stops auto displaying plots upon generation
@@ -51,6 +44,13 @@ try:
 except:
     ImportError
 
+import numpy as np
+from scipy.stats.mstats import gmean
+
+from . import transform
+from chronostar.traceorbit import trace_cartesian_orbit
+
+# Including plotting capabilities
 
 class AbstractComponent(object):
     """
