@@ -255,9 +255,9 @@ class AbstractComponent(object):
     def __str__(self):
         x,y,z,u,v,w = self.get_mean_now()
         return 'Currentday(' \
-               'X: {:.2}pc, Y: {:.2}pc, Z: {:.2}pc, '  \
-               'U {:.2}km/s, V {:.2}km/s, W {:.2}km/s, ' \
-               'age: {:.2}Myr)'.format(x,y,z,u,v,w, self._age)
+               'X: {:5.1f}pc, Y: {:5.1f}pc, Z: {:5.1f}pc, '  \
+               'U {:4.1f}km/s, V {:4.1f}km/s, W {:4.1f}km/s, ' \
+               'age: {:4.1f}Myr)'.format(x,y,z,u,v,w, self._age)
 
     def __repr__(self):
         return self.__str__()
@@ -445,6 +445,8 @@ class AbstractComponent(object):
             self._set_covmatrix(covmatrix=attributes['covmatrix'])
         if 'age' in attributes.keys():
             self._set_age(age=attributes['age'])
+
+        # Reset any attribute that may have already been calculated
         self._mean_now = None
         self._covmatrix_now = None
         self._sphere_dx = None

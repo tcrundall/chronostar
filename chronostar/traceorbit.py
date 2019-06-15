@@ -215,7 +215,7 @@ def convert_galpycoords2cart(data, ts=None, ro=8., vo=220., rc=True):
 
 def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
                           potential=MWPotential2014, ro=8., vo=220.,
-                          method='rk6_c'):
+                          method='dopr54_c'):
     """
     Given a star's XYZUVW relative to the LSR (at any time), project its
     orbit forward (or backward) to each of the times listed in *times*
@@ -242,8 +242,8 @@ def trace_cartesian_orbit(xyzuvw_start, times=None, single_age=True,
             'symplec4_c',
             'rk4_c',
             'dopr54_c',
-            'rk6_c',
-        Our tests show rk6_c to be the fastest, with errors of 1e-7 pc.
+            'rk6_c', [!!! this one has a bug !!!]
+        Our tests show dopr54_c to be fastest with no bugs.
 
     Returns
     -------
