@@ -172,6 +172,7 @@ else:
                 config.config['banyan_assoc_name'],
                 pos_margin=config.advanced.get('pos_margin', 30.),
                 vel_margin=config.advanced.get('vel_margin', 5.),
+                scale_margin=config.advanced.get('scale_margin', None),
         )
     elif config.data_bound is not None:
         bounds = (config.data_bound['lower_bound'],

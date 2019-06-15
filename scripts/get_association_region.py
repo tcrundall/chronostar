@@ -8,7 +8,9 @@ sys.path.insert(0, '..')
 from chronostar import tabletool
 
 
-def get_region(assoc_name, pos_margin=30., vel_margin=5., gagne_reference_data = None):
+def get_region(assoc_name, pos_margin=30., vel_margin=5.,
+               scale_margin=None,
+               gagne_reference_data=None):
     """
     Get a 6D box surrounding a known association with members from BANYAN
 
@@ -67,14 +69,21 @@ def get_region(assoc_name, pos_margin=30., vel_margin=5., gagne_reference_data =
         np.round(data_upper_bound)
     ))
 
-    data_margin = np.array(3*[pos_margin] + 3*[vel_margin])
+    # First try and scale box margins on.
+    # scale_margin of 1 would double total span (1 + 1)
+    if scale_margin is not None:
+        data_span = data_upper_bound - data_lower_bound
+        box_margin = 0.5 * scale_margin * data_span
 
-    # data_span = data_upper_bound - data_lower_bound
-    # data_centre = 0.5 * (data_upper_bound + data_lower_bound)
+        # Set up boundaries of box that span double the association
+        box_lower_bound = data_lower_bound - box_margin
+        box_upper_bound = data_upper_bound + box_margin
 
-    # Set up boundaries of box that span double the association
-    box_lower_bound = data_lower_bound - data_margin
-    box_upper_bound = data_upper_bound + data_margin
+    # Set margin based on provided (or default) constant amounts
+    else:
+        data_margin = np.array(3*[pos_margin] + 3*[vel_margin])
+        box_lower_bound = data_lower_bound - data_margin
+        box_upper_bound = data_upper_bound + data_margin
 
     logging.info('Range extended.\nLower: {}\nUpper: {}'.format(
         np.round(box_lower_bound),
