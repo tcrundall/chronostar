@@ -28,9 +28,9 @@ all_comps_file = '../results/all_nonbg_scocen_comps.npy'
 # Reading in and tidying components
 all_comps = SphereComponent.load_raw_components(all_comps_file)
 
-# Pop off some manually identified duplicates
-all_comps.pop(9)
-all_comps.pop(6)
+# # Pop off some manually identified duplicates
+# all_comps.pop(9)
+# all_comps.pop(6)
 
 print('ages of components: {}'.format([c.get_age() for c in all_comps]))
 
@@ -45,8 +45,8 @@ time_ix = ntimes - ntimes/2
 time = times[int(ntimes/2)]
 
 
-for dim1, dim2 in [(0,1), (0,2), (0,3), (1,4), (2,5), (1,2)]:
 # for dim1, dim2 in [(0,2)]:
+for dim1, dim2 in [(0,1), (0,2), (0,3), (1,4), (2,5), (1,2)]:
     lims = 6*[None]
     for time_ix, time in enumerate(times[::-1]):
         print('plot {:3}: time {:4.2f}'.format(time_ix, time))

@@ -10,7 +10,7 @@ forward (or backward) through the Galactic potential.
 import numpy as np
 
 
-def calc_jacobian_column(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
+def calc_jacobian_column(trans_func, col_number, loc, dim=6, h=1e-3, args=None):
     """
     Calculate a column of the Jacobian.
 
@@ -32,7 +32,7 @@ def calc_jacobian_column(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
     loc: [dim] float array
         The position (in the initial coordinte frame) around which we are
         calculting the jacobian
-    dim: integer {2}
+    dim: integer {6}
         The dimensionality of the coordinate frames.
     h: float {1e-3}
         The size of the increment
@@ -55,7 +55,7 @@ def calc_jacobian_column(trans_func, col_number, loc, dim=2, h=1e-3, args=None):
         return (trans_func(loc_pl, *args) - trans_func(loc_mi, *args)) / (2*h)
 
 
-def calc_jacobian(trans_func, loc, dim=2, h=1e-3, args=None):
+def calc_jacobian(trans_func, loc, dim=6, h=1e-3, args=None):
     """
     Calculate the Jacobian of the coordinate transfromation `trans_func` about
     `loc`.
@@ -73,7 +73,7 @@ def calc_jacobian(trans_func, loc, dim=2, h=1e-3, args=None):
     loc : [dim] float array
         The position (in the initial coordinte frame) around which we are
         calculating the jacobian
-    dim : int {2}
+    dim : int {6}
         The dimensionality of the coordinate frames
     h : float {1e-3}
         The size of the increment, smaller values maybe run into numerical
@@ -99,7 +99,7 @@ def calc_jacobian(trans_func, loc, dim=2, h=1e-3, args=None):
     return jac
 
 
-def transform_covmatrix(cov, trans_func, loc, dim=6, args=None):
+def transform_covmatrix(cov, trans_func, loc, dim=6, h=1e-3, args=None):
     """
     Transforming a covariance matrix from one coordinate frame to another
 
@@ -113,9 +113,12 @@ def transform_covmatrix(cov, trans_func, loc, dim=6, args=None):
         mutable, i.e. single value, or an array
     loc : [dim] float array
         The position (in the initial coordinate frame)
-        around which we are calculting the jacobian
+        around which we are calculating the jacobian
     dim : integer {6}
-        The dimensionality of the coordinate frames
+        The dimensionality of the coordinate frame
+    h : float {1e-3}
+        The size of the increment, smaller values maybe run into numerical
+        issues
     args : tuple
         extra args to be passed to trans_func. E.g. for traceOrbitXYZUVW
         args = (age,) [for traceforward] or args = (-age,) [for traceback]
@@ -125,6 +128,6 @@ def transform_covmatrix(cov, trans_func, loc, dim=6, args=None):
     conv_cov : [dim,dim] float array
         The transformed covariance matrix
     """
-    jac = calc_jacobian(trans_func, loc, dim=dim, args=args)
+    jac = calc_jacobian(trans_func, loc, dim=dim, h=h, args=args)
     return np.dot(jac, np.dot(cov, jac.T))
 
