@@ -189,9 +189,9 @@ def convert_cartesian2angles(x, y, z, return_dist=False):
     phi_deg = np.arcsin(z/dist)*180./np.pi
     theta_deg = np.mod((np.arctan2(y/dist,x/dist))*180./np.pi, 360.)
     if return_dist:
-        return theta_deg, phi_deg, dist
+        return np.array([theta_deg, phi_deg, dist])
     else:
-        return theta_deg, phi_deg
+        return np.array([theta_deg, phi_deg])
 
 
 def convert_equatorial2galactic(theta_deg, phi_deg):
@@ -339,7 +339,7 @@ def convert_heliospacevelocity2pm(a_deg, d_deg, pi, u, v, w):
     rv = sky_vels[0]
     mu_a = pi * sky_vels[1] / K
     mu_d = pi * sky_vels[2] / K
-    return mu_a, mu_d, rv
+    return np.array([mu_a, mu_d, rv])
 
 
 def convert_helioxyzuvw2astrometry(xyzuvw_helio):
@@ -367,7 +367,7 @@ def convert_helioxyzuvw2astrometry(xyzuvw_helio):
     a_deg, d_deg = convert_galactic2equatorial(l_deg, b_deg)
     pi = 1./dist
     mu_a, mu_d, rv = convert_heliospacevelocity2pm(a_deg, d_deg, pi, u, v, w)
-    return a_deg, d_deg, pi, mu_a, mu_d, rv
+    return np.array([a_deg, d_deg, pi, mu_a, mu_d, rv])
 
 
 def convert_astrometry2helioxyzuvw(a_deg, d_deg, pi, mu_a, mu_d, rv):
@@ -537,16 +537,11 @@ def convert_lsrxyzuvw2astrometry(xyzuvw_lsr):
     """
     xyzuvw_lsr = np.copy(xyzuvw_lsr)
 
-    # logging.debug("Input (before conversion) is: {}".format(xyzuvw_lsr))
-
     xyzuvw_helio = convert_lsr2helio(xyzuvw_lsr)
-    # logging.debug("xyzuvw_helio is: {}".format(xyzuvw_helio))
     astr = np.array(convert_helioxyzuvw2astrometry(xyzuvw_helio))
-    # logging.debug("Astro before conversion is: {}".format(astr))
 
     # Finally converts angles to mas for external use
     astr[2:5] *= 1e3
-    # logging.debug("Astro after conversion is: {}".format(astr))
     return astr
 
 

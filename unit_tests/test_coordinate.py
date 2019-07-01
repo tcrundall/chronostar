@@ -243,3 +243,27 @@ def test_convertManyLSRXYZUVWToAstrometry():
 
     recalculated_xyzuvws = cc.convert_many_astrometry2lsrxyzuvw(calculated_astros)
     assert np.allclose(recalculated_xyzuvws, xyzuvw_lsrs)
+
+
+def test_internalConsistency():
+    '''
+    Take a starting LSR cartesian mean, convert to RA, DEC directly and
+    indirectly.
+    '''
+    start_position_lsr = np.array([120.7, -18.5, 74.9, 5.4, -4., 0.5])
+
+    # Convert directly to equatorial
+    direct_ra, direct_dec =\
+        cc.convert_lsrxyzuvw2astrometry(start_position_lsr)[:2]
+
+    # Convert to helio
+    start_position_helio = cc.convert_lsr2helio(start_position_lsr)[:3]
+    # Convert to galactic coordiantes
+    theta_gal, phi_gal = cc.convert_cartesian2angles(*start_position_helio)
+    # Convert to equatorial
+
+    indirect_ra, indirect_dec = cc.convert_galactic2equatorial(theta_gal,
+                                                               phi_gal)
+
+    assert np.isclose(direct_ra, indirect_ra)
+    assert np.isclose(direct_dec, indirect_dec)

@@ -812,7 +812,7 @@ class AbstractComponent(object):
         return ellip
 
     def plot(self, dim1, dim2, ax=None, comp_now=True, comp_then=False,
-             color='red', comp_orbit=False, alpha=0.3, marker='+',
+             color='red', comp_orbit=False, alpha=0.3, marker='+', msize=10,
              **kwargs):
         """
         Conveniently displays the component on the provided axes (or most
@@ -835,7 +835,7 @@ class AbstractComponent(object):
 
         if comp_now:
             ax.scatter(self.get_mean_now()[dim1], self.get_mean_now()[dim2], color=color,
-                       linewidth=0.0, marker=marker, s=10)
+                       linewidth=0.0, marker=marker, s=msize)
             self.plot_cov_ellipse(self.get_covmatrix_now()[np.ix_([dim1, dim2], [dim1, dim2])],
                                   self.get_mean_now()[np.ix_([dim1, dim2])],
                                   ax=ax, alpha=alpha, linewidth='3',
