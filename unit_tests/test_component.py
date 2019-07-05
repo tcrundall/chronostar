@@ -122,7 +122,7 @@ def test_simple_projection():
 
         assert np.allclose(comp.get_mean(), comp.get_mean_now(), atol=1e-8)
         assert np.allclose(comp.get_covmatrix(), comp.get_covmatrix_now(),
-                           atol=1e-6)
+                           atol=1e-4)
 
 def test_split_group():
     """
@@ -179,3 +179,23 @@ def test_init_from_attributes():
         assert np.allclose(comp_orig.get_covmatrix(),
                            comp_from_attr.get_covmatrix())
 
+def test_get_best_from_chain():
+    # Triplicate sphere pars (are copies)
+    # Represents a chain with 2 walkers and 3 steps
+    intern_sphere_pars = SphereComponent.internalise(SPHERE_PARS)
+    dummy_chain = np.array([
+        [intern_sphere_pars, intern_sphere_pars, intern_sphere_pars],
+        [intern_sphere_pars, intern_sphere_pars, intern_sphere_pars]
+    ])
+    dummy_lnprob = np.zeros(dummy_chain.shape[:2])
+
+    # Incorporate identifying marker at desired index
+    true_best_ix = (1,1)
+    dummy_chain[true_best_ix][0] = 10.
+    dummy_lnprob[true_best_ix] = 1.
+
+    best_comp = SphereComponent.get_best_from_chain(dummy_chain, dummy_lnprob)
+    assert np.allclose(dummy_chain[true_best_ix], best_comp.get_emcee_pars())
+
+if __name__=='__main__':
+    test_simple_projection()

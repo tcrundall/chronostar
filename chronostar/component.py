@@ -280,10 +280,17 @@ class AbstractComponent(object):
                     )
             )
 
-    def externalise(self, pars):
+    @staticmethod
+    def externalise(pars):
         """
         Take parameter set in internal form (as used by emcee) and
         convert to external form (as used to build attributes).
+
+        Notes
+        -----
+        This is a "staticmethod" because often there is a desire to convert
+        between parameterisations without actually having a component
+        object.
 
         Tasks
         -----
@@ -292,10 +299,17 @@ class AbstractComponent(object):
         """
         raise NotImplementedError
 
+    @staticmethod
     def internalise(self, pars):
         """
         Take parameter set in external form (as used to build attributes)
         and convert to internal form (as used by emcee).
+
+        Notes
+        -----
+        This is a "staticmethod" because often there is a desire to convert
+        between parameterisations without actually having a component
+        object.
 
         Tasks
         -----
@@ -662,6 +676,40 @@ class AbstractComponent(object):
                       'age':self.get_age()}
         np.save(filename, attributes)
 
+    @classmethod
+    def get_best_from_chain(cls, chain_file, lnprob_file):
+        """
+        Little helper method that constructs a Component object
+        representing the best sample from output of an emcee run
+
+        Parameters
+        ----------
+        chain_file: str (or array)
+            A numpy stored array of the chain output with dims
+            [nwalkers, nsteps, npars]
+        lnprob_file: str (or array)
+            A numpy stored array of the lnprob output with dims
+            [nwalkers, nsteps]
+
+        Returns
+        -------
+        Component object
+            A component corresponding to the sample with the highest
+            lnprob from provided samples
+        """
+        if type(chain_file) is str:
+            chain_file = np.load(chain_file)
+        if type(lnprob_file) is str:
+            lnprob_file = np.load(lnprob_file)
+        best_ix = np.argmax(lnprob_file)
+        npars = len(cls.PARAMETER_FORMAT)
+        best_pars = chain_file.reshape(-1, npars)[best_ix]
+        return cls(emcee_pars=best_pars)
+
+
+    # --------------------------------------------------
+    # --  PLOTTING METHODS  ----------------------------
+    # --------------------------------------------------
     def add_arrow(self, line, position=None, indices=None, direction='right',
                   size=15, color=None, **kwargs):
         """
@@ -891,7 +939,8 @@ class SphereComponent(AbstractComponent):
                         'log_pos_std', 'log_vel_std',
                         'age']
 
-    def externalise(self, pars):
+    @staticmethod
+    def externalise(pars):
         """
         Take parameter set in internal form (as used by emcee) and
         convert to external form (as used to build attributes).
@@ -900,7 +949,8 @@ class SphereComponent(AbstractComponent):
         extern_pars[6:8] = np.exp(extern_pars[6:8])
         return extern_pars
 
-    def internalise(self, pars):
+    @staticmethod
+    def internalise(pars):
         """
         Take parameter set in external form (as used to build attributes)
         and convert to internal form (as used by emcee).
@@ -945,7 +995,8 @@ class EllipComponent(AbstractComponent):
                         'corr', 'corr', 'corr',
                         'age']
 
-    def externalise(self, pars):
+    @staticmethod
+    def externalise(pars):
         """
         Take parameter set in internal form (as used by emcee) and
         convert to external form (as used to build attributes).
@@ -954,7 +1005,8 @@ class EllipComponent(AbstractComponent):
         extern_pars[6:10] = np.exp(extern_pars[6:10])
         return extern_pars
 
-    def internalise(self, pars):
+    @staticmethod
+    def internalise(pars):
         """
         Take parameter set in external form (as used to build attributes)
         and convert to internal form (as used by emcee).

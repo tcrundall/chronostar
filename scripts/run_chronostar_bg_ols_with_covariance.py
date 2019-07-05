@@ -370,7 +370,7 @@ while ncomps < MAX_COMPS:
                     chain = np.load(final_cdir + 'final_chain.npy')
                     lnprob = np.load(final_cdir + 'final_lnprob.npy')
                     npars = len(Component.PARAMETER_FORMAT)
-                    best_ix = np.argmax(lnprob)
+                    best_ix = np.argmax(lnprob)[best_ix]
                     best_pars = chain.reshape(-1, npars)
                     prev_comps[i] = Component(emcee_pars=best_pars)
                 np.save(str(run_dir + 'final/' + final_comps_file), prev_comps)

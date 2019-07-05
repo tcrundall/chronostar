@@ -362,8 +362,8 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
 
     # plot info for each group (fitted, or true synthetic origin)
     for i, group in enumerate(groups):
-        cov_then = group.generateSphericalCovMatrix()
-        mean_then = group.mean
+        cov_then = group.get_covmatrix()
+        mean_then = group.get_mean()
         # plot group initial distribution
         if group_then:
             ax.plot(mean_then[dim1], mean_then[dim2], marker='+', alpha=0.3,
@@ -381,10 +381,10 @@ def plotPane(dim1=0, dim2=1, ax=None, groups=(), star_pars=None,
 
         # plot group current day distribution (should match well with stars)
         if group_now:
-            mean_now = torb.trace_cartesian_orbit(mean_then, group.age,
+            mean_now = torb.trace_cartesian_orbit(mean_then, group.get_age(),
                                                   single_age=True)
             cov_now = tf.transform_covmatrix(cov_then, torb.trace_cartesian_orbit,
-                                             mean_then, args=[group.age])
+                                             mean_then, args=[group.get_age()])
             ax.plot(mean_now[dim1], mean_now[dim2], marker='+', alpha=0.3,
                    color=COLORS[i])
             plotCovEllipse(cov_now[np.ix_([dim1, dim2], [dim1, dim2])],

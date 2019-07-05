@@ -17,11 +17,15 @@ Properties I want:
 - xaxis broken [SOLVED]
 - plot bars with hatching
 
+Issues:
+- currently histograms with hatched fill are also black
+
 """
 
 from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 import sys
 sys.path.insert(0, '..')
@@ -62,50 +66,50 @@ def getScenarioFromIndex(index):
     dx_ix = int( (index / len(precs) / len(labels) / len(nstars) / len(dvs)) % len(dxs) )
     print(dxs[dx_ix], dvs[dv_ix], nstars[nstar_ix], labels[label_ix], precs[prec_ix])
 
-def breakAxes(ax1, ax2, ymin=None, ymax=None): #, horizontal=True):
-    """
-    Given two axes objects, paint as if a single plot with broken axes in
-    x (Currently hardcoded for only x direction)
+# def breakAxes(ax1, ax2, ymin=None, ymax=None): #, horizontal=True):
+#     """
+#     Given two axes objects, paint as if a single plot with broken axes in
+#     x (Currently hardcoded for only x direction)
+#
+#     Can optionally provide the ylimits.
+#     """
+#
+#     # line up y axes across two axes objects
+#     if ymin is None:
+#         ymin = np.min((ax1.get_ylim()[0], ax2.get_ylim()[0]))
+#     if ymax is None:
+#         ymax = np.max((ax1.get_ylim()[1], ax2.get_ylim()[1]))
+#     ax1.set_ylim(ymin, ymax)
+#     ax2.set_ylim(ymin, ymax)
+#
+#     # Remove unneeded spines
+#     ax1.spines['right'].set_visible(False)
+#     ax2.spines['left'].set_visible(False)
+#     ax1.yaxis.tick_left()
+#     ax1.tick_params(labelright='off')  # don't put tick labels at the right
+#     ax2.tick_params(labelleft='off')
+#     # ax2.tick_params(labelright='off')  # don't put tick labels at the right
+#     ax2.yaxis.tick_right()
+#
+#     # and break marks
+#     d = .015  # how big to make the diagonal lines in axes coordinates
+#     # arguments to pass to plot, just so we don't keep repeating them
+#     kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
+#     ax1.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
+#     ax1.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # top-right diagonal
+#
+#     kwargs.update(transform=ax2.transAxes)  # switch to the right axes
+#     ax2.plot((-d, +d), (-d, +d), **kwargs)  # bottom-left diagonal
+#     ax2.plot((- d, + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
 
-    Can optionally provide the ylimits.
-    """
-
-    # line up y axes across two axes objects
-    if ymin is None:
-        ymin = np.min((ax1.get_ylim()[0], ax2.get_ylim()[0]))
-    if ymax is None:
-        ymax = np.max((ax1.get_ylim()[1], ax2.get_ylim()[1]))
-    ax1.set_ylim(ymin, ymax)
-    ax2.set_ylim(ymin, ymax)
-
-    # Remove unneeded spines
-    ax1.spines['right'].set_visible(False)
-    ax2.spines['left'].set_visible(False)
-    ax1.yaxis.tick_left()
-    ax1.tick_params(labelright='off')  # don't put tick labels at the right
-    ax2.tick_params(labelleft='off')
-    # ax2.tick_params(labelright='off')  # don't put tick labels at the right
-    ax2.yaxis.tick_right()
-
-    # and break marks
-    d = .015  # how big to make the diagonal lines in axes coordinates
-    # arguments to pass to plot, just so we don't keep repeating them
-    kwargs = dict(transform=ax1.transAxes, color='k', clip_on=False)
-    ax1.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
-    ax1.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # top-right diagonal
-
-    kwargs.update(transform=ax2.transAxes)  # switch to the right axes
-    ax2.plot((-d, +d), (-d, +d), **kwargs)  # bottom-left diagonal
-    ax2.plot((- d, + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
-
-def plotAgeHistsByPrec(ax1, ax2, age, precs, bad_hists, bad_edges, hists, edges,
+def plotAgeHistsByPrec(ax, age, precs, bad_hists, bad_edges, hists, edges,
                        weight=1.):
     alpha=0.7
-    ax2.tick_params(direction='in', top=True)#, right=True)
+    ax.tick_params(direction='in', top=True, right=True)
     for prec in precs:
         width = np.diff(edges[age][prec])
         # center = (edges[age][prec][:-1] + edges[age][prec][1:]) / 2
-        ax2.bar(
+        ax.bar(
             edges[age][prec][:-1],
             hists[age][prec]*weight,
             width=width,
@@ -118,35 +122,67 @@ def plotAgeHistsByPrec(ax1, ax2, age, precs, bad_hists, bad_edges, hists, edges,
         )
 
     # scale of plot is different if not using broken axis
-    if bad_hists is not None:
-        xpos = 0.96
-    else:
-        xpos = 0.98
-    ax2.text(xpos, 0.92, r"$t_{{true}} =${:2} Myr".format(age),
+    # if bad_hists is not None:
+    #     import pdb; pdb.set_trace()
+    #     xpos = 0.96
+    # else:
+    #     xpos = 0.98
+    xpos = 0.98 # now that the width of the main plot is fixed, don't need to change
+    ax.text(xpos, 0.92, r"$t_{{true}} =${:2} Myr".format(age),
                     fontsize=10,
                     horizontalalignment='right',
                     verticalalignment='top',
-                    transform=ax2.transAxes
+                    transform=ax.transAxes
                     )
 
     if bad_hists is not None:
-        ax1.tick_params(direction='in', top=True, left=True)
-        for prec in precs:
-            ax1.bar(
-                bad_edges[age][prec][:-1],
-                bad_hists[age][prec],
-                width=width,
-                alpha=alpha,
-                align='edge',
-                hatch=patterns[precs.index(prec)],
-                color='none',
-                edgecolor=list(plt.rcParams['axes.prop_cycle'])[precs.index(prec)]['color'], #plt.rcParams['axes.prop_cycle'][precs.index(prec)],
-                label=prec_labels[prec],
+        # check if bad_hists is not empty
+        if np.sum(list(bad_hists[age].values())) > 0.:
+            width_frac = 0.28
+            height_frac = 0.6
+            ax_ins = inset_axes(ax,
+                                width='{}%'.format(int(100*width_frac)),
+                                height='{}%'.format(int(100*height_frac)),
+                                borderpad=0.5, loc=2,
+                                bbox_to_anchor=(0.1,0.,1.,1.),
+                                bbox_transform=ax.transAxes,
+                                )
+            ax_ins.tick_params(direction='in', top=True, right=True)
+            ax_ins.bar(
+                    bad_edges[age][prec][:-1],
+                    bad_hists[age][prec],
+                    width=width,
+                    alpha=alpha,
+                    align='edge',
+                    hatch=patterns[precs.index(prec)],
+                    color='none',
+                    edgecolor=list(plt.rcParams['axes.prop_cycle'])[precs.index(prec)]['color'], #plt.rcParams['axes.prop_cycle'][precs.index(prec)],
+                    label=prec_labels[prec],
             )
-        breakAxes(ax1, ax2, ymin=0., ymax=1.25)
-    else:
-        ax2.tick_params(right=True)
-        ax2.set_ylim(0,1.25)
+            ax_ins.set_ylim(ax.get_ylim()[0], height_frac*1.25)
+            x_centre = -19.
+            x_span = 2 * width_frac * np.diff(ax.get_xlim())
+            ax_ins.set_xlim(x_centre-0.5*x_span, x_centre+0.5*x_span)
+            # ax_pos = ax.get_position()
+            # print(ax_pos)
+            # if ax1 is not None:
+            #     import pdb; pdb.set_trace()
+            # Here I build the inset plot and inset it
+            # ax1.tick_params(direction='in', top=True, left=True)
+            # for prec in precs:
+            #     ax1.bar(
+            #         bad_edges[age][prec][:-1],
+            #         bad_hists[age][prec],
+            #         width=width,
+            #         alpha=alpha,
+            #         align='edge',
+            #         hatch=patterns[precs.index(prec)],
+            #         color='none',
+            #         edgecolor=list(plt.rcParams['axes.prop_cycle'])[precs.index(prec)]['color'], #plt.rcParams['axes.prop_cycle'][precs.index(prec)],
+            #         label=prec_labels[prec],
+            #     )
+            # breakAxes(ax1, ax, ymin=0., ymax=1.25)
+    ax.set_ylim(0,1.25)
 
 def calcNumpyHists(ages, precs, data, good_mask, bad_mask, info):
     """
@@ -253,7 +289,11 @@ labels = 'abcd'
 precs = ['half', 'gaia', 'double']#, 'quint']
 
 if __name__ == '__main__':
-    rdir = '../../results/archive/synth_fit/med_2paper1_runs/'
+
+    # ----------------------------------------------------------------------
+    # --  Building data dicitonaries from the data -------------------------
+    # ----------------------------------------------------------------------
+    rdir = '../results/archive/synth_fit/med_2paper1_runs/'
 
     master_dict = buildMasterDict(ages, dxs, dvs, nstars, labels, precs)
     raw_resids_by_age, raw_resids_by_age_prec = buildSpecialDicts(
@@ -268,10 +308,19 @@ if __name__ == '__main__':
         'norm':'$(t_{\\rm fitted} - t_{\\rm true})/\sigma_{\\rm fitted}$',
         # 'norm':'Normalised residual'
     }
-    #data = {'raw':raw_resids_by_age, 'norm':norm_resids_by_age}
+
+    # `data` is a multi-tiered dicitonary with each layer corresponding to:
+    # normalised or not / ages / dx / dvs / nstars / named labels / precisions
     data = {'raw':raw_resids_by_age_prec, 'norm':norm_resids_by_age_prec}
+    # `vanilla` is a multi-tiered dicitonary with each layer corresponding to:
+    # normalised or not / ages / dx / dvs / nstars / named labels
     vanilla_data = {'raw':raw_resids_by_age, 'norm':norm_resids_by_age}
 
+
+    # ----------------------------------------------------------------------
+    # --  Constructing appropriate masks so as to avoid bad data that ruins-
+    # --  the plots  -------------------------------------------------------
+    # ----------------------------------------------------------------------
     vanilla_mask = {}
     bad_vanilla_mask = {}
     for age in ages:
@@ -301,34 +350,37 @@ if __name__ == '__main__':
         'double':r'$\eta = 2.0$',
     }
 
-    # Plot hists of raw offset with broken axis
+    # ----------------------------------------------------------------------
+    # -- Plot hists of raw offset, with really bad runs in the inset      --
+    # ----------------------------------------------------------------------
     for info in ['raw']: #'['raw', 'norm']:
         f, axes = plt.subplots(
             len(ages),
-            2,
-            # sharex=True,
-            # gridspec_kw={'wspace':0,'hspace':0},
+            1,
             gridspec_kw={'hspace':0},
             figsize=(5,len(ages))
         )
-        axes[-1,1].set_xlabel(xlabels[info])
+        axes[-1].set_xlabel(xlabels[info])
 
         # Construct normalised, standard (e.g. bin widths etc) histograms
         hists, edges, bad_hists, bad_edges =\
             calcNumpyHists(ages, precs, data, data_mask, bad_data_mask, info=info)
 
         # Plot each histogram
+        #inset_axes = None # place holder for now
         for i, age in enumerate(ages):
-            plotAgeHistsByPrec(axes[i,0], axes[i,1], age, precs, bad_hists, bad_edges,
+            plotAgeHistsByPrec(axes[i], age, precs, bad_hists, bad_edges,
                                    hists, edges)
 
         # Set primary axes labels and save
-        axes[0,0].legend(loc=2, fontsize='small')
-        axes[2,0].set_ylabel('Relative frequency [arbitrary units]')
+        axes[0].legend(loc=2, fontsize='small')
+        axes[2].set_ylabel('Relative frequency [arbitrary units]')
         f.set_tight_layout(tight=True)
-        f.savefig('../../plots/multi_all_{}_step.pdf'.format(info))
+        f.savefig('../plots/multi_all_{}_step.pdf'.format(info))
 
-    # plot normalised histograms, excluding the failed fits (bad data)
+    # ----------------------------------------------------------------------
+    # -- plot normalised histograms, excluding the failed fits (bad data) --
+    # ----------------------------------------------------------------------
     f, axes = plt.subplots(
         len(ages),
         1,
@@ -347,11 +399,12 @@ if __name__ == '__main__':
     ref_area_under_hist = getAreaUnderCurve(edges[5]['half'][:-1],
                                             hists[5]['half'])
     scaled_ys = ys[:]*ref_area_under_hist/gauss_area
+
     for i, age in enumerate(ages):
         area_under_hist = getAreaUnderCurve(edges[age]['half'][:-1],
                                             hists[age]['half'])
         axes[i].plot(xs, scaled_ys, c='xkcd:black', ls='--')
-        plotAgeHistsByPrec(None, axes[i], age, precs, bad_hists=None,
+        plotAgeHistsByPrec(axes[i], age, precs, bad_hists=None,
                            bad_edges=None,
                            hists=hists,
                            edges=edges,
@@ -362,7 +415,12 @@ if __name__ == '__main__':
     axes[0].legend(loc=2, fontsize='small')
     axes[2].set_ylabel('Relative frequency [arbitrary units]')
     f.set_tight_layout(tight=True)
-    f.savefig('../../plots/multi_all_{}_step.pdf'.format('norm'))
+    f.savefig('../plots/multi_all_{}_step.pdf'.format('norm'))
+
+
+    # ----------------------------------------------------------------------
+    # --  Just some book keeping if desired  -------------------------------
+    # ----------------------------------------------------------------------
 
     if False:
         print("Removed runs:")

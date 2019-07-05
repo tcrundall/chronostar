@@ -17,20 +17,22 @@ sys.path.insert(0, '../..')
 
 import chronostar.retired2.datatool as dt
 import chronostar.fitplotter as fp
+from chronostar import tabletool
+from chronostar.component import SphereComponent
 
 debugging_circles=False
 
 # PLOTTING FLAGS
 PLOT_CORNER = False
 # PLOT_CORNER = True
-PLOT_FED_STARS = False
-# PLOT_FED_STARS = True
+# PLOT_FED_STARS = False
+PLOT_FED_STARS = True
 PLOT_MUTLI_SYNTH = False
 # PLOT_MUTLI_SYNTH = True
 PLOT_SYNTH_BPMG2 = False
 # PLOT_SYNTH_BPMG2 = True
-# PLOT_BPMG_REAL = False
-PLOT_BPMG_REAL = True
+PLOT_BPMG_REAL = False
+# PLOT_BPMG_REAL = True
 PLOT_FAILURE = False
 
 DEFAULT_DIMS = ((0,1), (0,3), (1,4), (2,5))
@@ -352,12 +354,20 @@ if PLOT_BPMG_REAL:
             #     bpmg_range[1] = temp_range
 
 
-# plotting federrath stars
+# --------------------------------------------------
+# --  PLOTTING FEDERRATH STARS  --------------------
+# --------------------------------------------------
+# Plots the following:
+# - current day measured star positions
+# - best fit
+# - gaussian fit to true origin
+# - calculated stellar traceback orbits
+#   (with incorporated measurement uncertainties)
 if PLOT_FED_STARS:
     print("Plotting fed stars)")
     synth_fit = 'fed_stars'
     # rdir = '../../results/fed_fits/30/gaia/'
-    rdir = '../../results/fed_fits/20/gaia/'
+    rdir = '../../results/archive/fed_fits/20/gaia/'
     origins_file = rdir + 'origins.npy'
     chain_file = rdir + 'final_chain.npy'
     lnprob_file = rdir + 'final_lnprob.npy'
@@ -371,7 +381,8 @@ if PLOT_FED_STARS:
     lnprobs = np.load(lnprob_file)
     # best_fit_pars = np.load(chain_file)[np.unravel_index(np.argmax(lnprobs), lnprobs.shape)]
     best_fit_pars = chain[np.argmax(lnprobs)]
-    groups = [chronostar.component.Component(best_fit_pars, internal=True)]
+    comps = [chronostar.component.SphereComponent(emcee_pars=best_fit_pars)]
+    comps = SphereComponent(emc)
     origins = dt.loadGroups(origins_file)
     raw_init_xyzuvw = np.load(init_xyzuvw_file)
     # perf_xyzuvw = np.load(perf_xyzuvw_file)
@@ -391,7 +402,7 @@ if PLOT_FED_STARS:
         fed_xranges[dim1], fed_yranges[dim2] = fp.plotPane(
             dim1,
             dim2,
-            groups=groups,
+            groups=comps,
             star_pars=star_pars_file,
             origin_star_pars={'xyzuvw':init_xyzuvw},
             group_then=True,
@@ -401,7 +412,7 @@ if PLOT_FED_STARS:
                                                LABELS[dim1],
                                                LABELS[dim2]),
             marker_legend={'current-day':'.', 'origin':'s'} if dim1==2 else None,
-            color_legend={'current-day':'xkcd:blue', 'origin':'xkcd:blue'} if dim1==2 else None,
+            color_legend={'current-day':'xkcd:red', 'origin':'xkcd:orange'} if dim1==2 else None,
             star_pars_label='current-day',
             origin_star_pars_label='origin',
             isotropic=(int(dim1/3) == int(dim2/3)),
