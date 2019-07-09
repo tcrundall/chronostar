@@ -529,5 +529,45 @@ def test_badColNames():
     except:
         assert False
 
+def test_build_data_from_incomplete_table():
+    """
+    Sometimes rows will be missing data, e.g. from when binaries
+    have been merged. build_data_from_dict should detect the
+    presence of nans and skip them
+    """
+    # build a dummy table of data
+    NSTARS = 10
+    NDIM = 6
+    missing_row_ix = (np.array([0,3,4]),)
+    means = np.random.rand(NSTARS,NDIM)
+    covs = np.array(NSTARS*[np.eye(NDIM,NDIM)])
+    nan_mask = np.array(NSTARS*[False])
+
+    # check bad data are within index range
+    assert np.all(missing_row_ix[0] < NSTARS)
+    nan_mask[missing_row_ix] = True
+    covs[nan_mask] = np.nan
+
+    names = np.arange(NSTARS)
+
+    dummy_table = Table()
+    dummy_table['names'] = names
+
+    tabletool.append_cart_cols_to_table(dummy_table)
+
+    for row, mean, cov in zip(dummy_table, means, covs):
+        tabletool.insert_data_into_row(row, mean, cov)
+
+    star_pars = tabletool.build_data_dict_from_table(dummy_table)
+
+    assert not np.any(np.isnan(star_pars['means']))
+    assert not np.any(np.isnan(star_pars['covs']))
+
+    # check the correct number of rows have been returned
+    assert len(star_pars['means']) == np.sum(np.logical_not(nan_mask))
+    assert len(star_pars['covs']) == np.sum(np.logical_not(nan_mask))
+
+
 if __name__ == '__main__':
-    test_badColNames()
+    pass
+

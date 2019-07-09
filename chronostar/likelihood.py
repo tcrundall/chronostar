@@ -16,25 +16,28 @@ except ImportError:
     print("C IMPLEMENTATION OF GET_OVERLAP NOT IMPORTED")
     USE_C_IMPLEMENTATION = False
 
-def slow_get_lnoverlaps(g_cov, g_mn, st_covs, st_mns):
+def slow_get_lnoverlaps(g_cov, g_mn, st_covs, st_mns, dummy=None):
     """
     A pythonic implementation of overlap integral calculation.
     Left here in case swigged _overlap doesn't work.
 
     Paramters
     ---------
-    g_cov : ([6,6] float array)
+    g_cov: ([6,6] float array)
         Covariance matrix of the group
-    g_mn : ([6] float array)
+    g_mn: ([6] float array)
         mean of the group
-    st_covs : ([nstars, 6, 6] float array)
+    st_covs: ([nstars, 6, 6] float array)
         covariance matrices of the stars
-    st_mns : ([nstars, 6], float array)
+    st_mns: ([nstars, 6], float array)
         means of the stars
+    dummy: {None}
+        a place holder parameter such that this function's signature
+        matches that of the c implementation
 
     Returns
     -------
-    ln_ols : ([nstars] float array)
+    ln_ols: ([nstars] float array)
         an array of the logarithm of the overlaps
     """
     lnols = []

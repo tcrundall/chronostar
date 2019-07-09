@@ -165,15 +165,7 @@ def build_data_dict_from_table(table, main_colnames=None, error_colnames=None,
     means = np.vstack([table[col] for col in main_colnames]).T
     if only_means:
         return means
-    results_dict = {}
-    results_dict['means'] = means
-
-    # Insert background overlaps
-    if get_background_overlaps:
-        if background_colname is None:
-            background_colname = 'background_log_overlap'
-    if background_colname in table.colnames:
-        results_dict['bg_lnols'] = np.array(table[background_colname])
+    results_dict = {'means':means}
 
     # Generate covariance matrices
     nstars = len(table)
@@ -223,6 +215,25 @@ def build_data_dict_from_table(table, main_colnames=None, error_colnames=None,
     covs = np.einsum('ijk,ij->ijk', covs, standard_devs)    # the rows
     covs = np.einsum('ijk,ik->ijk', covs, standard_devs)    # the columsn
     results_dict['covs'] = covs
+
+    # Checks for any nans in the means or covariances
+    bad_mean_mask = np.any(np.isnan(means), axis=1)
+    bad_cov_mask = np.any(np.isnan(covs), axis=(1,2))
+
+    good_row_mask = np.logical_not(np.logical_or(bad_mean_mask, bad_cov_mask))
+
+    results_dict = {
+        'means':means[good_row_mask],
+        'covs':covs[good_row_mask],
+    }
+
+    # Insert background overlaps
+    if get_background_overlaps:
+        if background_colname is None:
+            background_colname = 'background_log_overlap'
+    if background_colname in table.colnames:
+        results_dict['bg_lnols'] = np.array(table[background_colname])[good_row_mask]
+
     return results_dict
 
 

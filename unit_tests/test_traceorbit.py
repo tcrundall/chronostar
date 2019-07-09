@@ -32,7 +32,7 @@ from galpy.potential import MiyamotoNagaiPotential
 
 LOGGINGLEVEL = logging.DEBUG
 method_atols = {
-    'odeint':1e-11,
+    'odeint':1e-10,
     'symplec4_c':1e-5,
     'rk4_c':1e-5,
     'dopr54_c':1e-6,

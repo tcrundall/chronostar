@@ -92,19 +92,19 @@ def test_expectation():
 
     assert np.allclose(true_memb_probs, fitted_memb_probs, atol=1e-10)
 
-def test_background_overlaps():
-    """
-    Author: Marusa Zerjal, 2019 - 05 - 26
+# def test_background_overlaps():
+#     """
+#     Author: Marusa Zerjal, 2019 - 05 - 26
 
-    Compare background overlap with KDE and background overlap with tiny covariance matrix
+    # Compare background overlap with KDE and background overlap with tiny covariance matrix
 
-    :return:
-    """
+    # :return:
+    # """
 
-    background_means = tabletool.build_data_dict_from_table(kernel_density_input_datafile,
-        only_means=True,
-    )
+    # background_means = tabletool.build_data_dict_from_table(kernel_density_input_datafile,
+    #     only_means=True,
+    # )
 
-    ln_bg_ols_kde = em.get_kernel_densities(background_means,
-    #                                           star_means, )
+    # ln_bg_ols_kde = em.get_kernel_densities(background_means,
+    # #                                           star_means, )
 
