@@ -148,12 +148,16 @@ def get_background_overlaps_with_covariances(background_means, star_means,
     # So I do it in a loop for every star
     bg_lnols=[]
     for i, (star_mean, star_cov) in enumerate(zip(star_means, star_covs)):
-        print('{} of {}'.format(i, len(star_means)))
-        print(star_cov)
-        print(np.linalg.det(star_cov))
+        #print('{} of {}'.format(i, len(star_means)))
+        #print(star_cov)
+        #print('det', np.linalg.det(star_cov))
+        #bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
+        #                         background_means, nstars)
         try:
+            #print('***********', nstars, star_cov, star_mean, background_covs, background_means)
             bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
                                      background_means, nstars)
+            #print('intermediate', bg_lnol)
             # bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
             bg_lnol = logsumexp(bg_lnol) # sum in linear space
 
@@ -162,10 +166,11 @@ def get_background_overlaps_with_covariances(background_means, star_means,
         except:
             # TC: Changed sign to negative (surely if it fails, we want it to
             # have a neglible background overlap?
+            print('bg ln overlap failed, setting it to -inf')
             bg_lnol = -np.inf
         bg_lnols.append(bg_lnol)
-        print(bg_lnol)
-        print('')
+        #print(bg_lnol)
+        #print('')
 
     # This should be parallelized
     #bg_lnols = [np.sum(get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)) for star_mean, star_cov in zip(star_means, star_covs)]
