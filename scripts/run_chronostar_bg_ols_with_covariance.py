@@ -207,21 +207,25 @@ else:
         if bg_lnol_colname not in data_table.colnames:
             log_message('Calculating background densities with covariance matrices')
 
-            #ln_bg_ols = expectmax.get_background_overlaps_with_covariances(
-            #    config.config['kernel_density_input_datafile'],
-            #    data_table,
-            #)
-
-            # Background overlap with no covariance matrix
-            background_means = tabletool.build_data_dict_from_table(
+            # Background overlap with covariance matrix
+            if config.config['bg_ols_with_covariance']:
+                ln_bg_ols = expectmax.get_background_overlaps_with_covariances(
                     config.config['kernel_density_input_datafile'],
-                    only_means=True,
-            )
-            star_means = tabletool.build_data_dict_from_table(
-                    data_table, only_means=True,
-            )
-            ln_bg_ols = expectmax.get_kernel_densities(background_means,
-                                                       star_means, )
+                    data_table,
+                )
+
+            # Background overlap with KDE
+            else:
+                # Background overlap with no covariance matrix
+                background_means = tabletool.build_data_dict_from_table(
+                        config.config['kernel_density_input_datafile'],
+                        only_means=True,
+                )
+                star_means = tabletool.build_data_dict_from_table(
+                        data_table, only_means=True,
+                )
+                ln_bg_ols = expectmax.get_kernel_densities(background_means,
+                                                           star_means, )
 
 
             # If allowed, save to original file path

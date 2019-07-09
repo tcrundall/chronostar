@@ -17,6 +17,7 @@ config = {
     'kernel_density_input_datafile':'/home/tcrun/chronostar/data/gaia_cartesian_full_6d_table.fits',
                                                     # Cartesian data of all Gaia DR2 stars
                                                     # e.g. ../data/gaia_dr2_mean_xyzuvw.npy
+    'bg_ols_with_covariance': False, # Compute background overlaps using covariance matrix. Useful when some components have large errors, e.g. unknown radial velocities. If False, KDE will be used as default.
     'run_with_mpi':False,       # not yet inpmlemented
     'convert_to_cartesian':True,        # whehter need to convert data from astrometry to cartesian
     'overwrite_datafile':False,         # whether to store results in same talbe and rewrite to file
