@@ -62,7 +62,6 @@ def test_compare_two_overlap_implementations():
         'age': true_comp_age,
     })
 
-
     nstars = 10
     synth_data = SynthData(pars=true_comp.get_pars(), starcounts=nstars)
     synth_data.synthesise_everything()
@@ -83,6 +82,8 @@ def test_compare_two_overlap_implementations():
     #print(ln_bg_ols_cov)
 
     assert np.allclose(ln_bg_ols_kde, ln_bg_ols_cov, atol=0.1)
+    assert np.isfinite(ln_bg_ols_kde).all()
+    assert np.isfinite(ln_bg_ols_cov).all()
 
 if __name__ == '__main__':
     test_compare_two_overlap_implementations()
