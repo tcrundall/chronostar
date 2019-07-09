@@ -14,9 +14,10 @@ import numpy as np
 import scipy
 _SCIPY_VERSION= [int(v.split('rc')[0])
                  for v in scipy.__version__.split('.')]
-if _SCIPY_VERSION[0] < 1 and _SCIPY_VERSION[1] < 10:
+if _SCIPY_VERSION[0] == 0 and _SCIPY_VERSION[1] < 10:
     from scipy.maxentropy import logsumexp
-elif _SCIPY_VERSION[0] == 1 and _SCIPY_VERSION[1] >= 3:
+elif ((_SCIPY_VERSION[0] == 1 and _SCIPY_VERSION[1] >= 3) or
+    _SCIPY_VERSION[0] > 1):
     from scipy.special import logsumexp
 else:
     from scipy.misc import logsumexp
@@ -126,16 +127,17 @@ def get_background_overlaps_with_covariances(background_means, star_means,
 
     Notes
     -----
+    We invert the vertical values (Z and U) because the typical background
+    density should be symmetric along the vertical axis, and this distances
+    stars from their siblings. I.e. association stars aren't assigned
+    higher background overlaps by virtue of being an association star.
 
     Edits
     -----
     TC 2019-05-28: changed signature such that it follows similar usage as
                    get_kernel_densitites
     """
-#     # Background means
-#     background_means = tabletool.build_data_dict_from_table(data,
-#                                                             only_means=True,
-#                                                             )
+    # Inverting the vertical values
     star_means = np.copy(star_means)
     star_means[:, 2] *= -1
     star_means[:, 5] *= -1
