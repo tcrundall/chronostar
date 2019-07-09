@@ -136,6 +136,9 @@ def get_background_overlaps_with_covariances(background_means, star_means,
 #     background_means = tabletool.build_data_dict_from_table(data,
 #                                                             only_means=True,
 #                                                             )
+    star_means = np.copy(star_means)
+    star_means[:, 2] *= -1
+    star_means[:, 5] *= -1
 
     # Background covs with bandwidth using Scott's rule
     d = 6.0 # number of dimensions

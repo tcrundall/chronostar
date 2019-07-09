@@ -24,66 +24,42 @@ def test_compare_two_overlap_implementations():
 
     Compare KDE and background overlap with covariance matrix
 
+    Generate two sets of normally distributed points. The first serves
+    as the background stars, the second is our set of sample stars
+    for which the background overlaps will be calculated. In the limit
+    of tiny covariance matrices for the stars,
     """
+    TINY_STD = 1e-6
 
     # Simple background data
-    true_comp_mean = np.zeros(6)
-    true_comp_dx = 200.
-    true_comp_dv = 200.
-    true_comp_covmatrix = np.identity(6)
-    true_comp_covmatrix[:3, :3] *= true_comp_dx ** 2
-    true_comp_covmatrix[3:, 3:] *= true_comp_dv ** 2
-    true_comp_age = 1e-10
-    true_comp = SphereComponent(attributes={
-        'mean': true_comp_mean,
-        'covmatrix': true_comp_covmatrix,
-        'age': true_comp_age,
-    })
-
-    nstars = 2000
-    synth_data = SynthData(pars=true_comp.get_pars(), starcounts=nstars)
-    synth_data.synthesise_everything()
-    tabletool.convert_table_astro2cart(synth_data.table)
-
-    star_data = tabletool.build_data_dict_from_table(synth_data.table)
-    background_means = star_data['means']
+    nbgstars = 1000
+    bg_comp_dx = 100.
+    bg_comp_dv = 10.
+    background_means = np.random.randn(nbgstars, 6)
+    background_means[:, :3] *= bg_comp_dx
+    background_means[:, 3:] *= bg_comp_dv
 
     # STAR DATA
-    true_comp_mean = np.zeros(6)
-    true_comp_dx = 2.
-    true_comp_dv = 2.
-    true_comp_covmatrix = np.identity(6)
-    true_comp_covmatrix[:3, :3] *= true_comp_dx ** 2
-    true_comp_covmatrix[3:, 3:] *= true_comp_dv ** 2
-    true_comp_age = 1e-10
-    true_comp = SphereComponent(attributes={
-        'mean': true_comp_mean,
-        'covmatrix': true_comp_covmatrix,
-        'age': true_comp_age,
-    })
+    n_sample_stars = 10
 
-    nstars = 10
-    synth_data = SynthData(pars=true_comp.get_pars(), starcounts=nstars)
-    synth_data.synthesise_everything()
-    tabletool.convert_table_astro2cart(synth_data.table)
+    # Generating random values normally distributed
+    star_means = np.random.randn(n_sample_stars, 6)
 
-    star_data = tabletool.build_data_dict_from_table(synth_data.table)
-    star_means = star_data['means']
-    star_covs = star_data['covs']
-    #group_mean = true_comp.get_mean()
-    #group_cov = true_comp.get_covmatrix()
+    # Extending spread to match that of background stars
+    star_means[:,:3] *= bg_comp_dx
+    star_means[:,3:] *= bg_comp_dv
+
+    star_covs = np.array(
+        n_sample_stars * [np.identity(6) * TINY_STD**2]
+    )
 
     # Background overlaps using KDE
-    ln_bg_ols_kde = expectmax.get_kernel_densities(background_means, star_means, )
-    #print(ln_bg_ols_kde)
+    ln_bg_ols_kde = expectmax.get_kernel_densities(background_means, star_means)
 
     # Background overlaps using covariance matrix
     ln_bg_ols_cov = expectmax.get_background_overlaps_with_covariances(background_means, star_means, star_covs)
-    #print(ln_bg_ols_cov)
 
-    assert np.allclose(ln_bg_ols_kde, ln_bg_ols_cov, atol=0.1)
+    assert np.allclose(ln_bg_ols_kde, ln_bg_ols_cov)
     assert np.isfinite(ln_bg_ols_kde).all()
     assert np.isfinite(ln_bg_ols_cov).all()
 
-if __name__ == '__main__':
-    test_compare_two_overlap_implementations()
