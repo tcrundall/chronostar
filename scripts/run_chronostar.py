@@ -137,7 +137,8 @@ print('After filenames')
 if (config.config['data_savefile'] != '' and
         os.path.isfile(config.config['data_savefile'])):
     log_message('Loading pre-prepared data')
-    data_table = tabletool.load(config.config['data_savefile'])
+    datafile = config.config['data_savefile']
+    data_table = tabletool.load(datafile)
     historical = 'c_XU' in data_table.colnames
 
 # Otherwise, perform entire process
@@ -217,6 +218,8 @@ else:
     if config.config['include_background_distribution']:
         # Only calculate if missing
         if bg_lnol_colname not in data_table.colnames:
+            # TODO: by circumstance the means don't get masked for bad data...
+            # which is what we want here. But it is ugly
             log_message('Calculating background densities')
             background_means = tabletool.build_data_dict_from_table(
                     config.config['kernel_density_input_datafile'],
@@ -230,16 +233,19 @@ else:
 
             # If allowed, save to original file path
             if config.config['overwrite_datafile']:
-                tabletool.insert_column(data_table, bg_lnol_colname,
-                                        ln_bg_ols, filename=datafile)
+                tabletool.insert_column(data_table,
+                                        col_data=ln_bg_ols,
+                                        col_name=bg_lnol_colname,
+                                        filename=datafile)
             else:
-                tabletool.insert_column(data_table, col_data=ln_bg_ols,
+                tabletool.insert_column(data_table,
+                                        col_data=ln_bg_ols,
                                         col_name=bg_lnol_colname)
 
-if config.config['overwrite_datafile']:
-    data_table.write(datafile)
-elif config.config['data_savefile'] != '':
-    data_table.write(config.config['data_savefile'], overwrite=True)
+    if config.config['overwrite_datafile']:
+        data_table.write(datafile, overwrite=True)
+    elif config.config['data_savefile'] != '':
+        data_table.write(config.config['data_savefile'], overwrite=True)
 
 # Set up trace_orbit_func
 if config.config['dummy_trace_orbit_function']:
@@ -280,7 +286,8 @@ init_memb_probs = np.zeros((len(data_dict['means']),1+using_bg))
 init_memb_probs[:,0] = 1.
 
 store_burnin_chains = config.advanced.get('store_burnin_chains', False)
-log_message(msg='Storing burnin chains', symbol='-')
+if store_burnin_chains:
+    log_message(msg='Storing burnin chains', symbol='-')
 
 # Try and recover any results from previous run
 try:
