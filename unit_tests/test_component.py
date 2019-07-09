@@ -15,11 +15,12 @@ import numpy as np
 import sys
 sys.path.insert(0, '..')
 
-from chronostar.component import SphereComponent, EllipComponent
+from chronostar.component import SphereComponent, EllipComponent, FreeComponent
 
 COMPONENT_CLASSES = {
     'sphere':SphereComponent,
     'ellip':EllipComponent,
+    'free':FreeComponent,
     # Insert new implementations here
 }
 
@@ -27,18 +28,40 @@ MEAN = np.array([0.,1.,2.,3.,4.,5.])
 DX = 9.
 DY = 12.
 DZ = 16.
+DU = 3.
 DV = 5.
+DW = 7.
 C_XY = 0.2
 C_XZ = -0.9
+C_XU = 0.1
+C_XV = -0.1
+C_XW = 0.4
 C_YZ = -0.3
+C_YU = 0.1
+C_YV = -0.1
+C_YW = 0.1
+C_ZU = 0.2
+C_ZV = 0.1
+C_ZW = -0.1
+C_UV = 0.1
+C_UW = 0.1
+C_WU = 0.1
 AGE = 20
 SPHERE_PARS = np.hstack((MEAN, [DX, DV, AGE]))
 
 ELLIP_PARS = np.hstack((MEAN, [DX, DY, DZ, DV, C_XY, C_XZ, C_YZ, AGE]))
+FREE_PARS = np.hstack((MEAN, [DX, DY, DZ, DU, DV, DW,
+                              C_XY, C_XZ, C_XU, C_XV, C_XW,
+                              C_YZ, C_YU, C_YV, C_YW,
+                              C_ZU, C_ZV, C_ZW,
+                              C_UV, C_UW,
+                              C_WU,
+                              AGE]))
 
 DEFAULT_PARS = {
     'sphere':SPHERE_PARS,
     'ellip':ELLIP_PARS,
+    'free':FREE_PARS,
     # Insert new default pars here
 }
 

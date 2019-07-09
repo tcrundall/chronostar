@@ -18,7 +18,7 @@ sys.path.insert(0, '../..')
 import chronostar.retired2.datatool as dt
 import chronostar.fitplotter as fp
 from chronostar import tabletool
-from chronostar.component import SphereComponent
+from chronostar.component import SphereComponent, FreeComponent, EllipComponent
 
 debugging_circles=False
 
@@ -353,6 +353,17 @@ if PLOT_BPMG_REAL:
             # if dim1 == 0 and dim2 == 1 and debugging_circles:
             #     bpmg_range[1] = temp_range
 
+def plot_comps_and_stars(dim1, dim2, star_pars, comps, Component=SphereComponent,
+                         star_orbits=False, star_age=0., star_then=False,
+                         comp_kwargs={},
+                         ):
+    if type(star_pars) is str:
+        tabletool.build_data_dict_from_table(star_pars)
+    if type(comps) is str:
+        comps = Component.load_raw_components(comps)
+
+
+
 
 # --------------------------------------------------
 # --  PLOTTING FEDERRATH STARS  --------------------
@@ -365,67 +376,127 @@ if PLOT_BPMG_REAL:
 #   (with incorporated measurement uncertainties)
 if PLOT_FED_STARS:
     print("Plotting fed stars)")
+
+    # Setting up file names
     synth_fit = 'fed_stars'
-    # rdir = '../../results/fed_fits/30/gaia/'
     rdir = '../../results/archive/fed_fits/20/gaia/'
     origins_file = rdir + 'origins.npy'
+    origin_comp_file = rdir + 'origin_ellip_comp.npy'
     chain_file = rdir + 'final_chain.npy'
     lnprob_file = rdir + 'final_lnprob.npy'
     star_pars_file = rdir + 'xyzuvw_now.fits'
-    # init_xyzuvw_file = '../../data/sink_init_xyzuvw.npy'
     init_xyzuvw_file = rdir + '../xyzuvw_init_offset.npy'
-    # perf_xyzuvw_file = rdir + '../perf_xyzuvw.npy'
-    # star_pars_file = '../../data/fed_stars_20_xyzuvw.fits'
+    perf_xyzuvw_now = rdir + '../perf_xyzuvw.npy'
 
-    chain = np.load(chain_file).reshape(-1,9)
-    lnprobs = np.load(lnprob_file)
-    # best_fit_pars = np.load(chain_file)[np.unravel_index(np.argmax(lnprobs), lnprobs.shape)]
-    best_fit_pars = chain[np.argmax(lnprobs)]
-    comps = [chronostar.component.SphereComponent(emcee_pars=best_fit_pars)]
-    comps = SphereComponent(emc)
-    origins = dt.loadGroups(origins_file)
-    raw_init_xyzuvw = np.load(init_xyzuvw_file)
-    # perf_xyzuvw = np.load(perf_xyzuvw_file)
-    # init_xyzuvw = torb.traceManyOrbitXYZUVW(perf_xyzuvw, -origins[0].age,
-    #                                         single_age=True)
+    # loading in data
+    best_comp = SphereComponent.get_best_from_chain(chain_file, lnprob_file)
+    origin_comp = EllipComponent.load_raw_components(origin_comp_file)[0]
     init_xyzuvw = np.load(init_xyzuvw_file)
-
     star_pars = dt.loadXYZUVW(star_pars_file)
+    perf_mean_now = np.load(perf_xyzuvw_now)
+
+    original_origin = dt.loadGroups(origins_file)[0]
+
+
+    # assigning useful shorthands
+    mns = star_pars['xyzuvw']
+    covs = star_pars['xyzuvw_cov']
+
     fed_xranges, fed_yranges = calcRanges(
         {'xyzuvw':np.vstack((star_pars['xyzuvw'],init_xyzuvw))},
         sep_axes=True,
     )
+
+    labels='XYZUVW'
+    units = 3*['[pc]'] + 3*['[km/s]']
     # import pdb; pdb.set_trace()
 
-    for dim1, dim2 in DEFAULT_DIMS: #[(0,1), (0,3), (1,4), (2,5)]:
-        # plt.clf()
-        fed_xranges[dim1], fed_yranges[dim2] = fp.plotPane(
-            dim1,
-            dim2,
-            groups=comps,
-            star_pars=star_pars_file,
-            origin_star_pars={'xyzuvw':init_xyzuvw},
-            group_then=True,
-            group_now=True,
-            star_orbits=True,
-            savefile='{}_both_{}{}.pdf'.format(synth_fit,
-                                               LABELS[dim1],
-                                               LABELS[dim2]),
-            marker_legend={'current-day':'.', 'origin':'s'} if dim1==2 else None,
-            color_legend={'current-day':'xkcd:red', 'origin':'xkcd:orange'} if dim1==2 else None,
-            star_pars_label='current-day',
-            origin_star_pars_label='origin',
-            isotropic=(int(dim1/3) == int(dim2/3)),
-            range_1=fed_xranges[dim1],
-            range_2=fed_yranges[dim2],
-        )
+    plt.clf()
+    fig, axes = plt.subplots(2, 2, figsize=(8,8))
+
+    for ax, (dim1, dim2) in zip(axes.flatten(), DEFAULT_DIMS):
+        # Plot the initial distribution in solid red, with orbit
+        origin_comp.plot(ax=ax, dim1=dim1, dim2=dim2, color='xkcd:red', msize=30,
+                         comp_then=True, comp_now=False, comp_orbit=True,
+                         alpha=0.8, orbit_alpha=0.7, comp_then_fill=False,
+                         comp_then_linewidth='2')
+        # Plot the initial stars
+        for init_mean in init_xyzuvw:
+            ax.scatter(init_mean[dim1], init_mean[dim2], marker='s', color='xkcd:grey',
+                        alpha=0.7)
+        # Plot the stars as they are today
+        for mean in perf_mean_now:
+            ax.scatter(mean[dim1], mean[dim2], marker='*', color='black',
+                       s=25,
+                       alpha=0.7)
+        # Plot the fit to today
+        best_comp.plot(ax=ax, dim1=dim1, dim2=dim2, color='xkcd:red', msize=30,
+                       alpha=0.7)
+        # Plot the measurements of the stars
+        for ix, (mn, cov) in enumerate(zip(mns, covs)):
+            star_comp = FreeComponent(attributes={'mean':mn,
+                                                  'covmatrix':cov,
+                                                  'age':-20.})
+            star_comp.plot(ax=ax, dim1=dim1, dim2=dim2, color='xkcd:blue',
+                           comp_orbit=(ix%3==0), comp_now=False, comp_then=True,
+                           msize=50, marker='o', orbit_alpha=0.7,
+                           orbit_color='xkcd:grey', orbit_arrow=False)
+
+        ax.set_xlabel('{} {}'.format(labels[dim1], units[dim1]))
+        ax.set_ylabel('{} {}'.format(labels[dim2], units[dim2]))
+
+        # Standardise ranges
+        if int(dim1/3) == int(dim2/3):
+            ax.axis('equal')
+
+        fed_xranges[dim1] = ax.get_xlim()
+        fed_yranges[dim2] = ax.get_ylim()
+
         scaleRanges(fed_xranges, (0, 1, 2))
         scaleRanges(fed_xranges, (3, 4, 5))
-        # scaleRanges(fed_yranges, (0, 1, 2))
-        # scaleRanges(fed_yranges, (3, 4, 5))
-        # scaleRanges(fed_xranges, (0,1,2))
-        # scaleRanges(fed_xranges, (3,4,5))
+        scaleRanges(fed_yranges, (0, 1, 2))
+        scaleRanges(fed_yranges, (3, 4, 5))
 
+        ax.set_xlim(fed_xranges[dim1])
+        ax.set_ylim(fed_yranges[dim2])
+        ax.tick_params(direction='in', top=True, right=True)
+
+        # plt.savefig('{}_both_{}{}.pdf'.format(synth_fit,
+        #                                       labels[dim1],
+        #                                       labels[dim2]))
+    fig.set_tight_layout(tight=True)
+    fig.savefig('{}_all.pdf'.format(synth_fit))
+
+
+    # for dim1, dim2 in DEFAULT_DIMS: #[(0,1), (0,3), (1,4), (2,5)]:
+    #     # plt.clf()
+    #     fed_xranges[dim1], fed_yranges[dim2] = fp.plotPane(
+    #         dim1,
+    #         dim2,
+    #         groups=comps,
+    #         star_pars=star_pars_file,
+    #         origin_star_pars={'xyzuvw':init_xyzuvw},
+    #         group_then=True,
+    #         group_now=True,
+    #         star_orbits=True,
+    #         savefile='{}_both_{}{}.pdf'.format(synth_fit,
+    #                                            LABELS[dim1],
+    #                                            LABELS[dim2]),
+    #         marker_legend={'current-day':'.', 'origin':'s'} if dim1==2 else None,
+    #         color_legend={'current-day':'xkcd:red', 'origin':'xkcd:orange'} if dim1==2 else None,
+    #         star_pars_label='current-day',
+    #         origin_star_pars_label='origin',
+    #         isotropic=(int(dim1/3) == int(dim2/3)),
+    #         range_1=fed_xranges[dim1],
+    #         range_2=fed_yranges[dim2],
+    #     )
+    #     scaleRanges(fed_xranges, (0, 1, 2))
+    #     scaleRanges(fed_xranges, (3, 4, 5))
+    #     # scaleRanges(fed_yranges, (0, 1, 2))
+    #     # scaleRanges(fed_yranges, (3, 4, 5))
+    #     # scaleRanges(fed_xranges, (0,1,2))
+    #     # scaleRanges(fed_xranges, (3,4,5))
+    #
 
 # plotting Multi-component synth fits
 if PLOT_MUTLI_SYNTH:

@@ -751,7 +751,8 @@ class AbstractComponent(object):
                                )
 
     def plot_orbit(self, dim1, dim2, ax, ntimes=50,
-                  with_arrow=False, annotate=False, color=None, **kwargs):
+                  with_arrow=False, annotate=False, color=None, alpha=0.3,
+                   **kwargs):
         """
         For traceback use negative age
 
@@ -769,7 +770,7 @@ class AbstractComponent(object):
         with_arrow: (bool) {False}, whether to include arrows along orbit
         annotate: (bool) {False}, whether to include text
         """
-        alpha=0.3
+        # alpha=0.3
         if color is None:
             color = 'black'
             # if group_ix is None:
@@ -785,13 +786,13 @@ class AbstractComponent(object):
         )
         line_obj = ax.plot(comp_orb[:, dim1], comp_orb[:, dim2], ls='-',
                            alpha=alpha,
-                           color=color, **kwargs)
+                           color=color, zorder=1, **kwargs)
         indices = [int(ntimes / 3), int(2 * ntimes / 3)]
         if with_arrow:
             # make sure arrow is always pointing forwards through time
             direction = 'right' if self.get_age() > 0 else 'left'
             self.add_arrow(line_obj[0], indices=indices, direction=direction,
-                           color=color, alpha=alpha,)
+                           color=color, alpha=alpha, zorder=1)
         if annotate:
             ax.annotate("Orbital trajectory",
                         (comp_orb[int(ntimes / 2), dim1],
@@ -799,6 +800,7 @@ class AbstractComponent(object):
                         color=color)
 
     def plot_cov_ellipse(self, cov, pos, nstd=2, ax=None, with_line=True,
+                         zorder=4,
                          **kwargs):
         """
         Plots an `nstd` sigma error ellipse based on the specified covariance
@@ -813,6 +815,9 @@ class AbstractComponent(object):
                 Defaults to 2 standard deviations.
             ax : The axis that the ellipse will be plotted on. Defaults to the
                 current axis.
+            zorder: Integer
+                The priority of overlay. The higher the number, the more 'ontop
+                of' the plot the ellipse will be.
             Additional keyword arguments are pass on to the ellipse patch.
         Returns
         -------
@@ -840,6 +845,8 @@ class AbstractComponent(object):
         if 'color' not in kwargs.keys():# and 'c' not in kwargs.keys():
             ellip.set_facecolor('red')
 
+        ellip.zorder = zorder
+
         ax.add_patch(ellip)
 
         # THEN just f***ing plot an invisible line across the ellipse.
@@ -861,6 +868,11 @@ class AbstractComponent(object):
 
     def plot(self, dim1, dim2, ax=None, comp_now=True, comp_then=False,
              color='red', comp_orbit=False, alpha=0.3, marker='+', msize=10,
+             orbit_color=None, orbit_alpha=None,
+             comp_then_fill=True,
+             comp_then_linewidth='0.1',
+             orbit_arrow=True,
+             comp_orbit_kwargs={},
              **kwargs):
         """
         Conveniently displays the component on the provided axes (or most
@@ -883,7 +895,7 @@ class AbstractComponent(object):
 
         if comp_now:
             ax.scatter(self.get_mean_now()[dim1], self.get_mean_now()[dim2], color=color,
-                       linewidth=0.0, marker=marker, s=msize)
+                       linewidth=0.0, marker=marker, s=msize, zorder=2)
             self.plot_cov_ellipse(self.get_covmatrix_now()[np.ix_([dim1, dim2], [dim1, dim2])],
                                   self.get_mean_now()[np.ix_([dim1, dim2])],
                                   ax=ax, alpha=alpha, linewidth='3',
@@ -892,16 +904,24 @@ class AbstractComponent(object):
                                   color=color, **kwargs)
         if comp_then:
             ax.scatter(self.get_mean()[dim1], self.get_mean()[dim2], color=color,
-                       linewidth=0.0, marker=marker, s=10)
+                       linewidth=0.0, marker=marker, s=msize, zorder=2)
             self.plot_cov_ellipse(self.get_covmatrix()[np.ix_([dim1, dim2], [dim1, dim2])],
                                   self.get_mean()[np.ix_([dim1, dim2])],
-                                  ax=ax, alpha=alpha, linewidth='0.1',
+                                  ax=ax, alpha=alpha, linewidth=comp_then_linewidth,
+                                  fill=comp_then_fill,
                                   color=color, **kwargs)
 
         if comp_orbit:
+            if orbit_alpha is None:
+                orbit_alpha = alpha
+            if orbit_color is None:
+                orbit_color = color
             self.plot_orbit(dim1, dim2, ax,
-                      with_arrow=True, annotate=False, color=color, **kwargs)
-        pass
+                            with_arrow=orbit_arrow, annotate=False, color=orbit_color,
+                            alpha=orbit_alpha,
+                            )
+
+        return ax
 
     @classmethod
     def load_from_attributes(cls, filename):
@@ -1052,3 +1072,81 @@ class EllipComponent(AbstractComponent):
             self._pars[9] = dv
             self._pars[10:13] = c_xy, c_xz, c_yz
 
+
+class FreeComponent(AbstractComponent):
+    PARAMETER_FORMAT = ['pos', 'pos', 'pos', 'vel', 'vel', 'vel',
+                        'log_pos_std', 'log_pos_std', 'log_pos_std',
+                        'log_vel_std', 'log_vel_std', 'log_vel_std',
+                        'corr', 'corr', 'corr', 'corr', 'corr',
+                        'corr', 'corr', 'corr', 'corr',
+                        'corr', 'corr', 'corr',
+                        'corr', 'corr',
+                        'corr',
+                        'age']
+
+    @staticmethod
+    def externalise(pars):
+        """
+        Take parameter set in internal form (as used by emcee) and
+        convert to external form (as used to build attributes).
+        """
+        extern_pars = np.copy(pars)
+        extern_pars[6:12] = np.exp(extern_pars[6:12])
+        return extern_pars
+
+    @staticmethod
+    def internalise(pars):
+        """
+        Take parameter set in external form (as used to build attributes)
+        and convert to internal form (as used by emcee).
+        """
+        intern_pars = np.copy(pars)
+        intern_pars[6:12] = np.log(intern_pars[6:12])
+        return intern_pars
+
+    def _set_covmatrix(self, covmatrix=None):
+        """Builds covmatrix from self.pars. If setting from an externally
+        provided covariance matrix then updates self.pars for consistency"""
+        # If covmatrix hasn't been provided, generate from self._pars
+        # and set.
+        if covmatrix is None:
+            dx, dy, dz = self._pars[6:9]
+            du, dv, dw = self._pars[9:12]
+            c_xy, c_xz, c_xu, c_xv, c_xw, \
+                  c_yz, c_yu, c_yv, c_yw, \
+                        c_zu, c_zv, c_zw, \
+                              c_uv, c_uw, \
+                                    c_uw, = self._pars[12:27]
+            self._covmatrix = np.array([
+                [dx**2,      c_xy*dx*dy, c_xz*dx*dz, c_xu*dx*du, c_xv*dx*dv, c_xw*dx*dw],
+                [c_xy*dx*dy, dy**2,      c_yz*dy*dz, c_yu*dy*du, c_yv*dy*dv, c_yw*dy*dw],
+                [c_xz*dx*dz, c_yz*dy*dz, dz**2,      c_zu*dz*du, c_zv*dz*dv, c_zw*dz*dw],
+                [c_xu*dx*du, c_yu*dy*du, c_zu*dz*du, du**2,      c_uv*du*dv, c_uw*du*dw],
+                [c_xv*dx*dv, c_yv*dy*dv, c_zv*dz*dv, c_uv*du*dv, dv**2,      c_uw*dv*dw],
+                [c_xw*dx*dw, c_yw*dy*dw, c_zw*dz*dw, c_uw*du*dw, c_uv*dw*dv, dw**2     ],
+            ])
+        # If covmatrix has been provided, reverse engineer the most
+        # suitable set of parameters and update self._pars accordingly
+        # (e.g. take the geometric mean of the (square-rooted) velocity
+        # eigenvalues as dv, as this at least ensures constant volume
+        # in velocity space).
+        else:
+            self._covmatrix = np.copy(covmatrix)
+            stds = np.sqrt(np.diagonal(self._covmatrix))
+            dx, dy, dz, du, dv, dw = stds
+
+            corr_matrix = (self._covmatrix
+                           / stds
+                           / stds.reshape(1,6).T)
+            c_xy, c_xz, c_xu, c_xv, c_xw, \
+                  c_yz, c_yu, c_yv, c_yw, \
+                        c_zu, c_zv, c_zw, \
+                              c_uv, c_uw, \
+                                    c_uw, = corr_matrix[np.triu_indices(6,1)]
+            self._pars[6:9] = dx, dy, dz
+            self._pars[9:12] = du, dv, dw
+            self._pars[12:27] = c_xy, c_xz, c_xu, c_xv, c_xw, \
+                                      c_yz, c_yu, c_yv, c_yw, \
+                                            c_zu, c_zv, c_zw, \
+                                                  c_uv, c_uw, \
+                                                        c_uw
