@@ -99,7 +99,8 @@ def build_data_dict_from_table(table, main_colnames=None, error_colnames=None,
                                corr_colnames=None, cartesian=True,
                                historical=False, only_means=False,
                                get_background_overlaps=True,
-                               background_colname=None, ):
+                               background_colname=None,
+                               return_table_ixs=False):
     """
     Use data in tale columns to construct arrays of means and covariance
     matrices.
@@ -138,6 +139,19 @@ def build_data_dict_from_table(table, main_colnames=None, error_colnames=None,
     background_colname: str {None}
         Set which column name to use for background overlaps. If left as
         None, uses 'background_log_overlap' as default.
+    return_table_ixs: boolean {False}
+        If set, returns a mapping taking the indices of elements in dictionary
+        to rows from original table. This is useful when table rows have
+        been skipped due to missing data.
+        Convert data to row indices for table assignment e.g. recording of
+        membership to `comp_A` thusly:
+        >>> my_table['comp_A'][table_ixs] = final_memb[:,0]
+
+        Or to extract gaia ids of comp A members:
+        >>> my_table['gaia_dr2'][table_ixs][np.where(final_memb[:,0]>0.5)]
+
+        where `final_memb` is a [nstars, ncomps] array recording membership
+        probabilities.
 
     Returns
     -------
@@ -234,7 +248,10 @@ def build_data_dict_from_table(table, main_colnames=None, error_colnames=None,
     if background_colname in table.colnames:
         results_dict['bg_lnols'] = np.array(table[background_colname])[good_row_mask]
 
-    return results_dict
+    if return_table_ixs:
+        return results_dict, np.where(good_row_mask)
+    else:
+        return results_dict
 
 
 def append_cart_cols_to_table(table, main_colnames=None, error_colnames=None,

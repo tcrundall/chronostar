@@ -19,24 +19,35 @@ import chronostar.retired2.datatool as dt
 import chronostar.fitplotter as fp
 from chronostar import tabletool
 from chronostar.component import SphereComponent, FreeComponent, EllipComponent
+from astropy.table import Table
 
 debugging_circles=False
 
 # PLOTTING FLAGS
 PLOT_CORNER = False
 # PLOT_CORNER = True
-# PLOT_FED_STARS = False
-PLOT_FED_STARS = True
+PLOT_FED_STARS = False
+# PLOT_FED_STARS = True
 PLOT_MUTLI_SYNTH = False
 # PLOT_MUTLI_SYNTH = True
 PLOT_SYNTH_BPMG2 = False
 # PLOT_SYNTH_BPMG2 = True
-PLOT_BPMG_REAL = False
-# PLOT_BPMG_REAL = True
+# PLOT_BPMG_REAL = False
+PLOT_BPMG_REAL = True
 PLOT_FAILURE = False
 
 DEFAULT_DIMS = ((0,1), (0,3), (1,4), (2,5))
 COLOR_LABELS = ['Fitted {}'.format(ch) for ch in 'ABCDEF']
+COLORS = [
+    'xkcd:blue',
+    'xkcd:red',
+    'xkcd:tangerine',
+    'xkcd:shit',
+    'xkcd:neon purple',
+    'xkcd:sun yellow',
+    'xkcd:cyan',
+    'xkcd:bright pink'
+]
 
 acronyms = {
     'beta Pictoris':r'$\beta$PMG',
@@ -46,6 +57,10 @@ acronyms = {
     # 'TW Hya':'TWA',
     'Upper Centaurus Lupus':'UCL',
 }
+
+labels = 'XYZUVW'
+units = 3 * ['[pc]'] + 3 * ['[km/s]']
+
 
 def displayRanges(ranges):
     print([ranges[dim][1] - ranges[dim][0] for dim in (0,1,2,3,4,5)])
@@ -145,174 +160,261 @@ if PLOT_CORNER:
         plt.savefig(plot_name)
 
 if PLOT_BPMG_REAL:
-    for iteration in ['5B']: #, '6C']:
-        star_pars_file = '../../data/beta_Pictoris_with_gaia_small_xyzuvw.fits'
-        star_pars = dt.loadXYZUVW(star_pars_file)
-        fit_name = 'bpmg_and_nearby'
-        rdir = '../../results/em_fit/beta_Pictoris_wgs_inv2_{}_res/'.format(iteration)
+    # PLOTTING ITERATION 6E
+    # star_pars_file = '../../data/beta_Pictoris_with_gaia_small_xyzuvw.fits'
+    table_file = '../../data/paper1/beta_Pictoris_corrected_everything.fits'
+    bpmg_table = Table.read(table_file)
+    star_pars, table_ixs = tabletool.build_data_dict_from_table(bpmg_table,
+                                                                return_table_ixs=True)
+    nstars = len(table_ixs[0])
+    fit_name = 'bpmg_and_nearby'
+    rdir = '../../results/beta_Pictoris_with_gaia_small_inv2/6/E/final/'
 
-        memb_file = rdir + 'final_membership.npy'
-        groups_file = rdir + 'final_groups.npy'
+    memb_file = rdir + 'final_membership.npy'
+    comp_file = rdir + 'final_comps.npy'
 
-        z = np.load(memb_file)
-        groups = dt.loadGroups(groups_file)
+    z = np.load(memb_file)
+    comps = SphereComponent.load_raw_components(comp_file)
 
-        # Assign markers based on BANYAN membership
-        gt_sp = dt.loadDictFromTable('../../data/banyan_with_gaia_near_bpmg_xyzuvw.fits')
-        banyan_membership = len(star_pars['xyzuvw']) * ['N/A']
-        for i in range(len(star_pars['xyzuvw'])):
-            master_table_ix = np.where(gt_sp['table']['source_id']==star_pars['gaia_ids'][i])
-            banyan_membership[i] = gt_sp['table']['Moving group'][master_table_ix[0][0]]
+    # Assign markers based on BANYAN membership
+    banyan_markers = np.array(nstars * ['.'])
+    banyan_membs = bpmg_table['banyan_assoc'][table_ixs]
 
-        # assign markers based on present moving groups, keep track of
-        # assoc -> marker relationship incase a legend is called for
-        banyan_membership=np.array(banyan_membership)
-        banyan_markers = np.array(len(banyan_membership) * ['.'])
+    # Assign markers to each star (via `banyan_markers`) whilst concurrently
+    # building list of maker style and the corresponding association for legend
+    marker_style = []
+    marker_label = []
+    banyan_memb_set = set(banyan_membs)
+    for bassoc in banyan_memb_set:
+        if bassoc not in acronyms.keys():
+            acronyms[bassoc] = bassoc
+    # Do BPMG manually
+    banyan_markers[np.where(banyan_membs=='beta Pictoris')] = 'v'
+    banyan_memb_set.remove('beta Pictoris')
+    marker_label.append(acronyms['beta Pictoris'])
+    marker_style.append('v')
 
-        banyan_memb_set = set(banyan_membership)
-        for bassoc in set(gt_sp['table']['Moving group']):
-            if bassoc not in acronyms.keys():
-                acronyms[bassoc] = bassoc
-        banyan_markers[np.where(banyan_membership=='beta Pictoris')] = 'v'
-        marker_label = []
-        banyan_memb_set.remove('beta Pictoris')
-        marker_label.append(acronyms['beta Pictoris'])
-        marker_style = []
-        marker_style.append('v')
-        banyan_markers[np.where(banyan_membership=='Tucana-Horologium')] = '*'
-        banyan_memb_set.remove('Tucana-Horologium')
-        marker_label.append(acronyms['Tucana-Horologium'])
-        marker_style.append('*')
+    # Do Tucana-Horologium manually
+    banyan_markers[np.where(banyan_membs=='Tucana-Horologium')] = '*'
+    banyan_memb_set.remove('Tucana-Horologium')
+    marker_label.append(acronyms['Tucana-Horologium'])
+    marker_style.append('*')
 
-        banyan_memb_set.remove('N/A')
-        for banyan_assoc, marker in zip(banyan_memb_set, ('s', 'p', 'D', 'X', 'H', 'D')): #''''''^', '<', '>', '8', 's', 'p', 'h', 'H', 'D', 'd', 'P', 'X')):
-            banyan_markers[np.where(banyan_membership==banyan_assoc)] = marker
-            marker_label.append(acronyms[banyan_assoc])
-            marker_style.append(marker)
+    # Do remainder automatically
+    banyan_memb_set.remove('N/A') # remove 'N/A' as they will remain default '.'
+    for banyan_assoc, marker in zip(banyan_memb_set, ('s', 'p', 'D', 'X', 'H', 'D')): #''''''^', '<', '>', '8', 's', 'p', 'h', 'H', 'D', 'd', 'P', 'X')):
+        banyan_markers[np.where(banyan_membs==banyan_assoc)] = marker
+        marker_label.append(acronyms[banyan_assoc])
+        marker_style.append(marker)
 
-        # First do all, then just do possible membs of BPMG
-        if True:
-            x_nearby_ranges, y_nearby_ranges =\
-                calcRanges(star_pars, sep_axes=True, scale=False)
-            # nearby_star_pars = {}
-            # for key in ['xyzuvw', 'xyzuvw_cov']:
-            #     nearby_star_pars[key] = np.copy(star_pars[key])
-            #
-            # # Replace cov matrices with None for bg stars
-            # nearby_star_pars['xyzuvw_cov'][
-            #     np.where(z.argmax(axis=1)==z.shape[1]-1)
-            # ] = None
+    # First do all, then just do possible membs of BPMG
+    if True:
+        # x_nearby_ranges, y_nearby_ranges =\
+        #     calcRanges(star_pars, sep_axes=True, scale=False)
+        # nearby_star_pars = {}
+        # for key in ['xyzuvw', 'xyzuvw_cov']:
+        #     nearby_star_pars[key] = np.copy(star_pars[key])
+        #
+        # # Replace cov matrices with None for bg stars
+        # nearby_star_pars['xyzuvw_cov'][
+        #     np.where(z.argmax(axis=1)==z.shape[1]-1)
+        # ] = None
 
-            # Set to None all covariance matrices not part of BPMG or THOR
-            bpmg_ix = 0
-            thor_ix = 3
+        # Set to None all covariance matrices not part of BPMG or THOR
+        bpmg_ix = 0
+        thor_ix = 3
+        thor2_ix = 4
+        bg_mask = np.where(np.logical_not(
+            np.isin(np.argmax(z, axis=1), [bpmg_ix,thor_ix, thor2_ix])
+        ))
+        nearby_star_pars = {}
+        mns = star_pars['means']
+        covs = star_pars['covs']
+        covs[bg_mask] = None
+        # nearby_star_pars['xyzuvw'] = star_pars['xyzuvw']
+        # nearby_star_pars['xyzuvw_cov'] = np.copy(star_pars['xyzuvw_cov'])
+        # nearby_star_pars['xyzuvw_cov'][bg_mask] = None
+        # nearby_star_pars['indices'] = np.array(star_pars['indices'])
+
+        bpmg_xranges, bpmg_yranges = calcRanges(
+                {'xyzuvw':star_pars['means']}, sep_axes=True,
+        )
+
+        plt.clf()
+        fig, axes = plt.subplots(2,2, figsize=(10,10))
+
+        BPMG_COLORS = COLORS[:z.shape[1]]
+        BPMG_COLORS[-1] = 'xkcd:grey'
+        background_ix = z.shape[1] - 1
+
+        for ax, (dim1, dim2) in zip(axes.flatten(), DEFAULT_DIMS):
+
+            [c.plot(ax=ax, dim1=dim1, dim2=dim2, color=BPMG_COLORS[ix],
+                    msize=30, alpha=0.4, marker_alpha=0.)
+                for ix, c in enumerate(comps)]
+
+            for ix, (mn, cov) in enumerate(zip(mns, covs)):
+                comp_memb_ix = np.argmax(z[ix])
+
+                star_alpha = 0.45 if comp_memb_ix != background_ix else 0.2
+
+                star_zorder = 8 if comp_memb_ix != background_ix else 2
+                if (comp_memb_ix == background_ix) and (banyan_markers[ix] == '.'):
+                    marker_size = 20
+                else:
+                    marker_size = 80
+
+                if np.any(np.isnan(cov)):
+                    ax.scatter(mn[dim1], mn[dim2], color=BPMG_COLORS[comp_memb_ix],
+                               marker=banyan_markers[ix], alpha=star_alpha,
+                               s=marker_size)
+                else:
+                    star_comp = FreeComponent(attributes={'mean':mn,
+                                                          'covmatrix':cov,
+                                                          'age':0.})
+                    star_comp.plot(ax=ax, dim1=dim1, dim2=dim2,
+                                   color=BPMG_COLORS[comp_memb_ix],
+                                   marker_alpha=star_alpha,
+                                   alpha=0.25,
+                                   marker=banyan_markers[ix],
+                                   msize=70, comp_now=False, comp_then=True,
+                                   mzorder=star_zorder,
+                                   comp_then_linewidth=0.01)
+            ax.set_xlabel('{} {}'.format(labels[dim1], units[dim1]))
+            ax.set_ylabel('{} {}'.format(labels[dim2], units[dim2]))
+
+            if int(dim1 / 3) == int(dim2 / 3):
+                ax.axis('equal')
+
+            scaleRanges(bpmg_xranges, (0, 1, 2))
+            scaleRanges(bpmg_xranges, (3, 4, 5))
+            scaleRanges(bpmg_yranges, (0, 1, 2))
+            scaleRanges(bpmg_yranges, (3, 4, 5))
+
+            ax.set_xlim(bpmg_xranges[dim1])
+            ax.set_ylim(bpmg_yranges[dim2])
+            ax.tick_params(direction='in', top=True, right=True)
+
+        # Manually insert marker and color legend, coincidentally the most
+        # recent 'ax' is the Z-W plot, as desired
+        for label, style in zip(marker_label, marker_style):
+            ax.scatter(1e10, 1e10, c='black',
+                       marker=style,
+                       label=label)
+        for ix, color in enumerate(BPMG_COLORS[:-1]):
+            label = 'Fitted {}'.format(chr(ord('A') + ix))
+            ax.plot(1e10, 1e10, c=color, label=label)
+
+        ax.scatter(1e10, 1e10, c='xkcd:grey', alpha=0.5, label='background')
+        ax.legend(loc='best', prop={'size': 9})
+        fig.set_tight_layout(tight=True)
+
+        plt.savefig('corrected_bpmg.pdf')
+
+        if False:
+        # for dim1, dim2 in DEFAULT_DIMS: #[(0,1), (0,3), (1,4), (2,5)]: #, 'yv', 'zw']:
+            # # force the XY plot to have same scales
+            # if dim1==0 and dim2==1 and debugging_circles:
+            #     temp_range = nearby_range[1]
+            #     nearby_range[1] = [-120,80]
+
+
+
+
+            x_nearby_ranges[dim1], y_nearby_ranges[dim2] = fp.plotPane(
+                dim1,
+                dim2,
+                groups=groups,
+                star_pars=nearby_star_pars,
+                group_now=True,
+                membership=z,
+                # true_memb=true_memb,
+                savefile='redo_{}_{}_{}{}.pdf'.format(fit_name, iteration,
+                                                 LABELS[dim1], LABELS[dim2]),
+                with_bg=True,
+                range_1=x_nearby_ranges[dim1], #range_1,
+                range_2=y_nearby_ranges[dim2], #range_2,
+                markers=banyan_markers,
+                marker_style=marker_style,
+                marker_labels=marker_label if dim1 == 2 else None,
+                color_labels=COLOR_LABELS[:len(groups)] if
+                               dim1 == 2 else None,
+                isotropic=(int(dim1/3) == int(dim2/3)),
+            )
+            # # undo forced change
+            # if dim1 == 0 and dim2 == 1 and debugging_circles:
+            #     nearby_range[1] = temp_range
+            scaleRanges(x_nearby_ranges, (0,1,2))
+            scaleRanges(x_nearby_ranges, (3,4,5))
+            # scaleRanges(y_nearby_ranges, (0,1,2))
+            scaleRanges(y_nearby_ranges, (3,4,5))
+
+    # Only include stars that, if they weren't bg, they'd most likely be BPMG
+    if False:
+        if iteration == '5B':
+            fit_name = 'bpmg_candidates'
+            # extract_group_ix = [0,2]
+            extract_group_ixs_by_iteration = {
+                '5B':[0,3],
+                '6C':[0,2],
+            }
+            extract_group_ix = extract_group_ixs_by_iteration[iteration]
+            # bpmg_mask = np.where(z[:,extract_group_ix]>0.1)
+            bpmg_star_pars = {}
+            # bpmg_mask = np.where(np.isin(np.argmax(z[:,:-1], axis=1), extract_group_ix))# == extract_group_ix)
+            bpmg_mask = np.where(np.isin(np.argmax(z, axis=1), extract_group_ix))# == extract_group_ix)
             bg_mask = np.where(np.logical_not(
-                np.isin(np.argmax(z, axis=1), [bpmg_ix,thor_ix])
+                np.isin(np.argmax(z, axis=1), extract_group_ix)
             ))
-            nearby_star_pars = {}
-            nearby_star_pars['xyzuvw'] = star_pars['xyzuvw']
-            nearby_star_pars['xyzuvw_cov'] = np.copy(star_pars['xyzuvw_cov'])
-            nearby_star_pars['xyzuvw_cov'][bg_mask] = None
-            nearby_star_pars['indices'] = np.array(star_pars['indices'])
+            bpmg_star_pars['xyzuvw'] = star_pars['xyzuvw'] #[bpmg_mask]
+            bpmg_star_pars['xyzuvw_cov'] = np.copy(star_pars['xyzuvw_cov']) #[bpmg_mask]
+            bpmg_star_pars['xyzuvw_cov'][bg_mask] = None
+            bpmg_star_pars['indices'] = np.array(star_pars['indices']) #[bpmg_mask]
 
-            for dim1, dim2 in DEFAULT_DIMS: #[(0,1), (0,3), (1,4), (2,5)]: #, 'yv', 'zw']:
-                # # force the XY plot to have same scales
+            # z = z[bpmg_mask]#, (0,-1),]
+            z = z[:,(extract_group_ix+[-1]),]
+
+            # bpmg_range = calcRanges(bpmg_star_pars)
+            # import pdb; pdb.set_trace()
+
+            for dim1, dim2 in DEFAULT_DIMS: #[(0,1), (0,3), (1,4)]: #, (2,5)]: #, 'yv', 'zw']:
+                # force the XY plot to have same scales
                 # if dim1==0 and dim2==1 and debugging_circles:
-                #     temp_range = nearby_range[1]
-                #     nearby_range[1] = [-120,80]
+                #     temp_range = bpmg_range[1]
+                #     bpmg_range[1] = [-120,80]
+                # import pdb; pdb.set_trace()
 
-                x_nearby_ranges[dim1], y_nearby_ranges[dim2] = fp.plotPane(
+                dim1_range, dim2_range = fp.plotPane(
                     dim1,
                     dim2,
-                    groups=groups,
-                    star_pars=nearby_star_pars,
+                    groups=groups[extract_group_ix],
+                    star_pars=bpmg_star_pars,
                     group_now=True,
                     membership=z,
-                    # true_memb=true_memb,
-                    savefile='{}_{}_{}{}.pdf'.format(fit_name, iteration,
-                                                     LABELS[dim1], LABELS[dim2]),
+                    savefile='{}_{}_{}{}.pdf'.format(fit_name,
+                                                     iteration,
+                                                     LABELS[dim1],
+                                                     LABELS[dim2]),
                     with_bg=True,
-                    range_1=x_nearby_ranges[dim1], #range_1,
-                    range_2=y_nearby_ranges[dim2], #range_2,
+                    # range_1=bpmg_range[dim1],
+                    range_1=x_nearby_ranges[dim1],
+                    # range_2=bpmg_range[dim2],
+                    range_2=y_nearby_ranges[dim2],
+                    # residual=True,
                     markers=banyan_markers,
                     marker_style=marker_style,
-                    marker_labels=marker_label if dim1 == 2 else None,
-                    color_labels=COLOR_LABELS[:len(groups)] if
-                                   dim1 == 2 else None,
-                    isotropic=(int(dim1/3) == int(dim2/3)),
+                    marker_labels=marker_label if dim1==2 else None,
+                    color_labels=[r'Fitted $\beta$PMG'] if dim1==2 else None,
+                    # isotropic=(int(dim1/3) == int(dim2/3))
                 )
                 # # undo forced change
                 # if dim1 == 0 and dim2 == 1 and debugging_circles:
-                #     nearby_range[1] = temp_range
-                scaleRanges(x_nearby_ranges, (0,1,2))
-                scaleRanges(x_nearby_ranges, (3,4,5))
-                # scaleRanges(y_nearby_ranges, (0,1,2))
-                scaleRanges(y_nearby_ranges, (3,4,5))
+                #     bpmg_range[1] = temp_range
 
-        # Only include stars that, if they weren't bg, they'd most likely be BPMG
-        if False:
-            if iteration == '5B':
-                fit_name = 'bpmg_candidates'
-                # extract_group_ix = [0,2]
-                extract_group_ixs_by_iteration = {
-                    '5B':[0,3],
-                    '6C':[0,2],
-                }
-                extract_group_ix = extract_group_ixs_by_iteration[iteration]
-                # bpmg_mask = np.where(z[:,extract_group_ix]>0.1)
-                bpmg_star_pars = {}
-                # bpmg_mask = np.where(np.isin(np.argmax(z[:,:-1], axis=1), extract_group_ix))# == extract_group_ix)
-                bpmg_mask = np.where(np.isin(np.argmax(z, axis=1), extract_group_ix))# == extract_group_ix)
-                bg_mask = np.where(np.logical_not(
-                    np.isin(np.argmax(z, axis=1), extract_group_ix)
-                ))
-                bpmg_star_pars['xyzuvw'] = star_pars['xyzuvw'] #[bpmg_mask]
-                bpmg_star_pars['xyzuvw_cov'] = np.copy(star_pars['xyzuvw_cov']) #[bpmg_mask]
-                bpmg_star_pars['xyzuvw_cov'][bg_mask] = None
-                bpmg_star_pars['indices'] = np.array(star_pars['indices']) #[bpmg_mask]
-
-                # z = z[bpmg_mask]#, (0,-1),]
-                z = z[:,(extract_group_ix+[-1]),]
-
-                # bpmg_range = calcRanges(bpmg_star_pars)
-                # import pdb; pdb.set_trace()
-
-                for dim1, dim2 in DEFAULT_DIMS: #[(0,1), (0,3), (1,4)]: #, (2,5)]: #, 'yv', 'zw']:
-                    # force the XY plot to have same scales
-                    # if dim1==0 and dim2==1 and debugging_circles:
-                    #     temp_range = bpmg_range[1]
-                    #     bpmg_range[1] = [-120,80]
-                    # import pdb; pdb.set_trace()
-
-                    dim1_range, dim2_range = fp.plotPane(
-                        dim1,
-                        dim2,
-                        groups=groups[extract_group_ix],
-                        star_pars=bpmg_star_pars,
-                        group_now=True,
-                        membership=z,
-                        savefile='{}_{}_{}{}.pdf'.format(fit_name,
-                                                         iteration,
-                                                         LABELS[dim1],
-                                                         LABELS[dim2]),
-                        with_bg=True,
-                        # range_1=bpmg_range[dim1],
-                        range_1=x_nearby_ranges[dim1],
-                        # range_2=bpmg_range[dim2],
-                        range_2=y_nearby_ranges[dim2],
-                        # residual=True,
-                        markers=banyan_markers,
-                        marker_style=marker_style,
-                        marker_labels=marker_label if dim1==2 else None,
-                        color_labels=[r'Fitted $\beta$PMG'] if dim1==2 else None,
-                        # isotropic=(int(dim1/3) == int(dim2/3))
-                    )
-                    # # undo forced change
-                    # if dim1 == 0 and dim2 == 1 and debugging_circles:
-                    #     bpmg_range[1] = temp_range
-
-        # To ensure consistency, we now plot the BANYAN bpmg stars only,
-        # and use the ragnes from previous plot
+    # To ensure consistency, we now plot the BANYAN bpmg stars only,
+    # and use the ragnes from previous plot
+    # 2019-07-13 [TC]: not sure why this is here...
+    if False:
         fit_name = 'banyan_bpmg'
         rdir = '../../results/em_fit/beta_Pictoris/'
 

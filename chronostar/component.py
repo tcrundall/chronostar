@@ -867,11 +867,14 @@ class AbstractComponent(object):
         return ellip
 
     def plot(self, dim1, dim2, ax=None, comp_now=True, comp_then=False,
-             color='red', comp_orbit=False, alpha=0.3, marker='+', msize=10,
+             color='red', comp_orbit=False, alpha=0.3, marker='+',
+             marker_alpha=0.9,
+             msize=10,
              orbit_color=None, orbit_alpha=None,
              comp_then_fill=True,
              comp_then_linewidth='0.1',
              orbit_arrow=True,
+             mzorder=2,
              comp_orbit_kwargs={},
              **kwargs):
         """
@@ -895,7 +898,7 @@ class AbstractComponent(object):
 
         if comp_now:
             ax.scatter(self.get_mean_now()[dim1], self.get_mean_now()[dim2], color=color,
-                       linewidth=0.0, marker=marker, s=msize, zorder=2)
+                       linewidth=0.0, marker=marker, s=msize, zorder=mzorder)
             self.plot_cov_ellipse(self.get_covmatrix_now()[np.ix_([dim1, dim2], [dim1, dim2])],
                                   self.get_mean_now()[np.ix_([dim1, dim2])],
                                   ax=ax, alpha=alpha, linewidth='3',
@@ -904,7 +907,7 @@ class AbstractComponent(object):
                                   color=color, **kwargs)
         if comp_then:
             ax.scatter(self.get_mean()[dim1], self.get_mean()[dim2], color=color,
-                       linewidth=0.0, marker=marker, s=msize, zorder=2)
+                       linewidth=0.0, marker=marker, s=msize, zorder=mzorder, alpha=marker_alpha)
             self.plot_cov_ellipse(self.get_covmatrix()[np.ix_([dim1, dim2], [dim1, dim2])],
                                   self.get_mean()[np.ix_([dim1, dim2])],
                                   ax=ax, alpha=alpha, linewidth=comp_then_linewidth,
