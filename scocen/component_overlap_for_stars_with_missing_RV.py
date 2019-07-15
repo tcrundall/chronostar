@@ -65,20 +65,33 @@ except:
 # data_table should include background overlaps as well
 
 # Background overlaps (using covariance matrix)
-ln_bg_ols = expectmax.get_background_overlaps_with_covariances(
-    '/home/tcrun/chronostar/data/gaia_cartesian_full_6d_table.fits',
-    data_table,
+background_means = tabletool.build_data_dict_from_table(
+                        '/home/tcrun/chronostar/data/gaia_cartesian_full_6d_table.fits',
+                        only_means=True,
+)
+
+# Need this first for background. Later do it again, with background included
+data_dict_tmp = tabletool.build_data_dict_from_table(
+        data_table,
+        get_background_overlaps=False,
+        historical=historical,
+)
+
+ln_bg_ols = expectmax.get_background_overlaps_with_covariances(background_means,
+            data_dict_tmp['means'], data_dict_tmp['covs'],
 )
 
 bg_lnol_colname = 'background_log_overlap'
 print('Background overlaps')
 tabletool.insert_column(data_table, bg_lnol_colname, ln_bg_ols, filename=datafile)
 
+data_table.write('data_table_cartesian_with_bg_ols.fits')
+
 print('Create data dict')
-# Create data dict
+# Create data dict for real
 data_dict = tabletool.build_data_dict_from_table(
         data_table,
-        get_background_overlaps=True, # TODO change to True and provide bg ols
+        get_background_overlaps=True,
         historical=historical,
 )
 
