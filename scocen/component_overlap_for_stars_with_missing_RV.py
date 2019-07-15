@@ -26,9 +26,9 @@ print (c)
 print (c.shape)
 
 # Read Gaia data including both stars with known and missing radial velocities
-#data_table = tabletool.read('../data/ScoCen_box_result.fits')
-data_table = tabletool.read('../data/scocen_for_testing.fits') # Shorter table
-data_table=data_table[:100]
+data_table = tabletool.read('../data/ScoCen_box_result.fits')
+#data_table = tabletool.read('../data/scocen_for_testing.fits') # Shorter table
+#data_table=data_table[:100]
 print('DATA READ', len(data_table))
 # Set missing radial velocities to some value, and their errors to something very big
 
