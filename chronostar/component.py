@@ -706,6 +706,32 @@ class AbstractComponent(object):
         best_pars = chain_file.reshape(-1, npars)[best_ix]
         return cls(emcee_pars=best_pars)
 
+    def get_alpha(self, nstars):
+        """
+        Calculate the virial-ness of the component by plugging spread in
+        poisiton and velocity into simple virial equation.
+
+        Parameters
+        ----------
+        nstars: float
+            The expected number of stellar members
+
+        Returns
+        -------
+        alpha: float
+            the simplified virial value where < 1 implies a bound initial
+            state
+
+        Notes
+        -----
+            Assuming we have identified 100% of star mass, and that average
+            star mass is 1 M_sun.
+        """
+        G_const = 0.004300917270069976  # pc (km/s)^2 / Msun
+        M_sol = 1.  # Msun
+        dx = self.get_sphere_dx()
+        dv = self.get_sphere_dv()
+        return (dv ** 2 * dx) / (G_const * nstars * M_sol)
 
     # --------------------------------------------------
     # --  PLOTTING METHODS  ----------------------------
@@ -873,6 +899,7 @@ class AbstractComponent(object):
              orbit_color=None, orbit_alpha=None,
              comp_then_fill=True,
              comp_then_linewidth='0.1',
+             comp_now_linewidth='2',
              orbit_arrow=True,
              mzorder=2,
              comp_orbit_kwargs={},
@@ -898,16 +925,18 @@ class AbstractComponent(object):
 
         if comp_now:
             ax.scatter(self.get_mean_now()[dim1], self.get_mean_now()[dim2], color=color,
-                       linewidth=0.0, marker=marker, s=msize, zorder=mzorder)
+                       linewidth=0.0,
+                       marker=marker, s=msize, zorder=mzorder)
             self.plot_cov_ellipse(self.get_covmatrix_now()[np.ix_([dim1, dim2], [dim1, dim2])],
                                   self.get_mean_now()[np.ix_([dim1, dim2])],
-                                  ax=ax, alpha=alpha, linewidth='3',
+                                  ax=ax, alpha=alpha, linewidth=comp_now_linewidth,
                                   linestyle='--',
                                   fill=False,
                                   color=color, **kwargs)
         if comp_then:
             ax.scatter(self.get_mean()[dim1], self.get_mean()[dim2], color=color,
-                       linewidth=0.0, marker=marker, s=msize, zorder=mzorder, alpha=marker_alpha)
+                       # linewidth=0.0,
+                       marker=marker, s=msize, zorder=mzorder, alpha=marker_alpha)
             self.plot_cov_ellipse(self.get_covmatrix()[np.ix_([dim1, dim2], [dim1, dim2])],
                                   self.get_mean()[np.ix_([dim1, dim2])],
                                   ax=ax, alpha=alpha, linewidth=comp_then_linewidth,

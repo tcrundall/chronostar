@@ -64,8 +64,25 @@ for i in range(len(orig_table)):
 banyan_membership[np.where(banyan_membership == '')] = 'beta Pictoris'
 orig_table['banyan_assoc'] = banyan_membership
 
+# Update previous membership references
+new_ref_ixs = {
+    4050178830427649024 : '29',
+    6754492966739292928 : '29',
+    5963633872326630272 : '29',
+    6731752867256886144 : '30',
+    6723183789033085824 : '31',
+}
+
+for ix, ref in new_ref_ixs.items():
+    print(orig_table['gaia_dr2'][np.where(orig_table['gaia_dr2'] == str(ix))])
+    row_ix = np.where(orig_table['gaia_dr2'] == str(ix))[0]
+    orig_table['lit_membership_ref'][row_ix] = ref
+
+    print(orig_table['phot_consist'][row_ix])
+
+
 save_filename = '../data/paper1/beta_Pictoris_corrected_everything.fits'
 
-Table.write(orig_table, save_filename)
+# Table.write(orig_table, save_filename)
 # from astropy.io import ascii
 # ascii.write(orig_table, save_filename)

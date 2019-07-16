@@ -81,7 +81,8 @@ def calcRanges(star_pars, sep_axes=False, scale=True):
     # adjust ranges so the span is consistent across pos axes and vel axes
 
     for dim in (3,4,5):
-        print(ranges[dim][1] - ranges[dim][0])
+        pass
+        # print(ranges[dim][1] - ranges[dim][0])
 
     if sep_axes:
         xranges = {}
@@ -223,9 +224,9 @@ if PLOT_BPMG_REAL:
         # Set to None all covariance matrices not part of BPMG or THOR
         bpmg_ix = 0
         thor_ix = 3
-        thor2_ix = 4
+        # thor2_ix = 4
         bg_mask = np.where(np.logical_not(
-            np.isin(np.argmax(z, axis=1), [bpmg_ix,thor_ix, thor2_ix])
+            np.isin(np.argmax(z, axis=1), [bpmg_ix,thor_ix])
         ))
         nearby_star_pars = {}
         mns = star_pars['means']
@@ -241,7 +242,7 @@ if PLOT_BPMG_REAL:
         )
 
         plt.clf()
-        fig, axes = plt.subplots(2,2, figsize=(10,10))
+        fig, axes = plt.subplots(2,2, figsize=(10,8))
 
         BPMG_COLORS = COLORS[:z.shape[1]]
         BPMG_COLORS[-1] = 'xkcd:grey'
@@ -250,7 +251,8 @@ if PLOT_BPMG_REAL:
         for ax, (dim1, dim2) in zip(axes.flatten(), DEFAULT_DIMS):
 
             [c.plot(ax=ax, dim1=dim1, dim2=dim2, color=BPMG_COLORS[ix],
-                    msize=30, alpha=0.4, marker_alpha=0.)
+                    msize=30, alpha=0.4, marker_alpha=0.,
+                    comp_now_linewidth='1')
                 for ix, c in enumerate(comps)]
 
             for ix, (mn, cov) in enumerate(zip(mns, covs)):
@@ -277,9 +279,10 @@ if PLOT_BPMG_REAL:
                                    marker_alpha=star_alpha,
                                    alpha=0.25,
                                    marker=banyan_markers[ix],
-                                   msize=70, comp_now=False, comp_then=True,
+                                   msize=marker_size, comp_now=False, comp_then=True,
                                    mzorder=star_zorder,
-                                   comp_then_linewidth=0.01)
+                                   # comp_then_linewidth=0.01,
+                                   )
             ax.set_xlabel('{} {}'.format(labels[dim1], units[dim1]))
             ax.set_ylabel('{} {}'.format(labels[dim2], units[dim2]))
 
