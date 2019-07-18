@@ -257,10 +257,12 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
         #                         background_means, nstars)
         try:
             #print('***********', nstars, star_cov, star_mean, background_covs, background_means)
+            print('bgols get lnoverlaps', i)
             bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
                                      background_means, nstars)
             #print('intermediate', bg_lnol)
             # bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
+            print('bgols get logsumexp', i)
             bg_lnol = logsumexp(bg_lnol) # sum in linear space
 
         # Do we really want to make exceptions here? If the sum fails then
@@ -283,7 +285,10 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
 
     #TODO: this is hardcoded... shouldn't be!
 
-    def func(star_mean, star_cov):
+    def func(arg):
+        star_mean = arg[0]
+        star_cov = arg[1]
+        print(star_mean, star_cov)
         try:
             #print('***********', nstars, star_cov, star_mean, background_covs, background_means)
             bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
@@ -302,6 +307,7 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
         #bg_lnols.append(bg_lnol)
         #print(bg_lnol)
         #print('')
+        return bg_lnol
 
 
     num_threads = 8
@@ -309,7 +315,7 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
     # ~ with contextlib.closing( Pool(num_threads) ) as pool:
     #with Pool(num_threads) as pool:
     with contextlib.closing(Pool(num_threads)) as pool:
-        results = pool.map(func, args=(star_means, star_covs,))
+        results = pool.map(func, zip(star_means, star_covs))
     end = time.time()
     print(end - start, 'multiprocessing')
     print('results', results)
