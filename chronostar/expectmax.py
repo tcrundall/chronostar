@@ -253,18 +253,10 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
     start = time.time() # TODO remove
     for i, (star_mean, star_cov) in enumerate(zip(star_means, star_covs)):
         print('bgols', i)
-        #print('{} of {}'.format(i, len(star_means)))
-        #print(star_cov)
-        #print('det', np.linalg.det(star_cov))
-        #bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
-        #                         background_means, nstars)
         try:
-            #print('***********', nstars, star_cov, star_mean, background_covs, background_means)
             print('bgols get lnoverlaps', i)
             bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
                                      background_means, nstars)
-            #print('intermediate', bg_lnol)
-            # bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
             print('bgols get logsumexp', i)
             bg_lnol = logsumexp(bg_lnol) # sum in linear space
 
@@ -276,8 +268,6 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
             print('bg ln overlap failed, setting it to -inf')
             bg_lnol = -np.inf
         bg_lnols.append(bg_lnol)
-        #print(bg_lnol)
-        #print('')
 
     end = time.time()
     print(end - start, 'for loop')
@@ -303,13 +293,9 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
         """
         star_mean = star_means[index]
         star_cov = star_covs[index]
-        print(star_mean, star_cov)
         try:
-            #print('***********', nstars, star_cov, star_mean, background_covs, background_means)
             bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
                                      background_means, nstars)
-            #print('intermediate', bg_lnol)
-            # bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
             bg_lnol = logsumexp(bg_lnol) # sum in linear space
 
         # Do we really want to make exceptions here? If the sum fails then
@@ -319,14 +305,10 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
             # have a neglible background overlap?
             print('bg ln overlap failed, setting it to -inf')
             bg_lnol = -np.inf
-        #bg_lnols.append(bg_lnol)
-        #print(bg_lnol)
-        #print('')
         return bg_lnol
 
-    pool = ProcessingPool(nodes=4)
+    pool = ProcessingPool(nodes=16)
     func = partial(func_bg, background_covs, background_means, nstars)
-    # ~ result = pool.map(doubler, [1,2,3], [1,11,111])
     start = time.time()
     indices=range(len(star_means))
     result = pool.map(func, indices)
