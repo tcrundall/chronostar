@@ -26,8 +26,8 @@ except:
     logging.info("WARNING: Couldn't import C implementation, using slow pythonic overlap instead")
     from chronostar.likelihood import slow_get_lnoverlaps as get_lnoverlaps
 
-class Bg_ols_cov_multiprocessing(background_means, background_covs, nstars, star_covs, star_means):
-    def __init__(self):
+class Bg_ols_cov_multiprocessing():
+    def __init__(self, background_means, background_covs, nstars, star_covs, star_means):
         self.star_means = star_means
         self.star_covs = star_covs
         self.background_means = background_means
