@@ -46,7 +46,9 @@ except:
     from chronostar.likelihood import slow_get_lnoverlaps as get_lnoverlaps
 
 #TODO check if this is needed
-from . import overlaps_cov_multiprocessing
+#from . import overlaps_cov_multiprocessing
+from pathos.multiprocessing import ProcessingPool
+from functools import partial
 
 def log_message(msg, symbol='.', surround=False):
     """Little formatting helper"""
@@ -286,8 +288,55 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
 
     #TODO: this is hardcoded... shouldn't be!
 
-    multi = overlaps_cov_multiprocessing.Bg_ols_cov_multiprocessing(background_means, background_covs, nstars, star_covs, star_means)
-    results = multi.compute_bg_ols()
+    #multi = overlaps_cov_multiprocessing.Bg_ols_cov_multiprocessing(background_means, background_covs, nstars, star_covs, star_means)
+    #results = multi.compute_bg_ols()
+
+
+    def func_bg(background_covs, background_means, nstars, index):
+        """
+        Author: Marusa Zerjal, 2019 - 07 - 18
+
+        Multiprocessing function should be pickable
+
+        :param index:
+        :return:
+        """
+        star_mean = star_means[index]
+        star_cov = star_covs[index]
+        print(star_mean, star_cov)
+        try:
+            #print('***********', nstars, star_cov, star_mean, background_covs, background_means)
+            bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
+                                     background_means, nstars)
+            #print('intermediate', bg_lnol)
+            # bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
+            bg_lnol = logsumexp(bg_lnol) # sum in linear space
+
+        # Do we really want to make exceptions here? If the sum fails then
+        # there's something wrong with the data.
+        except:
+            # TC: Changed sign to negative (surely if it fails, we want it to
+            # have a neglible background overlap?
+            print('bg ln overlap failed, setting it to -inf')
+            bg_lnol = -np.inf
+        #bg_lnols.append(bg_lnol)
+        #print(bg_lnol)
+        #print('')
+        return bg_lnol
+
+    pool = ProcessingPool(nodes=4)
+    func = partial(func_bg, background_covs, background_means, nstars)
+    # ~ result = pool.map(doubler, [1,2,3], [1,11,111])
+    start = time.time()
+    result = pool.map(func, inputs)
+    end = time.time()
+    print(end - start, 'pathos')
+    pool.close()
+    pool.join()
+    # ~ print('pathos result', result)
+
+
+
 
     #num_threads = 8
     #start = time.time()
