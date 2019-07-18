@@ -307,7 +307,7 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
     start = time.time()
     # ~ with contextlib.closing( Pool(num_threads) ) as pool:
     with Pool(num_threads) as pool:
-        results = pool.map(doubler, inputs)
+        results = pool.map(func, args=(star_means, star_covs,))
     end = time.time()
     print(end - start, 'multiprocessing')
     print('results', results)
