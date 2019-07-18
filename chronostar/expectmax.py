@@ -318,7 +318,7 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
         #results = pool.map(func, zip(star_means, star_covs))
         indices=range(len(star_means))
         print('indices', indices)
-        results = pool.map(func, indices)
+        results = pool.map(func, tuple(indices))
     end = time.time()
     print(end - start, 'multiprocessing')
     print('results', results)
