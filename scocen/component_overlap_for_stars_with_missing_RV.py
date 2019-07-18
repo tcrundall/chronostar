@@ -33,6 +33,7 @@ print('Are there duplicate components?')
 try:
     data_table = Table.read(datafile)
     historical = 'c_XU' in data_table.colnames
+    print('DATA_TABLE READ', len(data_table))
 except:
     # Read Gaia data including both stars with known and missing radial velocities
     data_table = tabletool.read('../data/ScoCen_box_result.fits')
