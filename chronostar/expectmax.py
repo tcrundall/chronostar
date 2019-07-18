@@ -228,6 +228,7 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
 
     #TODO: this import should happen at the beginning of the file
     from multiprocessing import Pool
+    import contextlib
     import time
 
 
@@ -306,7 +307,8 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
     num_threads = 8
     start = time.time()
     # ~ with contextlib.closing( Pool(num_threads) ) as pool:
-    with Pool(num_threads) as pool:
+    #with Pool(num_threads) as pool:
+    with contextlib.closing(Pool(num_threads)) as pool:
         results = pool.map(func, args=(star_means, star_covs,))
     end = time.time()
     print(end - start, 'multiprocessing')
