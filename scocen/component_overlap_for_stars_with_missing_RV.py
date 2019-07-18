@@ -29,13 +29,9 @@ c = np.load('all_nonbg_scocen_comps.npy') # including LCC
 print('components', c.shape)
 print('Are there duplicate components?')
 
-print (c)
-print (c.shape)
-
-
-
 try:
     data_table = Table.read(datafile)
+    historical = 'c_XU' in data_table.colnames
 except:
     # Read Gaia data including both stars with known and missing radial velocities
     data_table = tabletool.read('../data/ScoCen_box_result.fits')
