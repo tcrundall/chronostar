@@ -318,7 +318,8 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
     pool.join()
     # ~ print('pathos result', result)
 
-
+    print(bg_lnols)
+    print(result)
 
 
     #num_threads = 8
