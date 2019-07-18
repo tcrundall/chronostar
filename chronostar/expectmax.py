@@ -153,6 +153,7 @@ def get_background_overlaps_with_covariances(background_means, star_means,
     # So I do it in a loop for every star
     bg_lnols=[]
     for i, (star_mean, star_cov) in enumerate(zip(star_means, star_covs)):
+        print('bgols', i)
         #print('{} of {}'.format(i, len(star_means)))
         #print(star_cov)
         #print('det', np.linalg.det(star_cov))
