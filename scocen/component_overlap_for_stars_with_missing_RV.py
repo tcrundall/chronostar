@@ -40,7 +40,9 @@ except:
     # Read Gaia data including both stars with known and missing radial velocities
     data_table = tabletool.read('../data/ScoCen_box_result.fits')
     #data_table = tabletool.read('../data/scocen_for_testing.fits') # Shorter table
-    #data_table=data_table[:100]
+
+    #TODO: first 100 stars for testing purposes
+    data_table=data_table[:100]
     print('DATA READ', len(data_table))
     # Set missing radial velocities to some value, and their errors to something very big
 
@@ -77,6 +79,7 @@ data_dict_tmp = tabletool.build_data_dict_from_table(
         historical=historical,
 )
 
+print('ln_bg_ols...')
 ln_bg_ols = expectmax.get_background_overlaps_with_covariances(background_means,
             data_dict_tmp['means'], data_dict_tmp['covs'],
 )
@@ -85,7 +88,7 @@ bg_lnol_colname = 'background_log_overlap'
 print('Background overlaps')
 tabletool.insert_column(data_table, bg_lnol_colname, ln_bg_ols, filename=datafile)
 
-data_table.write('data_table_cartesian_with_bg_ols.fits')
+data_table.write('data_table_cartesian_with_bg_ols_tmp.fits')
 
 print('Create data dict')
 # Create data dict for real
@@ -118,7 +121,14 @@ for i in range(membership_probabilities.shape[1]):
 
 print(data_table)
 
-# Compare with membership probabilities of stars with known radial velocities
+
+
+######################################################################################
+######################################################################################
+####  Compare with membership probabilities of stars with known radial velocities ####
+######################################################################################
+######################################################################################
+
 memb_usco = np.load('usco_res/final_membership.npy')
 data_usco = Table.read('usco_res/usco_run_subset.fit')
 for i in range(memb_usco.shape[1]-1):
