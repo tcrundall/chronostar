@@ -35,7 +35,7 @@ class Bg_ols_cov_multiprocessing():
         self.nstars = nstars
 
 
-    def func(index):
+    def func(self, index):
         """
         Author: Marusa Zerjal, 2019 - 07 - 18
 
@@ -67,7 +67,7 @@ class Bg_ols_cov_multiprocessing():
         #print('')
         return bg_lnol
 
-    def compute_bg_ols():
+    def compute_bg_ols(self):
         num_threads = 8
         start = time.time()
         # ~ with contextlib.closing( Pool(num_threads) ) as pool:
