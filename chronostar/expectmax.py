@@ -286,7 +286,7 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
 
     #TODO: this is hardcoded... shouldn't be!
 
-    multi = overlaps_cov_multiprocessing(background_means, background_covs, nstars, star_covs, star_means)
+    multi = overlaps_cov_multiprocessing.Bg_ols_cov_multiprocessing(background_means, background_covs, nstars, star_covs, star_means)
     results = multi.compute_bg_ols()
 
     #num_threads = 8
