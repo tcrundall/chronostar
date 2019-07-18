@@ -45,7 +45,8 @@ except:
     logging.info("WARNING: Couldn't import C implementation, using slow pythonic overlap instead")
     from chronostar.likelihood import slow_get_lnoverlaps as get_lnoverlaps
 
-
+#TODO check if this is needed
+from . import overlaps_cov_multiprocessing
 
 def log_message(msg, symbol='.', surround=False):
     """Little formatting helper"""
@@ -285,42 +286,17 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
 
     #TODO: this is hardcoded... shouldn't be!
 
-    def func(index):
-        star_mean = star_means[index]
-        star_cov = star_covs[index]
-        print(star_mean, star_cov)
-        try:
-            #print('***********', nstars, star_cov, star_mean, background_covs, background_means)
-            bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
-                                     background_means, nstars)
-            #print('intermediate', bg_lnol)
-            # bg_lnol = np.log(np.sum(np.exp(bg_lnol))) # sum in linear space
-            bg_lnol = logsumexp(bg_lnol) # sum in linear space
+    multi = overlaps_cov_multiprocessing(background_means, background_covs, nstars, star_covs, star_means)
+    results = multi.compute_bg_ols()
 
-        # Do we really want to make exceptions here? If the sum fails then
-        # there's something wrong with the data.
-        except:
-            # TC: Changed sign to negative (surely if it fails, we want it to
-            # have a neglible background overlap?
-            print('bg ln overlap failed, setting it to -inf')
-            bg_lnol = -np.inf
-        #bg_lnols.append(bg_lnol)
-        #print(bg_lnol)
-        #print('')
-        return bg_lnol
-
-
-    num_threads = 8
-    start = time.time()
-    # ~ with contextlib.closing( Pool(num_threads) ) as pool:
-    #with Pool(num_threads) as pool:
-    with contextlib.closing(Pool(num_threads)) as pool:
-        #results = pool.map(func, zip(star_means, star_covs))
-        indices=range(len(star_means))
-        print('indices', indices)
-        results = pool.map(func, tuple(indices))
-    end = time.time()
-    print(end - start, 'multiprocessing')
+    #num_threads = 8
+    #start = time.time()
+    #indices = range(len(star_means))
+    #print('indices', indices)
+    #with contextlib.closing(Pool(num_threads)) as pool:
+    #    results = pool.map(func, tuple(indices))
+    #end = time.time()
+    #print(end - start, 'multiprocessing')
     print('results', results)
 
     return bg_lnols
