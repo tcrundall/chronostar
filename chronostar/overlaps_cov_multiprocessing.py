@@ -72,7 +72,7 @@ class Bg_ols_cov_multiprocessing():
         start = time.time()
         # ~ with contextlib.closing( Pool(num_threads) ) as pool:
         #with Pool(num_threads) as pool:
-        indices = range(len(star_means))
+        indices = range(len(self.star_means))
         print('indices', indices)
         with contextlib.closing(Pool(num_threads)) as pool:
             #results = pool.map(func, zip(star_means, star_covs))
