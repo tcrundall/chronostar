@@ -329,7 +329,7 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
     #    results = pool.map(func, tuple(indices))
     #end = time.time()
     #print(end - start, 'multiprocessing')
-    print('results', results)
+    #print('results', results)
 
     return bg_lnols
 
