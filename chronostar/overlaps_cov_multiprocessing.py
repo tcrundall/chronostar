@@ -27,7 +27,7 @@ except:
     from chronostar.likelihood import slow_get_lnoverlaps as get_lnoverlaps
 
 class Bg_ols_cov_multiprocessing(background_means, background_covs, nstars, star_covs, star_means):
-    __init__(self):
+    def __init__(self):
         self.star_means = star_means
         self.star_covs = star_covs
         self.background_means = background_means
