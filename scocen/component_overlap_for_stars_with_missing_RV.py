@@ -81,7 +81,7 @@ data_dict_tmp = tabletool.build_data_dict_from_table(
 )
 
 print('Compute ln_bg_ols...')
-ln_bg_ols = expectmax.get_background_overlaps_with_covariances(background_means,
+ln_bg_ols = expectmax.get_background_overlaps_with_covariances_multiprocessing(background_means,
             data_dict_tmp['means'], data_dict_tmp['covs'],
 )
 
