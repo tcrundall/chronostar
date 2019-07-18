@@ -17,6 +17,7 @@ from chronostar import tabletool
 from chronostar import expectmax
 from astropy.table import Table, vstack, join
 
+
 datafile = 'data_table_cartesian.fits'
 
 
@@ -38,7 +39,7 @@ except:
     #data_table = tabletool.read('../data/scocen_for_testing.fits') # Shorter table
 
     #TODO: first 100 stars for testing purposes
-    data_table=data_table[:100]
+    data_table=data_table[:4]
     print('DATA READ', len(data_table))
     # Set missing radial velocities to some value, and their errors to something very big
 
