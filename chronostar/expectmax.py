@@ -46,9 +46,8 @@ except:
     from chronostar.likelihood import slow_get_lnoverlaps as get_lnoverlaps
 
 #TODO check if this is needed
-#from . import overlaps_cov_multiprocessing
 from pathos.multiprocessing import ProcessingPool
-from functools import partial
+#from functools import partial
 
 def log_message(msg, symbol='.', surround=False):
     """Little formatting helper"""
@@ -249,38 +248,11 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
 
     # shapes of the c_get_lnoverlaps input must be: (6, 6), (6,), (120, 6, 6), (120, 6)
     # So I do it in a loop for every star
-    bg_lnols=[]
-    start = time.time() # TODO remove
-    for i, (star_mean, star_cov) in enumerate(zip(star_means, star_covs)):
-        print('bgols', i)
-        try:
-            print('bgols get lnoverlaps', i)
-            bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
-                                     background_means, nstars)
-            print('bgols get logsumexp', i)
-            bg_lnol = logsumexp(bg_lnol) # sum in linear space
 
-        # Do we really want to make exceptions here? If the sum fails then
-        # there's something wrong with the data.
-        except:
-            # TC: Changed sign to negative (surely if it fails, we want it to
-            # have a neglible background overlap?
-            print('bg ln overlap failed, setting it to -inf')
-            bg_lnol = -np.inf
-        bg_lnols.append(bg_lnol)
-
-    end = time.time()
-    print(end - start, 'for loop')
 
     # This should be parallelized
     #bg_lnols = [np.sum(get_lnoverlaps(star_cov, star_mean, background_covs, background_means, nstars)) for star_mean, star_cov in zip(star_means, star_covs)]
     #print(bg_lnols)
-
-    #TODO: this is hardcoded... shouldn't be!
-
-    #multi = overlaps_cov_multiprocessing.Bg_ols_cov_multiprocessing(background_means, background_covs, nstars, star_covs, star_means)
-    #results = multi.compute_bg_ols()
-
 
     #def func_bg(background_covs, background_means, nstars, index):
     def func_bg(index):
@@ -310,18 +282,14 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
 
     pool = ProcessingPool(nodes=16)
     #func = partial(func_bg, background_covs, background_means, nstars)
-    start = time.time()
+    #start = time.time()
     indices=range(len(star_means))
     #result = pool.map(func, indices)
     result = pool.map(func_bg, indices)
-    end = time.time()
-    print(end - start, 'pathos')
+    #end = time.time()
+    #print(end - start, 'pathos')
     pool.close()
     pool.join()
-
-
-    print(bg_lnols)
-    print(result)
 
 
     #num_threads = 8
