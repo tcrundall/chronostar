@@ -89,7 +89,7 @@ ln_bg_ols = expectmax.get_background_overlaps_with_covariances_multiprocessing(b
             data_dict_tmp['means'], data_dict_tmp['covs'],
 )
 
-np.savetxt('ln_bg_ols.dat', )
+np.savetxt('ln_bg_ols.dat', ln_bg_ols)
 
 bg_lnol_colname = 'background_log_overlap'
 print('Background overlaps: insert column')
