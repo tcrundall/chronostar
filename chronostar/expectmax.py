@@ -285,7 +285,7 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
     #start = time.time()
     indices=range(len(star_means))
     #result = pool.map(func, indices)
-    result = pool.map(func_bg, indices)
+    bg_lnols = pool.map(func_bg, indices)
     #end = time.time()
     #print(end - start, 'pathos')
     pool.close()
@@ -301,6 +301,8 @@ def get_background_overlaps_with_covariances_multiprocessing(background_means, s
     #end = time.time()
     #print(end - start, 'multiprocessing')
     #print('results', results)
+
+    print(bg_lnols)
 
     return bg_lnols
 
