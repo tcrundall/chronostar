@@ -45,7 +45,7 @@ data_table = tabletool.read(datafile)
 #data_table = tabletool.read('../data/scocen_for_testing.fits') # Shorter table
 
 #TODO: first 100 stars for testing purposes
-data_table=data_table[:4]
+#data_table=data_table[:4]
 print('DATA READ', len(data_table))
 # Set missing radial velocities to some value, and their errors to something very big
 
