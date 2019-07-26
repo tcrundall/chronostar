@@ -93,7 +93,7 @@ np.savetxt('ln_bg_ols.dat', ln_bg_ols)
 
 bg_lnol_colname = 'background_log_overlap'
 print('Background overlaps: insert column')
-tabletool.insert_column(data_table, bg_lnol_colname, ln_bg_ols, filename=datafile)
+tabletool.insert_column(data_table, ln_bg_ols, bg_lnol_colname, filename=datafile)
 
 print('Print bg ols to cartesian table')
 data_table.write('data_table_cartesian_with_bg_ols_tmp.fits')
