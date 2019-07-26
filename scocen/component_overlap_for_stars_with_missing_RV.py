@@ -18,7 +18,9 @@ from chronostar import expectmax
 from astropy.table import Table, vstack, join
 
 
-datafile = 'data_table_cartesian.fits'
+#datafile = 'data_table_cartesian.fits'
+#datafile = 'scocen_4500_candidates.fits'
+datafile = 'scocen_100k_candidates.fits'
 
 
 # Read all components
@@ -30,35 +32,37 @@ c = np.load('all_nonbg_scocen_comps.npy') # including LCC
 print('components', c.shape)
 print('Are there duplicate components?')
 
+"""
 try:
     data_table = Table.read(datafile)
     historical = 'c_XU' in data_table.colnames
-    data_table = data_table[:20]
+    #data_table = data_table#[:20]
     print('DATA_TABLE READ', len(data_table))
 except:
-    # Read Gaia data including both stars with known and missing radial velocities
-    data_table = tabletool.read('../data/ScoCen_box_result.fits')
-    #data_table = tabletool.read('../data/scocen_for_testing.fits') # Shorter table
+"""
+# Read Gaia data including both stars with known and missing radial velocities
+data_table = tabletool.read(datafile)
+#data_table = tabletool.read('../data/scocen_for_testing.fits') # Shorter table
 
-    #TODO: first 100 stars for testing purposes
-    data_table=data_table[:4]
-    print('DATA READ', len(data_table))
-    # Set missing radial velocities to some value, and their errors to something very big
+#TODO: first 100 stars for testing purposes
+#data_table=data_table#[:4]
+print('DATA READ', len(data_table))
+# Set missing radial velocities to some value, and their errors to something very big
 
-    # Set missing radial velocities (nan) to 0
-    data_table['radial_velocity'] = np.nan_to_num(data_table['radial_velocity'])
+# Set missing radial velocities (nan) to 0
+data_table['radial_velocity'] = np.nan_to_num(data_table['radial_velocity'])
 
-    # Set missing radial velocity errors (nan) to 1e+10
-    data_table['radial_velocity_error'][np.isnan(data_table['radial_velocity_error'])] = 1e+4
+# Set missing radial velocity errors (nan) to 1e+10
+data_table['radial_velocity_error'][np.isnan(data_table['radial_velocity_error'])] = 1e+4
 
-    print(data_table)
+print(data_table)
 
-    # Convert to Cartesian
-    print('Convert to cartesian')
-    historical = 'c_XU' in data_table.colnames
-    # Performs conversion in place (in memory) on `data_table`
-    if (not 'c_XU' in data_table.colnames and not 'X_U_corr' in data_table.colnames):
-        tabletool.convert_table_astro2cart(table=data_table, return_table=True)
+# Convert to Cartesian
+print('Convert to cartesian')
+historical = 'c_XU' in data_table.colnames
+# Performs conversion in place (in memory) on `data_table`
+if (not 'c_XU' in data_table.colnames and not 'X_U_corr' in data_table.colnames):
+    tabletool.convert_table_astro2cart(table=data_table, return_table=True)
 
 
 #data_table.write('data_table_cartesian.fits')
@@ -84,6 +88,8 @@ print('Compute ln_bg_ols...')
 ln_bg_ols = expectmax.get_background_overlaps_with_covariances_multiprocessing(background_means,
             data_dict_tmp['means'], data_dict_tmp['covs'],
 )
+
+np.savetxt('ln_bg_ols.dat', )
 
 bg_lnol_colname = 'background_log_overlap'
 print('Background overlaps: insert column')

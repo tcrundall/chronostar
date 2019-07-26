@@ -9,8 +9,13 @@ Background overlap computations are too slow to process that many stars, so narr
 
 import numpy as np
 from astropy.table import Table
+import sys
+import os
+sys.path.insert(0, os.path.abspath('..'))
+from chronostar import tabletool
 
-tab = Table.read('../data/ScoCen_box_result.fits')
+#tab = Table.read('../data/ScoCen_box_result.fits')
+tab = Table.read('../data/ScoCen_box_result_with_kinematics.fits')
 print('All candidates', len(tab))
 print(tab)
 
@@ -26,68 +31,75 @@ def distance_cut(tab):
     mask = (distance>100.0) & (distance<160.0)
     return tab[mask]
 
-def add_UVW(tab):
-    '''
-    Determine UVW.
-    Need:
-    parallax
-    pmra, pmdec
-    rv
-    '''
+def add_UVW_chronostar(tab):
+    tabletool.convert_table_astro2cart(
+        table=tab,
+        main_colnames=None,
+        error_colnames=None,
+        corr_colnames=None,
+        return_table=True)
 
-    import astropy.coordinates as coord
-    import astropy.units as u
+    tab.write('ScoCen_box_result_with_kinematics.fits')
 
-    print 'Determine UVW for %d stars.' % len(tab)
+def kinematic_cut(tab):
+    maskNaN = np.isnan(tab['U'])
 
-    # ~ tab=tab[:10]
+    tab1=tab[~maskNaN]
 
-    result = []
-    U = []
-    V = []
-    W = []
-    i = 0
-    for x in tab:
-        # ~ print x
-        try:
-            c1 = coord.ICRS(ra=x['ra'] * u.degree, dec=x['dec'] * u.degree,
-                            distance=(x['parallax'] * u.mas).to(u.pc, u.parallax()),
-                            pm_ra_cosdec=x['pmra'] * u.mas / u.yr,
-                            pm_dec=x['pmdec'] * u.mas / u.yr,
-                            radial_velocity=x['radial_velocity'] * u.km / u.s)
 
-            gc1 = c1.transform_to(coord.Galactocentric)
-            i += 1
-            if i % 100 == 0:
-                print i, len(tab), gc1.v_x, gc1.v_y, gc1.v_z
-            result.append([x['source_id'], gc1.v_x.value, gc1.v_y.value, gc1.v_z.value])
-            U.append(gc1.v_x.value)
-            V.append(gc1.v_y.value)
-            W.append(gc1.v_z.value)
-        except:
-            U.append(np.nan)
-            V.append(np.nan)
-            W.append(np.nan)
-    print U
+    b=100
 
-    tab['U'] = U
-    tab['V'] = V
-    tab['W'] = W
-    tab['U'].unit = 'km/s'
-    tab['V'].unit = 'km/s'
-    tab['W'].unit = 'km/s'
+    #"""
+    print(tab['U'])
+    import matplotlib.pyplot as plt
+    fig=plt.figure()
+    ax=fig.add_subplot(311)
+    ax.hist(tab1['U'], bins=np.linspace(-100, 100, b))
+
+    ax=fig.add_subplot(312)
+    ax.hist(tab1['V'], bins=np.linspace(-100, 100, b))
+
+    ax=fig.add_subplot(313)
+    ax.hist(tab1['W'], bins=np.linspace(-50, 50, b))
+
+    plt.show()
+    #"""
+
+    maskU = (tab['U']>-25) & (tab['U']<10)
+    maskV = (tab['V']>-20) & (tab['V']<5)
+    maskW = (tab['W']>-10) & (tab['W']<10)
+    mask = maskU & maskV & maskW
+
+    # UVW within limits or no RV
+    mask = np.logical_or(mask, maskNaN)
+
+    print len(tab[maskU])
+    print len(tab[maskV])
+    print len(tab[maskW])
+
+    tab=tab[mask]
+
+    print(len(tab))
 
     return tab
 
-tab = remove_stars_at_very_different_positions_in_the_sky(tab)
+
+#tab = remove_stars_at_very_different_positions_in_the_sky(tab)
+#print(len(tab))
+
+#tab = distance_cut(tab)
+#print(len(tab))
+
+
+#tab = add_UVW(tab)
+#tab.write('../data/ScoCen_box_result_with_kinematics.fits', format='fits', overwrite=True)
+
+#add_UVW_chronostar(tab)
+
+tab=kinematic_cut(tab)
 print(len(tab))
-
-tab = distance_cut(tab)
-print(len(tab))
-
-
-tab = add_UVW(tab)
-tab.write('../data/ScoCen_box_result_with_kinematics.fits', format='fits', overwrite=True)
+tab.write('scocen_100k_candidates.fits')
 
 print('Days needed', 13.5*len(tab)/3600.0/24.0)
+print('Hours needed', 13.5*len(tab)/3600.0)
 #What about excluding giants?
