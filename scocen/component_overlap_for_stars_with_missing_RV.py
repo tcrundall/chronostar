@@ -69,7 +69,9 @@ if (not 'c_XU' in data_table.colnames and not 'X_U_corr' in data_table.colnames)
 
 # data_table should include background overlaps as well
 
-# Background overlaps (using covariance matrix)
+############################################################################
+########### BACKGROUND OVERLAPS (using covariance matrix) ##################
+############################################################################
 print('Read background Gaia data')
 background_means = tabletool.build_data_dict_from_table(
                         '/home/tcrun/chronostar/data/gaia_cartesian_full_6d_table.fits',
@@ -96,7 +98,15 @@ print('Background overlaps: insert column')
 tabletool.insert_column(data_table, ln_bg_ols, bg_lnol_colname, filename=datafile)
 
 print('Print bg ols to cartesian table')
-data_table.write('data_table_cartesian_with_bg_ols_tmp.fits')
+data_table.write('data_table_cartesian_with_bg_ols_tmp.fits', overwrite=True, format='fits')
+
+############################################################################
+############################################################################
+
+
+############################################################################
+############ COMPONENT OVERLAPS ############################################
+############################################################################
 
 print('Create data dict')
 # Create data dict for real
@@ -106,12 +116,13 @@ data_dict = tabletool.build_data_dict_from_table(
         historical=historical,
 )
 
+
 # Create components
 comps = [SphereComponent(pars=x) for x in c]
 print(comps)
 
 
-
+# COMPONENT OVERLAPS
 overlaps = expectmax.get_all_lnoverlaps(data_dict, comps)
 #print(overlaps)
 #print('overlaps.shape', overlaps.shape)
