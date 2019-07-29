@@ -157,6 +157,6 @@ for star_cov, star_mean in zip(star_covs, star_means):
 # GATHER DATA
 bg_ln_ols_result = comm.gather(bg_ln_ols, root=0)
 if rank == 0:
-    print  'master collected: ', bg_ln_ols_result
+    print  ('master collected: ', bg_ln_ols_result)
 
     np.savetxt('bgols_multi_testing.dat')
