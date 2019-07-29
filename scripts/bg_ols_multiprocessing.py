@@ -60,6 +60,7 @@ else:
 
 import sys
 sys.path.insert(0, '..')
+from chronostar import tabletool
 
 try:
     print('Using C implementation in expectmax')
