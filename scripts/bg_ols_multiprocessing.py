@@ -66,7 +66,8 @@ from chronostar import tabletool
 
 try:
     print('Using C implementation in expectmax')
-    from _overlap import get_lnoverlaps
+    #from _overlap import get_lnoverlaps
+    from chronostar._overlap import get_lnoverlaps
 except:
     print("WARNING: Couldn't import C implementation, using slow pythonic overlap instead")
     logging.info("WARNING: Couldn't import C implementation, using slow pythonic overlap instead")
