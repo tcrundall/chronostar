@@ -96,7 +96,6 @@ if rank == 0:
     data_table = data_table[:20] # for testing
     print('DATA_TABLE READ', len(data_table))
 
-    print('data_dict')
     data_dict = tabletool.build_data_dict_from_table(
         data_table,
         get_background_overlaps=False, # bg overlap not available yet
@@ -127,8 +126,6 @@ if rank == 0:
 
     # SPLIT DATA into multiple processes
     indices_chunks = np.array_split(range(len(star_means)), size)
-    print(len(star_means), size)
-    print(indices_chunks)
     star_means = [star_means[i] for i in indices_chunks]
     star_covs = [star_covs[i] for i in indices_chunks]
 else:
@@ -149,7 +146,7 @@ time_start=time.time()
 star_means = comm.scatter(star_means, root=0)
 star_covs = comm.scatter(star_covs, root=0)
 
-print(rank, nstars, len(star_means))
+print(rank, len(star_means))
 
 # EVERY PROCESS DOES THIS FOR ITS DATA
 bg_ln_ols=[]
@@ -172,8 +169,8 @@ print(rank, 'done', time_end-time_start)
 
 # GATHER DATA
 bg_ln_ols_result = comm.gather(bg_ln_ols, root=0)
-bg_ln_ols_result = list(itertools.chain.from_iterable(bg_ln_ols_result))
 if rank == 0:
+    bg_ln_ols_result = list(itertools.chain.from_iterable(bg_ln_ols_result))
     print  ('master collected: ', bg_ln_ols_result)
 
     np.savetxt('bgols_multi_testing.dat', bg_ln_ols_result)
