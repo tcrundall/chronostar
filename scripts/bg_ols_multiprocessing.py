@@ -100,6 +100,7 @@ if rank == 0:
     )
     star_means = data_dict['means']
     star_covs = data_dict['covs']
+    print('star_means', star_means)
 
     # PREPARE BACKGROUND DATA
     print('Read background Gaia data')
