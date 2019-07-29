@@ -67,7 +67,7 @@ sys.path.insert(0, '..')
 from chronostar import tabletool
 
 try:
-    print('Using C implementation in expectmax')
+    print('Using C implementation')
     #from _overlap import get_lnoverlaps
     from chronostar._overlap import get_lnoverlaps
 except:

@@ -41,6 +41,7 @@ TC 2019-05-28: changed signature such that it follows similar usage as
 from __future__ import print_function, division
 
 import numpy as np
+import itertools
 from mpi4py import MPI
 
 import time
@@ -65,7 +66,7 @@ sys.path.insert(0, '..')
 from chronostar import tabletool
 
 try:
-    print('Using C implementation in expectmax')
+    print('Using C implementation')
     #from _overlap import get_lnoverlaps
     from chronostar._overlap import get_lnoverlaps
 except:
@@ -170,6 +171,7 @@ print(rank, 'done', time_end-time_start)
 
 # GATHER DATA
 bg_ln_ols_result = comm.gather(bg_ln_ols, root=0)
+bg_ln_ols_result = list(itertools.chain.from_iterable(bg_ln_ols_result))
 if rank == 0:
     print  ('master collected: ', bg_ln_ols_result)
 
