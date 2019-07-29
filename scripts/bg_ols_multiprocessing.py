@@ -122,8 +122,8 @@ if rank == 0:
 
     # SPLIT DATA into multiple processes
     indices_chunks = np.array_split(range(nstars), size)
-    star_means_split = [star_means[i] for i in indices_chunks]
-    star_covs_split = [star_covs[i] for i in indices_chunks]
+    star_means = [star_means[i] for i in indices_chunks]
+    star_covs = [star_covs[i] for i in indices_chunks]
 
 
 # BROADCAST CONSTANTS
@@ -132,8 +132,8 @@ background_means = comm.bcast(background_means, root=0)
 background_covs = comm.bcast(background_covs, root=0)
 
 # SCATTER DATA
-star_means = comm.scatter(star_means_split, root=0)
-star_covs = comm.scatter(star_covs_split, root=0)
+star_means = comm.scatter(star_means, root=0)
+star_covs = comm.scatter(star_covs, root=0)
 
 
 
