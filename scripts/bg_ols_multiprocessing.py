@@ -93,7 +93,7 @@ if rank == 0:
     datafile = '../scocen/data_table_cartesian_100k.fits' # SHOULD BE CARTESIAN
     data_table = tabletool.read(datafile)
     historical = 'c_XU' in data_table.colnames
-    data_table = data_table[:20] # for testing
+    #data_table = data_table[:20] # for testing
     print('DATA_TABLE READ', len(data_table))
 
     data_dict = tabletool.build_data_dict_from_table(
@@ -128,6 +128,9 @@ if rank == 0:
     indices_chunks = np.array_split(range(len(star_means)), size)
     star_means = [star_means[i] for i in indices_chunks]
     star_covs = [star_covs[i] for i in indices_chunks]
+
+    #TODO: delete the time line
+    time_start = time.time()
 else:
     nstars=None
     star_means=None
@@ -140,13 +143,11 @@ nstars = comm.bcast(nstars, root=0)
 background_means = comm.bcast(background_means, root=0)
 background_covs = comm.bcast(background_covs, root=0)
 
-time_start=time.time()
-
 # SCATTER DATA
 star_means = comm.scatter(star_means, root=0)
 star_covs = comm.scatter(star_covs, root=0)
 
-print(rank, len(star_means))
+#print(rank, len(star_means))
 
 # EVERY PROCESS DOES THIS FOR ITS DATA
 bg_ln_ols=[]
@@ -162,15 +163,16 @@ for star_cov, star_mean in zip(star_covs, star_means):
         bg_lnol = -np.inf
 
     bg_ln_ols.append(bg_lnol)
-print(rank, bg_ln_ols)
+#print(rank, bg_ln_ols)
 
-time_end=time.time()
-print(rank, 'done', time_end-time_start)
+
 
 # GATHER DATA
 bg_ln_ols_result = comm.gather(bg_ln_ols, root=0)
 if rank == 0:
     bg_ln_ols_result = list(itertools.chain.from_iterable(bg_ln_ols_result))
-    print  ('master collected: ', bg_ln_ols_result)
+    time_end = time.time()
+    print(rank, 'done', time_end - time_start)
+    #print('master collected: ', bg_ln_ols_result)
 
-    np.savetxt('bgols_multi_testing.dat', bg_ln_ols_result)
+    np.savetxt('bgols_multiprocessing.dat', bg_ln_ols_result)

@@ -26,6 +26,7 @@ print('Are there duplicate components?')
 # Read Gaia data including both stars with known and missing radial velocities
 datafile = 'data_table_cartesian_100k.fits'
 data_table = tabletool.read(datafile)
+print('cartesian len', len(data_table))
 
 #TODO DELETE THIS
 # Just because I don't have bg_ols for stars with missing RV yet!!!
@@ -36,6 +37,7 @@ print('DATA READ', len(data_table))
 historical = 'c_XU' in data_table.colnames
 
 ln_bg_ols = np.loadtxt('ln_bg_ols.dat')
+print('lens', len(ln_bg_ols), len(data_table))
 
 bg_lnol_colname = 'background_log_overlap'
 print('Background overlaps: insert column')
