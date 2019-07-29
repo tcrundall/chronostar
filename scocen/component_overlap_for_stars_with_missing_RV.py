@@ -61,11 +61,13 @@ print(data_table)
 print('Convert to cartesian')
 historical = 'c_XU' in data_table.colnames
 # Performs conversion in place (in memory) on `data_table`
-if (not 'c_XU' in data_table.colnames and not 'X_U_corr' in data_table.colnames):
-    tabletool.convert_table_astro2cart(table=data_table, return_table=True)
+#if (not 'c_XU' in data_table.colnames and not 'X_U_corr' in data_table.colnames):
+#TODO: This table already has cartesian coordinates, but with RV nan. Not re-do them with big radial_velocity_errors.
+tabletool.convert_table_astro2cart(table=data_table, return_table=True)
 
 
-#data_table.write('data_table_cartesian.fits')
+data_table.write('data_table_cartesian_100k.fits')
+print('Cartesian written.')
 
 # data_table should include background overlaps as well
 
@@ -91,7 +93,7 @@ ln_bg_ols = expectmax.get_background_overlaps_with_covariances_multiprocessing(b
             data_dict_tmp['means'], data_dict_tmp['covs'],
 )
 
-np.savetxt('ln_bg_ols.dat', ln_bg_ols)
+np.savetxt('ln_bg_ols2.dat', ln_bg_ols)
 
 bg_lnol_colname = 'background_log_overlap'
 print('Background overlaps: insert column')
