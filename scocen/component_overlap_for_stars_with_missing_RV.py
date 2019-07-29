@@ -65,7 +65,7 @@ historical = 'c_XU' in data_table.colnames
 #TODO: This table already has cartesian coordinates, but with RV nan. Not re-do them with big radial_velocity_errors.
 tabletool.convert_table_astro2cart(table=data_table, return_table=True)
 
-data_table.write('data_table_cartesian_100k.fits')
+data_table.write('data_table_cartesian_100k_2.fits')
 print('Cartesian written.', len(data_table), len_original)
 
 # data_table should include background overlaps as well
