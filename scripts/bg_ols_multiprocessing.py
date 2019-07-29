@@ -130,6 +130,7 @@ if rank == 0:
     star_covs = [star_covs[i] for i in indices_chunks]
 
     #TODO: delete the time line
+    print('Start')
     time_start = time.time()
 else:
     nstars=None
