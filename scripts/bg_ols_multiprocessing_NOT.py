@@ -139,6 +139,7 @@ for star_cov, star_mean in zip(star_covs, star_means):
         bg_lnol = -np.inf
 
     bg_ln_ols.append(bg_lnol)
+    i+=1
 
 time_end=time.time()
 print('done', time_end-time_start)
