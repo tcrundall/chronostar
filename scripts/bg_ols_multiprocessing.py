@@ -124,7 +124,12 @@ if rank == 0:
     indices_chunks = np.array_split(range(nstars), size)
     star_means = [star_means[i] for i in indices_chunks]
     star_covs = [star_covs[i] for i in indices_chunks]
-
+else:
+    nstars=None
+    star_means=None
+    star_covs=None
+    background_means=None
+    background_covs=None
 
 # BROADCAST CONSTANTS
 nstars = comm.bcast(nstars, root=0)
