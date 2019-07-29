@@ -119,11 +119,14 @@ background_cov = np.cov(background_means.T) * bandwidth ** 2
 background_covs = np.array(nstars * [background_cov]) # same cov for every star
 
 
+print('Start')
 time_start=time.time()
 
 # EVERY PROCESS DOES THIS FOR ITS DATA
 bg_ln_ols=[]
+i=0
 for star_cov, star_mean in zip(star_covs, star_means):
+    print(i)
     try:
         bg_lnol = get_lnoverlaps(star_cov, star_mean, background_covs,
                                  background_means, nstars)
