@@ -43,6 +43,8 @@ from __future__ import print_function, division
 import numpy as np
 from mpi4py import MPI
 
+import time
+
 import logging
 
 # The placement of logsumexp varies wildly between scipy versions
@@ -100,7 +102,6 @@ if rank == 0:
     )
     star_means = data_dict['means']
     star_covs = data_dict['covs']
-    print('star_means', star_means)
 
     # PREPARE BACKGROUND DATA
     print('Read background Gaia data')
@@ -140,11 +141,13 @@ nstars = comm.bcast(nstars, root=0)
 background_means = comm.bcast(background_means, root=0)
 background_covs = comm.bcast(background_covs, root=0)
 
+time_start=time.time()
+
 # SCATTER DATA
 star_means = comm.scatter(star_means, root=0)
 star_covs = comm.scatter(star_covs, root=0)
 
-
+print(rank, nstars, len(star_means))
 
 # EVERY PROCESS DOES THIS FOR ITS DATA
 bg_ln_ols=[]
@@ -161,7 +164,8 @@ for star_cov, star_mean in zip(star_covs, star_means):
 
     bg_ln_ols.append(bg_lnol)
 
-
+time_end=time.time()
+print(rank, 'done', time_end-time_start)
 
 # GATHER DATA
 bg_ln_ols_result = comm.gather(bg_ln_ols, root=0)
