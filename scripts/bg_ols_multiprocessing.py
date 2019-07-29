@@ -86,7 +86,7 @@ rank=comm.Get_rank()
 
 if rank == 0:
     # PREPARE STELLAR DATA
-    datafile = 'data_table_cartesian_100k.fits' # SHOULD BE CARTESIAN
+    datafile = '../scocen/data_table_cartesian_100k.fits' # SHOULD BE CARTESIAN
     data_table = tabletool.read(datafile)
     historical = 'c_XU' in data_table.colnames
     data_table = data_table[:20] # for testing
