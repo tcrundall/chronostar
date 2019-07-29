@@ -143,6 +143,6 @@ for star_cov, star_mean in zip(star_covs, star_means):
 
 time_end=time.time()
 print('done', time_end-time_start)
-print((time_end-time_start)/float(len(data_table)) 'per star')
+print((time_end-time_start)/float(len(data_table)), 'per star')
 
 np.savetxt('bgols_multi_testing_not_multiprocessing.dat')
