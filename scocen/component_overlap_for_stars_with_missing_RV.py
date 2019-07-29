@@ -42,7 +42,7 @@ except:
 """
 # Read Gaia data including both stars with known and missing radial velocities
 data_table = tabletool.read(datafile)
-#data_table = tabletool.read('../data/scocen_for_testing.fits') # Shorter table
+len_original = len(data_table)
 
 #TODO: first 100 stars for testing purposes
 #data_table=data_table[:4]
@@ -65,9 +65,8 @@ historical = 'c_XU' in data_table.colnames
 #TODO: This table already has cartesian coordinates, but with RV nan. Not re-do them with big radial_velocity_errors.
 tabletool.convert_table_astro2cart(table=data_table, return_table=True)
 
-
 data_table.write('data_table_cartesian_100k.fits')
-print('Cartesian written.')
+print('Cartesian written.', len(data_table), len_original)
 
 # data_table should include background overlaps as well
 
