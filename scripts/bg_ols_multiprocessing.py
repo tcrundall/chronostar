@@ -173,4 +173,4 @@ bg_ln_ols_result = comm.gather(bg_ln_ols, root=0)
 if rank == 0:
     print  ('master collected: ', bg_ln_ols_result)
 
-    np.savetxt('bgols_multi_testing.dat')
+    np.savetxt('bgols_multi_testing.dat', bg_ln_ols_result)
