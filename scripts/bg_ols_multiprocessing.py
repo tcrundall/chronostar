@@ -123,8 +123,8 @@ if rank == 0:
 
 
     # SPLIT DATA into multiple processes
-    indices_chunks = np.array_split(range(nstars), size)
-    print(nstars, size)
+    indices_chunks = np.array_split(range(len(star_means)), size)
+    print(len(star_means), size)
     print(indices_chunks)
     star_means = [star_means[i] for i in indices_chunks]
     star_covs = [star_covs[i] for i in indices_chunks]
