@@ -88,7 +88,9 @@ def compare_membership_probabilities_of_stars_with_and_without_radial_velocities
     data_memb = vstack([data_usco, data_ucl])
     #print(data_memb)
 
-    dall = join(data_table, data_memb, keys='source_id')
+    dall = join(d, data_memb, keys='source_id')
+    print(d.colnames)
+    print(data_memb.colnames)
     print(dall.colnames)
 
 
