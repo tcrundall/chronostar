@@ -28,8 +28,10 @@ d = Table.read('data_table_cartesian_with_bg_ols_and_component_overlaps.fits')
 
 
 for i in range(1, 16+1):
+    maskRV = d['radial_velocity_error']<500.0
     mask = d['comp_overlap_%d'%i]>0.5
-    print i, len(d[mask])
+
+    print i, len(d[mask]), len(d[maskRV])
 
 
 
