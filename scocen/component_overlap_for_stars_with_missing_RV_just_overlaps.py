@@ -37,7 +37,7 @@ print('DATA READ', len(data_table))
 historical = 'c_XU' in data_table.colnames
 
 # Read backgrounf overlaps
-ln_bg_ols = np.loadtxt('../scripts/bgols_multiprocessing_tmp.dat')
+ln_bg_ols = np.loadtxt('../scripts/bgols_multiprocessing.dat')
 print('len bg_ols', len(ln_bg_ols), 'len data_table', len(data_table))
 
 bg_lnol_colname = 'background_log_overlap'
