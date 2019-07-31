@@ -30,14 +30,15 @@ print('cartesian len', len(data_table))
 
 #TODO DELETE THIS
 # Just because I don't have bg_ols for stars with missing RV yet!!!
-mask = data_table['radial_velocity_error']<5000
-data_table=data_table[mask]
+#mask = data_table['radial_velocity_error']<5000
+#data_table=data_table[mask]
 
 print('DATA READ', len(data_table))
 historical = 'c_XU' in data_table.colnames
 
-ln_bg_ols = np.loadtxt('ln_bg_ols.dat')
-print('lens', len(ln_bg_ols), len(data_table))
+# Read backgrounf overlaps
+ln_bg_ols = np.loadtxt('../scripts/bgols_multiprocessing_tmp.dat')
+print('len bg_ols', len(ln_bg_ols), 'len data_table', len(data_table))
 
 bg_lnol_colname = 'background_log_overlap'
 print('Background overlaps: insert column')
