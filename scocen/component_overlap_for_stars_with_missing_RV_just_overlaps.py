@@ -64,7 +64,7 @@ data_dict = tabletool.build_data_dict_from_table(
 
 # Create components
 comps = [SphereComponent(pars=x) for x in c]
-print(comps)
+#print(comps)
 
 
 # COMPONENT OVERLAPS
@@ -84,6 +84,7 @@ for i in range(membership_probabilities.shape[1]):
 #    data_table['comp_overlap_ucl%d'%(i+1)]=membership_probabilities[:,i+4]
 
 print(data_table)
+data_table.write('data_table_cartesian_with_bg_ols_and_component_overlaps.fits', format='fits')
 
 
 
@@ -107,9 +108,6 @@ data_ucl['Comp_bg'] = memb_ucl[:,-1]
 
 data_memb = vstack([data_usco, data_ucl])
 print(data_memb)
-
-print(type(data_table['source_id'][0]))
-print(type(data_memb['source_id'][0]))
 
 d = join(data_table, data_memb, keys='source_id')
 print(d)
