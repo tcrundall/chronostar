@@ -59,6 +59,11 @@ def compare_membership_probabilities_of_stars_with_and_without_radial_velocities
     plt.show()
     """
 
+    # Members in the overall data
+    mask_members_d = d['comp_overlap_1']>1 # Everything is False
+    for i in range(1, 16+1):
+        mask_members_d = np.logical_or(mask_members_d, d['comp_overlap_%d' % i] > 0.5)
+
 
     memb_usco = np.load('usco_res/final_membership.npy')
     data_usco = Table.read('usco_res/usco_run_subset.fit')
@@ -66,12 +71,9 @@ def compare_membership_probabilities_of_stars_with_and_without_radial_velocities
         data_usco['Comp_USco_%d'%(i+1)] = memb_usco[:,i]
     data_usco['Comp_bg'] = memb_usco[:,-1]
 
-    mask_members = data_usco['Comp_USco_1']>1 # Everything is False
-    for i in range(1, 4+1):
-        mask_members = np.logical_or(mask_members, data_usco['Comp_USco_%d'%i]>0.5)
 
-    print 'USCO MEMBERS'
-    print data_usco[mask_members]
+    #print 'USCO MEMBERS'
+    #print data_usco[mask_members]
 
     memb_ucl = np.load('ucl_res/final_membership.npy')
     data_ucl = Table.read('ucl_res/ucl_run_subset.fit')
@@ -79,11 +81,31 @@ def compare_membership_probabilities_of_stars_with_and_without_radial_velocities
         data_ucl['Comp_UCL_%d'%(i+1)] = memb_ucl[:,i]
     data_ucl['Comp_bg'] = memb_ucl[:,-1]
 
-    data_memb = vstack([data_usco, data_ucl])
-    print(data_memb)
+    mask_members = data_ucl['Comp_UCL_1']>1 # Everything is False
+    for i in range(1, 4+1):
+        mask_members = np.logical_or(mask_members, data_usco['Comp_UCL_%d'%i]>0.5)
 
-    d = join(data_table, data_memb, keys='source_id')
-    print(d)
+    data_memb = vstack([data_usco, data_ucl])
+    #print(data_memb)
+
+    dall = join(data_table, data_memb, keys='source_id')
+    #print(d)
+
+
+
+    mask_members_usco = dall['Comp_USco_1']>1 # Everything is False
+    for i in range(1, 4+1):
+        mask_members_usco = np.logical_or(mask_members_usco, dall['Comp_USco_%d'%i]>0.5)
+
+    mask_members_ucl = dall['Comp_UCL_1']>1 # Everything is False
+    for i in range(1, 4+1):
+        mask_members_ucl = np.logical_or(mask_members_ucl, dall['Comp_UCL_%d'%i]>0.5)
+
+    mask_members = dall['Comp_UCL_1']>1 # Everything is False
+    for i in range(1, 16+1):
+        mask_members = np.logical_or(mask_members, dall['comp_overlap_%d'%i]>0.5)
+
+    print len(dall[mask_members_usco]), len(dall[mask_members_ucl]), len(dall[mask_members])
 
 
 compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d)
