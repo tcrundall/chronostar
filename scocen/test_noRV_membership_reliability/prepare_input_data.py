@@ -65,4 +65,6 @@ data = join(data_original, scocen_members_essential_cols, keys='source_id')
 print data
 print data.colnames
 
+# This table is masked. Unmask:
+data=data.filled()
 data.write('scocen_members_with_artificially_broken_radial_velocities_for_comparison.fits', format='fits', overwrite=True)
