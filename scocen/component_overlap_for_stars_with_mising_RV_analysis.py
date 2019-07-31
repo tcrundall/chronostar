@@ -35,9 +35,18 @@ for i in range(1, 16+1):
 
 
 
-def compare_membership_probabilities_of_stars_with_known_radial_velocities():
+def compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d):
+    mask = d['comp_overlap_9'] > 0.5
+    maskRV = d['radial_velocity_error'] < 500.0
+
+    d9rv=d[maskRV&mask]
+    d9norv=d[~maskRV&mask]
+
+    print d9rv
+    print d9norv
 
 
+    """
     memb_usco = np.load('usco_res/final_membership.npy')
     data_usco = Table.read('usco_res/usco_run_subset.fit')
     for i in range(memb_usco.shape[1]-1):
@@ -55,4 +64,6 @@ def compare_membership_probabilities_of_stars_with_known_radial_velocities():
 
     d = join(data_table, data_memb, keys='source_id')
     print(d)
+    """
 
+compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d)
