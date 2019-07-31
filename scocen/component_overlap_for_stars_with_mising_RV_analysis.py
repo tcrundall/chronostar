@@ -31,7 +31,7 @@ for i in range(1, 16+1):
     maskRV = d['radial_velocity_error']<500.0
     mask = d['comp_overlap_%d'%i]>0.5
 
-    print i, len(d[mask]), len(d[maskRV])
+    print i, len(d[mask]), len(d[maskRV&mask])
 
 
 
