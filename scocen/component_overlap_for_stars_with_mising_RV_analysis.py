@@ -53,6 +53,8 @@ def compare_membership_probabilities_of_stars_with_and_without_radial_velocities
     ax.scatter(d9rv['Z'], d9rv['W'], s=1, c='k')
     ax.scatter(d9norv['Z'], d9norv['W'], s=1, c='r')
 
+    plt.savefig('compare.png')
+
     plt.show()
 
     """
