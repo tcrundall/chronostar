@@ -66,6 +66,13 @@ def compare_membership_probabilities_of_stars_with_and_without_radial_velocities
         data_usco['Comp_USco_%d'%(i+1)] = memb_usco[:,i]
     data_usco['Comp_bg'] = memb_usco[:,-1]
 
+    mask_members = data_usco['Comp_USco_1']>1 # Everything is False
+    for i in range(1, 4+1):
+        mask_members = np.logical_or(mask_members, data_usco['Comp_USco_%d'%i]>0.5)
+
+    print 'USCO MEMBERS'
+    print data_usco[mask_members]
+
     memb_ucl = np.load('ucl_res/final_membership.npy')
     data_ucl = Table.read('ucl_res/ucl_run_subset.fit')
     for i in range(memb_ucl.shape[1]-1):
