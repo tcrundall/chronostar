@@ -26,13 +26,13 @@ print('Are there duplicate components?')
 d = Table.read('data_table_cartesian_with_bg_ols_and_component_overlaps.fits')
 
 
-
+maskRV = d['radial_velocity_error']<500.0
 for i in range(1, 15+1):
-    maskRV = d['radial_velocity_error']<500.0
     mask = d['comp_overlap_%d'%i]>0.5
 
     print i, len(d[mask]), len(d[maskRV&mask])
-
+mask = d['comp_overlap_bg']>0.5
+print 'bg', len(d[mask], len(d[maskRV&mask]))
 
 
 def compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d):
@@ -137,24 +137,26 @@ def prepare_Tims_data():
     data_ucl['Comp_bg_UCL'] = memb_ucl[:, -1]
     data_ucl['nonbg'] = -(data_ucl['Comp_bg_UCL'] - 1.0)
 
+    """
     memb_lcc = np.load('lcc_res/final_membership.npy')
     data_lcc = Table.read('lcc_res/lcc_run_subset.fit')
     for i in range(memb_ucl.shape[1] - 1):
         data_lcc['Comp_LCC_%d' % (i + 1)] = memb_lcc[:, i]
     data_lcc['Comp_bg_LCC'] = memb_lcc[:, -1]
     data_lcc['nonbg'] = -(data_lcc['Comp_bg_LCC'] - 1.0)
+    """
 
     data_memb = vstack([data_usco, data_ucl])
-    data_memb = vstack([data_memb, data_lcc])
+    #data_memb = vstack([data_memb, data_lcc])
 
     # Find the highest probability value
     nonbg_usco = -(data_memb['Comp_bg_USco']-1.0)
     nonbg_ucl = -(data_memb['Comp_bg_UCL']-1.0)
-    nonbg_lcc = -(data_memb['Comp_bg_LCC']-1.0)
+    #nonbg_lcc = -(data_memb['Comp_bg_LCC']-1.0)
 
     data_memb['nonbg_USco'] = nonbg_usco
     data_memb['nonbg_UCL'] = nonbg_ucl
-    data_memb['nonbg_LCC'] = nonbg_lcc
+    #data_memb['nonbg_LCC'] = nonbg_lcc
 
     return data_memb
 
