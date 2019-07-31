@@ -89,7 +89,7 @@ def compare_membership_probabilities_of_stars_with_and_without_radial_velocities
     #print(data_memb)
 
     dall = join(data_table, data_memb, keys='source_id')
-    #print(d)
+    print(dall.colnames)
 
 
 
