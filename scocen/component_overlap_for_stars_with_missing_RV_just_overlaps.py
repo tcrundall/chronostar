@@ -57,7 +57,7 @@ data_dict = tabletool.build_data_dict_from_table(
         historical=historical,
 )
 
-print 'KEYS', data_table.keys()
+print 'KEYS', data_dict.keys()
 
 # Create components
 comps = [SphereComponent(pars=x) for x in c]
