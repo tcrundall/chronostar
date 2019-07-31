@@ -194,19 +194,18 @@ def compare_membership_probabilities(d):
         mask_members = np.logical_or(mask_members, d['comp_overlap_%d' % i] > 0.5)
     """
 
-    """
+
     import matplotlib.pyplot as plt
 
     fig=plt.figure()
     ax=fig.add_subplot(111)
 
-    ax.scatter(d9rv['Z'], d9rv['W'], s=1, c='k')
-    ax.scatter(d9norv['Z'], d9norv['W'], s=1, c='r')
+    ax.scatter(d['nonbg'], d['nonbg_probability'], s=1, c='k')
 
-    plt.savefig('compare.png')
+    plt.savefig('compare_nonbg.png')
 
     plt.show()
-    """
+
 
 #compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d)
 compare_membership_probabilities(d)
