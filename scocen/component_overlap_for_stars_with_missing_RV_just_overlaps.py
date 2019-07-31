@@ -23,19 +23,16 @@ c = np.load('all_nonbg_scocen_comps.npy') # including LCC
 print('components', c.shape)
 print('Are there duplicate components?')
 
+datafile = 'data_table_cartesian_with_bg_ols.fits'
+
 # Read Gaia data including both stars with known and missing radial velocities
 datafile = 'data_table_cartesian_100k.fits'
 data_table = tabletool.read(datafile)
-print('cartesian len', len(data_table))
-
-#TODO DELETE THIS
-# Just because I don't have bg_ols for stars with missing RV yet!!!
-#mask = data_table['radial_velocity_error']<5000
-#data_table=data_table[mask]
 
 print('DATA READ', len(data_table))
 historical = 'c_XU' in data_table.colnames
 
+"""
 # Read backgrounf overlaps
 ln_bg_ols = np.loadtxt('../scripts/bgols_multiprocessing.dat')
 print('len bg_ols', len(ln_bg_ols), 'len data_table', len(data_table))
@@ -45,11 +42,8 @@ print('Background overlaps: insert column')
 tabletool.insert_column(data_table, ln_bg_ols, bg_lnol_colname, filename=datafile)
 
 print('Print bg ols to cartesian table')
-data_table.write('data_table_cartesian_with_bg_ols_tmp.fits', overwrite=True, format='fits')
-
-
-# TODO: DELETE THIS
-data_table = data_table[:4]
+data_table.write('data_table_cartesian_with_bg_ols.fits', overwrite=True, format='fits')
+"""
 
 ############################################################################
 ############################################################################
