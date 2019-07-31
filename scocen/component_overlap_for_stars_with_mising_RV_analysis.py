@@ -200,7 +200,7 @@ def compare_membership_probabilities(d):
     fig=plt.figure()
     ax=fig.add_subplot(111)
 
-    ax.scatter(d['nonbg'], d['nonbg_probability'], s=1, c='k')
+    ax.scatter(d['nonbg_USco'], d['nonbg_probability'], s=1, c='k')
 
     plt.savefig('compare_nonbg.png')
 
