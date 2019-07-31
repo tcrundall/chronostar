@@ -27,7 +27,7 @@ d = Table.read('data_table_cartesian_with_bg_ols_and_component_overlaps.fits')
 
 
 
-for i in range(1, 16+1):
+for i in range(1, 15+1):
     maskRV = d['radial_velocity_error']<500.0
     mask = d['comp_overlap_%d'%i]>0.5
 
@@ -128,18 +128,21 @@ def prepare_Tims_data():
     for i in range(memb_usco.shape[1] - 1):
         data_usco['Comp_USco_%d' % (i + 1)] = memb_usco[:, i]
     data_usco['Comp_bg_USco'] = memb_usco[:, -1]
+    data_usco['nonbg'] = -(data_usco['Comp_bg_USco']-1.0)
 
     memb_ucl = np.load('ucl_res/final_membership.npy')
     data_ucl = Table.read('ucl_res/ucl_run_subset.fit')
     for i in range(memb_ucl.shape[1] - 1):
         data_ucl['Comp_UCL_%d' % (i + 1)] = memb_ucl[:, i]
     data_ucl['Comp_bg_UCL'] = memb_ucl[:, -1]
+    data_ucl['nonbg'] = -(data_ucl['Comp_bg_UCL'] - 1.0)
 
     memb_lcc = np.load('lcc_res/final_membership.npy')
     data_lcc = Table.read('lcc_res/lcc_run_subset.fit')
     for i in range(memb_ucl.shape[1] - 1):
         data_lcc['Comp_LCC_%d' % (i + 1)] = memb_lcc[:, i]
     data_lcc['Comp_bg_LCC'] = memb_lcc[:, -1]
+    data_lcc['nonbg'] = -(data_lcc['Comp_bg_LCC'] - 1.0)
 
     data_memb = vstack([data_usco, data_ucl])
     data_memb = vstack([data_memb, data_lcc])
@@ -159,12 +162,15 @@ def compare_membership_probabilities(d):
     tim = prepare_Tims_data()
     d = join(d, tim, keys='source_id')
 
-    d['nonbg_probability'] = -(d['background_log_overlap'])
+    d['nonbg_probability'] = -(d['comp_overlap_bg']-1.0)
+
+    print 'd'
+    print d
 
 
     # Members in the overall data
     mask_members_d = d['comp_overlap_1'] > 1  # Everything is False
-    for i in range(1, 16 + 1):
+    for i in range(1, 15 + 1):
         mask_members_d = np.logical_or(mask_members_d, d['comp_overlap_%d' % i] > 0.5)
 
 
@@ -194,4 +200,5 @@ def compare_membership_probabilities(d):
 
     plt.show()
 
-compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d)
+#compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d)
+compare_membership_probabilities(d)
