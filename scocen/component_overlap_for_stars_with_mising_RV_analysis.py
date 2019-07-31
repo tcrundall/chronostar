@@ -158,6 +158,9 @@ def prepare_Tims_data():
     data_memb['nonbg_UCL'] = nonbg_ucl
     #data_memb['nonbg_LCC'] = nonbg_lcc
 
+    print 'NONBG'
+    print data_usco['nonbg']
+
     return data_memb
 
 def compare_membership_probabilities(d):
@@ -191,6 +194,7 @@ def compare_membership_probabilities(d):
         mask_members = np.logical_or(mask_members, d['comp_overlap_%d' % i] > 0.5)
     """
 
+    """
     import matplotlib.pyplot as plt
 
     fig=plt.figure()
@@ -202,6 +206,7 @@ def compare_membership_probabilities(d):
     plt.savefig('compare.png')
 
     plt.show()
+    """
 
 #compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d)
 compare_membership_probabilities(d)
