@@ -32,7 +32,7 @@ for i in range(1, 15+1):
 
     print i, len(d[mask]), len(d[maskRV&mask])
 mask = d['comp_overlap_bg']>0.5
-print 'bg', len(d[mask], len(d[maskRV&mask]))
+print 'bg', len(d[mask]), len(d[maskRV&mask])
 
 
 def compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d):
