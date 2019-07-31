@@ -46,10 +46,6 @@ data_table.write('data_table_cartesian_with_bg_ols.fits', overwrite=True, format
 """
 
 ############################################################################
-############################################################################
-
-
-############################################################################
 ############ COMPONENT OVERLAPS ############################################
 ############################################################################
 
@@ -61,11 +57,12 @@ data_dict = tabletool.build_data_dict_from_table(
         historical=historical,
 )
 
+print 'KEYS', data_table.keys()
 
 # Create components
 comps = [SphereComponent(pars=x) for x in c]
-#print(comps)
 
+# What about background?
 
 # COMPONENT OVERLAPS
 overlaps = expectmax.get_all_lnoverlaps(data_dict, comps)
@@ -84,30 +81,4 @@ for i in range(membership_probabilities.shape[1]):
 #    data_table['comp_overlap_ucl%d'%(i+1)]=membership_probabilities[:,i+4]
 
 print(data_table)
-data_table.write('data_table_cartesian_with_bg_ols_and_component_overlaps.fits', format='fits')
-
-
-
-######################################################################################
-######################################################################################
-####  Compare with membership probabilities of stars with known radial velocities ####
-######################################################################################
-######################################################################################
-
-memb_usco = np.load('usco_res/final_membership.npy')
-data_usco = Table.read('usco_res/usco_run_subset.fit')
-for i in range(memb_usco.shape[1]-1):
-    data_usco['Comp_USco_%d'%(i+1)] = memb_usco[:,i]
-data_usco['Comp_bg'] = memb_usco[:,-1]
-
-memb_ucl = np.load('ucl_res/final_membership.npy')
-data_ucl = Table.read('ucl_res/ucl_run_subset.fit')
-for i in range(memb_ucl.shape[1]-1):
-    data_ucl['Comp_UCL_%d'%(i+1)] = memb_ucl[:,i]
-data_ucl['Comp_bg'] = memb_ucl[:,-1]
-
-data_memb = vstack([data_usco, data_ucl])
-print(data_memb)
-
-d = join(data_table, data_memb, keys='source_id')
-print(d)
+#data_table.write('data_table_cartesian_with_bg_ols_and_component_overlaps.fits', format='fits')
