@@ -36,7 +36,7 @@ for i in range(1, 16+1):
 
 
 def compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d):
-    mask = d['comp_overlap_9'] > 0.5
+    mask = d['comp_overlap_13'] > 0.5
     maskRV = d['radial_velocity_error'] < 500.0
 
     d9rv=d[maskRV&mask]
