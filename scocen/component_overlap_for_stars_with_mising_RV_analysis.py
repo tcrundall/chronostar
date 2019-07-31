@@ -107,7 +107,21 @@ def compare_membership_probabilities_of_stars_with_and_without_radial_velocities
     for i in range(1, 16+1):
         mask_members = np.logical_or(mask_members, dall['comp_overlap_%d'%i]>0.5)
 
-    print len(dall[mask_members_usco]), len(dall[mask_members_ucl]), len(dall[mask_members])
+    print len(dall[mask_members_usco]), len(dall[mask_members_ucl]), 'sum', len(dall[mask_members_usco])+len(dall[mask_members_ucl]), 'Tims members:', len(dall[mask_members])
+
+    mask_Tim = np.logical_or(mask_members_ucl, mask_members_usco)
+    mask_norv = mask_members
+
+    # Test if stars are members in both analyses
+    mask_both = np.logical_and(mask_Tim, mask_norv) # A star is a member in both analyses
+    mask_none = np.logical_and(~mask_Tim, ~mask_norv) # A star is a NONmember in both analyses
+    mask_Timyes_Marusano = np.logical_and(mask_Tim, ~mask_norv)
+    mask_Timno_Marusayes = np.logical_and(~mask_Tim, mask_norv)
+
+    print('Both', len(dall[mask_both]))
+    print('None', len(dall[mask_none]))
+    print('Timyes Marusano', len(dall[mask_Timyes_Marusano]))
+    print('Timno Marusayes', len(dall[mask_Timno_Marusayes]))
 
 
 compare_membership_probabilities_of_stars_with_and_without_radial_velocities(d)
