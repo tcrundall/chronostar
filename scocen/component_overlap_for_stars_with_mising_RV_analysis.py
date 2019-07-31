@@ -177,18 +177,19 @@ def compare_membership_probabilities(d):
 
 
 
-    mask_members_usco = dall['Comp_USco_1'] > 1  # Everything is False
+    mask_members_usco = d['Comp_USco_1'] > 1  # Everything is False
     for i in range(1, 4 + 1):
-        mask_members_usco = np.logical_or(mask_members_usco, dall['Comp_USco_%d' % i] > 0.5)
+        mask_members_usco = np.logical_or(mask_members_usco, d['Comp_USco_%d' % i] > 0.5)
 
-    mask_members_ucl = dall['Comp_UCL_1'] > 1  # Everything is False
+    mask_members_ucl = d['Comp_UCL_1'] > 1  # Everything is False
     for i in range(1, 4 + 1):
-        mask_members_ucl = np.logical_or(mask_members_ucl, dall['Comp_UCL_%d' % i] > 0.5)
+        mask_members_ucl = np.logical_or(mask_members_ucl, d['Comp_UCL_%d' % i] > 0.5)
 
-    mask_members = dall['Comp_UCL_1'] > 1  # Everything is False
+    """
+    mask_members = d['Comp_UCL_1'] > 1  # Everything is False
     for i in range(1, 16 + 1):
-        mask_members = np.logical_or(mask_members, dall['comp_overlap_%d' % i] > 0.5)
-
+        mask_members = np.logical_or(mask_members, d['comp_overlap_%d' % i] > 0.5)
+    """
 
     import matplotlib.pyplot as plt
 
