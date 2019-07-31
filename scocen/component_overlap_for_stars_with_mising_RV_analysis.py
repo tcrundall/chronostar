@@ -5,16 +5,9 @@ Take Sco-Cen components fitted to 6D data and make overlaps
 (using covariance matrix) with stars missing radial velocities
 in order to find more Sco-Cen candidates.
 
-MZ: It fails in python2 (cannot import emcee).
-
 """
 
 import numpy as np
-import sys
-sys.path.insert(0, '..')
-from chronostar.component import SphereComponent
-from chronostar import tabletool
-from chronostar import expectmax
 from astropy.table import Table, vstack, join
 
 
@@ -22,6 +15,21 @@ from astropy.table import Table, vstack, join
 c = np.load('all_nonbg_scocen_comps.npy') # including LCC
 print('components', c.shape)
 print('Are there duplicate components?')
+print c
+
+
+def are_there_duplicate_components(c):
+    for i, x in enumerate(c[:-1]):
+        for j, y in enumerate(c):
+            if j<1 or i==j:
+                continue
+            #print x, y
+            f=np.allclose(x, y, atol=1)
+
+            if f:
+                print i, j, f
+
+are_there_duplicate_components(c)
 
 d = Table.read('data_table_cartesian_with_bg_ols_and_component_overlaps.fits')
 
@@ -137,40 +145,44 @@ def prepare_Tims_data():
     data_ucl['Comp_bg_UCL'] = memb_ucl[:, -1]
     data_ucl['nonbg'] = -(data_ucl['Comp_bg_UCL'] - 1.0)
 
-    """
     memb_lcc = np.load('lcc_res/final_membership.npy')
     data_lcc = Table.read('lcc_res/lcc_run_subset.fit')
     for i in range(memb_ucl.shape[1] - 1):
         data_lcc['Comp_LCC_%d' % (i + 1)] = memb_lcc[:, i]
     data_lcc['Comp_bg_LCC'] = memb_lcc[:, -1]
     data_lcc['nonbg'] = -(data_lcc['Comp_bg_LCC'] - 1.0)
-    """
 
     data_memb = vstack([data_usco, data_ucl])
-    #data_memb = vstack([data_memb, data_lcc])
+    data_memb = vstack([data_memb, data_lcc])
 
     # Find the highest probability value
     nonbg_usco = -(data_memb['Comp_bg_USco']-1.0)
     nonbg_ucl = -(data_memb['Comp_bg_UCL']-1.0)
-    #nonbg_lcc = -(data_memb['Comp_bg_LCC']-1.0)
+    nonbg_lcc = -(data_memb['Comp_bg_LCC']-1.0)
 
     data_memb['nonbg_USco'] = nonbg_usco
     data_memb['nonbg_UCL'] = nonbg_ucl
-    #data_memb['nonbg_LCC'] = nonbg_lcc
+    data_memb['nonbg_LCC'] = nonbg_lcc
 
-    print 'NONBG'
-    print data_usco['nonbg']
+    #print 'NONBG'
+    #print data_usco['nonbg']
 
     return data_memb
 
 def compare_membership_probabilities(d):
+    d['nonbg_probability'] = -(d['comp_overlap_bg'] - 1.0)
+    d0=d
+    print('my d', len(d0))
+
     tim = prepare_Tims_data()
     d = join(d, tim, keys='source_id')
 
-    d['nonbg_probability'] = -(d['comp_overlap_bg']-1.0)
 
-    print 'd'
-    print d
+
+    print ('joined d', len(d))
+
+    #print 'd'
+    #print d
 
 
     # Members in the overall data
@@ -200,9 +212,24 @@ def compare_membership_probabilities(d):
     fig=plt.figure()
     ax=fig.add_subplot(111)
 
-    ax.scatter(d['nonbg_USco'], d['nonbg_probability'], s=1, c='k')
+    #ax.scatter(d['nonbg_USco'], d['nonbg_probability'], s=1, c='k')
+    ax.scatter(d['nonbg'], d['nonbg_probability'], s=1, c='k')
 
-    plt.savefig('compare_nonbg.png')
+    #plt.savefig('compare_nonbg.png')
+
+
+    fig=plt.figure()
+    ax=fig.add_subplot(111)
+    b=20
+    #ax.hist(d['nonbg_USco'], histtype='step', color='k')
+    ax.hist(d['nonbg'], histtype='step', color='k', bins=b)
+    ax.hist(d['nonbg_probability'], histtype='step', color='r', bins=b)
+
+    fig=plt.figure()
+    ax=fig.add_subplot(111)
+    b=20
+    ax.hist(d0['nonbg_probability'], histtype='step', color='r', bins=b)
+
 
     plt.show()
 
