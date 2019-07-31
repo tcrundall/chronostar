@@ -83,7 +83,7 @@ def compare_membership_probabilities_of_stars_with_and_without_radial_velocities
 
     mask_members = data_ucl['Comp_UCL_1']>1 # Everything is False
     for i in range(1, 4+1):
-        mask_members = np.logical_or(mask_members, data_usco['Comp_UCL_%d'%i]>0.5)
+        mask_members = np.logical_or(mask_members, data_ucl['Comp_UCL_%d'%i]>0.5)
 
     data_memb = vstack([data_usco, data_ucl])
     #print(data_memb)
