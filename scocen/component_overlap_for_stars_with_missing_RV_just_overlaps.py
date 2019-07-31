@@ -57,28 +57,21 @@ data_dict = tabletool.build_data_dict_from_table(
         historical=historical,
 )
 
-print 'KEYS', data_dict.keys()
-
 # Create components
 comps = [SphereComponent(pars=x) for x in c]
 
-# What about background?
-
 # COMPONENT OVERLAPS
 overlaps = expectmax.get_all_lnoverlaps(data_dict, comps)
-#print(overlaps)
 print('overlaps.shape', overlaps.shape, len(comps))
 
+# MEMBERSHIP PROBABILITIES
 membership_probabilities = np.array([expectmax.calc_membership_probs(ol) for ol in overlaps])
-#print(membership_probabilities)
-#print(membership_probabilities.shape)
 
-for i in range(membership_probabilities.shape[1]):
+# Create a table
+for i in range(membership_probabilities.shape[1]-1):
     data_table['comp_overlap_%d' % (i + 1)] = membership_probabilities[:, i]
-#for i in range(4):
-#    data_table['comp_overlap_usco%d'%(i+1)]=membership_probabilities[:,i]
-#for i in range(4):
-#    data_table['comp_overlap_ucl%d'%(i+1)]=membership_probabilities[:,i+4]
+data_table['comp_overlap_bg'] = membership_probabilities[:, -1]
 
+# Print data
+data_table.write('data_table_cartesian_with_bg_ols_and_component_overlaps.fits', format='fits', overwrite=True)
 print(data_table)
-#data_table.write('data_table_cartesian_with_bg_ols_and_component_overlaps.fits', format='fits')
