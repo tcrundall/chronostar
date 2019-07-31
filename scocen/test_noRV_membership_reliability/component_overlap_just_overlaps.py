@@ -70,5 +70,6 @@ for i in range(membership_probabilities.shape[1]-1):
 data_table['comp_overlap_bg'] = membership_probabilities[:, -1]
 
 # Print data
+print('WRITE A TABLE WITH PROBABILITIES')
 data_table.write('scocen_data_table_cartesian_with_bg_ols_and_component_overlaps_with_artificially_broken_radial_velocities.fits', format='fits', overwrite=True)
 print(data_table)
