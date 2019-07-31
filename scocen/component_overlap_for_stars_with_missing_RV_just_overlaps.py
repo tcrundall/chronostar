@@ -67,7 +67,7 @@ comps = [SphereComponent(pars=x) for x in c]
 # COMPONENT OVERLAPS
 overlaps = expectmax.get_all_lnoverlaps(data_dict, comps)
 #print(overlaps)
-#print('overlaps.shape', overlaps.shape)
+print('overlaps.shape', overlaps.shape, len(comps))
 
 membership_probabilities = np.array([expectmax.calc_membership_probs(ol) for ol in overlaps])
 #print(membership_probabilities)
