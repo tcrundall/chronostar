@@ -23,11 +23,15 @@ c = np.load('all_nonbg_scocen_comps.npy') # including LCC
 print('components', c.shape)
 print('Are there duplicate components?')
 
-datafile = 'data_table_cartesian_with_bg_ols.fits'
+#datafile = 'data_table_cartesian_with_bg_ols.fits'
+datafile = 'data_table_cartesian_including_tims_stars_with_bg_ols.fits'
 
 # Read Gaia data including both stars with known and missing radial velocities
-datafile = 'data_table_cartesian_100k.fits'
+#datafile = 'data_table_cartesian_100k.fits'
 data_table = tabletool.read(datafile)
+
+# This table is masked. Unmask:
+data_table=data_table.filled()
 
 print('DATA READ', len(data_table))
 historical = 'c_XU' in data_table.colnames
@@ -73,5 +77,5 @@ for i in range(membership_probabilities.shape[1]-1):
 data_table['comp_overlap_bg'] = membership_probabilities[:, -1]
 
 # Print data
-data_table.write('data_table_cartesian_with_bg_ols_and_component_overlaps.fits', format='fits', overwrite=True)
+data_table.write('data_table_cartesian_including_tims_stars_with_bg_ols_and_component_overlaps.fits', format='fits', overwrite=True)
 print(data_table)

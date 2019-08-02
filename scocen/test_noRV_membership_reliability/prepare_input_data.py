@@ -6,7 +6,7 @@ Make two sets: One with radial velocities and one with very large radial velocit
 import numpy as np
 from astropy.table import Table, vstack, join
 
-datafile = '../data_table_cartesian_100k.fits' # SHOULD BE CARTESIAN
+datafile = '../data_table_cartesian_including_tims_stars_with_bg_ols_and_component_overlaps.fits' # SHOULD BE CARTESIAN
 
 data_original = Table.read(datafile)
 #print data_original
@@ -14,7 +14,7 @@ data_original = Table.read(datafile)
 data_original['radial_velocity'] = 0.0
 data_original['radial_velocity_error'] = 1e+5
 
-data_original.write('data_table_cartesian_100k_with_all_big_rv_errors.fits', overwrite=True, format='fits')
+data_original.write('data_table_cartesian_including_tims_stars_with_bg_ols_and_component_overlaps_with_all_big_rv_errors.fits', overwrite=True, format='fits')
 
 # Select only Tim's members
 def prepare_Tims_data():
@@ -65,6 +65,16 @@ data = join(data_original, scocen_members_essential_cols, keys='source_id')
 print data
 print data.colnames
 
+
+# Exclude stars that already have computed 'broken RV' bg overlaps
+data_existing = Table.read('scocen_members_with_artificially_broken_radial_velocities_for_comparison.fits')
+mask = np.in1d(data['source_id'], data_existing['source_id'])
+
+data=data[mask]
+
 # This table is masked. Unmask:
 data=data.filled()
-data.write('scocen_members_with_artificially_broken_radial_velocities_for_comparison.fits', format='fits', overwrite=True)
+
+data.write('scocen_members_with_artificially_broken_radial_velocities_for_comparison_with_tims_stars_only_leftover_stars.fits', format='fits', overwrite=True)
+print('Final data written.')
+print(len(data))
