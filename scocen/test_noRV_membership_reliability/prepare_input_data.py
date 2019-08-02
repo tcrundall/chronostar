@@ -91,10 +91,10 @@ def insert_bg_ols_into_table():
     ln_bg_ols = np.loadtxt('bgols_scocen_with_tims_stars_with_artificially_broken_radial_velocities_multiprocessing2.dat')
     bg_lnol_colname = 'background_log_overlap'
     print('Background overlaps: insert column')
-    print('before', table_for_which_I_computed_bgols)
+    print('before', table_for_which_I_computed_bgols.colnames)
     tabletool.insert_column(table_for_which_I_computed_bgols, ln_bg_ols, bg_lnol_colname, filename=datafile)
     table_for_which_I_computed_bgols.write(datafile, overwrite=True, format='fits')
-    print('after', table_for_which_I_computed_bgols)
+    print('after', table_for_which_I_computed_bgols.colnames)
 
     # Merge tables
     data_existing = Table.read('scocen_members_with_artificially_broken_radial_velocities_for_comparison.fits')
