@@ -23,8 +23,7 @@ c = np.load('../all_nonbg_scocen_comps.npy') # including LCC
 print('components', c.shape)
 print('Are there duplicate components?')
 
-datafile = 'scocen_members_with_artificially_broken_radial_velocities_for_comparison.fits'
-datafile = 'data_table_cartesian_with_bg_ols_artificially_broken_radial_velocities.fits'
+datafile = 'scocen_members_with_artificially_broken_radial_velocities_for_comparison_with_tims_stars_only_leftover_stars.fits'
 data_table = tabletool.read(datafile)
 
 print('DATA READ', len(data_table))

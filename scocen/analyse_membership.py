@@ -406,13 +406,49 @@ def cmd_for_candidate_members(d):
 
     plt.show()
 
+def plot_Z_W_for_each_component(d, show=True):
+    """
+    Plot Z vs W for each component.
 
+    :param d:
+    :param show:
+    :return:
+    """
+
+    # Minimal probability required for membership
+    p = 0.5
+
+    fig = plt.figure()
+
+    for i in range(1, 15 + 1):
+        ax = fig.add_subplot(4, 4, i)
+
+        mask = d['comp_overlap_%d' % i] > p
+        t = d[mask]
+
+        ax.scatter(t['Z'], t['W'], c='k', s=1)
+
+        # Plot stars with known RV
+        mask = t['radial_velocity_error']<50.0
+        t=t[mask]
+        ax.scatter(t['Z'], t['W'], c='r', s=1)
+
+    #        ax.set_ylim(0, 1000)
+
+
+    #ax.set_ylim(0, 2000)
+
+    if show:
+        plt.show()
 
 if __name__ == "__main__":
     #cmd_for_candidate_members(d)
 
     #are_tims_members_in_my_data_table(d)
     #cmd_for_each_component_for_Tims_members(show=True)
+
+    plot_Z_W_for_each_component(d, show=True)
+    exit(0)
 
     distance_for_each_component(d, show=False)
 
