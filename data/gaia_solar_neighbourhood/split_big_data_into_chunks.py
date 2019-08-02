@@ -10,7 +10,7 @@ data = Table.read('ScoCen_box_result.fits') # 1.5M stars between 80 and 200 pc.
 # TODO: add 0-80 pc sample! and beyond 200pc!
 
 # How many chunks?
-N=1
+N=10
 
 indices_chunks = np.array_split(range(len(data)), N)
 
