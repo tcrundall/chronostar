@@ -171,7 +171,7 @@ for star_cov, star_mean in zip(star_covs, star_means):
 bg_ln_ols_result = comm.gather(bg_ln_ols, root=0)
 if rank == 0:
     bg_ln_ols_result = list(itertools.chain.from_iterable(bg_ln_ols_result))
-    np.savetxt('bgols_scocen_with_tims_stars_with_artificially_broken_radial_velocities_multiprocessing.dat', bg_ln_ols_result)
+    np.savetxt('bgols_scocen_with_tims_stars_with_artificially_broken_radial_velocities_multiprocessing2.dat', bg_ln_ols_result)
 
     time_end = time.time()
     print(rank, 'done', time_end - time_start)
