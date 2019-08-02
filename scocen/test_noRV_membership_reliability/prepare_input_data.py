@@ -70,7 +70,7 @@ print data.colnames
 data_existing = Table.read('scocen_members_with_artificially_broken_radial_velocities_for_comparison.fits')
 mask = np.in1d(data['source_id'], data_existing['source_id'])
 
-data=data[mask]
+data=data[~mask]
 
 # This table is masked. Unmask:
 data=data.filled()
