@@ -11,7 +11,7 @@ MZ: It fails in python2 (cannot import emcee).
 
 import numpy as np
 import sys
-sys.path.insert(0, '..')
+sys.path.insert(0, '../../')
 from chronostar.component import SphereComponent
 from chronostar import tabletool
 from chronostar import expectmax
@@ -23,14 +23,17 @@ c = np.load('../all_nonbg_scocen_comps.npy') # including LCC
 print('components', c.shape)
 print('Are there duplicate components?')
 
-datafile = 'scocen_members_with_artificially_broken_radial_velocities_for_comparison_with_tims_stars_only_leftover_stars.fits'
+datafile = 'scocen_members_with_artificially_broken_radial_velocities_for_comparison_with_all_tims_members.fits'
 data_table = tabletool.read(datafile)
+
+# This table is masked. Unmask:
+data_table = data_table.filled()
 
 print('DATA READ', len(data_table))
 historical = 'c_XU' in data_table.colnames
 
 """
-# Read backgrounf overlaps
+# Read background overlaps
 ln_bg_ols = np.loadtxt('bgols_scocen_with_artificially_broken_radial_velocities_multiprocessing.dat')
 print('len bg_ols', len(ln_bg_ols), 'len data_table', len(data_table))
 
@@ -70,5 +73,5 @@ data_table['comp_overlap_bg'] = membership_probabilities[:, -1]
 
 # Print data
 print('WRITE A TABLE WITH PROBABILITIES')
-data_table.write('scocen_data_table_cartesian_with_bg_ols_and_component_overlaps_with_artificially_broken_radial_velocities.fits', format='fits', overwrite=True)
+data_table.write('scocen_members_with_artificially_broken_radial_velocities_for_comparison_with_all_tims_members_with_component_probabilities.fits', format='fits', overwrite=True)
 print(data_table)

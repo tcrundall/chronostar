@@ -98,7 +98,9 @@ def insert_bg_ols_into_table():
     data_existing = Table.read('scocen_members_with_artificially_broken_radial_velocities_for_comparison.fits')
     data = vstack([data_existing, table_for_which_I_computed_bgols])
 
-    data.write('scocen_members_with_artificially_broken_radial_velocities_for_comparison_with_all_tims_members.fits', format='fits')
+    #data.write('scocen_members_with_artificially_broken_radial_velocities_for_comparison_with_all_tims_members.fits', format='fits')
+
+    print data.colnames
 
 if __name__=='__main__':
     #prepare_data_for_bg_ols_computation()
