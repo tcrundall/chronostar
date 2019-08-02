@@ -6,6 +6,10 @@ Make two sets: One with radial velocities and one with very large radial velocit
 import numpy as np
 from astropy.table import Table, vstack, join
 
+import sys
+sys.path.insert(0, '..')
+from chronostar import tabletool
+
 def prepare_data_for_bg_ols_computation():
     datafile = '../data_table_cartesian_including_tims_stars_with_bg_ols_and_component_overlaps.fits' # SHOULD BE CARTESIAN
 
