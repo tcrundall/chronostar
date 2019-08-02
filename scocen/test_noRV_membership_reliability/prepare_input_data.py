@@ -99,7 +99,8 @@ def insert_bg_ols_into_table():
     # Merge tables
     data_existing = Table.read('scocen_members_with_artificially_broken_radial_velocities_for_comparison.fits')
     print data_existing.colnames
-    data = vstack([data_existing, table_for_which_I_computed_bgols])
+    data = join(data_existing, table_for_which_I_computed_bgols, uniq_col_name=None)
+    #vstack([data_existing, table_for_which_I_computed_bgols])
 
     #data.write('scocen_members_with_artificially_broken_radial_velocities_for_comparison_with_all_tims_members.fits', format='fits')
 
