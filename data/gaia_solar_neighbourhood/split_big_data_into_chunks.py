@@ -16,5 +16,5 @@ indices_chunks = np.array_split(range(len(data)), N)
 
 for i, ind in enumerate(indices_chunks):
     subdata = data[ind]
-    subdata.write('ScoCen_box_result_chunk%d.fits'%(i+1))
+    subdata.write('/priv/mulga1/marusa/chronostar/data/ScoCen_box_result_chunk%d.fits'%(i+1))
     print 'ScoCen_box_result_chunk%d.fits'%(i+1), 'written', len(subdata)
