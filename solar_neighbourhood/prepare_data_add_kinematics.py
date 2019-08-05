@@ -10,7 +10,7 @@ from chronostar import tabletool
 from astropy.table import Table
 
 datafile = Table.read('../data/ScoCen_box_result.fits')
-d = tabletool.read(datafile)
+d = Table.read(datafile)
 
 # Set missing radial velocities (nan) to 0
 d['radial_velocity'] = np.nan_to_num(d['radial_velocity'])
