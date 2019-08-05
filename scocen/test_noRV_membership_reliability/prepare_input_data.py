@@ -94,12 +94,16 @@ def insert_bg_ols_into_table():
     tabletool.insert_column(table_for_which_I_computed_bgols, ln_bg_ols, bg_lnol_colname, filename=datafile)
     table_for_which_I_computed_bgols.write(datafile, overwrite=True, format='fits')
     print('&&&&&&&&AFTER', table_for_which_I_computed_bgols.colnames)
+    table_for_which_I_computed_bgols.remove_columns(['background_log_overlap_1', 'comp_overlap_1', 'comp_overlap_2', 'comp_overlap_3', 'comp_overlap_4', 'comp_overlap_5', 'comp_overlap_6', 'comp_overlap_7', 'comp_overlap_8', 'comp_overlap_9', 'comp_overlap_10', 'comp_overlap_11', 'comp_overlap_12', 'comp_overlap_13', 'comp_overlap_14', 'comp_overlap_15', 'comp_overlap_bg', 'background_log_overlap_2', 'Comp_USco_1', 'Comp_USco_2', 'Comp_USco_3', 'Comp_USco_4', 'Comp_bg_USco', 'nonbg', 'Comp_UCL_1', 'Comp_UCL_2', 'Comp_UCL_3', 'Comp_UCL_4', 'Comp_bg_UCL', 'Comp_LCC_1', 'Comp_LCC_2', 'Comp_LCC_3', 'Comp_LCC_4', 'Comp_bg_LCC', 'nonbg_USco', 'nonbg_UCL', 'nonbg_LCC'])
 
     # Merge tables
     data_existing = Table.read('scocen_members_with_artificially_broken_radial_velocities_for_comparison.fits')
     print data_existing.colnames
+    data_existing.remove_columns(['Comp_USco_1', 'Comp_USco_2', 'Comp_USco_3', 'Comp_USco_4', 'Comp_bg_USco', 'nonbg', 'Comp_UCL_1', 'Comp_UCL_2', 'Comp_UCL_3', 'Comp_UCL_4', 'Comp_bg_UCL', 'Comp_LCC_1', 'Comp_LCC_2', 'Comp_LCC_3', 'Comp_LCC_4', 'Comp_bg_LCC', 'nonbg_USco', 'nonbg_UCL', 'nonbg_LCC'])
 
-    #table_for_which_I_computed_bgols = table_for_which_I_computed_bgols[['source_id', 'background_log_overlap']]
+    #table_for_which_I_computed_bgols = table_for_which_I_computed_b
+    #
+    # gols[['source_id', 'background_log_overlap']]
     #data = join(data_existing, table_for_which_I_computed_bgols, uniq_col_name=None)
     data=vstack([data_existing, table_for_which_I_computed_bgols])
 
