@@ -21,5 +21,5 @@ d['radial_velocity_error'][np.isnan(d['radial_velocity_error'])] = 1e+4
 print('Convert to cartesian')
 tabletool.convert_table_astro2cart(table=d, return_table=True)
 
-d.write('../data/ScoCen_box_result_15M_ready_for_bg_ols.fits')
+d.write('/priv/mulga1/marusa/chronostar/data/ScoCen_box_result_15M_ready_for_bg_ols.fits')
 print('Cartesian written.', len(d))
