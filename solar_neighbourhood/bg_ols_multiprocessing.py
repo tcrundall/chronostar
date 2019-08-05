@@ -90,15 +90,17 @@ rank=comm.Get_rank()
 
 if rank == 0:
     # PREPARE STELLAR DATA
-    datafile = '../data/Scocen_box_result_with_kinematics.fits' # SHOULD BE CARTESIAN
+    datafile = '../data/ScoCen_box_result_15M_ready_for_bg_ols.fits' # SHOULD BE CARTESIAN
     data_table = tabletool.read(datafile)
     historical = 'c_XU' in data_table.colnames
     #data_table = data_table[:20] #TODO for testing
     print('DATA_TABLE READ', len(data_table))
 
     # Compute overlaps only for the part of the data (chunk)
+    # Every 100k stars take about 2 days, so I only want about that many stars in each run, in case something
+    # goes wrong
     N=10 # that many chunks
-    NI=0 # take this chunk #TODO: update this number for every run!
+    NI=int(sys.argv[1]) # take this chunk #TODO: update this number for every run!
     # TAKE ONLY the i-th part of the data
     indices_chunks = np.array_split(range(len(data_table)), N)
     data_table=data_table[indices_chunks[NI]]
