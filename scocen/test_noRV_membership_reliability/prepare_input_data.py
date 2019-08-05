@@ -100,12 +100,13 @@ def insert_bg_ols_into_table():
     print data_existing.colnames
 
     table_for_which_I_computed_bgols = table_for_which_I_computed_bgols[['source_id', 'background_log_overlap']]
-    data = join(data_existing, table_for_which_I_computed_bgols, uniq_col_name=None)
-    #vstack([data_existing, table_for_which_I_computed_bgols])
+    #data = join(data_existing, table_for_which_I_computed_bgols, uniq_col_name=None)
+    data=vstack([data_existing, table_for_which_I_computed_bgols])
 
     data.write('scocen_members_with_artificially_broken_radial_velocities_for_comparison_with_all_tims_members.fits', format='fits', overwrite=True)
 
     print data.colnames
+    print len(data)
 
 if __name__=='__main__':
     #prepare_data_for_bg_ols_computation()
