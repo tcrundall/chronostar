@@ -447,10 +447,10 @@ if __name__ == "__main__":
     #are_tims_members_in_my_data_table(d)
     #cmd_for_each_component_for_Tims_members(show=True)
 
-    plot_Z_W_for_each_component(d, show=True)
-    exit(0)
+    #plot_Z_W_for_each_component(d, show=True)
+    #exit(0)
 
-    distance_for_each_component(d, show=False)
+    #distance_for_each_component(d, show=False)
 
     #exit(0)
 

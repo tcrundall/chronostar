@@ -7,8 +7,10 @@ import numpy as np
 from astropy.table import Table, vstack, join
 import matplotlib.pyplot as plt
 
-data = Table.read('../data_table_cartesian_with_bg_ols_and_component_overlaps.fits')
-datanorv = Table.read('scocen_data_table_cartesian_with_bg_ols_and_component_overlaps_with_artificially_broken_radial_velocities.fits')
+data = Table.read('../data_table_cartesian_including_tims_stars_with_bg_ols_and_component_overlaps.fits')
+datanorv = Table.read('scocen_members_with_artificially_broken_radial_velocities_for_comparison_with_all_tims_members_with_component_probabilities.fits')
+
+print len(data), len(datanorv)
 
 #mask = np.in1d(data['source_id'], datanorv['source_id'])
 #data=data[mask]
@@ -51,11 +53,13 @@ ax.set_ylim(0, 1)
 b=20
 fig=plt.figure()
 ax=fig.add_subplot(111)
-ax.hist(d['comp_overlap_bg_1'], histtype='step', color='r', bins=b)
-ax.hist(d['comp_overlap_bg_2'], histtype='step', color='k', bins=b)
+fig.suptitle('p(bg)')
+ax.hist(d['comp_overlap_bg_1'], histtype='step', color='r', bins=b, label='No RV')
+ax.hist(d['comp_overlap_bg_2'], histtype='step', color='k', bins=b, label = 'RV')
+ax.legend()
 
 mask = d['comp_overlap_bg_2']<0.5
 masknorv = d['comp_overlap_bg_1']<0.5
-print('with rv', len(d[mask]), 'noRV', len(d[masknorv]))
+print('NON-Background:', 'with rv', len(d[mask]), 'noRV', len(d[masknorv]), float(len(d[masknorv]))/float(len(d[mask])))
 
 plt.show()
