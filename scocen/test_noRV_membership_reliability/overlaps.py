@@ -56,6 +56,8 @@ data_dict = tabletool.build_data_dict_from_table(
         historical=historical,
 )
 
+print len(data_dict['means'])
+
 # Create components
 comps = [SphereComponent(pars=x) for x in c]
 
