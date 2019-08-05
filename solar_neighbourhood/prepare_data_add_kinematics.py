@@ -9,7 +9,7 @@ sys.path.insert(0, '..')
 from chronostar import tabletool
 from astropy.table import Table
 
-datafile = '../data/ScoCen_box_result.fits')
+datafile = '../data/ScoCen_box_result.fits'
 d = tabletool.read(datafile)
 
 # Set missing radial velocities (nan) to 0
