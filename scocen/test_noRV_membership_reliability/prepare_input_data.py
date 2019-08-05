@@ -99,7 +99,7 @@ def insert_bg_ols_into_table():
     data_existing = Table.read('scocen_members_with_artificially_broken_radial_velocities_for_comparison.fits')
     print data_existing.colnames
 
-    table_for_which_I_computed_bgols = table_for_which_I_computed_bgols[['source_id', 'background_log_overlap']]
+    #table_for_which_I_computed_bgols = table_for_which_I_computed_bgols[['source_id', 'background_log_overlap']]
     #data = join(data_existing, table_for_which_I_computed_bgols, uniq_col_name=None)
     data=vstack([data_existing, table_for_which_I_computed_bgols])
 
