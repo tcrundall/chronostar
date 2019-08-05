@@ -90,7 +90,7 @@ rank=comm.Get_rank()
 
 if rank == 0:
     # PREPARE STELLAR DATA
-    datafile = '../data/ScoCen_box_result_15M_ready_for_bg_ols.fits' # SHOULD BE CARTESIAN
+    datafile = '/priv/mulga1/marusa/chronostar/data/ScoCen_box_result_15M_ready_for_bg_ols.fits' # SHOULD BE CARTESIAN
     data_table = tabletool.read(datafile)
     historical = 'c_XU' in data_table.colnames
     #data_table = data_table[:20] #TODO for testing
