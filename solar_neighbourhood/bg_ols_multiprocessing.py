@@ -101,6 +101,7 @@ if rank == 0:
     # goes wrong
     N=10 # that many chunks
     NI=int(sys.argv[1]) # take this chunk #TODO: update this number for every run!
+    print('NI=%d'%NI)
     # TAKE ONLY the i-th part of the data
     indices_chunks = np.array_split(range(len(data_table)), N)
     data_table=data_table[indices_chunks[NI]]
