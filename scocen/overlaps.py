@@ -18,8 +18,10 @@ from chronostar import expectmax
 from astropy.table import Table, vstack, join
 
 
-
-c = np.load('all_nonbg_scocen_comps.npy') # including LCC
+# Create components
+#c = np.load('all_nonbg_scocen_comps.npy') # including LCC
+#comps = [SphereComponent(pars=x) for x in c]
+comps = SphereComponent.load_raw_components('all_nonbg_scocen_comps.npy')
 print('components', c.shape)
 print('Are there duplicate components?')
 
@@ -61,8 +63,6 @@ data_dict = tabletool.build_data_dict_from_table(
         historical=historical,
 )
 
-# Create components
-comps = [SphereComponent(pars=x) for x in c]
 
 # COMPONENT OVERLAPS
 overlaps = expectmax.get_all_lnoverlaps(data_dict, comps)
