@@ -28,7 +28,7 @@ def test_mpi(pool, the_func):
 
     pos,_,_ = sampler.run_mcmc(p0, 500)
     sampler.reset()
-    sampler.run_mcmc(p0, 1000)
+    sampler.run_mcmc(pos, 1000)
 
 if __name__ == '__main__':
     n_walkers = 16
